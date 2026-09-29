@@ -4,11 +4,23 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 require("dotenv/config");
+const node_http_1 = require("node:http");
 const app_1 = __importDefault(require("./app"));
 const database_1 = __importDefault(require("./config/database"));
 const reminder_service_1 = require("./services/reminder.service");
 const product_migration_service_1 = require("./services/product-migration.service");
 const PORT = Number(process.env.PORT || 5000);
+let ready = false;
+// Hostinger requires the listener before asynchronous database initialization.
+const server = (0, node_http_1.createServer)((req, res) => {
+    if (!ready) {
+        res.writeHead(503, { "Content-Type": "application/json", "Retry-After": "5" });
+        res.end(JSON.stringify({ success: false, message: "Backend is starting" }));
+        return;
+    }
+    (0, app_1.default)(req, res);
+});
+server.listen(PORT);
 const startServer = async () => {
     try {
         console.log("🚀 Backend starting...");
@@ -22,9 +34,8 @@ const startServer = async () => {
             console.log(`✅ Added stable color IDs to ${migratedProducts} product(s).`);
         }
         (0, reminder_service_1.startReminderScheduler)();
-        app_1.default.listen(PORT, () => {
-            console.log(`✅ HivraSoft backend running on http://localhost:${PORT}`);
-        });
+        ready = true;
+        console.log(`✅ HivraSoft backend running on http://localhost:${PORT}`);
     }
     catch (error) {
         console.error("❌ Server startup failed:");

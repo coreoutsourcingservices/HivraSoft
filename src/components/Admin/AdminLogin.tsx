@@ -20,6 +20,7 @@ export default function AdminLogin({ unavailable = false }: { unavailable?: bool
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/admin/login`, {
         method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username: form.get("username"), password: form.get("password") }),
+        signal: AbortSignal.timeout(15000),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Unable to sign in.");
@@ -27,6 +28,7 @@ export default function AdminLogin({ unavailable = false }: { unavailable?: bool
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to sign in. Please try again.");
+    } finally {
       setBusy(false);
     }
   }

@@ -22,6 +22,11 @@ const review_routes_1 = __importDefault(require("./routes/review.routes"));
 const user_settings_routes_1 = __importDefault(require("./routes/user-settings.routes"));
 const order_controller_1 = require("./controllers/order.controller");
 const app = (0, express_1.default)();
+// Hostinger forwards requests through its reverse proxy. Trust only the
+// nearest hop so client-supplied earlier X-Forwarded-For entries are ignored.
+if (process.env.NODE_ENV === "production") {
+    app.set("trust proxy", 1);
+}
 /* =========================================================
    CORS
 ========================================================= */

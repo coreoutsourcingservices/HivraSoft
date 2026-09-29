@@ -336,6 +336,11 @@ export default function ProductForm({
     emptyColor(0),
   ]);
 
+  const [
+    expandedColorIndexes,
+    setExpandedColorIndexes,
+  ] = useState<number[]>([]);
+
   /*
    * true  = Color product
    * false = No Color product
@@ -1000,6 +1005,26 @@ export default function ProductForm({
      STATE HELPERS
   ======================================================= */
 
+  const toggleColorExpanded = (
+    index: number
+  ) => {
+    setExpandedColorIndexes(
+      (current) =>
+        current.includes(
+          index
+        )
+          ? current.filter(
+              (item) =>
+                item !==
+                index
+            )
+          : [
+              ...current,
+              index,
+            ]
+    );
+  };
+
   const changeColorMode = (
     nextValue: boolean
   ) => {
@@ -1060,6 +1085,9 @@ export default function ProductForm({
 
   const addColor =
     () => {
+      const nextIndex =
+        colors.length;
+
       setColors(
         (
           current
@@ -1070,11 +1098,39 @@ export default function ProductForm({
           ),
         ]
       );
+
+      setExpandedColorIndexes(
+        (current) =>
+          current.includes(
+            nextIndex
+          )
+            ? current
+            : [
+                ...current,
+                nextIndex,
+              ]
+      );
     };
 
   const removeColor = (
     index: number
   ) => {
+    setExpandedColorIndexes(
+      (current) =>
+        current
+          .filter(
+            (item) =>
+              item !==
+              index
+          )
+          .map(
+            (item) =>
+              item > index
+                ? item - 1
+                : item
+          )
+    );
+
     setColors(
       (
         current
@@ -2455,14 +2511,24 @@ export default function ProductForm({
         </div>
 
         {/* =================================================
-            ALERTS
+            TOAST ALERTS
         ================================================= */}
 
         {(error ||
           success ||
           uploadMessage) && (
           <div
-            className={`mt-5 rounded-2xl border px-5 py-4 text-sm shadow-sm ${
+            role={
+              error
+                ? "alert"
+                : "status"
+            }
+            aria-live={
+              error
+                ? "assertive"
+                : "polite"
+            }
+            className={`fixed right-5 top-7 z-[100] w-[calc(100%-40px)] max-w-sm rounded-2xl border px-5 py-4 text-sm font-semibold shadow-[0_20px_60px_rgba(0,0,0,0.18)] backdrop-blur-sm ${
               error
                 ? "border-red-200 bg-red-50 text-red-700"
                 : uploadMessage
@@ -3005,39 +3071,90 @@ export default function ProductForm({
                       </div>
                     </div>
 
-                    {isColor && (
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            makeDefaultColor(
-                              colorIndex
-                            )
-                          }
-                          className="rounded-xl border border-black/[0.08] bg-white px-3.5 py-2 text-xs font-semibold text-black/65 transition hover:border-[#8C1839]/25 hover:text-[#8C1839]"
-                        >
-                          Set default
-                        </button>
-
-                        {colors.length >
-                          1 && (
+                    <div className="flex flex-wrap gap-2">
+                      {isColor && (
+                        <>
                           <button
                             type="button"
                             onClick={() =>
-                              removeColor(
+                              makeDefaultColor(
                                 colorIndex
                               )
                             }
-                            className="rounded-xl border border-red-100 bg-red-50 px-3.5 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-100"
+                            className="rounded-xl border border-black/[0.08] bg-white px-3.5 py-2 text-xs font-semibold text-black/65 transition hover:border-[#8C1839]/25 hover:text-[#8C1839]"
                           >
-                            Remove color
+                            Set default
                           </button>
-                        )}
-                      </div>
-                    )}
+
+                          {colors.length >
+                            1 && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                removeColor(
+                                  colorIndex
+                                )
+                              }
+                              className="rounded-xl border border-red-100 bg-red-50 px-3.5 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-100"
+                            >
+                              Remove color
+                            </button>
+                          )}
+                        </>
+                      )}
+
+                      <button
+                        type="button"
+                        aria-expanded={
+                          expandedColorIndexes.includes(
+                            colorIndex
+                          )
+                        }
+                        aria-controls={`product-color-details-${colorIndex}`}
+                        onClick={() =>
+                          toggleColorExpanded(
+                            colorIndex
+                          )
+                        }
+                        className={`inline-flex items-center gap-2 rounded-xl border px-3.5 py-2 text-xs font-bold transition ${
+                          expandedColorIndexes.includes(
+                            colorIndex
+                          )
+                            ? "border-[#8C1839]/20 bg-[#FFF4F7] text-[#8C1839]"
+                            : "border-black/[0.08] bg-white text-black/65 hover:border-[#8C1839]/25 hover:bg-[#FFF7F9] hover:text-[#8C1839]"
+                        }`}
+                      >
+                        {expandedColorIndexes.includes(
+                          colorIndex
+                        )
+                          ? "Collapse"
+                          : "Expand"}
+
+                        <span
+                          aria-hidden="true"
+                          className={`text-sm leading-none transition-transform duration-200 ${
+                            expandedColorIndexes.includes(
+                              colorIndex
+                            )
+                              ? "rotate-180"
+                              : ""
+                          }`}
+                        >
+                          ⌄
+                        </span>
+                      </button>
+                    </div>
                   </div>
 
-                  <div className="p-5 md:p-6">
+                  <div
+                    id={`product-color-details-${colorIndex}`}
+                    hidden={
+                      !expandedColorIndexes.includes(
+                        colorIndex
+                      )
+                    }
+                    className="p-5 md:p-6"
+                  >
                     {/* PRODUCT IDENTITY */}
 
                     <SubHeading
