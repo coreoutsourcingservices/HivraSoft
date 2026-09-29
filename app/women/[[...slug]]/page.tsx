@@ -240,10 +240,10 @@ function mapProductToWomenProduct(
       ),
 
     name:
-      product.name,
+      product.name || "Product",
 
     slug:
-      product.slug,
+      product.slug || "",
 
     image1,
 

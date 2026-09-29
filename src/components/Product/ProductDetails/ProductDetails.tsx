@@ -796,7 +796,7 @@ export default function ProductDetails({
                   index
                 ) => (
                   <button
-                    key={`${image.publicId || image.url}-${index}`}
+                    key={`${("publicId" in image && image.publicId) || image.url}-${index}`}
                     type="button"
                     onClick={() =>
                       setActiveImageIndex(

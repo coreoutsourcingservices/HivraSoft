@@ -16,6 +16,9 @@
 ========================================================= */
 
 export type WomenProduct = {
+  id?: string;
+  isFeatured?: boolean;
+  isNewLaunch?: boolean;
   name: string;
 
   image1: string;
@@ -1239,4 +1242,4 @@ function formatSlug(
         word.slice(1)
     )
     .join(" ");
-} 
+}

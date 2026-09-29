@@ -1,18 +1,19 @@
 "use client";
 
 import Link from "next/link";
+import type { CatalogProduct } from "@/lib/product-catalog";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
-async function readJson(response) {
+async function readJson(response: Response): Promise<{ products?: CatalogProduct[]; message?: string }> {
   try { return await response.json(); } catch { return {}; }
 }
 
-function normalizeProduct(product) {
+function normalizeProduct(product: CatalogProduct) {
   const colors = Array.isArray(product?.colors) ? product.colors : [];
-  const defaultColor = colors.find((color) => color?.isDefault) || colors[0] || {};
-  const images = Array.isArray(defaultColor.images) ? defaultColor.images : [];
+  const defaultColor = colors.find((color) => color?.isDefault) || colors[0];
+  const images = Array.isArray(defaultColor?.images) ? defaultColor?.images : [];
   const totalStock = colors.reduce(
     (total, color) => total + (Array.isArray(color?.sizes) ? color.sizes : []).reduce(
       (sum, size) => sum + (size?.isActive === false ? 0 : Math.max(0, Number(size?.stock || 0))), 0
@@ -20,9 +21,9 @@ function normalizeProduct(product) {
   );
   return {
     id: String(product?._id || ""),
-    name: defaultColor.nameProduct || "Product",
-    slug: defaultColor.slugProduct || "",
-    color: defaultColor.nameColor || "",
+    name: defaultColor?.nameProduct || "Product",
+    slug: defaultColor?.slugProduct || "",
+    color: defaultColor?.nameColor || "",
     image: images.find((image) => image?.isDefault)?.url || images[0]?.url || "",
     stock: totalStock,
     colors: colors.length,
@@ -34,11 +35,11 @@ function normalizeProduct(product) {
 }
 
 export default function ProductsManager() {
-  const [products, setProducts] = useState([]);
+  const [products, setProducts] = useState<ReturnType<typeof normalizeProduct>[]>([]);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [loading, setLoading] = useState(true);
-  const [actionId, setActionId] = useState(null);
+  const [actionId, setActionId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -73,7 +74,7 @@ export default function ProductsManager() {
     });
   }, [products, search, filter]);
 
-  const updateActive = async (id, isActive) => {
+  const updateActive = async (id: string, isActive: boolean) => {
     if (actionId) return;
     try {
       setActionId(id); setError(""); setSuccess("");
@@ -92,7 +93,7 @@ export default function ProductsManager() {
     } finally { setActionId(null); }
   };
 
-  const deleteProduct = async (id, name) => {
+  const deleteProduct = async (id: string, name: string) => {
     if (actionId || !window.confirm(`Delete "${name}"?\n\nProduct and its Cloudinary images will be deleted.`)) return;
     try {
       setActionId(id); setError(""); setSuccess("");

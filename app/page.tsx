@@ -242,7 +242,7 @@ function BannerSlider() {
 function FavouriteCard({
   card,
   delay = 0,
-}) {
+}: { card: (typeof favouriteCards)[number]; delay?: number }) {
   const [active, setActive] = useState(0);
 
   useEffect(() => {
@@ -404,7 +404,7 @@ function FavouriteCard({
 
 function ProductCard({
   product,
-}) {
+}: { product: (typeof everyWomanProducts)[number] }) {
   const [hovered, setHovered] = useState(false);
   const [clicked, setClicked] = useState(false);
 
@@ -650,7 +650,7 @@ function ProductSection({
   accent,
   products,
   alternate = false,
-}) {
+}: { eyebrow: string; title: string; accent: string; products: typeof everyWomanProducts; alternate?: boolean }) {
   return (
     <section
       className={`
@@ -916,7 +916,7 @@ function StyleConfidence() {
 function FitCard({
   card,
   delay = 0,
-}) {
+}: { card: (typeof findYourFit)[number]; delay?: number }) {
   const [active, setActive] = useState(0);
 
   useEffect(() => {
@@ -1252,7 +1252,7 @@ export default function HomePage() {
       /* GENERAL REVEALS */
 
       const reveals =
-        gsap.utils.toArray("[data-reveal]");
+        gsap.utils.toArray<HTMLElement>("[data-reveal]");
 
       reveals.forEach((element) => {
         gsap.fromTo(

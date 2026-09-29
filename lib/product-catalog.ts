@@ -101,7 +101,7 @@ export function toDisplayProduct(product: CatalogProduct | any): DisplayProduct 
 }
 
 export function catalogProductsFromResponse(data: any): DisplayProduct[] {
-  const list = Array.isArray(data?.products)
+  const list: CatalogProduct[] = Array.isArray(data?.products)
     ? data.products
     : Array.isArray(data?.data)
       ? data.data
