@@ -13,7 +13,7 @@ import {
   Trash2,
 } from "lucide-react";
 
-import Header from "@/components/Header/Header";
+import Header from "@/src/components/Header/Header";
 import AccountSidebar from "@/app/account/components/AccountSidebar";
 import { catalogProductsFromResponse } from "@/lib/product-catalog";
 

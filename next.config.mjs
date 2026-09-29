@@ -1,6 +1,5 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   async rewrites() {
     const backend = process.env.API_URL?.replace(/\/$/, "");
     return backend
