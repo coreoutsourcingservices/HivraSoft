@@ -31,6 +31,29 @@ import {
   getAdminUserOrders,
   getAdminUserNotifications,
 } from "../controllers/admin.controller";
+import {
+  getAdminCartTracking,
+  getAdminWishlistTracking,
+} from "../controllers/tracking.controller";
+
+import {
+  listAdminBlogs,
+  getAdminBlog,
+  createAdminBlog,
+  updateAdminBlog,
+  deleteAdminBlog,
+  publishAdminBlog,
+  duplicateAdminBlog,
+  listAdminBlogCategories,
+  createAdminBlogCategory,
+  updateAdminBlogCategory,
+  deleteAdminBlogCategory,
+  listAdminBlogTags,
+  createAdminBlogTag,
+  updateAdminBlogTag,
+  deleteAdminBlogTag,
+} from "../controllers/blog.controller";
+
 import User from "../models/User.model";
 import { verifyToken } from "../utils/jwt";
 import { upload } from "../middleware/upload.middleware";
@@ -146,6 +169,26 @@ router.get("/me", authenticateAdmin, (req: Request, res: Response) => {
 });
 
 router.get("/dashboard", authenticateAdmin, getAdminDashboard);
+router.get("/blogs", authenticateAdmin, listAdminBlogs);
+router.post("/blogs", authenticateAdmin, createAdminBlog);
+router.get("/blogs/:id", authenticateAdmin, getAdminBlog);
+router.put("/blogs/:id", authenticateAdmin, updateAdminBlog);
+router.patch("/blogs/:id", authenticateAdmin, updateAdminBlog);
+router.delete("/blogs/:id", authenticateAdmin, deleteAdminBlog);
+router.post("/blogs/:id/publish", authenticateAdmin, publishAdminBlog);
+router.post("/blogs/:id/duplicate", authenticateAdmin, duplicateAdminBlog);
+router.get("/blog-categories", authenticateAdmin, listAdminBlogCategories);
+router.post("/blog-categories", authenticateAdmin, createAdminBlogCategory);
+router.put("/blog-categories/:id", authenticateAdmin, updateAdminBlogCategory);
+router.patch("/blog-categories/:id", authenticateAdmin, updateAdminBlogCategory);
+router.delete("/blog-categories/:id", authenticateAdmin, deleteAdminBlogCategory);
+router.get("/blog-tags", authenticateAdmin, listAdminBlogTags);
+router.post("/blog-tags", authenticateAdmin, createAdminBlogTag);
+router.put("/blog-tags/:id", authenticateAdmin, updateAdminBlogTag);
+router.patch("/blog-tags/:id", authenticateAdmin, updateAdminBlogTag);
+router.delete("/blog-tags/:id", authenticateAdmin, deleteAdminBlogTag);
+router.get("/cart-tracking", authenticateAdmin, getAdminCartTracking);
+router.get("/wishlist-tracking", authenticateAdmin, getAdminWishlistTracking);
 router.get("/customers", authenticateAdmin, getAdminCustomers);
 router.post("/customers", authenticateAdmin, createAdminCustomer);
 router.get("/customers/:id", authenticateAdmin, getAdminCustomerDetails);

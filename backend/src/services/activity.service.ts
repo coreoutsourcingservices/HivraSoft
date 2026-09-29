@@ -52,3 +52,11 @@ export async function getUserActivities(userId: string, limit = 100) {
     .limit(Math.max(1, Math.min(250, limit)))
     .lean();
 }
+
+export async function markActivityEmailSent(activityId: string) {
+  if (!mongoose.Types.ObjectId.isValid(activityId)) return;
+  await UserActivity.updateOne(
+    { _id: new mongoose.Types.ObjectId(activityId) },
+    { $set: { "metadata.addedEmailSentAt": new Date() } }
+  ).catch((error) => console.error("ACTIVITY EMAIL STATUS ERROR:", error));
+}

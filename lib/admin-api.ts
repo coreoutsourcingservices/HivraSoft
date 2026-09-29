@@ -246,3 +246,82 @@ export async function updateAdminUserSettings(input: {
   }>("/api/admin/user-settings", { method: "PATCH", body: form });
 }
 
+
+export type CommerceTrackingStatus = "IN_CART" | "IN_WISHLIST" | "REMOVED" | "PURCHASED";
+
+export type CommerceTrackingRow = {
+  id: string;
+  kind: "cart" | "wishlist";
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    phone: string;
+    photo: string;
+  };
+  product: {
+    id: string;
+    name: string;
+    slug: string;
+    colorName: string;
+    sizeName: string;
+    price: number;
+    imageUrl: string;
+    colorId: string;
+    sizeId: string;
+  };
+  quantity: number;
+  addedAt: string;
+  updatedAt: string;
+  status: CommerceTrackingStatus;
+  email: {
+    addedSent: boolean;
+    addedSentAt?: string | null;
+    reminder20MinSent: boolean;
+    reminder24HourSent: boolean;
+  };
+};
+
+export type CommerceTrackingQuery = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: string;
+  dateFrom?: string;
+  dateTo?: string;
+};
+
+export type CommerceTrackingResult = {
+  tracking: CommerceTrackingRow[];
+  pagination: { page: number; limit: number; total: number; totalPages: number };
+};
+
+async function getCommerceTracking(kind: "cart" | "wishlist", query: CommerceTrackingQuery = {}) {
+  const params = new URLSearchParams();
+  if (query.page) params.set("page", String(query.page));
+  if (query.limit) params.set("limit", String(query.limit));
+  if (query.search) params.set("search", query.search);
+  if (query.status) params.set("status", query.status);
+  if (query.dateFrom) params.set("dateFrom", query.dateFrom);
+  if (query.dateTo) params.set("dateTo", query.dateTo);
+
+  const result = await apiFetch<{
+    success: boolean;
+    tracking?: CommerceTrackingRow[];
+    pagination?: CommerceTrackingResult["pagination"];
+  }>(`/api/admin/${kind}-tracking${params.toString() ? `?${params.toString()}` : ""}`);
+
+  const tracking = Array.isArray(result.tracking) ? result.tracking : [];
+  return {
+    tracking,
+    pagination: result.pagination || { page: 1, limit: query.limit || 20, total: tracking.length, totalPages: 1 },
+  };
+}
+
+export function getAdminCartTracking(query: CommerceTrackingQuery = {}) {
+  return getCommerceTracking("cart", query);
+}
+
+export function getAdminWishlistTracking(query: CommerceTrackingQuery = {}) {
+  return getCommerceTracking("wishlist", query);
+}

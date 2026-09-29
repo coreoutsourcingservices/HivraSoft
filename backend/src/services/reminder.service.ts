@@ -5,8 +5,9 @@ import Product from "../models/Product.model";
 import User from "../models/User.model";
 import Order from "../models/Order.model";
 import Notification from "../models/Notification.model";
+import { sendCartReminderEmail, sendWishlistReminderEmail } from "./commerce-email.service";
 
-const DAY_MS = 86_400_000;
+const MINUTE_MS = 60_000;
 
 function configuredStages(value: string | undefined, fallback: number[]) {
   const parsed = String(value || "")
@@ -14,26 +15,37 @@ function configuredStages(value: string | undefined, fallback: number[]) {
     .map((item) => Number(item.trim()))
     .filter((item) => Number.isFinite(item) && item > 0)
     .map((item) => Math.floor(item));
-
-  return Array.from(new Set(parsed.length ? parsed : fallback)).sort((a, b) => b - a);
+  return Array.from(new Set(parsed.length ? parsed : fallback)).sort((a, b) => a - b);
 }
 
-function ageDays(date: unknown, now: number) {
+function ageMinutes(date: unknown, now: number) {
   const timestamp = date ? new Date(date as any).getTime() : NaN;
   if (!Number.isFinite(timestamp)) return 0;
-  return Math.max(0, Math.floor((now - timestamp) / DAY_MS));
+  return Math.max(0, Math.floor((now - timestamp) / MINUTE_MS));
 }
 
-function productName(product: any) {
+function productName(product: any, colorId?: string) {
   const colors = Array.isArray(product?.colors) ? product.colors : [];
-  const color = colors.find((item: any) => item?.isDefault === true) || colors[0];
-  return String(color?.nameProduct || product?.name || "Your product");
+  const color = colors.find((item: any) => String(item?._id || "") === String(colorId || ""))
+    || colors.find((item: any) => item?.isDefault === true)
+    || colors[0];
+  return String(color?.nameProduct || "Your product");
+}
+
+function productImage(product: any, colorId?: string) {
+  const colors = Array.isArray(product?.colors) ? product.colors : [];
+  const color = colors.find((item: any) => String(item?._id || "") === String(colorId || ""))
+    || colors.find((item: any) => item?.isDefault === true)
+    || colors[0];
+  const images = Array.isArray(color?.images) ? color.images : [];
+  const image = images.find((item: any) => item?.isDefault === true) || images[0];
+  return String(image?.url || "");
 }
 
 async function activeCustomerIds(userIds: string[]) {
   if (!userIds.length) return new Set<string>();
   const users = await User.find({
-    _id: { $in: userIds.map((id) => new Types.ObjectId(id)) },
+    _id: { $in: userIds.filter((id) => Types.ObjectId.isValid(id)).map((id) => new Types.ObjectId(id)) },
     role: "customer",
     isActive: true,
   })
@@ -42,7 +54,18 @@ async function activeCustomerIds(userIds: string[]) {
   return new Set(users.map((user: any) => String(user._id)));
 }
 
-async function upsertReminder(input: {
+async function wasPurchasedAfter(userId: string, productId: string, addedAt: Date) {
+  if (!Types.ObjectId.isValid(userId) || !Types.ObjectId.isValid(productId)) return false;
+  return Boolean(await Order.exists({
+    user: new Types.ObjectId(userId),
+    "items.product": new Types.ObjectId(productId),
+    createdAt: { $gte: addedAt },
+    inventoryCommitted: true,
+    status: { $nin: ["cancelled", "canceled"] },
+  }));
+}
+
+async function ensureReminderNotification(input: {
   dedupeKey: string;
   userId: string;
   productId: string;
@@ -50,74 +73,159 @@ async function upsertReminder(input: {
   title: string;
   message: string;
   link: string;
-  stageDays: number;
-  metadata?: Record<string, unknown>;
+  imageUrl: string;
+  stageMinutes: number;
+  metadata: Record<string, unknown>;
 }) {
   const userObjectId = new Types.ObjectId(input.userId);
   const productObjectId = new Types.ObjectId(input.productId);
-
-  const result = await Notification.updateOne(
-    { dedupeKey: input.dedupeKey },
-    {
-      $setOnInsert: {
-        title: input.title,
-        message: input.message,
-        type: input.type,
-        audience: "selected",
-        userIds: [userObjectId],
-        link: input.link,
-        isActive: true,
-        readBy: [],
-        createdBy: null,
-        source: "system",
-        dedupeKey: input.dedupeKey,
-        product: productObjectId,
-        reminderStageDays: input.stageDays,
-        metadata: input.metadata || {},
+  try {
+    await Notification.updateOne(
+      { dedupeKey: input.dedupeKey },
+      {
+        $setOnInsert: {
+          title: input.title,
+          message: input.message,
+          type: input.type,
+          audience: "selected",
+          userIds: [userObjectId],
+          filters: {},
+          recipientCount: 1,
+          link: input.link,
+          imageUrl: input.imageUrl,
+          isActive: true,
+          readBy: [],
+          deletedBy: [],
+          createdBy: null,
+          source: "system",
+          dedupeKey: input.dedupeKey,
+          product: productObjectId,
+          reminderStageDays: input.stageMinutes / 1440,
+          metadata: {
+            ...input.metadata,
+            stageMinutes: input.stageMinutes,
+          },
+        },
       },
-    },
-    { upsert: true }
-  );
+      { upsert: true }
+    );
+  } catch (error: any) {
+    if (error?.code !== 11000) throw error;
+  }
+  return Notification.findOne({ dedupeKey: input.dedupeKey });
+}
 
-  return result.upsertedCount > 0;
+async function sendReminderOnce(input: {
+  kind: "cart" | "wishlist";
+  userId: string;
+  productId: string;
+  colorId?: string;
+  sizeId?: string;
+  quantity?: number;
+  addedAt: Date;
+  stageMinutes: number;
+  product: any;
+}) {
+  const addedAtIso = input.addedAt.toISOString();
+  const dedupeKey = [
+    input.kind,
+    input.userId,
+    input.productId,
+    input.colorId || "",
+    input.sizeId || "",
+    addedAtIso,
+    `${input.stageMinutes}m`,
+  ].join(":");
+  const name = productName(input.product, input.colorId);
+  const stageText = input.stageMinutes >= 1440 ? "24 hours" : `${input.stageMinutes} minutes`;
+  const notification = await ensureReminderNotification({
+    dedupeKey,
+    userId: input.userId,
+    productId: input.productId,
+    type: input.kind === "cart" ? "cart_reminder" : "wishlist_reminder",
+    title: input.kind === "cart" ? "Your cart is waiting for you" : "A wishlist item is still waiting",
+    message: input.kind === "cart"
+      ? `${name} has been in your cart for ${stageText}. Complete your order while it is still available.`
+      : `${name} has been in your wishlist for ${stageText}. Take another look before availability changes.`,
+    link: input.kind === "cart" ? "/account/card" : "/account/wishlist",
+    imageUrl: productImage(input.product, input.colorId),
+    stageMinutes: input.stageMinutes,
+    metadata: {
+      colorId: input.colorId || "",
+      sizeId: input.sizeId || "",
+      addedAt: addedAtIso,
+      quantity: Number(input.quantity || 1),
+    },
+  });
+
+  if (!notification) return false;
+  const meta = (notification.metadata || {}) as Record<string, any>;
+  if (meta.emailSentAt) return false;
+
+  try {
+    const sent = input.kind === "cart"
+      ? await sendCartReminderEmail({
+          userId: input.userId,
+          productId: input.productId,
+          colorId: input.colorId,
+          sizeId: input.sizeId,
+          quantity: Number(input.quantity || 1),
+          stageMinutes: input.stageMinutes,
+        })
+      : await sendWishlistReminderEmail({
+          userId: input.userId,
+          productId: input.productId,
+          colorId: input.colorId,
+          sizeId: input.sizeId,
+          stageMinutes: input.stageMinutes,
+        });
+
+    if (sent) {
+      await Notification.updateOne(
+        { _id: notification._id },
+        { $set: { "metadata.emailSentAt": new Date(), "metadata.emailAttemptedAt": new Date() } }
+      );
+      return true;
+    }
+    return false;
+  } catch (error) {
+    await Notification.updateOne(
+      { _id: notification._id },
+      { $set: { "metadata.emailAttemptedAt": new Date(), "metadata.emailLastError": error instanceof Error ? error.message : "Email failed" } }
+    ).catch(() => undefined);
+    console.error(`${input.kind.toUpperCase()} REMINDER EMAIL ERROR:`, error);
+    return false;
+  }
 }
 
 export async function runAbandonedCartWishlistReminders() {
   const now = Date.now();
-  const cartStages = configuredStages(process.env.CART_REMINDER_DAYS, [3, 1]);
-  const wishlistStages = configuredStages(process.env.WISHLIST_REMINDER_DAYS, [7]);
-  const oldestNeededDays = Math.min(
-    ...cartStages,
-    ...wishlistStages
-  );
-  const cutoff = new Date(now - oldestNeededDays * DAY_MS);
+  const cartStages = configuredStages(process.env.CART_REMINDER_MINUTES, [20, 1440]);
+  const wishlistStages = configuredStages(process.env.WISHLIST_REMINDER_MINUTES, [20, 1440]);
+  const oldestNeededMinutes = Math.min(...cartStages, ...wishlistStages);
+  const cutoff = new Date(now - oldestNeededMinutes * MINUTE_MS);
 
   const [carts, wishlists] = await Promise.all([
     Cart.find({ "items.addedAt": { $lte: cutoff } }).lean(),
     Wishlist.find({ "items.addedAt": { $lte: cutoff } }).lean(),
   ]);
 
-  const userIds = Array.from(
-    new Set([
-      ...carts.map((cart: any) => String(cart.user)),
-      ...wishlists.map((wishlist: any) => String(wishlist.user)),
-    ])
-  ).filter((id) => Types.ObjectId.isValid(id));
-
+  const userIds = Array.from(new Set([
+    ...carts.map((cart: any) => String(cart.user || "")),
+    ...wishlists.map((wishlist: any) => String(wishlist.user || "")),
+  ])).filter((id) => Types.ObjectId.isValid(id));
   const activeUsers = await activeCustomerIds(userIds);
-  const productIds = Array.from(
-    new Set([
-      ...carts.flatMap((cart: any) => (cart.items || []).map((item: any) => String(item.product || ""))),
-      ...wishlists.flatMap((wishlist: any) => (wishlist.items || []).map((item: any) => String(item.product || ""))),
-    ])
-  ).filter((id) => Types.ObjectId.isValid(id));
 
+  const productIds = Array.from(new Set([
+    ...carts.flatMap((cart: any) => (cart.items || []).map((item: any) => String(item.product || ""))),
+    ...wishlists.flatMap((wishlist: any) => (wishlist.items || []).map((item: any) => String(item.product || ""))),
+  ])).filter((id) => Types.ObjectId.isValid(id));
   const products = productIds.length
-    ? await Product.find({ _id: { $in: productIds } }).select("colors isActive status").lean()
+    ? await Product.find({ _id: { $in: productIds } }).select("colors isActive").lean()
     : [];
   const productMap = new Map(products.map((product: any) => [String(product._id), product]));
 
-  let created = 0;
+  let emailsSent = 0;
 
   for (const cart of carts as any[]) {
     const userId = String(cart.user || "");
@@ -126,44 +234,24 @@ export async function runAbandonedCartWishlistReminders() {
     for (const item of cart.items || []) {
       const productId = String(item.product || "");
       const product = productMap.get(productId) as any;
-      if (!product || product.isActive === false || product.status === "inactive") continue;
+      if (!product || product.isActive === false) continue;
+      const addedAt = new Date(item.addedAt);
+      if (Number.isNaN(addedAt.getTime())) continue;
+      if (await wasPurchasedAfter(userId, productId, addedAt)) continue;
+      const minutes = ageMinutes(addedAt, now);
 
-      const days = ageDays(item.addedAt, now);
-      const stage = cartStages.find((value) => days >= value);
-      if (!stage) continue;
-
-      const addedAt = new Date(item.addedAt).toISOString();
-      const dedupeKey = [
-        "cart",
-        userId,
-        productId,
-        String(item.colorId || ""),
-        String(item.sizeId || ""),
-        addedAt,
-        stage,
-      ].join(":");
-      const name = productName(product);
-
-      if (
-        await upsertReminder({
-          dedupeKey,
+      for (const stageMinutes of cartStages.filter((stage) => minutes >= stage)) {
+        if (await sendReminderOnce({
+          kind: "cart",
           userId,
           productId,
-          type: "cart_reminder",
-          title: "Your cart is waiting for you",
-          message: `${name} has been in your cart for ${days} day${days === 1 ? "" : "s"}. Complete your purchase while it is still available.`,
-          link: "/account/card",
-          stageDays: stage,
-          metadata: {
-            cartItemId: String(item._id || ""),
-            colorId: String(item.colorId || ""),
-            sizeId: String(item.sizeId || ""),
-            addedAt,
-            ageDays: days,
-          },
-        })
-      ) {
-        created += 1;
+          colorId: String(item.colorId || ""),
+          sizeId: String(item.sizeId || ""),
+          quantity: Number(item.quantity || 1),
+          addedAt,
+          stageMinutes,
+          product,
+        })) emailsSent += 1;
       }
     }
   }
@@ -175,57 +263,28 @@ export async function runAbandonedCartWishlistReminders() {
     for (const item of wishlist.items || []) {
       const productId = String(item.product || "");
       const product = productMap.get(productId) as any;
-      if (!product || product.isActive === false || product.status === "inactive") continue;
+      if (!product || product.isActive === false) continue;
+      const addedAt = new Date(item.addedAt);
+      if (Number.isNaN(addedAt.getTime())) continue;
+      if (await wasPurchasedAfter(userId, productId, addedAt)) continue;
+      const minutes = ageMinutes(addedAt, now);
 
-      const days = ageDays(item.addedAt, now);
-      const stage = wishlistStages.find((value) => days >= value);
-      if (!stage) continue;
-
-      const purchasedAfterSaved = await Order.exists({
-        user: new Types.ObjectId(userId),
-        "items.product": new Types.ObjectId(productId),
-        createdAt: { $gte: new Date(item.addedAt) },
-        status: { $nin: ["cancelled", "canceled"] },
-      });
-      if (purchasedAfterSaved) continue;
-
-      const addedAt = new Date(item.addedAt).toISOString();
-      const dedupeKey = [
-        "wishlist",
-        userId,
-        productId,
-        String(item.colorId || ""),
-        String(item.sizeId || ""),
-        addedAt,
-        stage,
-      ].join(":");
-      const name = productName(product);
-
-      if (
-        await upsertReminder({
-          dedupeKey,
+      for (const stageMinutes of wishlistStages.filter((stage) => minutes >= stage)) {
+        if (await sendReminderOnce({
+          kind: "wishlist",
           userId,
           productId,
-          type: "wishlist_reminder",
-          title: "A wishlist item is still waiting",
-          message: `${name} has been in your wishlist for ${days} days. Take another look before availability changes.`,
-          link: "/account/wishlist",
-          stageDays: stage,
-          metadata: {
-            wishlistItemId: String(item._id || ""),
-            colorId: String(item.colorId || ""),
-            sizeId: String(item.sizeId || ""),
-            addedAt,
-            ageDays: days,
-          },
-        })
-      ) {
-        created += 1;
+          colorId: String(item.colorId || ""),
+          sizeId: String(item.sizeId || ""),
+          addedAt,
+          stageMinutes,
+          product,
+        })) emailsSent += 1;
       }
     }
   }
 
-  return { created, cartCount: carts.length, wishlistCount: wishlists.length };
+  return { emailsSent, cartCount: carts.length, wishlistCount: wishlists.length };
 }
 
 let reminderTimer: NodeJS.Timeout | null = null;
@@ -233,14 +292,14 @@ let reminderTimer: NodeJS.Timeout | null = null;
 export function startReminderScheduler() {
   if (process.env.REMINDER_SCHEDULER_ENABLED === "false" || reminderTimer) return;
 
-  const intervalMinutes = Math.max(60, Number(process.env.REMINDER_INTERVAL_MINUTES || 60));
-  const intervalMs = intervalMinutes * 60 * 1000;
+  const intervalMinutes = Math.max(1, Number(process.env.REMINDER_INTERVAL_MINUTES || 5));
+  const intervalMs = intervalMinutes * MINUTE_MS;
 
   const run = async () => {
     try {
       const result = await runAbandonedCartWishlistReminders();
-      if (result.created > 0) {
-        console.log(`🔔 Reminder scheduler created ${result.created} notification(s).`);
+      if (result.emailsSent > 0) {
+        console.log(`📧 Reminder scheduler sent ${result.emailsSent} email(s).`);
       }
     } catch (error) {
       console.error("REMINDER SCHEDULER ERROR:", error);

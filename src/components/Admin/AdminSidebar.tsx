@@ -14,6 +14,9 @@ import {
   Star,
   Truck,
   UsersRound,
+  ShoppingCart,
+  Heart,
+  FileText,
 } from "lucide-react";
 
 export default function AdminSidebar() {
@@ -24,10 +27,12 @@ export default function AdminSidebar() {
     pathname.startsWith("/admin/customers") ||
     pathname.startsWith("/admin/notifications") ||
     pathname.startsWith("/admin/reviews");
+  const blogRoute = pathname.startsWith("/admin/blog");
   const extraRoute = pathname.startsWith("/admin/extra-add");
 
   const [productsOpen, setProductsOpen] = useState(productRoute);
   const [usersOpen, setUsersOpen] = useState(userRoute);
+  const [blogOpen, setBlogOpen] = useState(blogRoute);
   const [extraOpen, setExtraOpen] = useState(extraRoute);
 
   return (
@@ -77,6 +82,27 @@ export default function AdminSidebar() {
           <MenuLink href="/admin/orders" active={pathname.startsWith("/admin/orders")}>
             Orders
           </MenuLink>
+
+          <MenuLink href="/admin/cart" active={pathname.startsWith("/admin/cart")} icon={<ShoppingCart size={17} />}>
+            Cart
+          </MenuLink>
+
+          <MenuLink href="/admin/wishlist" active={pathname.startsWith("/admin/wishlist")} icon={<Heart size={17} />}>
+            Wishlist
+          </MenuLink>
+
+          <DropdownMenu
+            label="Blog"
+            active={blogRoute}
+            open={blogOpen}
+            onToggle={() => setBlogOpen((current) => !current)}
+            icon={<FileText size={17} />}
+          >
+            <SubMenuLink href="/admin/blog" active={pathname === "/admin/blog"}>All Blogs</SubMenuLink>
+            <SubMenuLink href="/admin/blog/add" active={pathname === "/admin/blog/add"} plus>Add New Blog</SubMenuLink>
+            <SubMenuLink href="/admin/blog/categories" active={pathname === "/admin/blog/categories"}>Categories</SubMenuLink>
+            <SubMenuLink href="/admin/blog/tags" active={pathname === "/admin/blog/tags"}>Tags</SubMenuLink>
+          </DropdownMenu>
 
           <DropdownMenu
             label="Users"

@@ -2,6 +2,7 @@ import mongoose, { Types } from "mongoose";
 import Order, { type OrderStatus } from "../models/Order.model";
 import Product from "../models/Product.model";
 import Cart from "../models/Cart.model";
+import Wishlist from "../models/Wishlist.model";
 import User from "../models/User.model";
 import Address from "../models/user/address.model";
 import Notification from "../models/Notification.model";
@@ -12,6 +13,7 @@ import {
   verifyRazorpayPaymentSignature,
 } from "./razorpay.service";
 import { calculateDeliveryCharge, normalizeDeliveryPaymentMethod } from "./delivery-charge.service";
+import { sendOrderConfirmationEmailOnce } from "./commerce-email.service";
 
 const roundMoney = (value: number) => Math.round((Number(value || 0) + Number.EPSILON) * 100) / 100;
 
@@ -240,6 +242,49 @@ async function removePurchasedCartItems(userId: string, items: any[]) {
   );
 }
 
+async function trackPurchasedCommerce(order: any) {
+  const userId = String(order?.user || "");
+  if (!Types.ObjectId.isValid(userId)) return;
+
+  const wishlist = await Wishlist.findOne({ user: userId }).select("items.product items.colorId items.sizeId").lean();
+  const wishlistItems = Array.isArray((wishlist as any)?.items) ? (wishlist as any).items : [];
+
+  for (const item of Array.isArray(order?.items) ? order.items : []) {
+    const productId = String(item?.productId || item?.product || "");
+    if (!Types.ObjectId.isValid(productId)) continue;
+
+    await trackUserActivity({
+      userId,
+      type: "cart_purchase",
+      productId,
+      orderId: String(order._id),
+      metadata: {
+        orderNumber: order.orderNumber,
+        quantity: Number(item?.quantity || 0),
+        colorId: String(item?.colorId || ""),
+        sizeId: String(item?.sizeId || ""),
+        purchasedAt: new Date(),
+      },
+    }).catch(() => undefined);
+
+    const wasWishlisted = wishlistItems.some((saved: any) => String(saved?.product || "") === productId);
+    if (wasWishlisted) {
+      await trackUserActivity({
+        userId,
+        type: "wishlist_purchase",
+        productId,
+        orderId: String(order._id),
+        metadata: {
+          orderNumber: order.orderNumber,
+          colorId: String(item?.colorId || ""),
+          sizeId: String(item?.sizeId || ""),
+          purchasedAt: new Date(),
+        },
+      }).catch(() => undefined);
+    }
+  }
+}
+
 export async function createOrderStatusNotification(order: any, status: string, createdBy?: string | Types.ObjectId | null) {
   const normalized = String(status || "").toLowerCase();
   const titles: Record<string, string> = {
@@ -337,8 +382,12 @@ export async function createOrderFromCart(userId: string, payload: any) {
   }
 
   await removePurchasedCartItems(userId, order.items);
+  await trackPurchasedCommerce(order).catch(() => undefined);
   await trackCreated(order);
   await createOrderStatusNotification(order.toObject(), "confirmed");
+  void sendOrderConfirmationEmailOnce(order.toObject()).catch((error) =>
+    console.error("ORDER CONFIRMATION EMAIL ERROR:", error)
+  );
   return order;
 }
 
@@ -461,7 +510,11 @@ async function finalizePaidOrder(orderId: string, paymentId: string, source: "ve
     if (!updated) throw new Error("Unable to finalize paid order.");
 
     await removePurchasedCartItems(String(updated.user), updated.items).catch(() => undefined);
+    await trackPurchasedCommerce(updated).catch(() => undefined);
     await createOrderStatusNotification(updated.toObject(), "confirmed").catch(() => undefined);
+    void sendOrderConfirmationEmailOnce(updated.toObject()).catch((error) =>
+      console.error("ORDER CONFIRMATION EMAIL ERROR:", error)
+    );
     await trackUserActivity({
       userId: String(updated.user),
       type: "order_paid",

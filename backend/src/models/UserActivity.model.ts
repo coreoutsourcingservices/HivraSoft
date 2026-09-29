@@ -11,6 +11,8 @@ export type ActivityType =
   | "cart_remove"
   | "cart_update"
   | "cart_clear"
+  | "cart_purchase"
+  | "wishlist_purchase"
   | "checkout_started"
   | "order_created"
   | "order_paid"
@@ -50,6 +52,8 @@ const userActivitySchema = new Schema<IUserActivity>(
         "cart_remove",
         "cart_update",
         "cart_clear",
+        "cart_purchase",
+        "wishlist_purchase",
         "checkout_started",
         "order_created",
         "order_paid",

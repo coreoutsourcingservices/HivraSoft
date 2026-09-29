@@ -10,7 +10,8 @@ import Cart, {
 import Product from "../models/Product.model";
 import DiscountCode from "../models/DiscountCode.model";
 import { calculateDiscounts } from "./discount.service";
-import { trackUserActivity } from "./activity.service";
+import { markActivityEmailSent, trackUserActivity } from "./activity.service";
+import { sendCartAddedEmail } from "./commerce-email.service";
 import { calculateTax } from "./tax.service";
 
 /* =========================================================
@@ -569,11 +570,15 @@ export const addItemToCart =
       );
     }
 
+    const now = new Date();
+    let trackingAddedAt = now;
+
     if (existingItem) {
       existingItem.quantity =
         nextQuantity;
       existingItem.updatedAt =
-        new Date();
+        now;
+      trackingAddedAt = existingItem.addedAt || now;
     } else {
       cart.items.push({
         product:
@@ -594,16 +599,16 @@ export const addItemToCart =
         quantity,
 
         addedAt:
-          new Date(),
+          now,
 
         updatedAt:
-          new Date(),
+          now,
       });
     }
 
     await cart.save();
 
-    await trackUserActivity({
+    const activity = await trackUserActivity({
       userId,
       type: "cart_add",
       productId: data.productId,
@@ -612,12 +617,30 @@ export const addItemToCart =
         sizeId: data.sizeId,
         quantity,
         finalQuantity: nextQuantity,
+        addedAt: trackingAddedAt,
       },
     });
 
-    return buildCartResponse(
+    const response = await buildCartResponse(
       cart
     );
+
+    void sendCartAddedEmail({
+      userId,
+      productId: data.productId,
+      colorId: data.colorId,
+      sizeId: data.sizeId,
+      quantity: nextQuantity,
+      cartTotal: Number((response as any).total || 0),
+    })
+      .then((sent) => {
+        if (sent && activity?._id) {
+          return markActivityEmailSent(String(activity._id));
+        }
+      })
+      .catch((error) => console.error("CART ADDED EMAIL ERROR:", error));
+
+    return response;
   };
 
 /* =========================================================

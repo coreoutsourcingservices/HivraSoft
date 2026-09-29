@@ -2,7 +2,8 @@ import { Types } from "mongoose";
 
 import Wishlist from "../models/Wishlist.model";
 import Product from "../models/Product.model";
-import { trackUserActivity } from "./activity.service";
+import { markActivityEmailSent, trackUserActivity } from "./activity.service";
+import { sendWishlistAddedEmail } from "./commerce-email.service";
 
 const WISHLIST_PRODUCT_SELECT = [
   "name",
@@ -113,6 +114,7 @@ export const addProductToWishlist = async (
     String(item.sizeId || "") === String(selectedSizeId || "");
 
   if (!wishlist) {
+    const now = new Date();
     wishlist = await Wishlist.create({
       user: userObjectId,
       items: [
@@ -120,21 +122,33 @@ export const addProductToWishlist = async (
           product: productObjectId,
           colorId: selectedColorId,
           sizeId: selectedSizeId,
-          addedAt: new Date(),
-          updatedAt: new Date(),
+          addedAt: now,
+          updatedAt: now,
         },
       ],
     });
 
-    await trackUserActivity({
+    const activity = await trackUserActivity({
       userId,
       type: "wishlist_add",
       productId,
       metadata: {
         colorId: selected.colorId,
         sizeId: selected.sizeId,
+        addedAt: now,
       },
     });
+
+    void sendWishlistAddedEmail({
+      userId,
+      productId,
+      colorId: selected.colorId,
+      sizeId: selected.sizeId,
+    })
+      .then((sent) => {
+        if (sent && activity?._id) return markActivityEmailSent(String(activity._id));
+      })
+      .catch((error) => console.error("WISHLIST ADDED EMAIL ERROR:", error));
 
     return { wishlist: await populateWishlistById(wishlist._id), alreadyExists: false };
   }
@@ -144,24 +158,37 @@ export const addProductToWishlist = async (
     return { wishlist: await populateWishlistById(wishlist._id), alreadyExists: true };
   }
 
+  const now = new Date();
   wishlist.items.push({
     product: productObjectId,
     colorId: selectedColorId,
     sizeId: selectedSizeId,
-    addedAt: new Date(),
-    updatedAt: new Date(),
+    addedAt: now,
+    updatedAt: now,
   });
   await wishlist.save();
 
-  await trackUserActivity({
+  const activity = await trackUserActivity({
     userId,
     type: "wishlist_add",
     productId,
     metadata: {
       colorId: selected.colorId,
       sizeId: selected.sizeId,
+      addedAt: now,
     },
   });
+
+  void sendWishlistAddedEmail({
+    userId,
+    productId,
+    colorId: selected.colorId,
+    sizeId: selected.sizeId,
+  })
+    .then((sent) => {
+      if (sent && activity?._id) return markActivityEmailSent(String(activity._id));
+    })
+    .catch((error) => console.error("WISHLIST ADDED EMAIL ERROR:", error));
 
   return { wishlist: await populateWishlistById(wishlist._id), alreadyExists: false };
 };
