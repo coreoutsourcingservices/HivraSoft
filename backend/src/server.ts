@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { createServer } from "node:http";
 
 import app from "./app";
 import connectDatabase from "./config/database";
@@ -9,6 +10,18 @@ import {
 } from "./services/product-migration.service";
 
 const PORT = Number(process.env.PORT || 5000);
+let ready = false;
+
+// Hostinger requires the listener before asynchronous database initialization.
+const server = createServer((req, res) => {
+  if (!ready) {
+    res.writeHead(503, { "Content-Type": "application/json", "Retry-After": "5" });
+    res.end(JSON.stringify({ success: false, message: "Backend is starting" }));
+    return;
+  }
+  app(req, res);
+});
+server.listen(PORT);
 
 const startServer = async () => {
   try {
@@ -30,11 +43,10 @@ const startServer = async () => {
 
     startReminderScheduler();
 
-    app.listen(PORT, () => {
+    ready = true;
       console.log(
         `✅ HivraSoft backend running on http://localhost:${PORT}`
       );
-    });
   } catch (error) {
     console.error("❌ Server startup failed:");
     console.error(error);
