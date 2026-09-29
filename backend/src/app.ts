@@ -23,6 +23,12 @@ import { razorpayWebhookController } from "./controllers/order.controller";
 const app =
   express();
 
+// Hostinger forwards requests through its reverse proxy. Trust only the
+// nearest hop so client-supplied earlier X-Forwarded-For entries are ignored.
+if (process.env.NODE_ENV === "production") {
+  app.set("trust proxy", 1);
+}
+
 /* =========================================================
    CORS
 ========================================================= */
