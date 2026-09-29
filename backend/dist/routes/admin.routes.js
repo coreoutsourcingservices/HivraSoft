@@ -8,9 +8,12 @@ const express_rate_limit_1 = require("express-rate-limit");
 const admin_controller_1 = require("../controllers/admin.controller");
 const User_model_1 = __importDefault(require("../models/User.model"));
 const jwt_1 = require("../utils/jwt");
+const upload_middleware_1 = require("../middleware/upload.middleware");
 const notification_controller_1 = require("../controllers/notification.controller");
 const discount_controller_1 = require("../controllers/discount.controller");
+const review_controller_1 = require("../controllers/review.controller");
 const tax_controller_1 = require("../controllers/tax.controller");
+const delivery_charge_controller_1 = require("../controllers/delivery-charge.controller");
 const router = (0, express_1.Router)();
 router.post("/login", (0, express_rate_limit_1.rateLimit)({
     windowMs: 15 * 60 * 1000,
@@ -21,7 +24,9 @@ router.post("/login", (0, express_rate_limit_1.rateLimit)({
 }), admin_controller_1.adminLogin);
 const authenticateAdmin = async (req, res, next) => {
     try {
-        const token = req.cookies?.accessToken;
+        const authorization = String(req.headers.authorization || "");
+        const bearerToken = authorization.toLowerCase().startsWith("bearer ") ? authorization.slice(7).trim() : "";
+        const token = req.cookies?.accessToken || bearerToken;
         if (!token) {
             res.status(401).json({ success: false, message: "Not authenticated" });
             return;
@@ -89,9 +94,18 @@ router.get("/users/:userId/wishlist", authenticateAdmin, admin_controller_1.getA
 router.get("/users/:userId/orders", authenticateAdmin, admin_controller_1.getAdminUserOrders);
 router.get("/users/:userId/activity", authenticateAdmin, admin_controller_1.getAdminCustomerActivity);
 router.get("/users/:userId/notifications", authenticateAdmin, admin_controller_1.getAdminUserNotifications);
+router.get("/users/:userId/reviews", authenticateAdmin, review_controller_1.getAdminUserReviews);
 router.get("/orders", authenticateAdmin, admin_controller_1.getAdminOrders);
+router.get("/orders/invoices", authenticateAdmin, admin_controller_1.downloadSelectedAdminInvoices);
+router.get("/orders/:id/invoice", authenticateAdmin, admin_controller_1.downloadAdminOrderInvoice);
+router.get("/orders/:id", authenticateAdmin, admin_controller_1.getAdminOrderById);
 router.patch("/orders/:id/status", authenticateAdmin, admin_controller_1.updateAdminOrderStatus);
 router.get("/system-status", authenticateAdmin, admin_controller_1.getAdminSystemStatus);
+router.get("/user-settings", authenticateAdmin, admin_controller_1.getAdminUserSettings);
+router.patch("/user-settings", authenticateAdmin, upload_middleware_1.upload.single("profileImage"), admin_controller_1.updateAdminUserSettings);
+router.get("/reviews", authenticateAdmin, review_controller_1.listAdminReviews);
+router.get("/reviews/:id", authenticateAdmin, review_controller_1.getAdminReview);
+router.post("/reviews/:id/reply", authenticateAdmin, review_controller_1.addAdminReply);
 router.get("/notifications", authenticateAdmin, notification_controller_1.listAdminNotifications);
 router.post("/notifications", authenticateAdmin, notification_controller_1.createAdminNotification);
 router.post("/notifications/preview", authenticateAdmin, notification_controller_1.previewAdminNotificationAudience);
@@ -101,12 +115,22 @@ router.post("/notifications/broadcast", authenticateAdmin, notification_controll
 router.delete("/notifications/:id", authenticateAdmin, notification_controller_1.deleteAdminNotification);
 router.get("/discounts/products", authenticateAdmin, discount_controller_1.getDiscountProducts);
 router.get("/discounts/automatic", authenticateAdmin, discount_controller_1.getAutomaticDiscount);
+router.post("/discounts/automatic", authenticateAdmin, discount_controller_1.createAutomaticDiscount);
 router.put("/discounts/automatic", authenticateAdmin, discount_controller_1.saveAutomaticDiscount);
+router.patch("/discounts/automatic/:id", authenticateAdmin, discount_controller_1.updateAutomaticDiscount);
+router.delete("/discounts/automatic/:id", authenticateAdmin, discount_controller_1.deleteAutomaticDiscount);
 router.get("/discounts/codes", authenticateAdmin, discount_controller_1.listDiscountCodes);
 router.post("/discounts/codes", authenticateAdmin, discount_controller_1.createDiscountCode);
 router.patch("/discounts/codes/:id", authenticateAdmin, discount_controller_1.updateDiscountCode);
 router.delete("/discounts/codes/:id", authenticateAdmin, discount_controller_1.deleteDiscountCode);
 router.get("/tax", authenticateAdmin, tax_controller_1.getTaxSettingAdmin);
+router.post("/tax", authenticateAdmin, tax_controller_1.createTaxSettingAdmin);
 router.put("/tax", authenticateAdmin, tax_controller_1.saveTaxSettingAdmin);
+router.patch("/tax/:id", authenticateAdmin, tax_controller_1.updateTaxSettingAdmin);
+router.delete("/tax/:id", authenticateAdmin, tax_controller_1.deleteTaxSettingAdmin);
+router.get("/delivery-charges", authenticateAdmin, delivery_charge_controller_1.listDeliveryChargeRules);
+router.post("/delivery-charges", authenticateAdmin, delivery_charge_controller_1.createDeliveryChargeRule);
+router.patch("/delivery-charges/:id", authenticateAdmin, delivery_charge_controller_1.updateDeliveryChargeRule);
+router.delete("/delivery-charges/:id", authenticateAdmin, delivery_charge_controller_1.deleteDeliveryChargeRule);
 exports.default = router;
 //# sourceMappingURL=admin.routes.js.map

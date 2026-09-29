@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteProductController = exports.updateProductController = exports.getProductBySlugController = exports.getProductByIdController = exports.getActiveProductsController = exports.getCatalogProductBySlugController = exports.getCatalogProductsController = exports.getAllProductsController = exports.createProductController = void 0;
+exports.deleteProductController = exports.deleteProductSizeController = exports.updateProductSizeController = exports.addProductSizeController = exports.setDefaultProductColorController = exports.setDefaultProductColorImageController = exports.deleteProductColorImageController = exports.uploadProductColorImagesController = exports.updateProductController = exports.getProductBySlugController = exports.getProductByIdController = exports.getCatalogProductBySlugController = exports.getCatalogProductsController = exports.getNewLaunchProductsController = exports.getFeaturedProductsController = exports.getActiveProductsController = exports.getAllProductsController = exports.createProductController = void 0;
 const product_service_1 = require("../services/product.service");
 /* =========================================================
    ROUTE PARAM HELPER
@@ -18,49 +18,22 @@ const getRouteParam = (value, paramName) => {
     return value;
 };
 /* =========================================================
+   ERROR MESSAGE
+========================================================= */
+const getErrorMessage = (error, fallback) => {
+    return error instanceof Error
+        ? error.message
+        : fallback;
+};
+/* =========================================================
    CREATE PRODUCT
+   ADMIN
 ========================================================= */
 const createProductController = async (req, res) => {
     try {
-        const { name, slug, shortDescription, description, categories, price, compareAtPrice, costPrice, stock, mainImages, isColor, colors, status, isActive, isFeatured, isNewLaunch, tags, seoTitle, seoDescription, } = req.body;
-        if (!name ||
-            !String(name).trim()) {
-            return res
-                .status(400)
-                .json({
-                success: false,
-                message: "Product name is required.",
-            });
-        }
-        if (price ===
-            undefined ||
-            price ===
-                null ||
-            price ===
-                "") {
-            return res
-                .status(400)
-                .json({
-                success: false,
-                message: "Product price is required.",
-            });
-        }
-        if (stock ===
-            undefined ||
-            stock ===
-                null ||
-            stock ===
-                "") {
-            return res
-                .status(400)
-                .json({
-                success: false,
-                message: "Product stock is required.",
-            });
-        }
+        const { categories, isColor, colors, isActive, isFeatured, isNewLaunch, } = req.body;
         if (!Array.isArray(categories) ||
-            categories.length ===
-                0) {
+            categories.length === 0) {
             return res
                 .status(400)
                 .json({
@@ -69,25 +42,12 @@ const createProductController = async (req, res) => {
             });
         }
         const product = await (0, product_service_1.createProduct)({
-            name,
-            slug,
-            shortDescription,
-            description,
             categories,
-            price,
-            compareAtPrice,
-            costPrice,
-            stock,
-            mainImages,
             isColor,
             colors,
-            status,
             isActive,
             isFeatured,
             isNewLaunch,
-            tags,
-            seoTitle,
-            seoDescription,
         });
         return res
             .status(201)
@@ -102,15 +62,14 @@ const createProductController = async (req, res) => {
             .status(400)
             .json({
             success: false,
-            message: error instanceof Error
-                ? error.message
-                : "Unable to create product.",
+            message: getErrorMessage(error, "Unable to create product."),
         });
     }
 };
 exports.createProductController = createProductController;
 /* =========================================================
-   GET ALL PRODUCTS - ADMIN
+   GET ALL PRODUCTS
+   ADMIN
 ========================================================= */
 const getAllProductsController = async (_req, res) => {
     try {
@@ -121,7 +80,6 @@ const getAllProductsController = async (_req, res) => {
             success: true,
             count: products.length,
             products,
-            data: products,
         });
     }
     catch (error) {
@@ -129,69 +87,24 @@ const getAllProductsController = async (_req, res) => {
             .status(500)
             .json({
             success: false,
-            message: error instanceof Error
-                ? error.message
-                : "Unable to load products.",
+            message: getErrorMessage(error, "Unable to load products."),
         });
     }
 };
 exports.getAllProductsController = getAllProductsController;
 /* =========================================================
-   GET CATALOG PRODUCTS - CLEAN COLOR-CENTRIC API
-========================================================= */
-const getCatalogProductsController = async (_req, res) => {
-    try {
-        const productDocuments = await (0, product_service_1.getActiveProducts)();
-        const products = productDocuments.map(product_service_1.toCatalogProduct);
-        return res.status(200).json({
-            success: true,
-            count: products.length,
-            products,
-        });
-    }
-    catch (error) {
-        return res.status(500).json({
-            success: false,
-            message: error instanceof Error
-                ? error.message
-                : "Unable to load catalog products.",
-        });
-    }
-};
-exports.getCatalogProductsController = getCatalogProductsController;
-const getCatalogProductBySlugController = async (req, res) => {
-    try {
-        const slug = getRouteParam(req.params.slug, "Product slug");
-        const product = await (0, product_service_1.getProductBySlug)(slug);
-        return res.status(200).json({
-            success: true,
-            product: (0, product_service_1.toCatalogProduct)(product),
-        });
-    }
-    catch (error) {
-        return res.status(404).json({
-            success: false,
-            message: error instanceof Error
-                ? error.message
-                : "Product not found.",
-        });
-    }
-};
-exports.getCatalogProductBySlugController = getCatalogProductBySlugController;
-/* =========================================================
-   GET ACTIVE PRODUCTS - STOREFRONT
+   GET ACTIVE PRODUCTS
+   PUBLIC
 ========================================================= */
 const getActiveProductsController = async (_req, res) => {
     try {
-        const productDocuments = await (0, product_service_1.getActiveProducts)();
-        const products = productDocuments.map(product_service_1.toStorefrontProduct);
+        const products = await (0, product_service_1.getActiveProducts)();
         return res
             .status(200)
             .json({
             success: true,
             count: products.length,
             products,
-            data: products,
         });
     }
     catch (error) {
@@ -199,15 +112,114 @@ const getActiveProductsController = async (_req, res) => {
             .status(500)
             .json({
             success: false,
-            message: error instanceof Error
-                ? error.message
-                : "Unable to load products.",
+            message: getErrorMessage(error, "Unable to load active products."),
         });
     }
 };
 exports.getActiveProductsController = getActiveProductsController;
 /* =========================================================
+   FEATURED PRODUCTS
+   PUBLIC
+========================================================= */
+const getFeaturedProductsController = async (_req, res) => {
+    try {
+        const products = await (0, product_service_1.getFeaturedProducts)();
+        return res
+            .status(200)
+            .json({
+            success: true,
+            count: products.length,
+            products,
+        });
+    }
+    catch (error) {
+        return res
+            .status(500)
+            .json({
+            success: false,
+            message: getErrorMessage(error, "Unable to load featured products."),
+        });
+    }
+};
+exports.getFeaturedProductsController = getFeaturedProductsController;
+/* =========================================================
+   NEW LAUNCH PRODUCTS
+   PUBLIC
+========================================================= */
+const getNewLaunchProductsController = async (_req, res) => {
+    try {
+        const products = await (0, product_service_1.getNewLaunchProducts)();
+        return res
+            .status(200)
+            .json({
+            success: true,
+            count: products.length,
+            products,
+        });
+    }
+    catch (error) {
+        return res
+            .status(500)
+            .json({
+            success: false,
+            message: getErrorMessage(error, "Unable to load new launch products."),
+        });
+    }
+};
+exports.getNewLaunchProductsController = getNewLaunchProductsController;
+/* =========================================================
+   CLEAN PRODUCT CATALOG
+   PUBLIC / FRONTEND
+========================================================= */
+const getCatalogProductsController = async (_req, res) => {
+    try {
+        const products = await (0, product_service_1.getProductCatalog)();
+        return res
+            .status(200)
+            .json({
+            success: true,
+            count: products.length,
+            products,
+        });
+    }
+    catch (error) {
+        return res
+            .status(500)
+            .json({
+            success: false,
+            message: getErrorMessage(error, "Unable to load product catalog."),
+        });
+    }
+};
+exports.getCatalogProductsController = getCatalogProductsController;
+/* =========================================================
+   CATALOG PRODUCT BY SLUG
+   PUBLIC / FRONTEND
+========================================================= */
+const getCatalogProductBySlugController = async (req, res) => {
+    try {
+        const slug = getRouteParam(req.params.slug, "Product slug");
+        const product = await (0, product_service_1.getCatalogProductBySlug)(slug);
+        return res
+            .status(200)
+            .json({
+            success: true,
+            product,
+        });
+    }
+    catch (error) {
+        return res
+            .status(404)
+            .json({
+            success: false,
+            message: getErrorMessage(error, "Product not found."),
+        });
+    }
+};
+exports.getCatalogProductBySlugController = getCatalogProductBySlugController;
+/* =========================================================
    GET PRODUCT BY ID
+   ADMIN
 ========================================================= */
 const getProductByIdController = async (req, res) => {
     try {
@@ -225,21 +237,19 @@ const getProductByIdController = async (req, res) => {
             .status(404)
             .json({
             success: false,
-            message: error instanceof Error
-                ? error.message
-                : "Product not found.",
+            message: getErrorMessage(error, "Product not found."),
         });
     }
 };
 exports.getProductByIdController = getProductByIdController;
 /* =========================================================
    GET PRODUCT BY SLUG
+   PUBLIC
 ========================================================= */
 const getProductBySlugController = async (req, res) => {
     try {
         const slug = getRouteParam(req.params.slug, "Product slug");
-        const productDocument = await (0, product_service_1.getProductBySlug)(slug);
-        const product = (0, product_service_1.toStorefrontProduct)(productDocument);
+        const product = await (0, product_service_1.getProductBySlug)(slug);
         return res
             .status(200)
             .json({
@@ -252,51 +262,25 @@ const getProductBySlugController = async (req, res) => {
             .status(404)
             .json({
             success: false,
-            message: error instanceof Error
-                ? error.message
-                : "Product not found.",
+            message: getErrorMessage(error, "Product not found."),
         });
     }
 };
 exports.getProductBySlugController = getProductBySlugController;
 /* =========================================================
    UPDATE PRODUCT
+   ADMIN
 ========================================================= */
 const updateProductController = async (req, res) => {
     try {
         const id = getRouteParam(req.params.id, "Product ID");
         const product = await (0, product_service_1.updateProduct)(id, {
-            name: req.body.name,
-            slug: req.body.slug,
-            shortDescription: req.body
-                .shortDescription,
-            description: req.body
-                .description,
-            categories: req.body
-                .categories,
-            price: req.body.price,
-            compareAtPrice: req.body
-                .compareAtPrice,
-            costPrice: req.body
-                .costPrice,
-            stock: req.body.stock,
-            mainImages: req.body
-                .mainImages,
-            isColor: req.body
-                .isColor,
+            categories: req.body.categories,
+            isColor: req.body.isColor,
             colors: req.body.colors,
-            status: req.body.status,
-            isActive: req.body
-                .isActive,
-            isFeatured: req.body
-                .isFeatured,
-            isNewLaunch: req.body
-                .isNewLaunch,
-            tags: req.body.tags,
-            seoTitle: req.body
-                .seoTitle,
-            seoDescription: req.body
-                .seoDescription,
+            isActive: req.body.isActive,
+            isFeatured: req.body.isFeatured,
+            isNewLaunch: req.body.isNewLaunch,
         });
         return res
             .status(200)
@@ -311,24 +295,38 @@ const updateProductController = async (req, res) => {
             .status(400)
             .json({
             success: false,
-            message: error instanceof Error
-                ? error.message
-                : "Unable to update product.",
+            message: getErrorMessage(error, "Unable to update product."),
         });
     }
 };
 exports.updateProductController = updateProductController;
 /* =========================================================
-   DELETE PRODUCT
+   UPLOAD COLOR IMAGES
+   ADMIN
 ========================================================= */
-const deleteProductController = async (req, res) => {
+const uploadProductColorImagesController = async (req, res) => {
     try {
         const id = getRouteParam(req.params.id, "Product ID");
-        const result = await (0, product_service_1.deleteProduct)(id);
+        const colorSlug = getRouteParam(req.params.colorSlug, "Color slug");
+        const files = req.files;
+        if (!files ||
+            files.length === 0) {
+            return res
+                .status(400)
+                .json({
+                success: false,
+                message: "At least one image is required.",
+            });
+        }
+        const result = await (0, product_service_1.uploadProductColorImages)(id, colorSlug, files.map((file) => ({
+            buffer: file.buffer,
+            originalname: file.originalname,
+        })));
         return res
-            .status(200)
+            .status(201)
             .json({
             success: true,
+            message: "Product images uploaded successfully.",
             ...result,
         });
     }
@@ -337,9 +335,238 @@ const deleteProductController = async (req, res) => {
             .status(400)
             .json({
             success: false,
-            message: error instanceof Error
-                ? error.message
-                : "Unable to delete product.",
+            message: getErrorMessage(error, "Unable to upload product images."),
+        });
+    }
+};
+exports.uploadProductColorImagesController = uploadProductColorImagesController;
+/* =========================================================
+   DELETE COLOR IMAGE
+   ADMIN
+
+   BODY:
+   {
+     "publicId": "hivrasoft/products/.../image-01"
+   }
+========================================================= */
+const deleteProductColorImageController = async (req, res) => {
+    try {
+        const id = getRouteParam(req.params.id, "Product ID");
+        const colorSlug = getRouteParam(req.params.colorSlug, "Color slug");
+        const publicId = String(req.body.publicId ||
+            "").trim();
+        if (!publicId) {
+            return res
+                .status(400)
+                .json({
+                success: false,
+                message: "Image publicId is required.",
+            });
+        }
+        const product = await (0, product_service_1.deleteProductColorImage)(id, colorSlug, publicId);
+        return res
+            .status(200)
+            .json({
+            success: true,
+            message: "Product image deleted successfully.",
+            product,
+        });
+    }
+    catch (error) {
+        return res
+            .status(400)
+            .json({
+            success: false,
+            message: getErrorMessage(error, "Unable to delete product image."),
+        });
+    }
+};
+exports.deleteProductColorImageController = deleteProductColorImageController;
+/* =========================================================
+   SET DEFAULT IMAGE
+   ADMIN
+
+   BODY:
+   {
+     "publicId": "..."
+   }
+========================================================= */
+const setDefaultProductColorImageController = async (req, res) => {
+    try {
+        const id = getRouteParam(req.params.id, "Product ID");
+        const colorSlug = getRouteParam(req.params.colorSlug, "Color slug");
+        const publicId = String(req.body.publicId ||
+            "").trim();
+        if (!publicId) {
+            return res
+                .status(400)
+                .json({
+                success: false,
+                message: "Image publicId is required.",
+            });
+        }
+        const product = await (0, product_service_1.setDefaultProductColorImage)(id, colorSlug, publicId);
+        return res
+            .status(200)
+            .json({
+            success: true,
+            message: "Default image updated successfully.",
+            product,
+        });
+    }
+    catch (error) {
+        return res
+            .status(400)
+            .json({
+            success: false,
+            message: getErrorMessage(error, "Unable to update default image."),
+        });
+    }
+};
+exports.setDefaultProductColorImageController = setDefaultProductColorImageController;
+/* =========================================================
+   SET DEFAULT COLOR
+   ADMIN
+========================================================= */
+const setDefaultProductColorController = async (req, res) => {
+    try {
+        const id = getRouteParam(req.params.id, "Product ID");
+        const colorSlug = getRouteParam(req.params.colorSlug, "Color slug");
+        const product = await (0, product_service_1.setDefaultProductColor)(id, colorSlug);
+        return res
+            .status(200)
+            .json({
+            success: true,
+            message: "Default color updated successfully.",
+            product,
+        });
+    }
+    catch (error) {
+        return res
+            .status(400)
+            .json({
+            success: false,
+            message: getErrorMessage(error, "Unable to update default color."),
+        });
+    }
+};
+exports.setDefaultProductColorController = setDefaultProductColorController;
+/* =========================================================
+   ADD SIZE
+   ADMIN
+========================================================= */
+const addProductSizeController = async (req, res) => {
+    try {
+        const id = getRouteParam(req.params.id, "Product ID");
+        const colorSlug = getRouteParam(req.params.colorSlug, "Color slug");
+        const { size, stock, originalPrice, showPrice, discountPrice, isActive, } = req.body;
+        const product = await (0, product_service_1.addProductSize)(id, colorSlug, {
+            size,
+            stock,
+            originalPrice,
+            showPrice,
+            discountPrice,
+            isActive,
+        });
+        return res
+            .status(201)
+            .json({
+            success: true,
+            message: "Product size added successfully.",
+            product,
+        });
+    }
+    catch (error) {
+        return res
+            .status(400)
+            .json({
+            success: false,
+            message: getErrorMessage(error, "Unable to add product size."),
+        });
+    }
+};
+exports.addProductSizeController = addProductSizeController;
+/* =========================================================
+   UPDATE SIZE
+   ADMIN
+========================================================= */
+const updateProductSizeController = async (req, res) => {
+    try {
+        const id = getRouteParam(req.params.id, "Product ID");
+        const colorSlug = getRouteParam(req.params.colorSlug, "Color slug");
+        const sizeId = getRouteParam(req.params.sizeId, "Size ID");
+        const product = await (0, product_service_1.updateProductSize)(id, colorSlug, sizeId, {
+            size: req.body.size,
+            stock: req.body.stock,
+            originalPrice: req.body.originalPrice,
+            showPrice: req.body.showPrice,
+            discountPrice: req.body.discountPrice,
+            isActive: req.body.isActive,
+        });
+        return res
+            .status(200)
+            .json({
+            success: true,
+            message: "Product size updated successfully.",
+            product,
+        });
+    }
+    catch (error) {
+        return res
+            .status(400)
+            .json({
+            success: false,
+            message: getErrorMessage(error, "Unable to update product size."),
+        });
+    }
+};
+exports.updateProductSizeController = updateProductSizeController;
+/* =========================================================
+   DELETE SIZE
+   ADMIN
+========================================================= */
+const deleteProductSizeController = async (req, res) => {
+    try {
+        const id = getRouteParam(req.params.id, "Product ID");
+        const colorSlug = getRouteParam(req.params.colorSlug, "Color slug");
+        const sizeId = getRouteParam(req.params.sizeId, "Size ID");
+        const product = await (0, product_service_1.deleteProductSize)(id, colorSlug, sizeId);
+        return res
+            .status(200)
+            .json({
+            success: true,
+            message: "Product size deleted successfully.",
+            product,
+        });
+    }
+    catch (error) {
+        return res
+            .status(400)
+            .json({
+            success: false,
+            message: getErrorMessage(error, "Unable to delete product size."),
+        });
+    }
+};
+exports.deleteProductSizeController = deleteProductSizeController;
+/* =========================================================
+   DELETE PRODUCT
+   ADMIN
+========================================================= */
+const deleteProductController = async (req, res) => {
+    try {
+        const id = getRouteParam(req.params.id, "Product ID");
+        const result = await (0, product_service_1.deleteProduct)(id);
+        return res
+            .status(200)
+            .json(result);
+    }
+    catch (error) {
+        return res
+            .status(400)
+            .json({
+            success: false,
+            message: getErrorMessage(error, "Unable to delete product."),
         });
     }
 };

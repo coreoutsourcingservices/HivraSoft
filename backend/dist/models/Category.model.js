@@ -40,13 +40,19 @@ const mongoose_1 = __importStar(require("mongoose"));
 const categoryImageSchema = new mongoose_1.Schema({
     url: {
         type: String,
-        default: "",
+        required: true,
         trim: true,
     },
     publicId: {
         type: String,
-        default: "",
+        required: true,
         trim: true,
+    },
+    alt: {
+        type: String,
+        required: true,
+        trim: true,
+        maxlength: 160,
     },
 }, {
     _id: false,
@@ -67,17 +73,33 @@ const categorySchema = new mongoose_1.Schema({
         unique: true,
         lowercase: true,
         trim: true,
+        index: true,
     },
     description: {
         type: String,
         default: "",
         trim: true,
     },
+    /*
+      null = root category
+
+      Women
+      └── Bra
+          └── Sports Bra
+    */
     parent: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: "Category",
         default: null,
+        index: true,
     },
+    /*
+      Sports Bra example:
+      [
+        Women._id,
+        Bra._id
+      ]
+    */
     ancestors: [
         {
             type: mongoose_1.Schema.Types.ObjectId,
@@ -88,17 +110,31 @@ const categorySchema = new mongoose_1.Schema({
         type: Number,
         default: 0,
         min: 0,
+        index: true,
     },
-    image: {
-        type: categoryImageSchema,
-        default: () => ({
-            url: "",
-            publicId: "",
-        }),
+    /*
+      All root / sub / sub-sub categories
+      use the SAME images[] field.
+
+      [
+        {
+          url: "https://res.cloudinary.com/...",
+          publicId:
+            "hivrasoft/category-images/women/bra/front-view",
+          alt: "Front View"
+        }
+      ]
+    */
+    images: {
+        type: [
+            categoryImageSchema,
+        ],
+        default: [],
     },
     isActive: {
         type: Boolean,
         default: true,
+        index: true,
     },
     sortOrder: {
         type: Number,
@@ -118,7 +154,9 @@ categorySchema.index({
     ancestors: 1,
 });
 categorySchema.index({
-    isActive: 1,
+    level: 1,
+    sortOrder: 1,
+    name: 1,
 });
 /* =========================================================
    MODEL

@@ -55,6 +55,12 @@ const userSchema = new mongoose_1.Schema({
         required: true,
         trim: true,
     },
+    gender: {
+        type: String,
+        enum: ["male", "female", "other"],
+        default: "other",
+        index: true,
+    },
     role: {
         type: String,
         enum: [

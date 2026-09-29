@@ -53,9 +53,14 @@ exports.getAdminCustomerDetails = getAdminCustomerDetails;
 exports.getAdminCustomerActivity = getAdminCustomerActivity;
 exports.updateAdminCustomerStatus = updateAdminCustomerStatus;
 exports.getAdminOrders = getAdminOrders;
+exports.getAdminOrderById = getAdminOrderById;
+exports.downloadAdminOrderInvoice = downloadAdminOrderInvoice;
+exports.downloadSelectedAdminInvoices = downloadSelectedAdminInvoices;
 exports.updateAdminOrderStatus = updateAdminOrderStatus;
 exports.getAdminCoupons = getAdminCoupons;
 exports.getAdminPages = getAdminPages;
+exports.getAdminUserSettings = getAdminUserSettings;
+exports.updateAdminUserSettings = updateAdminUserSettings;
 exports.getAdminSystemStatus = getAdminSystemStatus;
 exports.getAdminUserCart = getAdminUserCart;
 exports.getAdminUserWishlist = getAdminUserWishlist;
@@ -70,6 +75,7 @@ const Banner_model_1 = __importDefault(require("../models/Banner.model"));
 const Order_model_1 = __importDefault(require("../models/Order.model"));
 const Cart_model_1 = __importDefault(require("../models/Cart.model"));
 const Wishlist_model_1 = __importDefault(require("../models/Wishlist.model"));
+const Review_model_1 = __importDefault(require("../models/Review.model"));
 const address_model_1 = __importDefault(require("../models/user/address.model"));
 const account_model_1 = __importDefault(require("../models/user/account.model"));
 const password_1 = require("../utils/password");
@@ -78,6 +84,9 @@ const Notification_model_1 = __importDefault(require("../models/Notification.mod
 const customer_admin_service_1 = require("../services/customer-admin.service");
 const cart_service_1 = require("../services/cart.service");
 const wishlist_service_1 = require("../services/wishlist.service");
+const invoice_service_1 = require("../services/invoice.service");
+const order_service_1 = require("../services/order.service");
+const cloudinary_service_1 = require("../services/cloudinary.service");
 const dummyHash = (0, password_1.hashPassword)("invalid-admin-login");
 async function adminLogin(req, res) {
     const { username, password } = req.body || {};
@@ -131,63 +140,146 @@ async function safeCollectionCount(name) {
  */
 async function getAdminDashboard(_req, res) {
     try {
-        const db = getDb();
-        const hasOrders = await collectionExists("orders");
-        const [products, categories, banners, customers, orders] = await Promise.all([
+        const now = new Date();
+        const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+        const previousMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const cancelledStatuses = ["cancelled", "canceled"];
+        const revenueMatch = { status: { $nin: cancelledStatuses } };
+        const [products, categories, banners, customers, orders, revenueRows, currentProducts, previousProducts, currentOrders, previousOrders, currentCustomers, previousCustomers, currentRevenueRows, previousRevenueRows, recentOrdersRaw, productRows,] = await Promise.all([
             Product_model_1.default.countDocuments({}),
             Category_model_1.default.countDocuments({}),
             Banner_model_1.default.countDocuments({}),
             User_model_1.default.countDocuments({ role: "customer" }),
-            hasOrders ? db.collection("orders").countDocuments({}) : Promise.resolve(0),
+            Order_model_1.default.countDocuments({}),
+            Order_model_1.default.aggregate([{ $match: revenueMatch }, { $group: { _id: null, revenue: { $sum: "$total" } } }]),
+            Product_model_1.default.countDocuments({ createdAt: { $gte: currentMonthStart, $lt: nextMonthStart } }),
+            Product_model_1.default.countDocuments({ createdAt: { $gte: previousMonthStart, $lt: currentMonthStart } }),
+            Order_model_1.default.countDocuments({ createdAt: { $gte: currentMonthStart, $lt: nextMonthStart } }),
+            Order_model_1.default.countDocuments({ createdAt: { $gte: previousMonthStart, $lt: currentMonthStart } }),
+            User_model_1.default.countDocuments({ role: "customer", createdAt: { $gte: currentMonthStart, $lt: nextMonthStart } }),
+            User_model_1.default.countDocuments({ role: "customer", createdAt: { $gte: previousMonthStart, $lt: currentMonthStart } }),
+            Order_model_1.default.aggregate([
+                { $match: { ...revenueMatch, createdAt: { $gte: currentMonthStart, $lt: nextMonthStart } } },
+                { $group: { _id: null, revenue: { $sum: "$total" } } },
+            ]),
+            Order_model_1.default.aggregate([
+                { $match: { ...revenueMatch, createdAt: { $gte: previousMonthStart, $lt: currentMonthStart } } },
+                { $group: { _id: null, revenue: { $sum: "$total" } } },
+            ]),
+            Order_model_1.default.find({}).sort({ createdAt: -1 }).limit(4).populate("user", "name email").lean(),
+            Product_model_1.default.find({ isActive: { $ne: false } }).select("colors isActive createdAt").lean(),
         ]);
-        let revenue = 0;
-        if (hasOrders) {
-            const revenueRows = await db
-                .collection("orders")
-                .aggregate([
-                {
-                    $match: {
-                        status: { $nin: ["cancelled", "canceled"] },
+        const growth = (current, previous) => {
+            if (previous <= 0)
+                return current > 0 ? 100 : 0;
+            return Math.round(((current - previous) / previous) * 1000) / 10;
+        };
+        const revenue = Number(revenueRows[0]?.revenue || 0);
+        const currentRevenue = Number(currentRevenueRows[0]?.revenue || 0);
+        const previousRevenue = Number(previousRevenueRows[0]?.revenue || 0);
+        const sevenDaysAgo = new Date(now);
+        sevenDaysAgo.setHours(0, 0, 0, 0);
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+        const dailyRevenueRows = await Order_model_1.default.aggregate([
+            { $match: { ...revenueMatch, createdAt: { $gte: sevenDaysAgo } } },
+            {
+                $group: {
+                    _id: {
+                        year: { $year: "$createdAt" },
+                        month: { $month: "$createdAt" },
+                        day: { $dayOfMonth: "$createdAt" },
                     },
+                    revenue: { $sum: "$total" },
+                    orders: { $sum: 1 },
                 },
-                {
-                    $group: {
-                        _id: null,
-                        revenue: {
-                            $sum: {
-                                $convert: {
-                                    input: {
-                                        $ifNull: [
-                                            "$grandTotal",
-                                            { $ifNull: ["$total", { $ifNull: ["$totalAmount", 0] }] },
-                                        ],
-                                    },
-                                    to: "double",
-                                    onError: 0,
-                                    onNull: 0,
-                                },
-                            },
-                        },
-                    },
-                },
-            ])
-                .toArray();
-            revenue = Number(revenueRows[0]?.revenue || 0);
-        }
+            },
+        ]);
+        const dailyMap = new Map(dailyRevenueRows.map((row) => [
+            `${row._id.year}-${String(row._id.month).padStart(2, "0")}-${String(row._id.day).padStart(2, "0")}`,
+            { revenue: Number(row.revenue || 0), orders: Number(row.orders || 0) },
+        ]));
+        const salesOverview = Array.from({ length: 7 }, (_, index) => {
+            const day = new Date(sevenDaysAgo);
+            day.setDate(sevenDaysAgo.getDate() + index);
+            const key = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, "0")}-${String(day.getDate()).padStart(2, "0")}`;
+            const item = dailyMap.get(key) || { revenue: 0, orders: 0 };
+            return {
+                date: key,
+                label: day.toLocaleDateString("en-US", { day: "2-digit", month: "short" }),
+                revenue: item.revenue,
+                orders: item.orders,
+            };
+        });
+        const rawStatuses = await Order_model_1.default.aggregate([
+            { $group: { _id: { $toLower: "$status" }, count: { $sum: 1 } } },
+        ]);
+        const rawStatusMap = new Map(rawStatuses.map((row) => [String(row._id || ""), Number(row.count || 0)]));
+        const statusCount = (names) => names.reduce((sum, name) => sum + Number(rawStatusMap.get(name) || 0), 0);
+        const orderStatus = {
+            pending: statusCount(["pending", "pending_payment", "confirmed"]),
+            processing: statusCount(["processing", "shipped", "out_for_delivery"]),
+            completed: statusCount(["delivered"]),
+            cancelled: statusCount(["cancelled", "canceled", "returned", "refunded"]),
+        };
+        const recentOrders = recentOrdersRaw.map((order) => {
+            const customerData = order.customer && typeof order.customer === "object" ? order.customer : {};
+            const userData = order.user && typeof order.user === "object" ? order.user : {};
+            return {
+                id: String(order._id),
+                orderNumber: String(order.orderNumber || ""),
+                customer: String(userData.name || customerData.name || customerData.fullName || "Customer"),
+                amount: Number(order.total || 0),
+                status: String(order.status || "pending"),
+                date: order.createdAt,
+            };
+        });
+        const lowStockProducts = productRows
+            .map((product) => {
+            const colors = Array.isArray(product.colors) ? product.colors : [];
+            const defaultColor = colors.find((color) => color?.isDefault) || colors[0] || null;
+            const sizes = colors.flatMap((color) => (Array.isArray(color?.sizes) ? color.sizes : []));
+            const stock = sizes.reduce((sum, size) => sum + Math.max(0, Number(size?.stock || 0)), 0);
+            const images = Array.isArray(defaultColor?.images) ? defaultColor.images : [];
+            const image = images.find((item) => item?.isDefault) || images[0] || null;
+            return {
+                id: String(product._id),
+                name: String(defaultColor?.nameProduct || "Product"),
+                stock,
+                imageUrl: String(image?.url || ""),
+            };
+        })
+            .filter((product) => product.stock <= 5)
+            .sort((a, b) => a.stock - b.stock)
+            .slice(0, 4);
         return res.status(200).json({
             success: true,
-            stats: { products, orders, customers, revenue, categories, banners },
+            generatedAt: now.toISOString(),
+            stats: {
+                products,
+                orders,
+                customers,
+                revenue,
+                categories,
+                banners,
+                growth: {
+                    products: growth(currentProducts, previousProducts),
+                    orders: growth(currentOrders, previousOrders),
+                    customers: growth(currentCustomers, previousCustomers),
+                    revenue: growth(currentRevenue, previousRevenue),
+                },
+            },
+            salesOverview,
+            orderStatus,
+            recentOrders,
+            lowStockProducts,
             status: {
                 backend: "connected",
                 mongodb: mongoose_1.default.connection.readyState === 1 ? "connected" : "disconnected",
                 productsApi: "ready",
                 categoriesApi: "ready",
+                ordersApi: "ready",
                 bannersApi: "ready",
-                cloudinary: process.env.CLOUDINARY_CLOUD_NAME &&
-                    process.env.CLOUDINARY_API_KEY &&
-                    process.env.CLOUDINARY_API_SECRET
-                    ? "ready"
-                    : "pending",
             },
         });
     }
@@ -259,12 +351,18 @@ async function updateAdminCustomer(req, res) {
             update.email = String(req.body.email).trim().toLowerCase();
         if (req.body?.phone !== undefined)
             update.phone = String(req.body.phone).trim();
+        if (req.body?.gender !== undefined) {
+            const gender = String(req.body.gender).trim().toLowerCase();
+            if (!["male", "female", "other"].includes(gender))
+                return res.status(400).json({ success: false, message: "Gender must be male, female or other." });
+            update.gender = gender;
+        }
         if (req.body?.emailVerified !== undefined)
             update.emailVerified = Boolean(req.body.emailVerified);
         if (Object.values(update).some((value) => value === ""))
             return res.status(400).json({ success: false, message: "Updated fields cannot be empty." });
         const customer = await User_model_1.default.findOneAndUpdate({ _id: id, role: "customer" }, { $set: update }, { new: true, runValidators: true })
-            .select("name email phone emailVerified isActive accountStatus lastActiveAt createdAt updatedAt");
+            .select("name email phone gender emailVerified isActive accountStatus lastActiveAt createdAt updatedAt");
         if (!customer)
             return res.status(404).json({ success: false, message: "Customer not found." });
         return res.json({ success: true, message: "Customer updated.", data: customer });
@@ -386,7 +484,7 @@ async function getAdminCustomerDetails(req, res) {
         }
         const userObjectId = new mongoose_1.Types.ObjectId(customerId);
         const customer = await User_model_1.default.findOne({ _id: userObjectId, role: "customer" })
-            .select("name username email phone role emailVerified isActive accountStatus lastActiveAt avatar createdAt updatedAt")
+            .select("name username email phone gender role emailVerified isActive accountStatus lastActiveAt avatar createdAt updatedAt")
             .lean();
         if (!customer) {
             return res.status(404).json({ success: false, message: "Customer not found." });
@@ -524,13 +622,16 @@ async function getAdminCustomerDetails(req, res) {
             paymentMethod: String(order.paymentMethod || ""),
             subtotal: Number(order.subtotal || 0),
             automaticDiscount: Number(order.automaticDiscount || 0),
+            automaticDiscountDetails: order.automaticDiscountDetails || {},
             codeDiscount: Number(order.codeDiscount || 0),
+            codeDiscountDetails: order.codeDiscountDetails || {},
             discount: Number(order.discount || 0),
             discountCode: String(order.discountCode || ""),
             shipping: Number(order.shipping || 0),
             tax: Number(order.tax || 0),
             taxName: String(order.taxName || ""),
             taxPercentage: Number(order.taxPercentage || 0),
+            taxDetails: order.taxDetails || {},
             total: Number(order.total ?? order.grandTotal ?? order.totalAmount ?? 0),
             items: Array.isArray(order.items) ? order.items : [],
             shippingAddress: order.shippingAddress || null,
@@ -674,7 +775,7 @@ async function updateAdminCustomerStatus(req, res) {
             return res.status(400).json({ success: false, message: "accountStatus must be active, inactive or blocked." });
         }
         const isActive = rawStatus === "active";
-        const customer = await User_model_1.default.findOneAndUpdate({ _id: id, role: "customer" }, { $set: { isActive, accountStatus: rawStatus } }, { new: true }).select("name email phone emailVerified isActive accountStatus lastActiveAt createdAt updatedAt");
+        const customer = await User_model_1.default.findOneAndUpdate({ _id: id, role: "customer" }, { $set: { isActive, accountStatus: rawStatus } }, { new: true }).select("name email phone gender emailVerified isActive accountStatus lastActiveAt createdAt updatedAt");
         if (!customer)
             return res.status(404).json({ success: false, message: "Customer not found." });
         await account_model_1.default.updateOne({ user: customer._id }, { $set: { isActive, isBlocked: rawStatus === "blocked" }, $setOnInsert: { user: customer._id, role: "customer", emailVerified: customer.emailVerified } }, { upsert: true });
@@ -687,81 +788,191 @@ async function updateAdminCustomerStatus(req, res) {
         });
     }
 }
-/** GET /api/admin/orders - read-only admin list, works with the existing Mongo orders collection. */
-async function getAdminOrders(_req, res) {
+/** GET /api/admin/orders - paginated order management list. */
+async function getAdminOrders(req, res) {
     try {
-        if (!(await collectionExists("orders"))) {
-            return res.status(200).json({ success: true, count: 0, orders: [] });
+        const page = Math.max(1, Number.parseInt(String(req.query.page || "1"), 10) || 1);
+        const limit = Math.min(100, Math.max(1, Number.parseInt(String(req.query.limit || "20"), 10) || 20));
+        const search = String(req.query.search || "").trim();
+        const status = String(req.query.status || "").trim().toLowerCase();
+        const paymentStatus = String(req.query.paymentStatus || "").trim().toLowerCase();
+        const paymentMethod = String(req.query.paymentMethod || "").trim().toLowerCase();
+        const dateFrom = String(req.query.dateFrom || "").trim();
+        const dateTo = String(req.query.dateTo || "").trim();
+        const filter = {};
+        if (status)
+            filter.status = status;
+        if (paymentStatus)
+            filter.paymentStatus = paymentStatus;
+        if (paymentMethod)
+            filter.paymentMethod = paymentMethod;
+        if (dateFrom || dateTo) {
+            const createdAt = {};
+            if (dateFrom) {
+                const from = new Date(`${dateFrom}T00:00:00.000Z`);
+                if (!Number.isNaN(from.getTime()))
+                    createdAt.$gte = from;
+            }
+            if (dateTo) {
+                const to = new Date(`${dateTo}T23:59:59.999Z`);
+                if (!Number.isNaN(to.getTime()))
+                    createdAt.$lte = to;
+            }
+            if (Object.keys(createdAt).length)
+                filter.createdAt = createdAt;
         }
-        const orders = await getDb().collection("orders").find({}).sort({ createdAt: -1 }).limit(250).toArray();
-        return res.status(200).json({ success: true, count: orders.length, orders });
+        if (search) {
+            const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+            const rx = new RegExp(escaped, "i");
+            const users = await User_model_1.default.find({ role: "customer", $or: [{ name: rx }, { email: rx }, { phone: rx }] }).select("_id").limit(100).lean();
+            filter.$or = [
+                { orderNumber: rx },
+                { invoiceNumber: rx },
+                { "customer.name": rx },
+                { "customer.email": rx },
+                { "customer.phone": rx },
+                ...(users.length ? [{ user: { $in: users.map((user) => user._id) } }] : []),
+            ];
+        }
+        const [total, orders] = await Promise.all([
+            Order_model_1.default.countDocuments(filter),
+            Order_model_1.default.find(filter)
+                .sort({ createdAt: -1 })
+                .skip((page - 1) * limit)
+                .limit(limit)
+                .populate("user", "name email phone")
+                .lean(),
+        ]);
+        return res.status(200).json({
+            success: true,
+            count: orders.length,
+            orders,
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages: Math.max(1, Math.ceil(total / limit)),
+            },
+        });
     }
     catch (error) {
-        return res.status(500).json({
-            success: false,
-            message: error instanceof Error ? error.message : "Unable to load orders.",
-        });
+        return res.status(500).json({ success: false, message: error instanceof Error ? error.message : "Unable to load orders." });
+    }
+}
+/** GET /api/admin/orders/:id */
+async function getAdminOrderById(req, res) {
+    try {
+        const orderId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+        if (!orderId || !mongoose_1.Types.ObjectId.isValid(orderId))
+            return res.status(400).json({ success: false, message: "Invalid order id." });
+        const order = await Order_model_1.default.findById(orderId).populate("user", "name email phone").lean();
+        if (!order)
+            return res.status(404).json({ success: false, message: "Order not found." });
+        return res.json({ success: true, order });
+    }
+    catch (error) {
+        return res.status(500).json({ success: false, message: error instanceof Error ? error.message : "Unable to load order." });
+    }
+}
+/** GET /api/admin/orders/:id/invoice */
+async function downloadAdminOrderInvoice(req, res) {
+    try {
+        const orderId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+        if (!orderId || !mongoose_1.Types.ObjectId.isValid(orderId))
+            return res.status(400).json({ success: false, message: "Invalid order id." });
+        const order = await Order_model_1.default.findById(orderId).populate("user", "name email phone").lean();
+        if (!order)
+            return res.status(404).json({ success: false, message: "Order not found." });
+        const pdf = (0, invoice_service_1.buildInvoicePdf)(order);
+        const name = String(order.invoiceNumber || order.orderNumber || "invoice").replace(/[^A-Za-z0-9_-]/g, "-");
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader("Content-Disposition", `attachment; filename="${name}.pdf"`);
+        res.setHeader("Content-Length", String(pdf.length));
+        return res.send(pdf);
+    }
+    catch (error) {
+        return res.status(500).json({ success: false, message: error instanceof Error ? error.message : "Unable to create invoice." });
+    }
+}
+/** GET /api/admin/orders/invoices?ids=id1,id2 - combined PDF. */
+async function downloadSelectedAdminInvoices(req, res) {
+    try {
+        const ids = String(req.query.ids || "")
+            .split(",")
+            .map((id) => id.trim())
+            .filter((id) => mongoose_1.Types.ObjectId.isValid(id));
+        if (!ids.length)
+            return res.status(400).json({ success: false, message: "Select at least one valid order." });
+        if (ids.length > 50)
+            return res.status(400).json({ success: false, message: "You can download up to 50 invoices at a time." });
+        const orders = await Order_model_1.default.find({ _id: { $in: ids } }).sort({ createdAt: -1 }).lean();
+        if (!orders.length)
+            return res.status(404).json({ success: false, message: "No selected orders were found." });
+        const pdf = (0, invoice_service_1.buildInvoicesPdf)(orders);
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader("Content-Disposition", 'attachment; filename="selected-invoices.pdf"');
+        res.setHeader("Content-Length", String(pdf.length));
+        return res.send(pdf);
+    }
+    catch (error) {
+        return res.status(500).json({ success: false, message: error instanceof Error ? error.message : "Unable to create selected invoices." });
     }
 }
 /** PATCH /api/admin/orders/:id/status */
 async function updateAdminOrderStatus(req, res) {
     try {
-        const { status } = req.body || {};
-        if (typeof status !== "string" || !status.trim()) {
-            return res.status(400).json({ success: false, message: "Order status is required." });
-        }
+        const requested = String(req.body?.status || "").trim().toLowerCase();
+        const allowedStatuses = ["pending_payment", "confirmed", "processing", "shipped", "out_for_delivery", "delivered", "cancelled", "returned", "refunded"];
+        if (!allowedStatuses.includes(requested))
+            return res.status(400).json({ success: false, message: "Invalid order status." });
         const orderId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-        if (!orderId || !mongoose_1.Types.ObjectId.isValid(orderId)) {
+        if (!orderId || !mongoose_1.Types.ObjectId.isValid(orderId))
             return res.status(400).json({ success: false, message: "Invalid order id." });
-        }
-        if (!(await collectionExists("orders"))) {
-            return res.status(404).json({ success: false, message: "Order not found." });
-        }
-        const result = await getDb().collection("orders").findOneAndUpdate({ _id: new mongoose_1.Types.ObjectId(orderId) }, { $set: { status: status.trim().toLowerCase(), updatedAt: new Date() } }, { returnDocument: "after" });
-        const order = result?.value ?? result;
+        const order = await Order_model_1.default.findById(orderId);
         if (!order)
             return res.status(404).json({ success: false, message: "Order not found." });
-        const normalizedStatus = status.trim().toLowerCase();
-        if (order.user && ["delivered", "cancelled", "canceled"].includes(normalizedStatus)) {
-            await (0, activity_service_1.trackUserActivity)({
-                userId: String(order.user),
-                type: normalizedStatus === "delivered" ? "order_delivered" : "order_cancelled",
-                orderId: String(order._id),
-                metadata: {
-                    orderNumber: String(order.orderNumber || order._id),
-                    status: normalizedStatus,
-                    total: Number(order.total || 0),
-                },
-            });
+        const current = String(order.status || "");
+        if (!(0, order_service_1.isAdminTransitionAllowed)(current, requested)) {
+            return res.status(409).json({ success: false, message: `Cannot change order from ${current} to ${requested}.` });
         }
-        if (order.user && ["confirmed", "processing", "shipped", "delivered", "cancelled", "canceled"].includes(normalizedStatus)) {
-            const orderNumber = String(order.orderNumber || order._id);
-            const statusTitle = {
-                confirmed: "Order Confirmed",
-                processing: "Order Processing",
-                shipped: "Order Shipped",
-                delivered: "Order Delivered",
-                cancelled: "Order Cancelled",
-                canceled: "Order Cancelled",
-            };
-            await Notification_model_1.default.create({
-                title: statusTitle[normalizedStatus] || "Order Update",
-                message: `Your order ${orderNumber} is now ${normalizedStatus === "canceled" ? "cancelled" : normalizedStatus}.`,
-                type: "order",
-                audience: "selected",
-                userIds: [order.user],
-                link: "/account/orders",
-                isActive: true,
-                createdBy: req.user?._id || null,
-            });
+        if (current === "pending_payment" && requested === "confirmed" && order.paymentMethod === "razorpay" && order.paymentStatus !== "paid") {
+            return res.status(409).json({ success: false, message: "Razorpay order cannot be confirmed until payment is verified." });
         }
-        return res.status(200).json({ success: true, order });
+        if (requested === "cancelled" && order.inventoryCommitted) {
+            await (0, order_service_1.restoreOrderInventoryIfNeeded)(order.toObject());
+            order.inventoryCommitted = false;
+            order.fulfillmentState = "cancelled";
+            order.cancelledAt = new Date();
+            order.cancellationReason = String(req.body?.message || "Cancelled by admin").trim();
+        }
+        if (current !== requested) {
+            order.status = requested;
+            order.statusHistory.push({
+                status: requested,
+                message: String(req.body?.message || `Status changed to ${requested.replaceAll("_", " ")}.`).trim(),
+                at: new Date(),
+                by: req.user?._id || null,
+            });
+            if (requested === "refunded")
+                order.paymentStatus = "refunded";
+            await order.save();
+        }
+        if (order.user && current !== requested) {
+            await (0, order_service_1.createOrderStatusNotification)(order.toObject(), requested, req.user?._id || null).catch(() => undefined);
+            if (["delivered", "cancelled"].includes(requested)) {
+                await (0, activity_service_1.trackUserActivity)({
+                    userId: String(order.user),
+                    type: requested === "delivered" ? "order_delivered" : "order_cancelled",
+                    orderId: String(order._id),
+                    metadata: { orderNumber: order.orderNumber, status: requested, total: Number(order.total || 0) },
+                }).catch(() => undefined);
+            }
+        }
+        const populated = await Order_model_1.default.findById(order._id).populate("user", "name email phone").lean();
+        return res.status(200).json({ success: true, order: populated });
     }
     catch (error) {
-        return res.status(400).json({
-            success: false,
-            message: error instanceof Error ? error.message : "Unable to update order.",
-        });
+        return res.status(400).json({ success: false, message: error instanceof Error ? error.message : "Unable to update order." });
     }
 }
 /** GET /api/admin/coupons */
@@ -797,6 +1008,146 @@ async function getAdminPages(_req, res) {
         return res.status(500).json({
             success: false,
             message: error instanceof Error ? error.message : "Unable to load pages.",
+        });
+    }
+}
+/**
+ * GET /api/admin/user-settings
+ * Admin account settings in one API: profile, personal information and activity counts.
+ */
+async function getAdminUserSettings(req, res) {
+    try {
+        const userId = String(req.user._id);
+        const userObjectId = new mongoose_1.Types.ObjectId(userId);
+        const user = await User_model_1.default.findById(userId)
+            .select("name email phone gender avatar role createdAt updatedAt")
+            .lean();
+        if (!user) {
+            return res.status(404).json({ success: false, message: "Admin user not found." });
+        }
+        const [reviews, wishlist, notifications, usedCouponCodes] = await Promise.all([
+            Review_model_1.default.countDocuments({ userId: userObjectId }),
+            Wishlist_model_1.default.findOne({ user: userObjectId }).select("items").lean(),
+            Notification_model_1.default.countDocuments({
+                isActive: true,
+                $or: [
+                    { audience: "all" },
+                    { audience: { $in: ["selected", "filtered"] }, userIds: userObjectId },
+                ],
+            }),
+            Order_model_1.default.distinct("discountCode", {
+                user: userObjectId,
+                discountCode: { $type: "string", $ne: "" },
+            }),
+        ]);
+        return res.status(200).json({
+            success: true,
+            settings: {
+                profile: {
+                    id: String(user._id),
+                    name: user.name,
+                    gender: user.gender || "other",
+                    image: {
+                        url: user.avatar?.url || "",
+                        publicId: user.avatar?.publicId || "",
+                    },
+                },
+                personalInformation: {
+                    name: user.name,
+                    gender: user.gender || "other",
+                    email: user.email,
+                    mobile: user.phone,
+                },
+                accountActivity: {
+                    coupons: usedCouponCodes.filter(Boolean).length,
+                    reviews,
+                    notifications,
+                    wishlist: Array.isArray(wishlist?.items) ? wishlist.items.length : 0,
+                },
+            },
+        });
+    }
+    catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error instanceof Error ? error.message : "Unable to load user settings.",
+        });
+    }
+}
+/**
+ * PATCH /api/admin/user-settings
+ * Same user-settings API path updates only the fields requested by the UI.
+ */
+async function updateAdminUserSettings(req, res) {
+    let uploadedPublicId = "";
+    try {
+        const nameInput = req.body?.name;
+        const genderInput = req.body?.gender;
+        const update = {};
+        if (nameInput !== undefined) {
+            const name = String(nameInput).trim();
+            if (name.length < 2 || name.length > 100) {
+                return res.status(400).json({ success: false, message: "Name must be between 2 and 100 characters." });
+            }
+            update.name = name;
+        }
+        if (genderInput !== undefined) {
+            const gender = String(genderInput).trim().toLowerCase();
+            if (!["male", "female", "other"].includes(gender)) {
+                return res.status(400).json({ success: false, message: "Gender must be male, female or other." });
+            }
+            update.gender = gender;
+        }
+        const currentUser = await User_model_1.default.findById(req.user._id).select("avatar");
+        if (!currentUser) {
+            return res.status(404).json({ success: false, message: "Admin user not found." });
+        }
+        if (req.file?.buffer) {
+            const uploaded = await (0, cloudinary_service_1.uploadImageBuffer)(req.file.buffer, "hivrasoft/admin-profile");
+            uploadedPublicId = uploaded.public_id;
+            update.avatar = { url: uploaded.secure_url, publicId: uploaded.public_id };
+        }
+        if (Object.keys(update).length === 0) {
+            return res.status(400).json({ success: false, message: "Name, gender or profile image is required." });
+        }
+        const updated = await User_model_1.default.findByIdAndUpdate(req.user._id, { $set: update }, { new: true, runValidators: true })
+            .select("name email phone gender avatar role createdAt updatedAt")
+            .lean();
+        if (!updated) {
+            if (uploadedPublicId)
+                await (0, cloudinary_service_1.deleteCloudinaryImage)(uploadedPublicId).catch(() => undefined);
+            return res.status(404).json({ success: false, message: "Admin user not found." });
+        }
+        const oldPublicId = currentUser.avatar?.publicId || "";
+        if (uploadedPublicId && oldPublicId && oldPublicId !== uploadedPublicId) {
+            await (0, cloudinary_service_1.deleteCloudinaryImage)(oldPublicId).catch(() => undefined);
+        }
+        return res.status(200).json({
+            success: true,
+            message: "User settings updated successfully.",
+            profile: {
+                id: String(updated._id),
+                name: updated.name,
+                gender: updated.gender || "other",
+                image: {
+                    url: updated.avatar?.url || "",
+                    publicId: updated.avatar?.publicId || "",
+                },
+            },
+            personalInformation: {
+                name: updated.name,
+                gender: updated.gender || "other",
+                email: updated.email,
+                mobile: updated.phone,
+            },
+        });
+    }
+    catch (error) {
+        if (uploadedPublicId)
+            await (0, cloudinary_service_1.deleteCloudinaryImage)(uploadedPublicId).catch(() => undefined);
+        return res.status(400).json({
+            success: false,
+            message: error instanceof Error ? error.message : "Unable to update user settings.",
         });
     }
 }

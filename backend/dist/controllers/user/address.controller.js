@@ -231,7 +231,7 @@ const createAddress = async (req, res) => {
                 message: "Unauthorized. Please login.",
             });
         }
-        const { fullName, phone, alternatePhone, addressLine1, addressLine2, landmark, city, district, state, postalCode, country, countryCode, addressType, isDefault, isShippingAddress, isBillingAddress, instructions, } = req.body;
+        const { fullName, phone, alternatePhone, homeNumber, officeNumber, addressLine1, addressLine2, landmark, city, district, state, postalCode, country, countryCode, addressType, isDefault, isShippingAddress, isBillingAddress, instructions, } = req.body;
         /* =====================================================
            REQUIRED FIELDS
         ===================================================== */
@@ -372,6 +372,8 @@ const createAddress = async (req, res) => {
             fullName: fullName.trim(),
             phone: phone.trim(),
             alternatePhone: cleanString(alternatePhone),
+            homeNumber: cleanString(homeNumber),
+            officeNumber: cleanString(officeNumber),
             addressLine1: addressLine1.trim(),
             addressLine2: cleanString(addressLine2),
             landmark: cleanString(landmark),
@@ -563,7 +565,7 @@ const updateAddress = async (req, res) => {
                 message: "Address not found.",
             });
         }
-        const { fullName, phone, alternatePhone, addressLine1, addressLine2, landmark, city, district, state, postalCode, country, countryCode, addressType, isDefault, isShippingAddress, isBillingAddress, instructions, } = req.body;
+        const { fullName, phone, alternatePhone, homeNumber, officeNumber, addressLine1, addressLine2, landmark, city, district, state, postalCode, country, countryCode, addressType, isDefault, isShippingAddress, isBillingAddress, instructions, } = req.body;
         /* ===================================================
            REQUIRED STRING FIELDS
         =================================================== */
@@ -659,6 +661,16 @@ const updateAddress = async (req, res) => {
             undefined) {
             address.alternatePhone =
                 cleanString(alternatePhone);
+        }
+        if (homeNumber !==
+            undefined) {
+            address.homeNumber =
+                cleanString(homeNumber);
+        }
+        if (officeNumber !==
+            undefined) {
+            address.officeNumber =
+                cleanString(officeNumber);
         }
         if (addressLine2 !==
             undefined) {

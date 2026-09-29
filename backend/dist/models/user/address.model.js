@@ -69,6 +69,21 @@ const addressSchema = new mongoose_1.Schema({
         maxlength: 20,
     },
     /* ===============================================
+       HOME / OFFICE NUMBER
+    =============================================== */
+    homeNumber: {
+        type: String,
+        trim: true,
+        default: "",
+        maxlength: 80,
+    },
+    officeNumber: {
+        type: String,
+        trim: true,
+        default: "",
+        maxlength: 80,
+    },
+    /* ===============================================
        ADDRESS
     =============================================== */
     addressLine1: {

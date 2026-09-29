@@ -8,7 +8,9 @@ const User_model_1 = __importDefault(require("../models/User.model"));
 const jwt_1 = require("../utils/jwt");
 const authenticate = async (req, res, next) => {
     try {
-        const token = req.cookies?.accessToken;
+        const authorization = String(req.headers.authorization || "");
+        const bearerToken = authorization.toLowerCase().startsWith("bearer ") ? authorization.slice(7).trim() : "";
+        const token = req.cookies?.accessToken || bearerToken;
         if (!token) {
             res.status(401).json({
                 success: false,

@@ -6,12 +6,137 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.getCategoryTree = exports.deleteCategory = exports.updateCategory = exports.getCategoryBySlug = exports.getCategoryById = exports.getActiveCategories = exports.getAllCategories = exports.createCategory = void 0;
 const mongoose_1 = require("mongoose");
 const Category_model_1 = __importDefault(require("../models/Category.model"));
+const Product_model_1 = __importDefault(require("../models/Product.model"));
 const slug_1 = require("../utils/slug");
+const cloudinary_service_1 = require("./cloudinary.service");
+/* =========================================================
+   IMAGE NORMALIZER
+========================================================= */
+const normalizeImages = (images, fallbackAlt) => {
+    if (!Array.isArray(images)) {
+        return [];
+    }
+    const seenPublicIds = new Set();
+    const result = [];
+    for (const image of images) {
+        const url = typeof image?.url ===
+            "string"
+            ? image.url.trim()
+            : "";
+        const publicId = typeof image?.publicId ===
+            "string"
+            ? image.publicId.trim()
+            : "";
+        const alt = typeof image?.alt ===
+            "string" &&
+            image.alt.trim()
+            ? image.alt.trim()
+            : fallbackAlt;
+        if (!url ||
+            !publicId ||
+            seenPublicIds.has(publicId)) {
+            continue;
+        }
+        seenPublicIds.add(publicId);
+        result.push({
+            url,
+            publicId,
+            alt,
+        });
+    }
+    return result;
+};
+/* =========================================================
+   CATEGORY CLOUDINARY FOLDER
+
+   Every category gets its own folder only by category name:
+
+   Women:
+   hivrasoft/category-images/women
+
+   Sports Bra:
+   hivrasoft/category-images/sports-bra
+
+   Image:
+   hivrasoft/category-images/sports-bra/front-view
+========================================================= */
+const getCategoryCloudinaryFolder = (categoryName) => {
+    return `hivrasoft/category-images/${(0, slug_1.createSlug)(categoryName)}`;
+};
+/* =========================================================
+   ENSURE IMAGES ARE INSIDE CURRENT CATEGORY FOLDER
+
+   Category create/update/name-change ke baad sab retained
+   images canonical folder me move ho jayengi.
+
+   Photo filename same rahega.
+========================================================= */
+const ensureCategoryImagesFolder = async (category) => {
+    if ((category.images || []).length ===
+        0) {
+        return;
+    }
+    const targetFolder = getCategoryCloudinaryFolder(category.name);
+    let changed = false;
+    const oldFolders = new Set();
+    const nextImages = [];
+    for (const image of category.images || []) {
+        const fileName = image.publicId
+            .split("/")
+            .filter(Boolean)
+            .pop() ||
+            (0, slug_1.createSlug)(image.alt);
+        const targetPublicId = `${targetFolder}/${fileName}`;
+        if (image.publicId ===
+            targetPublicId) {
+            nextImages.push({
+                url: image.url,
+                publicId: image.publicId,
+                alt: image.alt,
+            });
+            continue;
+        }
+        oldFolders.add((0, cloudinary_service_1.getCloudinaryFolderFromPublicId)(image.publicId));
+        const moved = await (0, cloudinary_service_1.moveCloudinaryImage)(image.publicId, targetPublicId);
+        if (!moved) {
+            nextImages.push({
+                url: image.url,
+                publicId: image.publicId,
+                alt: image.alt,
+            });
+            continue;
+        }
+        changed =
+            true;
+        nextImages.push({
+            url: moved.secure_url,
+            publicId: moved.public_id,
+            alt: image.alt,
+        });
+    }
+    if (changed) {
+        category.images =
+            nextImages;
+        await category.save();
+        /*
+          Rename/move ke baad purane empty category folders
+          ko best-effort remove karo.
+        */
+        await Promise.allSettled(Array.from(oldFolders)
+            .filter((folder) => Boolean(folder &&
+            folder !==
+                targetFolder))
+            .map((folder) => (0, cloudinary_service_1.deleteCloudinaryFolderIfEmpty)(folder)));
+    }
+};
 /* =========================================================
    UNIQUE SLUG
 ========================================================= */
-const generateUniqueSlug = async (name, excludeId) => {
-    const baseSlug = (0, slug_1.createSlug)(name);
+const generateUniqueSlug = async (value, excludeId) => {
+    const baseSlug = (0, slug_1.createSlug)(value);
+    if (!baseSlug) {
+        throw new Error("Category slug is required.");
+    }
     let slug = baseSlug;
     let counter = 2;
     while (true) {
@@ -31,7 +156,8 @@ const generateUniqueSlug = async (name, excludeId) => {
         }
         slug =
             `${baseSlug}-${counter}`;
-        counter += 1;
+        counter +=
+            1;
     }
 };
 /* =========================================================
@@ -58,7 +184,8 @@ const getParentInformation = async (parentId) => {
             ...parent.ancestors,
             parent._id,
         ],
-        level: parent.level + 1,
+        level: parent.level +
+            1,
     };
 };
 /* =========================================================
@@ -69,8 +196,9 @@ const createCategory = async (input) => {
     if (!name) {
         throw new Error("Category name is required.");
     }
-    const slug = await generateUniqueSlug(name);
+    const slug = await generateUniqueSlug(input.slug?.trim() || name);
     const parentInfo = await getParentInformation(input.parentId);
+    const images = normalizeImages(input.images, name);
     const category = await Category_model_1.default.create({
         name,
         slug,
@@ -80,15 +208,17 @@ const createCategory = async (input) => {
         parent: parentInfo.parent,
         ancestors: parentInfo.ancestors,
         level: parentInfo.level,
-        image: input.image || {
-            url: "",
-            publicId: "",
-        },
+        images,
         isActive: input.isActive ??
             true,
         sortOrder: input.sortOrder ??
             0,
     });
+    /*
+      Ensure:
+      hivrasoft/category-images/<category-name>/<photo-name>
+    */
+    await ensureCategoryImagesFolder(category);
     return category;
 };
 exports.createCategory = createCategory;
@@ -151,9 +281,6 @@ const getCategoryBySlug = async (slug) => {
 exports.getCategoryBySlug = getCategoryBySlug;
 /* =========================================================
    REBUILD DESCENDANTS
-
-   Parent category change hone par children ke
-   ancestors + level automatically update honge.
 ========================================================= */
 const rebuildDescendants = async (categoryId) => {
     const descendants = await Category_model_1.default.find({
@@ -180,7 +307,8 @@ const rebuildDescendants = async (categoryId) => {
                 parent._id,
             ];
         descendant.level =
-            parent.level + 1;
+            parent.level +
+                1;
         await descendant.save();
     }
 };
@@ -204,8 +332,15 @@ const updateCategory = async (categoryId, input) => {
         }
         category.name =
             name;
+        if (input.slug === undefined) {
+            category.slug =
+                await generateUniqueSlug(name, categoryId);
+        }
+    }
+    /* MANUAL / AUTO SLUG */
+    if (input.slug !== undefined) {
         category.slug =
-            await generateUniqueSlug(name, categoryId);
+            await generateUniqueSlug(input.slug.trim() || category.name, categoryId);
     }
     /* DESCRIPTION */
     if (input.description !==
@@ -213,11 +348,18 @@ const updateCategory = async (categoryId, input) => {
         category.description =
             input.description.trim();
     }
-    /* IMAGE */
-    if (input.image !==
+    /* IMAGES */
+    let removedImagePublicIds = [];
+    if (input.images !==
         undefined) {
-        category.image =
-            input.image;
+        const nextImages = normalizeImages(input.images, category.name);
+        const nextPublicIds = new Set(nextImages.map((image) => image.publicId));
+        removedImagePublicIds =
+            category.images
+                .filter((image) => !nextPublicIds.has(image.publicId))
+                .map((image) => image.publicId);
+        category.images =
+            nextImages;
     }
     /* ACTIVE */
     if (input.isActive !==
@@ -231,9 +373,7 @@ const updateCategory = async (categoryId, input) => {
         category.sortOrder =
             input.sortOrder;
     }
-    /* =====================================
-       PARENT CHANGE
-    ===================================== */
+    /* PARENT CHANGE */
     let hierarchyChanged = false;
     if (input.parentId !==
         undefined) {
@@ -276,7 +416,29 @@ const updateCategory = async (categoryId, input) => {
         hierarchyChanged =
             true;
     }
+    /*
+      First DB save.
+      Agar DB save fail hua to old Cloudinary image
+      abhi bhi safe rahegi.
+    */
     await category.save();
+    /*
+      Successful DB update ke baad form se removed
+      images Cloudinary se delete.
+    */
+    if (removedImagePublicIds.length >
+        0) {
+        await (0, cloudinary_service_1.deleteCloudinaryImages)(removedImagePublicIds);
+        const removedFolders = Array.from(new Set(removedImagePublicIds
+            .map(cloudinary_service_1.getCloudinaryFolderFromPublicId)
+            .filter(Boolean)));
+        await Promise.allSettled(removedFolders.map((folder) => (0, cloudinary_service_1.deleteCloudinaryFolderIfEmpty)(folder)));
+    }
+    /*
+      Name change / folder mismatch:
+      all retained images are moved into current category folder.
+    */
+    await ensureCategoryImagesFolder(category);
     if (hierarchyChanged) {
         await rebuildDescendants(categoryId);
     }
@@ -284,29 +446,137 @@ const updateCategory = async (categoryId, input) => {
 };
 exports.updateCategory = updateCategory;
 /* =========================================================
-   DELETE CATEGORY
+   DELETE CATEGORY + DESCENDANTS + CLOUDINARY IMAGES
+
+   Example:
+
+   women
+   └── Bra
+       └── Sports Bra
+
+   cascade: true
+
+   DELETE women
+      ↓
+   women + Bra + Sports Bra images delete from Cloudinary
+      ↓
+   deleted category IDs are removed from Product.categories[]
+      ↓
+   all category documents are deleted
+      ↓
+   empty Cloudinary folders cleanup
 ========================================================= */
-const deleteCategory = async (categoryId) => {
+const deleteCategory = async (categoryId, options = {}) => {
+    /* =====================================================
+       VALIDATE ID
+    ===================================================== */
     if (!mongoose_1.Types.ObjectId.isValid(categoryId)) {
         throw new Error("Invalid category ID.");
     }
-    const category = await Category_model_1.default.findById(categoryId);
+    const categoryObjectId = new mongoose_1.Types.ObjectId(categoryId);
+    /* =====================================================
+       FIND ROOT CATEGORY
+    ===================================================== */
+    const category = await Category_model_1.default.findById(categoryObjectId);
     if (!category) {
         throw new Error("Category not found.");
     }
-    const childCategory = await Category_model_1.default.findOne({
-        parent: category._id,
-    })
-        .select("_id")
-        .lean();
-    if (childCategory) {
-        throw new Error("Delete or move child categories before deleting this category.");
-    }
-    await Category_model_1.default.deleteOne({
-        _id: category._id,
+    /* =====================================================
+       FIND COMPLETE SUBTREE
+
+       ancestors[] makes this possible in one query.
+
+       Root category itself + every descendant where
+       ancestors contains the root category id.
+    ===================================================== */
+    const subtree = await Category_model_1.default.find({
+        $or: [
+            {
+                _id: categoryObjectId,
+            },
+            {
+                ancestors: categoryObjectId,
+            },
+        ],
+    }).sort({
+        level: -1,
     });
+    const descendantCount = Math.max(0, subtree.length - 1);
+    if (descendantCount > 0 &&
+        !options.cascade) {
+        throw new Error(`"${category.name}" has ${descendantCount} subcategor${descendantCount === 1
+            ? "y"
+            : "ies"}. Use cascade delete to delete the complete category tree.`);
+    }
+    /* =====================================================
+       CATEGORY IDS
+    ===================================================== */
+    const categoryIds = subtree.map((item) => item._id);
+    /* =====================================================
+       COLLECT ALL CLOUDINARY PUBLIC IDS
+    ===================================================== */
+    const publicIds = Array.from(new Set(subtree.flatMap((item) => (item.images || [])
+        .map((image) => image.publicId
+        ?.trim())
+        .filter((publicId) => Boolean(publicId)))));
+    /* =====================================================
+       COLLECT CLOUDINARY FOLDERS
+    ===================================================== */
+    const folders = Array.from(new Set(publicIds
+        .map(cloudinary_service_1.getCloudinaryFolderFromPublicId)
+        .filter(Boolean)));
+    /* =====================================================
+       DELETE CLOUDINARY IMAGES FIRST
+
+       If Cloudinary fails, MongoDB category data stays intact
+       so the admin can safely retry the deletion.
+    ===================================================== */
+    if (publicIds.length > 0) {
+        await (0, cloudinary_service_1.deleteCloudinaryImages)(publicIds);
+    }
+    /* =====================================================
+       REMOVE CATEGORY REFERENCES FROM PRODUCTS
+
+       Product.categories[] can contain root or child ids.
+       Pull every deleted id so products do not keep dangling
+       category references.
+    ===================================================== */
+    const productCleanup = await Product_model_1.default.updateMany({
+        categories: {
+            $in: categoryIds,
+        },
+    }, {
+        $pull: {
+            categories: {
+                $in: categoryIds,
+            },
+        },
+    });
+    /* =====================================================
+       DELETE CATEGORY TREE
+    ===================================================== */
+    const deleteResult = await Category_model_1.default.deleteMany({
+        _id: {
+            $in: categoryIds,
+        },
+    });
+    /* =====================================================
+       DELETE EMPTY CLOUDINARY FOLDERS
+
+       Best effort only. Images are already deleted.
+    ===================================================== */
+    await Promise.allSettled(folders.map((folder) => (0, cloudinary_service_1.deleteCloudinaryFolderIfEmpty)(folder)));
+    /* =====================================================
+       RESPONSE
+    ===================================================== */
     return {
-        message: "Category deleted successfully.",
+        message: subtree.length > 1
+            ? `"${category.name}" and all subcategories deleted successfully.`
+            : `"${category.name}" deleted successfully.`,
+        deletedCategories: deleteResult.deletedCount,
+        deletedSubcategories: Math.max(0, deleteResult.deletedCount - 1),
+        deletedImages: publicIds.length,
+        updatedProducts: productCleanup.modifiedCount,
     };
 };
 exports.deleteCategory = deleteCategory;
@@ -339,14 +609,11 @@ const getCategoryTree = async (activeOnly = false) => {
                 : null,
             ancestors: category.ancestors.map((ancestor) => String(ancestor)),
             level: category.level,
-            image: {
-                url: category.image
-                    ?.url ||
-                    "",
-                publicId: category.image
-                    ?.publicId ||
-                    "",
-            },
+            images: category.images.map((image) => ({
+                url: image.url,
+                publicId: image.publicId,
+                alt: image.alt,
+            })),
             isActive: category.isActive,
             sortOrder: category.sortOrder,
             children: [],
