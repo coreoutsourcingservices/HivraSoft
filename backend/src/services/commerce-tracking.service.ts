@@ -206,6 +206,7 @@ export async function listCommerceTracking(kind: CommerceTrackingKind, query: Co
         addedSentAt: (metadata as any).addedEmailSentAt || null,
         reminder20MinSent: false,
         reminder24HourSent: false,
+        reminder48HourSent: false,
       },
     };
   });
@@ -238,6 +239,7 @@ export async function listCommerceTracking(kind: CommerceTrackingKind, query: Co
       });
       row.email.reminder20MinSent = related.some((notification: any) => Number(notification?.metadata?.stageMinutes) === 20 && Boolean(notification?.metadata?.emailSentAt));
       row.email.reminder24HourSent = related.some((notification: any) => Number(notification?.metadata?.stageMinutes) === 1440 && Boolean(notification?.metadata?.emailSentAt));
+      row.email.reminder48HourSent = related.some((notification: any) => Number(notification?.metadata?.stageMinutes) === 2880 && Boolean(notification?.metadata?.emailSentAt));
     }
   }
 

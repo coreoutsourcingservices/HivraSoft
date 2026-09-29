@@ -9,13 +9,30 @@ import { sendCartReminderEmail, sendWishlistReminderEmail } from "./commerce-ema
 
 const MINUTE_MS = 60_000;
 
-function configuredStages(value: string | undefined, fallback: number[]) {
+function configuredStages(value: string | undefined, requiredStages: number[]) {
   const parsed = String(value || "")
     .split(",")
     .map((item) => Number(item.trim()))
     .filter((item) => Number.isFinite(item) && item > 0)
     .map((item) => Math.floor(item));
-  return Array.from(new Set(parsed.length ? parsed : fallback)).sort((a, b) => a - b);
+
+  // Always keep the required commerce reminder stages active even when an older
+  // .env still contains only 20,1440. Extra configured stages remain supported.
+  return Array.from(new Set([...requiredStages, ...parsed])).sort((a, b) => a - b);
+}
+
+function reminderStageText(stageMinutes: number) {
+  if (stageMinutes === 1440) return "24 hours";
+  if (stageMinutes === 2880) return "48 hours (2 days)";
+  if (stageMinutes > 1440 && stageMinutes % 1440 === 0) {
+    const days = stageMinutes / 1440;
+    return `${days} day${days === 1 ? "" : "s"}`;
+  }
+  if (stageMinutes >= 60 && stageMinutes % 60 === 0) {
+    const hours = stageMinutes / 60;
+    return `${hours} hour${hours === 1 ? "" : "s"}`;
+  }
+  return `${stageMinutes} minutes`;
 }
 
 function ageMinutes(date: unknown, now: number) {
@@ -137,7 +154,7 @@ async function sendReminderOnce(input: {
     `${input.stageMinutes}m`,
   ].join(":");
   const name = productName(input.product, input.colorId);
-  const stageText = input.stageMinutes >= 1440 ? "24 hours" : `${input.stageMinutes} minutes`;
+  const stageText = reminderStageText(input.stageMinutes);
   const notification = await ensureReminderNotification({
     dedupeKey,
     userId: input.userId,
@@ -200,8 +217,8 @@ async function sendReminderOnce(input: {
 
 export async function runAbandonedCartWishlistReminders() {
   const now = Date.now();
-  const cartStages = configuredStages(process.env.CART_REMINDER_MINUTES, [20, 1440]);
-  const wishlistStages = configuredStages(process.env.WISHLIST_REMINDER_MINUTES, [20, 1440]);
+  const cartStages = configuredStages(process.env.CART_REMINDER_MINUTES, [20, 1440, 2880]);
+  const wishlistStages = configuredStages(process.env.WISHLIST_REMINDER_MINUTES, [20, 1440, 2880]);
   const oldestNeededMinutes = Math.min(...cartStages, ...wishlistStages);
   const cutoff = new Date(now - oldestNeededMinutes * MINUTE_MS);
 

@@ -279,6 +279,7 @@ export type CommerceTrackingRow = {
     addedSentAt?: string | null;
     reminder20MinSent: boolean;
     reminder24HourSent: boolean;
+    reminder48HourSent: boolean;
   };
 };
 

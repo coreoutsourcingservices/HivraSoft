@@ -19,6 +19,20 @@ const escapeHtml = (value: unknown) =>
 
 const frontendUrl = () => String(process.env.FRONTEND_URL || "http://localhost:3000").replace(/\/$/, "");
 
+function reminderStageLabel(stageMinutes: number) {
+  if (stageMinutes === 1440) return "24 hours";
+  if (stageMinutes === 2880) return "48 hours (2 days)";
+  if (stageMinutes > 1440 && stageMinutes % 1440 === 0) {
+    const days = stageMinutes / 1440;
+    return `${days} day${days === 1 ? "" : "s"}`;
+  }
+  if (stageMinutes >= 60 && stageMinutes % 60 === 0) {
+    const hours = stageMinutes / 60;
+    return `${hours} hour${hours === 1 ? "" : "s"}`;
+  }
+  return `${stageMinutes} minutes`;
+}
+
 function baseTemplate(input: { title: string; preheader: string; body: string }) {
   return `<!doctype html>
   <html>
@@ -145,7 +159,8 @@ export async function sendCartReminderEmail(input: {
   const data = await customerAndProduct(input.userId, input.productId, input.colorId, input.sizeId);
   if (!data) return false;
   const isDay = input.stageMinutes >= 1440;
-  const label = isDay ? "24 hours" : `${input.stageMinutes} minutes`;
+  const isTwoDay = input.stageMinutes >= 2880;
+  const label = reminderStageLabel(input.stageMinutes);
   const body = `
     <p style="margin:0 0 14px;font-size:15px;">Hi <strong>${escapeHtml((data.user as any).name || "Customer")}</strong>,</p>
     <p style="margin:0;color:#5f5550;font-size:14px;line-height:1.6;">This product has been waiting in your cart for ${escapeHtml(label)}.</p>
@@ -157,7 +172,7 @@ export async function sendCartReminderEmail(input: {
   `;
   await sendEmail({
     to: String((data.user as any).email),
-    subject: isDay ? "Your cart is still waiting" : "You left something in your cart",
+    subject: isTwoDay ? "Your cart is still waiting after 2 days" : isDay ? "Your cart is still waiting" : "You left something in your cart",
     html: baseTemplate({ title: "Cart Reminder", preheader: `${data.product.name} is still in your cart.`, body }),
   });
   return true;
@@ -173,7 +188,8 @@ export async function sendWishlistReminderEmail(input: {
   const data = await customerAndProduct(input.userId, input.productId, input.colorId, input.sizeId);
   if (!data) return false;
   const isDay = input.stageMinutes >= 1440;
-  const label = isDay ? "24 hours" : `${input.stageMinutes} minutes`;
+  const isTwoDay = input.stageMinutes >= 2880;
+  const label = reminderStageLabel(input.stageMinutes);
   const body = `
     <p style="margin:0 0 14px;font-size:15px;">Hi <strong>${escapeHtml((data.user as any).name || "Customer")}</strong>,</p>
     <p style="margin:0;color:#5f5550;font-size:14px;line-height:1.6;">A product you saved ${escapeHtml(label)} ago is still on your wishlist.</p>
@@ -184,7 +200,7 @@ export async function sendWishlistReminderEmail(input: {
   `;
   await sendEmail({
     to: String((data.user as any).email),
-    subject: isDay ? "Your wishlist item is still waiting" : "Still thinking about your wishlist item?",
+    subject: isTwoDay ? "Your wishlist item is still waiting after 2 days" : isDay ? "Your wishlist item is still waiting" : "Still thinking about your wishlist item?",
     html: baseTemplate({ title: "Wishlist Reminder", preheader: `${data.product.name} is still in your wishlist.`, body }),
   });
   return true;

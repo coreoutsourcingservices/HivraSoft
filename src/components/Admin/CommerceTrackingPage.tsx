@@ -210,6 +210,7 @@ export default function CommerceTrackingPage({ kind }: { kind: "cart" | "wishlis
                       <EmailBadge label="Added" sent={row.email.addedSent} />
                       <EmailBadge label="20 Min" sent={row.email.reminder20MinSent} />
                       <EmailBadge label="24 Hour" sent={row.email.reminder24HourSent} />
+                      <EmailBadge label="48 Hr / 2 Day" sent={row.email.reminder48HourSent} />
                     </div>
                   </td>
                 </tr>
