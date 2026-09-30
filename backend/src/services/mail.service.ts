@@ -4,6 +4,11 @@ export type SendEmailInput = {
   to: string;
   subject: string;
   html: string;
+  attachments?: Array<{
+    filename: string;
+    path: string;
+    cid: string;
+  }>;
 };
 
 export const sendEmail = async (input: SendEmailInput): Promise<void> => {
@@ -15,6 +20,7 @@ export const sendEmail = async (input: SendEmailInput): Promise<void> => {
     to,
     subject: input.subject,
     html: input.html,
+    attachments: input.attachments,
   });
 };
 

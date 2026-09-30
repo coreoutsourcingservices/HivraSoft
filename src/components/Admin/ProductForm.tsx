@@ -1468,6 +1468,74 @@ export default function ProductForm({
     );
   };
 
+  const movePendingImageToPosition = (
+    colorIndex: number,
+    imageId: string,
+    requestedPosition: number
+  ) => {
+    const color =
+      colors[
+        colorIndex
+      ];
+
+    const currentIndex =
+      color.pendingImages.findIndex(
+        (image) =>
+          image.id ===
+          imageId
+      );
+
+    if (
+      currentIndex < 0 ||
+      color.pendingImages.length < 2
+    ) {
+      return;
+    }
+
+    const targetIndex =
+      Math.max(
+        0,
+        Math.min(
+          color.pendingImages.length - 1,
+          Math.trunc(
+            Number(
+              requestedPosition
+            ) || 1
+          ) - 1
+        )
+      );
+
+    if (
+      targetIndex ===
+      currentIndex
+    ) {
+      return;
+    }
+
+    const nextImages =
+      [...color.pendingImages];
+
+    const [movedImage] =
+      nextImages.splice(
+        currentIndex,
+        1
+      );
+
+    nextImages.splice(
+      targetIndex,
+      0,
+      movedImage
+    );
+
+    updateColor(
+      colorIndex,
+      {
+        pendingImages:
+          nextImages,
+      }
+    );
+  };
+
   const removePendingImage = (
     colorIndex: number,
     imageId: string
@@ -3638,7 +3706,7 @@ export default function ProductForm({
                     <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
                       <SubHeading
                         title="Image Studio"
-                        description="Preview before upload, assign image name and ALT text, and choose the primary image."
+                        description="Preview before upload, assign image name and ALT text, choose the primary image, and set the photo index. Index 1 is stored first."
                       />
 
                       <label className="group relative cursor-pointer overflow-hidden rounded-2xl bg-[#211816] px-5 py-3 text-xs font-bold text-white shadow-lg transition hover:-translate-y-0.5">
@@ -3783,7 +3851,8 @@ export default function ProductForm({
 
                         {color.pendingImages.map(
                           (
-                            image
+                            image,
+                            imageIndex
                           ) => (
                             <ImageEditorCard
                               key={
@@ -3810,6 +3879,24 @@ export default function ProductForm({
                               ).toFixed(
                                 2
                               )} MB · ${image.file.type}`}
+                              position={
+                                imageIndex +
+                                1
+                              }
+                              maxPosition={
+                                color
+                                  .pendingImages
+                                  .length
+                              }
+                              onPositionChange={(
+                                position
+                              ) =>
+                                movePendingImageToPosition(
+                                  colorIndex,
+                                  image.id,
+                                  position
+                                )
+                              }
                               onNameChange={(
                                 value
                               ) =>
@@ -4287,6 +4374,9 @@ function ImageEditorCard({
   alt,
   publicId,
   fileInfo,
+  position,
+  maxPosition,
+  onPositionChange,
   onNameChange,
   onAltChange,
   onDefault,
@@ -4299,6 +4389,11 @@ function ImageEditorCard({
   alt: string;
   publicId?: string;
   fileInfo?: string;
+  position?: number;
+  maxPosition?: number;
+  onPositionChange?:
+    (position: number) =>
+      void;
 
   onNameChange:
     (value: string) =>
@@ -4393,6 +4488,43 @@ function ImageEditorCard({
             }
           />
         </Field>
+
+        {typeof position ===
+          "number" &&
+          typeof maxPosition ===
+            "number" &&
+          onPositionChange && (
+            <Field
+              label="Photo Index"
+              hint={`1-${maxPosition} · This controls the saved/upload order.`}
+            >
+              <input
+                type="number"
+                min={1}
+                max={
+                  maxPosition
+                }
+                step={1}
+                className={
+                  smallInputClass
+                }
+                value={
+                  position
+                }
+                onChange={(
+                  event
+                ) =>
+                  onPositionChange(
+                    Number(
+                      event
+                        .target
+                        .value
+                    )
+                  )
+                }
+              />
+            </Field>
+          )}
 
         {(fileInfo ||
           publicId) && (

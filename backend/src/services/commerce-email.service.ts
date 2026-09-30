@@ -1,4 +1,5 @@
 import { Types } from "mongoose";
+import path from "node:path";
 import Product from "../models/Product.model";
 import User from "../models/User.model";
 import Notification from "../models/Notification.model";
@@ -8,6 +9,14 @@ const ADMIN_ORDER_EMAIL = "hivrasoft@gmail.com";
 const YOUTUBE_URL = "https://www.youtube.com/@HivraSoft";
 const INSTAGRAM_URL = "https://www.instagram.com/hivrasoft/";
 const FACEBOOK_URL = "https://www.facebook.com/hivrasoft/";
+const BRAND_LOGO_CID = "hivra-soft-logo";
+const BRAND_LOGO_PATH = path.resolve(__dirname, "../../public/hivra-soft-logo.jpg");
+
+const brandLogoAttachment = () => [{
+  filename: "hivra-soft-logo.jpg",
+  path: BRAND_LOGO_PATH,
+  cid: BRAND_LOGO_CID,
+}];
 
 const money = (value: unknown) => {
   const amount = Number(value || 0);
@@ -66,10 +75,8 @@ function baseTemplate(input: { title: string; preheader: string; body: string })
           <td align="center" style="padding:18px 10px;">
             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:620px;background:#ffffff;border:1px solid #f4c6d5;overflow:hidden;">
               <tr>
-                <td align="center" style="background:#090909;padding:24px 18px;border-radius:18px 18px 0 0;">
-                  <div style="font-size:30px;line-height:1;font-weight:900;letter-spacing:-1px;color:#ff2d73;">HS</div>
-                  <div style="margin-top:5px;font-size:22px;line-height:1.2;font-weight:800;color:#ff2d73;">Hivra Soft</div>
-                  <div style="margin-top:4px;font-size:11px;letter-spacing:.4px;color:#ff557f;">Intimate Comfort</div>
+                <td align="center" style="background:#090909;padding:18px;border-radius:18px 18px 0 0;">
+                  <img src="cid:${BRAND_LOGO_CID}" alt="Hivra Soft - Intimate Comfort" width="250" style="display:block;width:250px;max-width:88%;height:auto;margin:0 auto;border:0;outline:none;text-decoration:none;" />
                 </td>
               </tr>
               <tr>
@@ -102,11 +109,25 @@ function baseTemplate(input: { title: string; preheader: string; body: string })
               <tr>
                 <td align="center" style="background:#070707;padding:22px 16px 24px;">
                   <div style="font-family:Georgia,Times New Roman,serif;font-size:19px;font-weight:700;color:#ffffff;">Follow Us On</div>
-                  <div style="margin-top:14px;font-size:12px;line-height:2;">
-                    <a href="${FACEBOOK_URL}" style="color:#ffffff;text-decoration:none;margin:0 10px;">Facebook</a>
-                    <a href="${INSTAGRAM_URL}" style="color:#ffffff;text-decoration:none;margin:0 10px;">Instagram</a>
-                    <a href="${YOUTUBE_URL}" style="color:#ffffff;text-decoration:none;margin:0 10px;">YouTube</a>
-                  </div>
+                  <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:14px auto 0;">
+                    <tr>
+                      <td style="padding:0 9px;">
+                        <a href="${FACEBOOK_URL}" aria-label="HivraSoft Facebook" style="display:inline-block;text-decoration:none;">
+                          <img src="https://cdn.simpleicons.org/facebook/1877F2" alt="Facebook" width="30" height="30" style="display:block;width:30px;height:30px;border:0;" />
+                        </a>
+                      </td>
+                      <td style="padding:0 9px;">
+                        <a href="${INSTAGRAM_URL}" aria-label="HivraSoft Instagram" style="display:inline-block;text-decoration:none;">
+                          <img src="https://cdn.simpleicons.org/instagram/E4405F" alt="Instagram" width="30" height="30" style="display:block;width:30px;height:30px;border:0;" />
+                        </a>
+                      </td>
+                      <td style="padding:0 9px;">
+                        <a href="${YOUTUBE_URL}" aria-label="HivraSoft YouTube" style="display:inline-block;text-decoration:none;">
+                          <img src="https://cdn.simpleicons.org/youtube/FF0000" alt="YouTube" width="32" height="30" style="display:block;width:32px;height:30px;border:0;" />
+                        </a>
+                      </td>
+                    </tr>
+                  </table>
                   <div style="margin-top:12px;font-size:9px;color:#b8b8b8;">You are receiving this email because you use HivraSoft.</div>
                 </td>
               </tr>
@@ -191,6 +212,7 @@ export async function sendCartReminderEmail(input: {
   await sendEmail({
     to: String((data.user as any).email),
     subject: isTwoDay ? "Your cart is still waiting — stock is limited" : "Your cart is waiting — buy before stock runs out",
+    attachments: brandLogoAttachment(),
     html: baseTemplate({ title: isTwoDay ? "Your Cart is Still Waiting!" : "Your Cart is Waiting!", preheader: `${data.product.name} is still in your cart and stock may change.`, body }),
   });
   return true;
@@ -225,6 +247,7 @@ export async function sendWishlistReminderEmail(input: {
   await sendEmail({
     to: String((data.user as any).email),
     subject: isTwoDay ? "Your wishlist item is still waiting after 2 days" : "Your wishlist item is still waiting",
+    attachments: brandLogoAttachment(),
     html: baseTemplate({ title: "Still on Your Wishlist!", preheader: `${data.product.name} is still in your wishlist.`, body }),
   });
   return true;
@@ -309,6 +332,7 @@ export async function sendOrderConfirmationEmailOnce(order: any) {
   await sendEmail({
     to: String((user as any).email),
     subject: `Your HivraSoft order ${order?.orderNumber || orderId} is confirmed`,
+    attachments: brandLogoAttachment(),
     html: baseTemplate({ title: "Your Order is Confirmed!", preheader: `Order ${order?.orderNumber || orderId} has been confirmed.`, body }),
   });
 
@@ -357,6 +381,7 @@ export async function sendAdminOrderNotificationEmailOnce(order: any) {
   await sendEmail({
     to: ADMIN_ORDER_EMAIL,
     subject: `New HivraSoft order: ${order?.orderNumber || orderId}`,
+    attachments: brandLogoAttachment(),
     html: baseTemplate({ title: "New Order Received!", preheader: `${(user as any).name || "Customer"} placed order ${order?.orderNumber || orderId}.`, body }),
   });
 
