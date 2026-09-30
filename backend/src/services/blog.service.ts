@@ -330,8 +330,8 @@ export function publicBlogMatch() {
   const now = new Date();
   return {
     $or: [
-      { status: "PUBLISHED" },
-      { status: "SCHEDULED", scheduledAt: { $lte: now } },
+      { status: "PUBLISHED" as const },
+      { status: "SCHEDULED" as const, scheduledAt: { $lte: now } },
     ],
   };
 }

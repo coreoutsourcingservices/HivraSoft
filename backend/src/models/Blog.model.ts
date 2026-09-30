@@ -80,7 +80,7 @@ const revisionSchema = new Schema(
     slug: { type: String, default: "" },
     excerpt: { type: String, default: "" },
     content: { type: String, default: "" },
-    blocks: { type: [Schema.Types.Mixed], default: [] },
+    blocks: { type: [{ type: Schema.Types.Mixed }], default: [] },
     seo: { type: Schema.Types.Mixed, default: {} },
   },
   { _id: true }
@@ -92,7 +92,7 @@ const blogSchema = new Schema<IBlog>(
     slug: { type: String, required: true, trim: true, lowercase: true, unique: true, index: true },
     excerpt: { type: String, default: "", trim: true, maxlength: 1200 },
     content: { type: String, default: "" },
-    blocks: { type: [Schema.Types.Mixed], default: [] },
+    blocks: { type: [{ type: Schema.Types.Mixed }], default: [] },
     featuredImage: { type: featuredImageSchema, default: () => ({}) },
     category: { type: Schema.Types.ObjectId, ref: "BlogCategory", default: null, index: true },
     tags: { type: [{ type: Schema.Types.ObjectId, ref: "BlogTag" }], default: [] },
