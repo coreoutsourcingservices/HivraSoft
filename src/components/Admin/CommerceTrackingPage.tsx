@@ -60,9 +60,9 @@ export default function CommerceTrackingPage({ kind }: { kind: "cart" | "wishlis
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       setError("");
       const result = isCart
         ? await getAdminCartTracking({ page, limit: 20, search: search.trim(), status, dateFrom, dateTo })
@@ -70,16 +70,22 @@ export default function CommerceTrackingPage({ kind }: { kind: "cart" | "wishlis
       setRows(result.tracking);
       setPagination(result.pagination);
     } catch (err) {
-      setRows([]);
-      setError(err instanceof Error ? err.message : `Unable to load ${kind} tracking.`);
+      if (!silent) {
+        setRows([]);
+        setError(err instanceof Error ? err.message : `Unable to load ${kind} tracking.`);
+      }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [dateFrom, dateTo, isCart, kind, page, search, status]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => void load(), 250);
-    return () => window.clearTimeout(timer);
+    const emailStatusTimer = window.setInterval(() => void load(true), 15000);
+    return () => {
+      window.clearTimeout(timer);
+      window.clearInterval(emailStatusTimer);
+    };
   }, [load]);
 
   const Icon = isCart ? ShoppingCart : Heart;

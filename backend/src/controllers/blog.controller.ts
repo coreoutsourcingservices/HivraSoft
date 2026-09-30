@@ -289,10 +289,46 @@ export async function getPublicBlogBySlug(req: Request, res: Response) {
       ...(tagIds.length ? [{ tags: { $in: tagIds } }] : []),
     ] }];
     const related = (categoryId || tagIds.length)
-      ? await Blog.find(relatedQuery).select("title slug excerpt featuredImage publishedAt readingTime category").populate("category", "name slug").sort({ publishedAt: -1 }).limit(4).lean()
+      ? await Blog.find(relatedQuery).select("title slug excerpt featuredImage publishedAt readingTime category likes").populate("category", "name slug").sort({ publishedAt: -1 }).limit(4).lean()
       : [];
 
-    return res.json({ success: true, blog, related });
+    const { likes = [], ...publicBlog } = blog as any;
+    const publicRelated = related.map((item: any) => {
+      const { likes: relatedLikes = [], ...rest } = item;
+      return { ...rest, likeCount: Array.isArray(relatedLikes) ? relatedLikes.length : 0 };
+    });
+
+    return res.json({
+      success: true,
+      blog: { ...publicBlog, likeCount: Array.isArray(likes) ? likes.length : 0 },
+      related: publicRelated,
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: duplicateMessage(error) });
+  }
+}
+
+
+export async function likePublicBlog(req: Request, res: Response) {
+  try {
+    const userId = String(req.user?._id || "");
+    if (!Types.ObjectId.isValid(userId) || req.user?.role !== "customer") {
+      return res.status(403).json({ success: false, message: "Customer login is required to like a blog." });
+    }
+
+    const slug = text(req.params.slug).toLowerCase();
+    const blog = await Blog.findOneAndUpdate(
+      { slug, ...publicBlogMatch() },
+      { $addToSet: { likes: new Types.ObjectId(userId) } },
+      { new: true }
+    ).select("likes").lean();
+
+    if (!blog) return res.status(404).json({ success: false, message: "Blog not found." });
+    return res.json({
+      success: true,
+      liked: true,
+      likeCount: Array.isArray((blog as any).likes) ? (blog as any).likes.length : 0,
+    });
   } catch (error) {
     return res.status(500).json({ success: false, message: duplicateMessage(error) });
   }

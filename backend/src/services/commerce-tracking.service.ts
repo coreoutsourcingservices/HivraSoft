@@ -114,6 +114,7 @@ export async function listCommerceTracking(kind: CommerceTrackingKind, query: Co
       },
     },
     { $set: { userDoc: { $arrayElemAt: ["$userDoc", 0] } } },
+    { $match: { "userDoc.role": "customer" } },
     {
       $lookup: {
         from: "products",

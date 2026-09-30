@@ -322,8 +322,8 @@ export async function duplicateBlog(id: string, authorId: string) {
   let slug = `${source.slug}-copy`;
   let i = 2;
   while (await Blog.exists({ slug })) slug = `${source.slug}-copy-${i++}`;
-  const { _id, createdAt, updatedAt, revisions, views, ...rest } = source as any;
-  return Blog.create({ ...rest, slug, title: `${source.title} Copy`, author: new Types.ObjectId(authorId), status: "DRAFT", publishedAt: null, scheduledAt: null, views: 0, revisions: [] });
+  const { _id, createdAt, updatedAt, revisions, views, likes, ...rest } = source as any;
+  return Blog.create({ ...rest, slug, title: `${source.title} Copy`, author: new Types.ObjectId(authorId), status: "DRAFT", publishedAt: null, scheduledAt: null, views: 0, likes: [], revisions: [] });
 }
 
 export function publicBlogMatch() {
@@ -374,7 +374,7 @@ export async function listPublicBlogs(input: any = {}) {
         : { publishedAt: -1, createdAt: -1 };
   const total = await Blog.countDocuments(match);
   const blogs = await Blog.find(match)
-    .select("title slug excerpt featuredImage category tags author status publishedAt scheduledAt readingTime views isFeatured createdAt updatedAt seo")
+    .select("title slug excerpt featuredImage category tags author status publishedAt scheduledAt readingTime views likes isFeatured createdAt updatedAt seo")
     .populate("category", "name slug")
     .populate("tags", "name slug")
     .populate("author", "name avatar")
@@ -382,5 +382,9 @@ export async function listPublicBlogs(input: any = {}) {
     .skip((page - 1) * limit)
     .limit(limit)
     .lean();
-  return { blogs, pagination: { page, limit, total, totalPages: Math.max(1, Math.ceil(total / limit)) } };
+  const publicBlogs = blogs.map((blog: any) => {
+    const { likes = [], ...rest } = blog;
+    return { ...rest, likeCount: Array.isArray(likes) ? likes.length : 0 };
+  });
+  return { blogs: publicBlogs, pagination: { page, limit, total, totalPages: Math.max(1, Math.ceil(total / limit)) } };
 }

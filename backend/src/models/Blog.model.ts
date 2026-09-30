@@ -26,6 +26,7 @@ export interface IBlog extends Document {
   scheduledAt?: Date | null;
   readingTime: number;
   views: number;
+  likes: Types.ObjectId[];
   isFeatured: boolean;
   customCss: string;
   revisions: Array<Record<string, unknown>>;
@@ -103,6 +104,7 @@ const blogSchema = new Schema<IBlog>(
     scheduledAt: { type: Date, default: null, index: true },
     readingTime: { type: Number, default: 1, min: 1 },
     views: { type: Number, default: 0, min: 0 },
+    likes: { type: [{ type: Schema.Types.ObjectId, ref: "User" }], default: [] },
     isFeatured: { type: Boolean, default: false, index: true },
     customCss: { type: String, default: "", maxlength: 20000 },
     revisions: { type: [revisionSchema], default: [] },

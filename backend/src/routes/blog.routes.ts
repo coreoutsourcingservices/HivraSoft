@@ -6,7 +6,9 @@ import {
   listFeaturedBlogs,
   listLatestBlogs,
   listPublicBlogController,
+  likePublicBlog,
 } from "../controllers/blog.controller";
+import { authenticate } from "../middleware/auth.middleware";
 
 const router = Router();
 
@@ -15,6 +17,7 @@ router.get("/featured", listFeaturedBlogs);
 router.get("/latest", listLatestBlogs);
 router.get("/category/:slug", listBlogsByCategory);
 router.get("/tag/:slug", listBlogsByTag);
+router.post("/:slug/like", authenticate, likePublicBlog);
 router.get("/:slug", getPublicBlogBySlug);
 
 export default router;
