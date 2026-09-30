@@ -2,8 +2,7 @@ import { Types } from "mongoose";
 
 import Wishlist from "../models/Wishlist.model";
 import Product from "../models/Product.model";
-import { markActivityEmailSent, trackUserActivity } from "./activity.service";
-import { sendWishlistAddedEmail } from "./commerce-email.service";
+import { trackUserActivity } from "./activity.service";
 
 const WISHLIST_PRODUCT_SELECT = [
   "name",
@@ -128,7 +127,7 @@ export const addProductToWishlist = async (
       ],
     });
 
-    const activity = await trackUserActivity({
+    await trackUserActivity({
       userId,
       type: "wishlist_add",
       productId,
@@ -138,17 +137,6 @@ export const addProductToWishlist = async (
         addedAt: now,
       },
     });
-
-    void sendWishlistAddedEmail({
-      userId,
-      productId,
-      colorId: selected.colorId,
-      sizeId: selected.sizeId,
-    })
-      .then((sent) => {
-        if (sent && activity?._id) return markActivityEmailSent(String(activity._id));
-      })
-      .catch((error) => console.error("WISHLIST ADDED EMAIL ERROR:", error));
 
     return { wishlist: await populateWishlistById(wishlist._id), alreadyExists: false };
   }
@@ -168,7 +156,7 @@ export const addProductToWishlist = async (
   });
   await wishlist.save();
 
-  const activity = await trackUserActivity({
+  await trackUserActivity({
     userId,
     type: "wishlist_add",
     productId,
@@ -178,17 +166,6 @@ export const addProductToWishlist = async (
       addedAt: now,
     },
   });
-
-  void sendWishlistAddedEmail({
-    userId,
-    productId,
-    colorId: selected.colorId,
-    sizeId: selected.sizeId,
-  })
-    .then((sent) => {
-      if (sent && activity?._id) return markActivityEmailSent(String(activity._id));
-    })
-    .catch((error) => console.error("WISHLIST ADDED EMAIL ERROR:", error));
 
   return { wishlist: await populateWishlistById(wishlist._id), alreadyExists: false };
 };

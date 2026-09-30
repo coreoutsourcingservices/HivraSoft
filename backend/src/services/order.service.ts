@@ -13,7 +13,7 @@ import {
   verifyRazorpayPaymentSignature,
 } from "./razorpay.service";
 import { calculateDeliveryCharge, normalizeDeliveryPaymentMethod } from "./delivery-charge.service";
-import { sendOrderConfirmationEmailOnce } from "./commerce-email.service";
+import { sendAdminOrderNotificationEmailOnce, sendOrderConfirmationEmailOnce } from "./commerce-email.service";
 
 const roundMoney = (value: number) => Math.round((Number(value || 0) + Number.EPSILON) * 100) / 100;
 
@@ -388,6 +388,9 @@ export async function createOrderFromCart(userId: string, payload: any) {
   void sendOrderConfirmationEmailOnce(order.toObject()).catch((error) =>
     console.error("ORDER CONFIRMATION EMAIL ERROR:", error)
   );
+  void sendAdminOrderNotificationEmailOnce(order.toObject()).catch((error) =>
+    console.error("ADMIN ORDER EMAIL ERROR:", error)
+  );
   return order;
 }
 
@@ -514,6 +517,9 @@ async function finalizePaidOrder(orderId: string, paymentId: string, source: "ve
     await createOrderStatusNotification(updated.toObject(), "confirmed").catch(() => undefined);
     void sendOrderConfirmationEmailOnce(updated.toObject()).catch((error) =>
       console.error("ORDER CONFIRMATION EMAIL ERROR:", error)
+    );
+    void sendAdminOrderNotificationEmailOnce(updated.toObject()).catch((error) =>
+      console.error("ADMIN ORDER EMAIL ERROR:", error)
     );
     await trackUserActivity({
       userId: String(updated.user),

@@ -10,8 +10,7 @@ import Cart, {
 import Product from "../models/Product.model";
 import DiscountCode from "../models/DiscountCode.model";
 import { calculateDiscounts } from "./discount.service";
-import { markActivityEmailSent, trackUserActivity } from "./activity.service";
-import { sendCartAddedEmail } from "./commerce-email.service";
+import { trackUserActivity } from "./activity.service";
 import { calculateTax } from "./tax.service";
 
 /* =========================================================
@@ -608,7 +607,7 @@ export const addItemToCart =
 
     await cart.save();
 
-    const activity = await trackUserActivity({
+    await trackUserActivity({
       userId,
       type: "cart_add",
       productId: data.productId,
@@ -621,26 +620,9 @@ export const addItemToCart =
       },
     });
 
-    const response = await buildCartResponse(
+    return buildCartResponse(
       cart
     );
-
-    void sendCartAddedEmail({
-      userId,
-      productId: data.productId,
-      colorId: data.colorId,
-      sizeId: data.sizeId,
-      quantity: nextQuantity,
-      cartTotal: Number((response as any).total || 0),
-    })
-      .then((sent) => {
-        if (sent && activity?._id) {
-          return markActivityEmailSent(String(activity._id));
-        }
-      })
-      .catch((error) => console.error("CART ADDED EMAIL ERROR:", error));
-
-    return response;
   };
 
 /* =========================================================

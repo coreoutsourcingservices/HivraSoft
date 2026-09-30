@@ -362,8 +362,6 @@ export default function CommerceTrackingPage({ kind }: { kind: "cart" | "wishlis
                   <td className="px-4 py-4 align-top"><StatusBadge status={row.status} /></td>
                   <td className="px-4 py-4 align-top">
                     <div className="flex max-w-[280px] flex-wrap gap-1.5">
-                      <EmailBadge label="Added" sent={row.email.addedSent} />
-                      <EmailBadge label="20 Min" sent={row.email.reminder20MinSent} />
                       <EmailBadge label="24 Hour" sent={row.email.reminder24HourSent} />
                       <EmailBadge label="48 Hr / 2 Day" sent={row.email.reminder48HourSent} />
                     </div>

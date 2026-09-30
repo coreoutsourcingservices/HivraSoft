@@ -4,6 +4,11 @@ import User from "../models/User.model";
 import Notification from "../models/Notification.model";
 import { sendEmail } from "./mail.service";
 
+const ADMIN_ORDER_EMAIL = "hivrasoft@gmail.com";
+const YOUTUBE_URL = "https://www.youtube.com/@HivraSoft";
+const INSTAGRAM_URL = "https://www.instagram.com/hivrasoft/";
+const FACEBOOK_URL = "https://www.facebook.com/hivrasoft/";
+
 const money = (value: unknown) => {
   const amount = Number(value || 0);
   return `₹${Number.isFinite(amount) ? amount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "0.00"}`;
@@ -18,6 +23,20 @@ const escapeHtml = (value: unknown) =>
     .replaceAll("'", "&#039;");
 
 const frontendUrl = () => String(process.env.FRONTEND_URL || "http://localhost:3000").replace(/\/$/, "");
+
+function formatDateTime(value: unknown) {
+  const date = value ? new Date(value as any) : new Date();
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleString("en-IN", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+    timeZone: "Asia/Kolkata",
+  });
+}
 
 function reminderStageLabel(stageMinutes: number) {
   if (stageMinutes === 1440) return "24 hours";
@@ -36,33 +55,76 @@ function reminderStageLabel(stageMinutes: number) {
 function baseTemplate(input: { title: string; preheader: string; body: string }) {
   return `<!doctype html>
   <html>
-    <body style="margin:0;background:#f7f3ef;font-family:Arial,sans-serif;color:#211A18;">
+    <head>
+      <meta name="viewport" content="width=device-width,initial-scale=1" />
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    </head>
+    <body style="margin:0;padding:0;background:#f6f6f6;font-family:Arial,Helvetica,sans-serif;color:#1f1f1f;">
       <div style="display:none;max-height:0;overflow:hidden;opacity:0;">${escapeHtml(input.preheader)}</div>
-      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f7f3ef;padding:24px 12px;">
-        <tr><td align="center">
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px;background:#ffffff;border:1px solid #eadfda;border-radius:20px;overflow:hidden;">
-            <tr><td style="padding:24px 28px;background:#211A18;color:#ffffff;">
-              <div style="font-size:20px;font-weight:700;letter-spacing:4px;">HIVRASOFT</div>
-              <div style="margin-top:8px;font-size:12px;color:#ffffffaa;">${escapeHtml(input.title)}</div>
-            </td></tr>
-            <tr><td style="padding:28px;">${input.body}</td></tr>
-            <tr><td style="padding:18px 28px;border-top:1px solid #eee4df;font-size:11px;color:#766a65;">
-              This is an automatic HivraSoft store email.
-            </td></tr>
-          </table>
-        </td></tr>
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;background:#f6f6f6;">
+        <tr>
+          <td align="center" style="padding:18px 10px;">
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:620px;background:#ffffff;border:1px solid #f4c6d5;overflow:hidden;">
+              <tr>
+                <td align="center" style="background:#090909;padding:24px 18px;border-radius:18px 18px 0 0;">
+                  <div style="font-size:30px;line-height:1;font-weight:900;letter-spacing:-1px;color:#ff2d73;">HS</div>
+                  <div style="margin-top:5px;font-size:22px;line-height:1.2;font-weight:800;color:#ff2d73;">Hivra Soft</div>
+                  <div style="margin-top:4px;font-size:11px;letter-spacing:.4px;color:#ff557f;">Intimate Comfort</div>
+                </td>
+              </tr>
+              <tr>
+                <td align="center" style="background:#fff0f6;padding:24px 18px;border-bottom:1px solid #f4c6d5;">
+                  <div style="font-family:Georgia,Times New Roman,serif;font-size:26px;line-height:1.25;font-weight:700;color:#111111;">${escapeHtml(input.title)}</div>
+                  <div style="margin-top:8px;font-size:12px;color:#6c5d63;">Thank you for shopping with HivraSoft 💕</div>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:28px 26px 20px;">${input.body}</td>
+              </tr>
+              <tr>
+                <td style="padding:0 26px 22px;">
+                  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;background:#ffe9f2;border:1px solid #f4c6d5;border-radius:14px;">
+                    <tr>
+                      <td align="center" style="padding:14px 10px;font-size:12px;color:#7f1741;">
+                        <strong>Need help? Contact us anytime!</strong>&nbsp;&nbsp;✉️&nbsp; hivrasoft@gmail.com
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              <tr>
+                <td align="center" style="padding:18px 20px 20px;background:#fff5f8;border-top:1px solid #f7d7e2;">
+                  <div style="font-size:11px;color:#92747e;">Warm Regards</div>
+                  <div style="margin-top:3px;font-size:16px;font-weight:800;color:#d11155;">Team HivraSoft</div>
+                  <div style="margin-top:2px;font-size:10px;color:#9b7c86;">Intimate Comfort</div>
+                </td>
+              </tr>
+              <tr>
+                <td align="center" style="background:#070707;padding:22px 16px 24px;">
+                  <div style="font-family:Georgia,Times New Roman,serif;font-size:19px;font-weight:700;color:#ffffff;">Follow Us On</div>
+                  <div style="margin-top:14px;font-size:12px;line-height:2;">
+                    <a href="${FACEBOOK_URL}" style="color:#ffffff;text-decoration:none;margin:0 10px;">Facebook</a>
+                    <a href="${INSTAGRAM_URL}" style="color:#ffffff;text-decoration:none;margin:0 10px;">Instagram</a>
+                    <a href="${YOUTUBE_URL}" style="color:#ffffff;text-decoration:none;margin:0 10px;">YouTube</a>
+                  </div>
+                  <div style="margin-top:12px;font-size:9px;color:#b8b8b8;">You are receiving this email because you use HivraSoft.</div>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
       </table>
     </body>
   </html>`;
 }
 
 function cta(label: string, href: string) {
-  return `<a href="${escapeHtml(href)}" style="display:inline-block;margin-top:20px;padding:12px 18px;border-radius:10px;background:#A51D45;color:#fff;text-decoration:none;font-size:13px;font-weight:700;">${escapeHtml(label)}</a>`;
+  return `<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin-top:20px;"><tr><td style="background:#ce0f55;border-radius:10px;"><a href="${escapeHtml(href)}" style="display:inline-block;padding:12px 20px;color:#ffffff;text-decoration:none;font-size:13px;font-weight:700;">${escapeHtml(label)}</a></td></tr></table>`;
 }
 
 function imageBlock(url: string, alt: string) {
   if (!url) return "";
-  return `<img src="${escapeHtml(url)}" alt="${escapeHtml(alt)}" width="170" style="display:block;width:170px;max-width:100%;height:auto;margin:18px 0;border-radius:14px;border:1px solid #eee4df;" />`;
+  return `<img src="${escapeHtml(url)}" alt="${escapeHtml(alt)}" width="120" style="display:block;width:120px;max-width:100%;height:auto;margin:16px 0;border-radius:12px;border:1px solid #f2d2dc;" />`;
 }
 
 function productSnapshot(product: any, colorId?: string | null, sizeId?: string | null) {
@@ -79,6 +141,8 @@ function productSnapshot(product: any, colorId?: string | null, sizeId?: string 
     name: String(color?.nameProduct || "Product"),
     image: String(image?.url || ""),
     price: Number(size?.showPrice ?? color?.showPrice ?? 0),
+    colorName: String(color?.nameColor || ""),
+    sizeName: String(size?.size || ""),
   };
 }
 
@@ -87,65 +151,12 @@ async function customerAndProduct(userId: string, productId: string, colorId?: s
     throw new Error("Invalid user or product ID for email.");
   }
   const [user, product] = await Promise.all([
-    User.findById(userId).select("name email isActive role").lean(),
+    User.findById(userId).select("name email phone isActive role").lean(),
     Product.findById(productId).select("colors isActive").lean(),
   ]);
   if (!user || user.role !== "customer" || user.isActive === false || !user.email) return null;
   if (!product || (product as any).isActive === false) return null;
   return { user, product: productSnapshot(product, colorId, sizeId) };
-}
-
-export async function sendCartAddedEmail(input: {
-  userId: string;
-  productId: string;
-  colorId?: string | null;
-  sizeId?: string | null;
-  quantity: number;
-  cartTotal?: number;
-}) {
-  const data = await customerAndProduct(input.userId, input.productId, input.colorId, input.sizeId);
-  if (!data) return false;
-  const quantity = Math.max(1, Number(input.quantity || 1));
-  const body = `
-    <p style="margin:0 0 14px;font-size:15px;">Hi <strong>${escapeHtml((data.user as any).name || "Customer")}</strong>,</p>
-    <p style="margin:0;color:#5f5550;font-size:14px;line-height:1.6;">You added this product to your cart.</p>
-    ${imageBlock(data.product.image, data.product.name)}
-    <div style="font-size:17px;font-weight:700;">${escapeHtml(data.product.name)}</div>
-    <div style="margin-top:8px;font-size:13px;color:#5f5550;">Quantity: <strong>${quantity}</strong></div>
-    <div style="margin-top:5px;font-size:13px;color:#5f5550;">Price: <strong>${money(data.product.price)}</strong></div>
-    ${Number.isFinite(Number(input.cartTotal)) ? `<div style="margin-top:5px;font-size:13px;color:#5f5550;">Cart Total: <strong>${money(input.cartTotal)}</strong></div>` : ""}
-    ${cta("View Cart", `${frontendUrl()}/account/card`)}
-  `;
-  await sendEmail({
-    to: String((data.user as any).email),
-    subject: "Product added to your cart",
-    html: baseTemplate({ title: "Cart Update", preheader: `${data.product.name} was added to your cart.`, body }),
-  });
-  return true;
-}
-
-export async function sendWishlistAddedEmail(input: {
-  userId: string;
-  productId: string;
-  colorId?: string | null;
-  sizeId?: string | null;
-}) {
-  const data = await customerAndProduct(input.userId, input.productId, input.colorId, input.sizeId);
-  if (!data) return false;
-  const body = `
-    <p style="margin:0 0 14px;font-size:15px;">Hi <strong>${escapeHtml((data.user as any).name || "Customer")}</strong>,</p>
-    <p style="margin:0;color:#5f5550;font-size:14px;line-height:1.6;">You added this product to your wishlist.</p>
-    ${imageBlock(data.product.image, data.product.name)}
-    <div style="font-size:17px;font-weight:700;">${escapeHtml(data.product.name)}</div>
-    <div style="margin-top:8px;font-size:13px;color:#5f5550;">Price: <strong>${money(data.product.price)}</strong></div>
-    ${cta("View Wishlist", `${frontendUrl()}/account/wishlist`)}
-  `;
-  await sendEmail({
-    to: String((data.user as any).email),
-    subject: "Product added to your wishlist",
-    html: baseTemplate({ title: "Wishlist Update", preheader: `${data.product.name} was saved to your wishlist.`, body }),
-  });
-  return true;
 }
 
 export async function sendCartReminderEmail(input: {
@@ -158,22 +169,29 @@ export async function sendCartReminderEmail(input: {
 }) {
   const data = await customerAndProduct(input.userId, input.productId, input.colorId, input.sizeId);
   if (!data) return false;
-  const isDay = input.stageMinutes >= 1440;
-  const isTwoDay = input.stageMinutes >= 2880;
   const label = reminderStageLabel(input.stageMinutes);
+  const isTwoDay = input.stageMinutes >= 2880;
+  const quantity = Math.max(1, Number(input.quantity || 1));
   const body = `
-    <p style="margin:0 0 14px;font-size:15px;">Hi <strong>${escapeHtml((data.user as any).name || "Customer")}</strong>,</p>
-    <p style="margin:0;color:#5f5550;font-size:14px;line-height:1.6;">This product has been waiting in your cart for ${escapeHtml(label)}.</p>
-    ${imageBlock(data.product.image, data.product.name)}
-    <div style="font-size:17px;font-weight:700;">${escapeHtml(data.product.name)}</div>
-    <div style="margin-top:8px;font-size:13px;color:#5f5550;">Quantity: <strong>${Math.max(1, Number(input.quantity || 1))}</strong></div>
-    <div style="margin-top:5px;font-size:13px;color:#5f5550;">Price: <strong>${money(data.product.price)}</strong></div>
-    ${cta("Complete Your Order", `${frontendUrl()}/account/card`)}
+    <p style="margin:0 0 8px;text-align:center;font-size:14px;">Hi <strong>${escapeHtml((data.user as any).name || "Customer")}</strong>,</p>
+    <p style="margin:0 auto 18px;max-width:500px;text-align:center;color:#5f5550;font-size:13px;line-height:1.7;">Your selected product has been waiting in your cart for ${escapeHtml(label)}. <strong style="color:#ce0f55;">Quantity is limited, so please buy as soon as possible before stock runs out.</strong></p>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;background:#fff3f7;border:1px solid #f3bfd0;border-radius:12px;">
+      <tr>
+        <td style="padding:14px;width:130px;vertical-align:top;">${imageBlock(data.product.image, data.product.name)}</td>
+        <td style="padding:16px 14px;vertical-align:middle;">
+          <div style="font-size:16px;font-weight:800;color:#22191c;">${escapeHtml(data.product.name)}</div>
+          ${data.product.sizeName ? `<div style="margin-top:7px;font-size:12px;color:#6c5d63;">Size: <strong>${escapeHtml(data.product.sizeName)}</strong></div>` : ""}
+          <div style="margin-top:7px;font-size:12px;color:#6c5d63;">Quantity: <strong>${quantity}</strong></div>
+          <div style="margin-top:7px;font-size:12px;color:#6c5d63;">Price: <strong>${money(data.product.price)}</strong></div>
+        </td>
+      </tr>
+    </table>
+    ${cta("Buy Now / Complete Order", `${frontendUrl()}/account/card`)}
   `;
   await sendEmail({
     to: String((data.user as any).email),
-    subject: isTwoDay ? "Your cart is still waiting after 2 days" : isDay ? "Your cart is still waiting" : "You left something in your cart",
-    html: baseTemplate({ title: "Cart Reminder", preheader: `${data.product.name} is still in your cart.`, body }),
+    subject: isTwoDay ? "Your cart is still waiting — stock is limited" : "Your cart is waiting — buy before stock runs out",
+    html: baseTemplate({ title: isTwoDay ? "Your Cart is Still Waiting!" : "Your Cart is Waiting!", preheader: `${data.product.name} is still in your cart and stock may change.`, body }),
   });
   return true;
 }
@@ -187,23 +205,73 @@ export async function sendWishlistReminderEmail(input: {
 }) {
   const data = await customerAndProduct(input.userId, input.productId, input.colorId, input.sizeId);
   if (!data) return false;
-  const isDay = input.stageMinutes >= 1440;
-  const isTwoDay = input.stageMinutes >= 2880;
   const label = reminderStageLabel(input.stageMinutes);
+  const isTwoDay = input.stageMinutes >= 2880;
   const body = `
-    <p style="margin:0 0 14px;font-size:15px;">Hi <strong>${escapeHtml((data.user as any).name || "Customer")}</strong>,</p>
-    <p style="margin:0;color:#5f5550;font-size:14px;line-height:1.6;">A product you saved ${escapeHtml(label)} ago is still on your wishlist.</p>
-    ${imageBlock(data.product.image, data.product.name)}
-    <div style="font-size:17px;font-weight:700;">${escapeHtml(data.product.name)}</div>
-    <div style="margin-top:8px;font-size:13px;color:#5f5550;">Price: <strong>${money(data.product.price)}</strong></div>
-    ${cta("View Product / Buy Now", `${frontendUrl()}/account/wishlist`)}
+    <p style="margin:0 0 8px;text-align:center;font-size:14px;">Hi <strong>${escapeHtml((data.user as any).name || "Customer")}</strong>,</p>
+    <p style="margin:0 auto 18px;max-width:500px;text-align:center;color:#5f5550;font-size:13px;line-height:1.7;">The product you saved has been in your wishlist for ${escapeHtml(label)}. If you still want it, <strong style="color:#ce0f55;">buy it soon because availability and stock can change.</strong></p>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;background:#fff3f7;border:1px solid #f3bfd0;border-radius:12px;">
+      <tr>
+        <td style="padding:14px;width:130px;vertical-align:top;">${imageBlock(data.product.image, data.product.name)}</td>
+        <td style="padding:16px 14px;vertical-align:middle;">
+          <div style="font-size:16px;font-weight:800;color:#22191c;">${escapeHtml(data.product.name)}</div>
+          ${data.product.sizeName ? `<div style="margin-top:7px;font-size:12px;color:#6c5d63;">Size: <strong>${escapeHtml(data.product.sizeName)}</strong></div>` : ""}
+          <div style="margin-top:7px;font-size:12px;color:#6c5d63;">Price: <strong>${money(data.product.price)}</strong></div>
+        </td>
+      </tr>
+    </table>
+    ${cta("View Wishlist / Buy Now", `${frontendUrl()}/account/wishlist`)}
   `;
   await sendEmail({
     to: String((data.user as any).email),
-    subject: isTwoDay ? "Your wishlist item is still waiting after 2 days" : isDay ? "Your wishlist item is still waiting" : "Still thinking about your wishlist item?",
-    html: baseTemplate({ title: "Wishlist Reminder", preheader: `${data.product.name} is still in your wishlist.`, body }),
+    subject: isTwoDay ? "Your wishlist item is still waiting after 2 days" : "Your wishlist item is still waiting",
+    html: baseTemplate({ title: "Still on Your Wishlist!", preheader: `${data.product.name} is still in your wishlist.`, body }),
   });
   return true;
+}
+
+function orderItemRows(items: any[]) {
+  return items.map((item: any) => `
+    <tr>
+      <td style="padding:11px 8px;border-bottom:1px solid #f4d6df;width:64px;vertical-align:middle;">
+        ${item?.image ? `<img src="${escapeHtml(item.image)}" alt="${escapeHtml(item?.name || "Product")}" width="52" style="display:block;width:52px;height:52px;object-fit:cover;border-radius:8px;border:1px solid #f0d5dd;" />` : ""}
+      </td>
+      <td style="padding:11px 8px;border-bottom:1px solid #f4d6df;vertical-align:middle;">
+        <div style="font-weight:700;font-size:12px;color:#222;">${escapeHtml(item?.name || "Product")}</div>
+        <div style="margin-top:4px;font-size:10px;color:#7b6970;">${[item?.colorName, item?.sizeName].filter(Boolean).map(escapeHtml).join(" / ")}</div>
+      </td>
+      <td align="center" style="padding:11px 8px;border-bottom:1px solid #f4d6df;font-size:12px;vertical-align:middle;">${Math.max(1, Number(item?.quantity || 1))}</td>
+      <td align="right" style="padding:11px 8px;border-bottom:1px solid #f4d6df;font-size:12px;font-weight:700;vertical-align:middle;">${money(item?.finalTotal ?? item?.subtotal ?? 0)}</td>
+    </tr>`).join("");
+}
+
+function orderSummaryRows(order: any) {
+  const rows: string[] = [];
+  rows.push(`<tr><td style="padding:5px 8px;text-align:right;color:#8a747d;font-size:11px;">Subtotal</td><td style="padding:5px 8px;text-align:right;font-size:11px;">${money(order?.subtotal)}</td></tr>`);
+  if (Number(order?.discount || 0) > 0) rows.push(`<tr><td style="padding:5px 8px;text-align:right;color:#8a747d;font-size:11px;">Discount</td><td style="padding:5px 8px;text-align:right;font-size:11px;">- ${money(order.discount)}</td></tr>`);
+  if (Number(order?.tax || 0) > 0) rows.push(`<tr><td style="padding:5px 8px;text-align:right;color:#8a747d;font-size:11px;">${escapeHtml(order?.taxName || "GST")}</td><td style="padding:5px 8px;text-align:right;font-size:11px;">${money(order.tax)}</td></tr>`);
+  rows.push(`<tr><td style="padding:5px 8px;text-align:right;color:#8a747d;font-size:11px;">Shipping</td><td style="padding:5px 8px;text-align:right;font-size:11px;color:${Number(order?.shipping || 0) > 0 ? "#333" : "#1b9a54"};font-weight:700;">${Number(order?.shipping || 0) > 0 ? money(order.shipping) : "FREE"}</td></tr>`);
+  rows.push(`<tr><td style="padding:9px 8px;text-align:right;border-top:1px solid #efbdce;color:#ce0f55;font-size:13px;font-weight:700;">Total</td><td style="padding:9px 8px;text-align:right;border-top:1px solid #efbdce;color:#ce0f55;font-size:13px;font-weight:800;">${money(order?.total)}</td></tr>`);
+  return rows.join("");
+}
+
+function shippingAddressBlock(order: any) {
+  const address = order?.shippingAddress || {};
+  const lines = [
+    address?.homeNumber || address?.officeNumber,
+    address?.addressLine1,
+    address?.addressLine2,
+    address?.landmark,
+    [address?.city, address?.district, address?.postalCode].filter(Boolean).join(" "),
+    [address?.state, address?.country].filter(Boolean).join(", "),
+  ].filter(Boolean);
+  if (!lines.length) return "";
+  return `
+    <div style="margin-top:18px;text-align:center;font-size:11px;font-weight:800;color:#ce0f55;">SHIPPING TO</div>
+    <div style="margin-top:8px;padding:14px;background:#f8f8f8;border-radius:10px;text-align:center;font-size:11px;line-height:1.65;color:#333;">
+      <div style="font-weight:700;">📍 ${escapeHtml(address?.fullName || order?.customer?.name || "Customer")}</div>
+      ${lines.map((line) => `<div>${escapeHtml(line)}</div>`).join("")}
+    </div>`;
 }
 
 export async function sendOrderConfirmationEmailOnce(order: any) {
@@ -215,53 +283,87 @@ export async function sendOrderConfirmationEmailOnce(order: any) {
   const notification = await Notification.findOne({ dedupeKey });
   if ((notification?.metadata as any)?.orderEmailSentAt) return false;
 
-  const user = await User.findById(userId).select("name email isActive role").lean();
+  const user = await User.findById(userId).select("name email phone isActive role").lean();
   if (!user || user.role !== "customer" || user.isActive === false || !user.email) return false;
 
   const items = Array.isArray(order?.items) ? order.items : [];
-  const itemRows = items.map((item: any) => `
-    <tr>
-      <td style="padding:12px 0;border-bottom:1px solid #eee4df;width:72px;vertical-align:top;">
-        ${item?.image ? `<img src="${escapeHtml(item.image)}" alt="${escapeHtml(item?.name || "Product")}" width="58" style="display:block;width:58px;height:58px;object-fit:cover;border-radius:9px;" />` : ""}
-      </td>
-      <td style="padding:12px 10px;border-bottom:1px solid #eee4df;vertical-align:top;">
-        <div style="font-weight:700;font-size:13px;">${escapeHtml(item?.name || "Product")}</div>
-        <div style="margin-top:4px;font-size:12px;color:#6d625d;">Qty: ${Math.max(1, Number(item?.quantity || 1))}</div>
-      </td>
-      <td align="right" style="padding:12px 0;border-bottom:1px solid #eee4df;font-size:13px;font-weight:700;vertical-align:top;">${money(item?.finalTotal ?? item?.subtotal ?? 0)}</td>
-    </tr>`).join("");
-
-  const summary: string[] = [];
-  summary.push(`<div style="display:flex;justify-content:space-between;margin-top:8px;font-size:13px;"><span>Subtotal</span><strong>${money(order?.subtotal)}</strong></div>`);
-  if (Number(order?.discount || 0) > 0) summary.push(`<div style="display:flex;justify-content:space-between;margin-top:8px;font-size:13px;"><span>Discount</span><strong>- ${money(order.discount)}</strong></div>`);
-  if (Number(order?.tax || 0) > 0) summary.push(`<div style="display:flex;justify-content:space-between;margin-top:8px;font-size:13px;"><span>${escapeHtml(order?.taxName || "GST")}</span><strong>${money(order.tax)}</strong></div>`);
-  if (Number(order?.shipping || 0) > 0) summary.push(`<div style="display:flex;justify-content:space-between;margin-top:8px;font-size:13px;"><span>Delivery Charge</span><strong>${money(order.shipping)}</strong></div>`);
-  summary.push(`<div style="display:flex;justify-content:space-between;margin-top:12px;padding-top:12px;border-top:1px solid #ddd0ca;font-size:15px;"><span>Grand Total</span><strong>${money(order?.total)}</strong></div>`);
-
   const body = `
-    <p style="margin:0 0 8px;font-size:15px;">Hi <strong>${escapeHtml((user as any).name || order?.customer?.name || "Customer")}</strong>,</p>
-    <p style="margin:0 0 18px;color:#5f5550;font-size:14px;line-height:1.6;">Your order has been confirmed.</p>
-    <div style="padding:14px;border-radius:12px;background:#faf8f6;font-size:12px;line-height:1.8;">
-      <strong>Order ID:</strong> ${escapeHtml(order?.orderNumber || orderId)}<br/>
-      <strong>Order Date:</strong> ${escapeHtml(new Date(order?.createdAt || Date.now()).toLocaleString("en-IN"))}<br/>
-      <strong>Payment Method:</strong> ${escapeHtml(String(order?.paymentMethod || "").toUpperCase())}<br/>
-      <strong>Order Status:</strong> ${escapeHtml(String(order?.status || "confirmed").replaceAll("_", " ").toUpperCase())}
-    </div>
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:14px;">${itemRows}</table>
-    <div style="margin-top:16px;">${summary.join("")}</div>
+    <p style="margin:0 0 14px;text-align:center;font-size:13px;color:#444;">Hi <strong>${escapeHtml((user as any).name || order?.customer?.name || "Customer")}</strong>,</p>
+    <p style="margin:0 auto 18px;max-width:500px;text-align:center;color:#5f5550;font-size:12px;line-height:1.7;">We've received your order and it's now being processed. We'll notify you once it's on its way! 🚚</p>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;background:#fff4f7;border:1px solid #f3bfd0;border-radius:10px;">
+      <tr><td style="padding:10px 14px;font-size:10px;color:#a2828e;">Order Number</td><td align="right" style="padding:10px 14px;font-size:11px;color:#ce0f55;font-weight:700;">${escapeHtml(order?.orderNumber || orderId)}</td></tr>
+      <tr><td style="padding:0 14px 10px;font-size:10px;color:#a2828e;">Order Date</td><td align="right" style="padding:0 14px 10px;font-size:11px;">${escapeHtml(formatDateTime(order?.createdAt))}</td></tr>
+      <tr><td style="padding:0 14px 10px;font-size:10px;color:#a2828e;">Payment Method</td><td align="right" style="padding:0 14px 10px;font-size:11px;">${escapeHtml(String(order?.paymentMethod || "").replaceAll("_", " ").toUpperCase())}</td></tr>
+    </table>
+
+    <div style="margin-top:18px;text-align:center;font-size:11px;font-weight:800;color:#ce0f55;">ORDER SUMMARY</div>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-top:8px;width:100%;background:#fff4f7;border:1px solid #f3bfd0;border-radius:10px;overflow:hidden;">
+      <tr style="background:#fff0f5;"><td colspan="2" style="padding:8px;font-size:9px;color:#a2828e;">Product</td><td align="center" style="padding:8px;font-size:9px;color:#a2828e;">Qty</td><td align="right" style="padding:8px;font-size:9px;color:#a2828e;">Price</td></tr>
+      ${orderItemRows(items)}
+      ${orderSummaryRows(order)}
+    </table>
+    ${shippingAddressBlock(order)}
     ${cta("View Order", `${frontendUrl()}/account/orders?order=${encodeURIComponent(orderId)}`)}
   `;
 
   await sendEmail({
     to: String((user as any).email),
-    subject: "Your order has been confirmed",
-    html: baseTemplate({ title: "Order Confirmation", preheader: `Order ${order?.orderNumber || orderId} has been confirmed.`, body }),
+    subject: `Your HivraSoft order ${order?.orderNumber || orderId} is confirmed`,
+    html: baseTemplate({ title: "Your Order is Confirmed!", preheader: `Order ${order?.orderNumber || orderId} has been confirmed.`, body }),
   });
 
   if (notification) {
     await Notification.updateOne(
       { _id: notification._id },
       { $set: { "metadata.orderEmailSentAt": new Date(), "metadata.orderEmail": String((user as any).email) } }
+    ).catch(() => undefined);
+  }
+  return true;
+}
+
+export async function sendAdminOrderNotificationEmailOnce(order: any) {
+  const orderId = String(order?._id || "");
+  const userId = String(order?.user || "");
+  if (!Types.ObjectId.isValid(orderId) || !Types.ObjectId.isValid(userId)) return false;
+
+  const dedupeKey = `order:${orderId}:status:confirmed`;
+  const notification = await Notification.findOne({ dedupeKey });
+  if ((notification?.metadata as any)?.adminOrderEmailSentAt) return false;
+
+  const user = await User.findById(userId).select("name email phone role").lean();
+  if (!user || user.role !== "customer") return false;
+
+  const items = Array.isArray(order?.items) ? order.items : [];
+  const body = `
+    <p style="margin:0 0 16px;text-align:center;font-size:13px;color:#444;">A customer has placed an order on HivraSoft.</p>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;background:#fff4f7;border:1px solid #f3bfd0;border-radius:10px;">
+      <tr><td style="padding:9px 14px;font-size:10px;color:#9b7c86;">User Name</td><td align="right" style="padding:9px 14px;font-size:11px;font-weight:700;">${escapeHtml((user as any).name || order?.customer?.name || "Customer")}</td></tr>
+      <tr><td style="padding:0 14px 9px;font-size:10px;color:#9b7c86;">User Number</td><td align="right" style="padding:0 14px 9px;font-size:11px;">${escapeHtml((user as any).phone || order?.customer?.phone || "—")}</td></tr>
+      <tr><td style="padding:0 14px 9px;font-size:10px;color:#9b7c86;">User Email</td><td align="right" style="padding:0 14px 9px;font-size:11px;">${escapeHtml((user as any).email || order?.customer?.email || "—")}</td></tr>
+      <tr><td style="padding:0 14px 9px;font-size:10px;color:#9b7c86;">Order Number</td><td align="right" style="padding:0 14px 9px;font-size:11px;color:#ce0f55;font-weight:700;">${escapeHtml(order?.orderNumber || orderId)}</td></tr>
+      <tr><td style="padding:0 14px 9px;font-size:10px;color:#9b7c86;">Purchase Time</td><td align="right" style="padding:0 14px 9px;font-size:11px;">${escapeHtml(formatDateTime(order?.createdAt))}</td></tr>
+      <tr><td style="padding:0 14px 11px;font-size:10px;color:#9b7c86;">Payment Method</td><td align="right" style="padding:0 14px 11px;font-size:11px;">${escapeHtml(String(order?.paymentMethod || "").replaceAll("_", " ").toUpperCase())}</td></tr>
+    </table>
+
+    <div style="margin-top:18px;text-align:center;font-size:11px;font-weight:800;color:#ce0f55;">PRODUCTS PURCHASED</div>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-top:8px;width:100%;background:#fff4f7;border:1px solid #f3bfd0;border-radius:10px;overflow:hidden;">
+      <tr style="background:#fff0f5;"><td colspan="2" style="padding:8px;font-size:9px;color:#a2828e;">Product</td><td align="center" style="padding:8px;font-size:9px;color:#a2828e;">Qty</td><td align="right" style="padding:8px;font-size:9px;color:#a2828e;">Price</td></tr>
+      ${orderItemRows(items)}
+      ${orderSummaryRows(order)}
+    </table>
+    ${shippingAddressBlock(order)}
+  `;
+
+  await sendEmail({
+    to: ADMIN_ORDER_EMAIL,
+    subject: `New HivraSoft order: ${order?.orderNumber || orderId}`,
+    html: baseTemplate({ title: "New Order Received!", preheader: `${(user as any).name || "Customer"} placed order ${order?.orderNumber || orderId}.`, body }),
+  });
+
+  if (notification) {
+    await Notification.updateOne(
+      { _id: notification._id },
+      { $set: { "metadata.adminOrderEmailSentAt": new Date(), "metadata.adminOrderEmail": ADMIN_ORDER_EMAIL } }
     ).catch(() => undefined);
   }
   return true;
