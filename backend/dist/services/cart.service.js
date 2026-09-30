@@ -43,6 +43,7 @@ const Product_model_1 = __importDefault(require("../models/Product.model"));
 const DiscountCode_model_1 = __importDefault(require("../models/DiscountCode.model"));
 const discount_service_1 = require("./discount.service");
 const activity_service_1 = require("./activity.service");
+const commerce_email_service_1 = require("./commerce-email.service");
 const tax_service_1 = require("./tax.service");
 /* =========================================================
    HELPERS
@@ -277,11 +278,14 @@ const addItemToCart = async (userId, data) => {
         nextQuantity) {
         throw new Error(`Only ${availableStock} item(s) are available in stock.`);
     }
+    const now = new Date();
+    let trackingAddedAt = now;
     if (existingItem) {
         existingItem.quantity =
             nextQuantity;
         existingItem.updatedAt =
-            new Date();
+            now;
+        trackingAddedAt = existingItem.addedAt || now;
     }
     else {
         cart.items.push({
@@ -289,12 +293,12 @@ const addItemToCart = async (userId, data) => {
             colorId: new mongoose_1.Types.ObjectId(data.colorId),
             sizeId: new mongoose_1.Types.ObjectId(data.sizeId),
             quantity,
-            addedAt: new Date(),
-            updatedAt: new Date(),
+            addedAt: now,
+            updatedAt: now,
         });
     }
     await cart.save();
-    await (0, activity_service_1.trackUserActivity)({
+    const activity = await (0, activity_service_1.trackUserActivity)({
         userId,
         type: "cart_add",
         productId: data.productId,
@@ -303,9 +307,25 @@ const addItemToCart = async (userId, data) => {
             sizeId: data.sizeId,
             quantity,
             finalQuantity: nextQuantity,
+            addedAt: trackingAddedAt,
         },
     });
-    return buildCartResponse(cart);
+    const response = await buildCartResponse(cart);
+    void (0, commerce_email_service_1.sendCartAddedEmail)({
+        userId,
+        productId: data.productId,
+        colorId: data.colorId,
+        sizeId: data.sizeId,
+        quantity: nextQuantity,
+        cartTotal: Number(response.total || 0),
+    })
+        .then((sent) => {
+        if (sent && activity?._id) {
+            return (0, activity_service_1.markActivityEmailSent)(String(activity._id));
+        }
+    })
+        .catch((error) => console.error("CART ADDED EMAIL ERROR:", error));
+    return response;
 };
 exports.addItemToCart = addItemToCart;
 /* =========================================================

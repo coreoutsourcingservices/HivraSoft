@@ -20,6 +20,7 @@ const mongoose_1 = require("mongoose");
 const Order_model_1 = __importDefault(require("../models/Order.model"));
 const Product_model_1 = __importDefault(require("../models/Product.model"));
 const Cart_model_1 = __importDefault(require("../models/Cart.model"));
+const Wishlist_model_1 = __importDefault(require("../models/Wishlist.model"));
 const User_model_1 = __importDefault(require("../models/User.model"));
 const address_model_1 = __importDefault(require("../models/user/address.model"));
 const Notification_model_1 = __importDefault(require("../models/Notification.model"));
@@ -27,6 +28,7 @@ const cart_service_1 = require("./cart.service");
 const activity_service_1 = require("./activity.service");
 const razorpay_service_1 = require("./razorpay.service");
 const delivery_charge_service_1 = require("./delivery-charge.service");
+const commerce_email_service_1 = require("./commerce-email.service");
 const roundMoney = (value) => Math.round((Number(value || 0) + Number.EPSILON) * 100) / 100;
 function makeOrderNumber() {
     const stamp = new Date().toISOString().replace(/[-:TZ.]/g, "").slice(0, 14);
@@ -231,6 +233,46 @@ async function removePurchasedCartItems(userId, items) {
         $set: { discountCode: "" },
     });
 }
+async function trackPurchasedCommerce(order) {
+    const userId = String(order?.user || "");
+    if (!mongoose_1.Types.ObjectId.isValid(userId))
+        return;
+    const wishlist = await Wishlist_model_1.default.findOne({ user: userId }).select("items.product items.colorId items.sizeId").lean();
+    const wishlistItems = Array.isArray(wishlist?.items) ? wishlist.items : [];
+    for (const item of Array.isArray(order?.items) ? order.items : []) {
+        const productId = String(item?.productId || item?.product || "");
+        if (!mongoose_1.Types.ObjectId.isValid(productId))
+            continue;
+        await (0, activity_service_1.trackUserActivity)({
+            userId,
+            type: "cart_purchase",
+            productId,
+            orderId: String(order._id),
+            metadata: {
+                orderNumber: order.orderNumber,
+                quantity: Number(item?.quantity || 0),
+                colorId: String(item?.colorId || ""),
+                sizeId: String(item?.sizeId || ""),
+                purchasedAt: new Date(),
+            },
+        }).catch(() => undefined);
+        const wasWishlisted = wishlistItems.some((saved) => String(saved?.product || "") === productId);
+        if (wasWishlisted) {
+            await (0, activity_service_1.trackUserActivity)({
+                userId,
+                type: "wishlist_purchase",
+                productId,
+                orderId: String(order._id),
+                metadata: {
+                    orderNumber: order.orderNumber,
+                    colorId: String(item?.colorId || ""),
+                    sizeId: String(item?.sizeId || ""),
+                    purchasedAt: new Date(),
+                },
+            }).catch(() => undefined);
+        }
+    }
+}
 async function createOrderStatusNotification(order, status, createdBy) {
     const normalized = String(status || "").toLowerCase();
     const titles = {
@@ -320,8 +362,10 @@ async function createOrderFromCart(userId, payload) {
         throw error;
     }
     await removePurchasedCartItems(userId, order.items);
+    await trackPurchasedCommerce(order).catch(() => undefined);
     await trackCreated(order);
     await createOrderStatusNotification(order.toObject(), "confirmed");
+    void (0, commerce_email_service_1.sendOrderConfirmationEmailOnce)(order.toObject()).catch((error) => console.error("ORDER CONFIRMATION EMAIL ERROR:", error));
     return order;
 }
 async function createRazorpayOrderFromCart(userId, payload) {
@@ -437,7 +481,9 @@ async function finalizePaidOrder(orderId, paymentId, source) {
         if (!updated)
             throw new Error("Unable to finalize paid order.");
         await removePurchasedCartItems(String(updated.user), updated.items).catch(() => undefined);
+        await trackPurchasedCommerce(updated).catch(() => undefined);
         await createOrderStatusNotification(updated.toObject(), "confirmed").catch(() => undefined);
+        void (0, commerce_email_service_1.sendOrderConfirmationEmailOnce)(updated.toObject()).catch((error) => console.error("ORDER CONFIRMATION EMAIL ERROR:", error));
         await (0, activity_service_1.trackUserActivity)({
             userId: String(updated.user),
             type: "order_paid",
