@@ -65,7 +65,11 @@ export async function listAdminBlogs(req: Request, res: Response) {
         .limit(limit)
         .lean(),
     ]);
-    return res.json({ success: true, blogs, pagination: { page, limit, total, totalPages: Math.max(1, Math.ceil(total / limit)) } });
+    const adminBlogs = blogs.map((blog: any) => {
+      const { likes = [], ...rest } = blog;
+      return { ...rest, likeCount: Array.isArray(likes) ? likes.length : 0 };
+    });
+    return res.json({ success: true, blogs: adminBlogs, pagination: { page, limit, total, totalPages: Math.max(1, Math.ceil(total / limit)) } });
   } catch (error) {
     return res.status(500).json({ success: false, message: duplicateMessage(error) });
   }

@@ -97,9 +97,9 @@ export default function AdminBlogsPage() {
           </div>
           {loading ? <div className="p-16 text-center text-sm text-[#211A18]/45">Loading blogs...</div> : error ? <div className="p-16 text-center text-sm text-red-600">{error}</div> : blogs.length === 0 ? <div className="p-16 text-center text-sm text-[#211A18]/45">No blogs found.</div> : (
             <div className="overflow-x-auto">
-              <table className="min-w-[1180px] w-full text-left">
+              <table className="min-w-[1240px] w-full text-left">
                 <thead className="bg-[#FAF8F6] text-[8px] uppercase tracking-[0.08em] text-[#211A18]/40"><tr>
-                  <th className="px-4 py-3">Image</th><th className="px-4 py-3">Blog</th><th className="px-4 py-3">Category</th><th className="px-4 py-3">Author</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Published</th><th className="px-4 py-3">Updated</th><th className="px-4 py-3">Views</th><th className="px-4 py-3 text-right">Actions</th>
+                  <th className="px-4 py-3">Image</th><th className="px-4 py-3">Blog</th><th className="px-4 py-3">Category</th><th className="px-4 py-3">Author</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Published</th><th className="px-4 py-3">Updated</th><th className="px-4 py-3">Views</th><th className="px-4 py-3">Likes</th><th className="px-4 py-3 text-right">Actions</th>
                 </tr></thead>
                 <tbody className="divide-y divide-[#211A18]/7">
                   {blogs.map((blog) => <tr key={blog._id} className="text-[10px] text-[#211A18]/70">
@@ -107,7 +107,7 @@ export default function AdminBlogsPage() {
                     <td className="max-w-[300px] px-4 py-3"><Link href={`/admin/blog/${blog._id}/edit`} className="font-semibold text-[#211A18] hover:text-[#A51D45]">{blog.title}</Link><div className="mt-1 truncate text-[9px] text-[#211A18]/40">/{blog.slug}</div></td>
                     <td className="px-4 py-3">{nameOf(blog.category)}</td><td className="px-4 py-3">{authorName(blog.author)}</td>
                     <td className="px-4 py-3"><span className="rounded-full bg-[#F7EEF1] px-2.5 py-1 text-[8px] font-semibold text-[#A51D45]">{blog.status}</span></td>
-                    <td className="px-4 py-3">{date(blog.publishedAt || blog.scheduledAt)}</td><td className="px-4 py-3">{date(blog.updatedAt)}</td><td className="px-4 py-3 font-semibold">{blog.views || 0}</td>
+                    <td className="px-4 py-3">{date(blog.publishedAt || blog.scheduledAt)}</td><td className="px-4 py-3">{date(blog.updatedAt)}</td><td className="px-4 py-3 font-semibold">{blog.views || 0}</td><td className="px-4 py-3 font-semibold">{blog.likeCount || 0}</td>
                     <td className="px-4 py-3"><div className="flex justify-end gap-2">
                       {blog.status === "PUBLISHED" && <Link href={`/blog/${blog.slug}`} target="_blank" className="rounded-lg border border-[#211A18]/10 px-2.5 py-2 text-[8px] font-semibold">Preview</Link>}
                       <Link href={`/admin/blog/${blog._id}/edit`} title="Edit" className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#211A18]/10"><Edit3 size={13}/></Link>

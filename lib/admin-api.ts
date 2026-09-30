@@ -265,6 +265,7 @@ export type CommerceTrackingRow = {
     slug: string;
     colorName: string;
     sizeName: string;
+    categoryName: string;
     price: number;
     imageUrl: string;
     colorId: string;

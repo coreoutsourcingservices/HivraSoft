@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { Heart, Loader2, Search, ShoppingCart } from "lucide-react";
+import { FileSpreadsheet, Heart, Loader2, Search, ShoppingCart } from "lucide-react";
 import {
   getAdminCartTracking,
   getAdminWishlistTracking,
@@ -14,17 +14,119 @@ function money(value: unknown) {
   return `₹${Number.isFinite(amount) ? amount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "0.00"}`;
 }
 
-function dateTime(value: unknown) {
-  if (!value) return "—";
+function parsedDate(value: unknown) {
+  if (!value) return null;
   const date = new Date(String(value));
-  if (Number.isNaN(date.getTime())) return "—";
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function dateTime(value: unknown) {
+  const date = parsedDate(value);
+  if (!date) return "—";
   return date.toLocaleString("en-IN", {
     day: "2-digit",
     month: "short",
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+    hour12: true,
   });
+}
+
+function exportDate(value: unknown) {
+  const date = parsedDate(value);
+  if (!date) return "";
+  return date.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+}
+
+function exportTime(value: unknown) {
+  const date = parsedDate(value);
+  if (!date) return "";
+  return date.toLocaleTimeString("en-IN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
+
+function xmlEscape(value: unknown) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&apos;");
+}
+
+function textCell(value: unknown) {
+  return `<Cell><Data ss:Type="String">${xmlEscape(value)}</Data></Cell>`;
+}
+
+function numberCell(value: unknown) {
+  const number = Number(value || 0);
+  return `<Cell><Data ss:Type="Number">${Number.isFinite(number) ? number : 0}</Data></Cell>`;
+}
+
+function downloadExcel(kind: "cart" | "wishlist", rows: CommerceTrackingRow[]) {
+  const headers = [
+    "User Name",
+    "User Number",
+    "User Mail",
+    "Product",
+    "Category",
+    "Size",
+    "Price",
+    "Quantity",
+    "Date",
+    "Time",
+  ];
+
+  const headerRow = headers.map((header) => `<Cell ss:StyleID="Header"><Data ss:Type="String">${xmlEscape(header)}</Data></Cell>`).join("");
+  const dataRows = rows.map((row) => `
+    <Row>
+      ${textCell(row.user.name)}
+      ${textCell(row.user.phone)}
+      ${textCell(row.user.email)}
+      ${textCell(row.product.name)}
+      ${textCell(row.product.categoryName || "—")}
+      ${textCell(row.product.sizeName || "—")}
+      ${numberCell(row.product.price)}
+      ${numberCell(row.quantity)}
+      ${textCell(exportDate(row.addedAt))}
+      ${textCell(exportTime(row.addedAt))}
+    </Row>`).join("");
+
+  const workbook = `<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+ <Styles>
+  <Style ss:ID="Default" ss:Name="Normal"><Alignment ss:Vertical="Center"/></Style>
+  <Style ss:ID="Header"><Font ss:Bold="1"/><Interior ss:Color="#F2ECE8" ss:Pattern="Solid"/></Style>
+ </Styles>
+ <Worksheet ss:Name="${kind === "cart" ? "Cart Tracking" : "Wishlist Tracking"}">
+  <Table>
+   <Row>${headerRow}</Row>
+   ${dataRows}
+  </Table>
+ </Worksheet>
+</Workbook>`;
+
+  const blob = new Blob([workbook], { type: "application/vnd.ms-excel;charset=utf-8" });
+  const href = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = href;
+  anchor.download = `${kind}-tracking-filtered-${new Date().toISOString().slice(0, 10)}.xls`;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(href);
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -42,8 +144,8 @@ function StatusBadge({ status }: { status: string }) {
 
 function EmailBadge({ label, sent }: { label: string; sent: boolean }) {
   return (
-    <span className={`inline-flex rounded-full px-2 py-1 text-[8px] font-semibold uppercase tracking-wide ${sent ? "bg-emerald-50 text-emerald-700" : "bg-[#F7F3EF] text-[#211A18]/40"}`}>
-      {label}: {sent ? "Sent" : "Pending"}
+    <span className={`inline-flex rounded-full border px-2 py-1 text-[8px] font-semibold uppercase tracking-wide ${sent ? "border-emerald-200 bg-emerald-100 text-emerald-800" : "border-transparent bg-[#F7F3EF] text-[#211A18]/40"}`}>
+      {label}: {sent ? "Complete" : "Pending"}
     </span>
   );
 }
@@ -58,15 +160,26 @@ export default function CommerceTrackingPage({ kind }: { kind: "cart" | "wishlis
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [error, setError] = useState("");
+
+  const getTracking = useCallback((requestedPage: number, limit: number) => {
+    const params = {
+      page: requestedPage,
+      limit,
+      search: search.trim(),
+      status,
+      dateFrom,
+      dateTo,
+    };
+    return isCart ? getAdminCartTracking(params) : getAdminWishlistTracking(params);
+  }, [dateFrom, dateTo, isCart, search, status]);
 
   const load = useCallback(async (silent = false) => {
     try {
       if (!silent) setLoading(true);
       setError("");
-      const result = isCart
-        ? await getAdminCartTracking({ page, limit: 20, search: search.trim(), status, dateFrom, dateTo })
-        : await getAdminWishlistTracking({ page, limit: 20, search: search.trim(), status, dateFrom, dateTo });
+      const result = await getTracking(page, 20);
       setRows(result.tracking);
       setPagination(result.pagination);
     } catch (err) {
@@ -77,7 +190,7 @@ export default function CommerceTrackingPage({ kind }: { kind: "cart" | "wishlis
     } finally {
       if (!silent) setLoading(false);
     }
-  }, [dateFrom, dateTo, isCart, kind, page, search, status]);
+  }, [getTracking, kind, page]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => void load(), 250);
@@ -88,11 +201,36 @@ export default function CommerceTrackingPage({ kind }: { kind: "cart" | "wishlis
     };
   }, [load]);
 
+  async function exportFilteredRows() {
+    try {
+      setExporting(true);
+      const first = await getTracking(1, 100);
+      const allRows = [...first.tracking];
+      const totalPages = Math.max(1, first.pagination.totalPages);
+
+      for (let exportPage = 2; exportPage <= totalPages; exportPage += 1) {
+        const next = await getTracking(exportPage, 100);
+        allRows.push(...next.tracking);
+      }
+
+      if (!allRows.length) {
+        window.alert("No filtered tracking records to export.");
+        return;
+      }
+
+      downloadExcel(kind, allRows);
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : `Unable to export ${kind} tracking.`);
+    } finally {
+      setExporting(false);
+    }
+  }
+
   const Icon = isCart ? ShoppingCart : Heart;
   const title = isCart ? "Cart Tracking" : "Wishlist Tracking";
   const description = isCart
     ? "See which customer added which product, quantity, exact time, purchase status and email reminders."
-    : "See which customer saved which product, exact time, purchase status and email reminders.";
+    : "See which customer saved which product, quantity, exact time, purchase status and email reminders.";
 
   return (
     <section className="mx-auto w-full max-w-[1600px]">
@@ -106,8 +244,19 @@ export default function CommerceTrackingPage({ kind }: { kind: "cart" | "wishlis
             </div>
             <p className="mt-1 max-w-3xl text-xs leading-5 text-[#211A18]/50">{description}</p>
           </div>
-          <div className="rounded-xl bg-[#F7F3EF] px-4 py-3 text-[10px] font-semibold text-[#211A18]/60">
-            {pagination.total.toLocaleString("en-IN")} tracking record{pagination.total === 1 ? "" : "s"}
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => void exportFilteredRows()}
+              disabled={exporting || loading}
+              className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#8C1839] px-4 text-[10px] font-semibold text-white disabled:opacity-50"
+            >
+              {exporting ? <Loader2 size={14} className="animate-spin" /> : <FileSpreadsheet size={14} />}
+              {exporting ? "Exporting..." : "Export Excel"}
+            </button>
+            <div className="rounded-xl bg-[#F7F3EF] px-4 py-3 text-[10px] font-semibold text-[#211A18]/60">
+              {pagination.total.toLocaleString("en-IN")} tracking record{pagination.total === 1 ? "" : "s"}
+            </div>
           </div>
         </div>
 
@@ -162,7 +311,7 @@ export default function CommerceTrackingPage({ kind }: { kind: "cart" | "wishlis
               <tr className="text-[9px] uppercase tracking-[0.12em] text-[#211A18]/50">
                 <th className="px-4 py-3">User</th>
                 <th className="px-4 py-3">Product</th>
-                {isCart && <th className="px-4 py-3">Qty</th>}
+                <th className="px-4 py-3">Quantity</th>
                 <th className="px-4 py-3">Price</th>
                 <th className="px-4 py-3">Added At</th>
                 <th className="px-4 py-3">Status</th>
@@ -171,9 +320,9 @@ export default function CommerceTrackingPage({ kind }: { kind: "cart" | "wishlis
             </thead>
             <tbody className="divide-y divide-[#211A18]/7">
               {loading ? (
-                <tr><td colSpan={isCart ? 7 : 6} className="py-16 text-center text-xs text-[#211A18]/45"><Loader2 className="mx-auto mb-2 animate-spin" size={20} />Loading tracking...</td></tr>
+                <tr><td colSpan={7} className="py-16 text-center text-xs text-[#211A18]/45"><Loader2 className="mx-auto mb-2 animate-spin" size={20} />Loading tracking...</td></tr>
               ) : rows.length === 0 ? (
-                <tr><td colSpan={isCart ? 7 : 6} className="py-16 text-center text-xs text-[#211A18]/45">No tracking records found.</td></tr>
+                <tr><td colSpan={7} className="py-16 text-center text-xs text-[#211A18]/45">No tracking records found.</td></tr>
               ) : rows.map((row) => (
                 <tr key={row.id} className="text-[10px] text-[#211A18]/65 hover:bg-[#FAF8F6]/60">
                   <td className="px-4 py-4 align-top">
@@ -204,7 +353,7 @@ export default function CommerceTrackingPage({ kind }: { kind: "cart" | "wishlis
                       </div>
                     </div>
                   </td>
-                  {isCart && <td className="px-4 py-4 align-top font-semibold text-[#211A18]">{row.quantity}</td>}
+                  <td className="px-4 py-4 align-top font-semibold text-[#211A18]">{row.quantity}</td>
                   <td className="px-4 py-4 align-top font-semibold text-[#211A18]">{money(row.product.price)}</td>
                   <td className="px-4 py-4 align-top">
                     <div className="font-medium text-[#211A18]">{dateTime(row.addedAt)}</div>
@@ -212,7 +361,7 @@ export default function CommerceTrackingPage({ kind }: { kind: "cart" | "wishlis
                   </td>
                   <td className="px-4 py-4 align-top"><StatusBadge status={row.status} /></td>
                   <td className="px-4 py-4 align-top">
-                    <div className="flex max-w-[260px] flex-wrap gap-1.5">
+                    <div className="flex max-w-[280px] flex-wrap gap-1.5">
                       <EmailBadge label="Added" sent={row.email.addedSent} />
                       <EmailBadge label="20 Min" sent={row.email.reminder20MinSent} />
                       <EmailBadge label="24 Hour" sent={row.email.reminder24HourSent} />

@@ -124,6 +124,14 @@ export async function listCommerceTracking(kind: CommerceTrackingKind, query: Co
       },
     },
     { $set: { productDoc: { $arrayElemAt: ["$productDoc", 0] } } },
+    {
+      $lookup: {
+        from: "categories",
+        localField: "productDoc.categories",
+        foreignField: "_id",
+        as: "categoryDocs",
+      },
+    },
   ];
 
   if (search) {
@@ -195,6 +203,9 @@ export async function listCommerceTracking(kind: CommerceTrackingKind, query: Co
       product: {
         id: productId,
         ...product,
+        categoryName: Array.isArray(activity.categoryDocs)
+          ? activity.categoryDocs.map((category: any) => String(category?.name || "").trim()).filter(Boolean).join(", ")
+          : "",
         colorId,
         sizeId,
       },
