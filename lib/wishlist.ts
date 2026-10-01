@@ -6,19 +6,18 @@ import {
    TYPES
 ========================================================= */
 
+export type WishlistProductReference =
+  | string
+  | {
+      _id?: string;
+      id?: string;
+    };
+
 export type WishlistItem = {
   _id?: string;
 
   product:
-    | string
-    | {
-        _id?: string;
-        id?: string;
-
-        name?: string;
-        slug?: string;
-      }
-    | null;
+    WishlistProductReference;
 
   colorId?:
     | string
@@ -27,49 +26,41 @@ export type WishlistItem = {
   sizeId?:
     | string
     | null;
-
-  addedAt?: string;
-
-  updatedAt?: string;
 };
 
 export type Wishlist = {
-  _id?:
-    | string
-    | null;
+  _id?: string;
 
-  user?: string;
-
-  items:
-    WishlistItem[];
-
-  createdAt?:
-    | string
-    | null;
-
-  updatedAt?:
-    | string
-    | null;
+  items: WishlistItem[];
 };
 
-type WishlistApiResponse = {
-  success: boolean;
-
-  message?: string;
-
-  count?: number;
+type WishlistResponse = {
+  success?: boolean;
 
   wishlist?: Wishlist;
+
+  items?: WishlistItem[];
+
+  data?:
+    | Wishlist
+    | {
+        wishlist?: Wishlist;
+        items?: WishlistItem[];
+      };
 };
 
-type WishlistCheckApiResponse = {
-  success: boolean;
+type WishlistCheckResponse = {
+  success?: boolean;
 
-  message?: string;
+  exists?: boolean;
 
-  productId?: string;
+  isWishlisted?: boolean;
 
-  isWishlisted: boolean;
+  data?: {
+    exists?: boolean;
+
+    isWishlisted?: boolean;
+  };
 };
 
 /* =========================================================
@@ -82,12 +73,75 @@ const EMPTY_WISHLIST: Wishlist =
   };
 
 /* =========================================================
-   UPDATE HEADER COUNT
+   NORMALIZER
 ========================================================= */
 
-function notifyWishlistUpdated(
-  wishlist?: Wishlist
-) {
+function normalizeWishlist(
+  response:
+    | WishlistResponse
+    | null
+    | undefined
+): Wishlist {
+  if (!response) {
+    return EMPTY_WISHLIST;
+  }
+
+  if (
+    response.wishlist &&
+    Array.isArray(
+      response.wishlist.items
+    )
+  ) {
+    return response.wishlist;
+  }
+
+  if (
+    Array.isArray(
+      response.items
+    )
+  ) {
+    return {
+      items:
+        response.items,
+    };
+  }
+
+  if (
+    response.data &&
+    "items" in
+      response.data &&
+    Array.isArray(
+      response.data.items
+    )
+  ) {
+    return {
+      items:
+        response.data.items,
+    };
+  }
+
+  if (
+    response.data &&
+    "wishlist" in
+      response.data &&
+    response.data.wishlist &&
+    Array.isArray(
+      response.data
+        .wishlist.items
+    )
+  ) {
+    return response.data
+      .wishlist;
+  }
+
+  return EMPTY_WISHLIST;
+}
+
+/* =========================================================
+   EVENT
+========================================================= */
+
+function dispatchWishlistUpdated() {
   if (
     typeof window ===
     "undefined"
@@ -96,44 +150,32 @@ function notifyWishlistUpdated(
   }
 
   window.dispatchEvent(
-    new CustomEvent(
-      "hivrasoft-wishlist-updated",
-      {
-        detail: {
-          count:
-            wishlist?.items
-              .length ??
-            0,
-        },
-      }
+    new Event(
+      "hivrasoft-wishlist-updated"
+    )
+  );
+
+  window.dispatchEvent(
+    new Event(
+      "hivra:store-changed"
     )
   );
 }
 
 /* =========================================================
-   REQUIRE WISHLIST
-========================================================= */
-
-function requireWishlist(
-  response: WishlistApiResponse
-): Wishlist {
-  return (
-    response.wishlist ||
-    EMPTY_WISHLIST
-  );
-}
-
-/* =========================================================
-   GET
+   GET WISHLIST
 ========================================================= */
 
 export async function getWishlist(): Promise<Wishlist> {
   const response =
-    await apiFetch<WishlistApiResponse>(
-      "/api/wishlist"
+    await apiFetch<WishlistResponse>(
+      "/api/wishlist",
+      {
+        method: "GET",
+      }
     );
 
-  return requireWishlist(
+  return normalizeWishlist(
     response
   );
 }
@@ -141,7 +183,8 @@ export async function getWishlist(): Promise<Wishlist> {
 /* =========================================================
    ADD
 
-   Current colorId also saves.
+   productId required.
+   colorId optional.
 ========================================================= */
 
 export async function addToWishlist(
@@ -157,76 +200,95 @@ export async function addToWishlist(
       | null;
   }
 ): Promise<Wishlist> {
+  const body: Record<
+    string,
+    unknown
+  > = {
+    productId,
+  };
+
+  if (
+    variant?.colorId
+  ) {
+    body.colorId =
+      variant.colorId;
+  }
+
+  if (
+    variant?.sizeId
+  ) {
+    body.sizeId =
+      variant.sizeId;
+  }
+
   const response =
-    await apiFetch<WishlistApiResponse>(
+    await apiFetch<WishlistResponse>(
       "/api/wishlist",
       {
-        method:
-          "POST",
+        method: "POST",
 
-        body: {
-          productId,
-
-          ...(variant ||
-            {}),
-        },
+        body,
       }
     );
 
-  const wishlist =
-    requireWishlist(
-      response
-    );
+  dispatchWishlistUpdated();
 
-  notifyWishlistUpdated(
-    wishlist
+  return normalizeWishlist(
+    response
   );
-
-  return wishlist;
 }
 
 /* =========================================================
    REMOVE
 
-   Backend service supports:
-
-   wishlist ITEM id
-   OR
-   product id
-
-   Catalog color-wise removal ke liye wishlist item id bhejenge.
-
-   Isliye:
-
-   Beige remove
-   ≠
-   Black remove
+   Official storefront route:
+   DELETE /api/wishlist/:productId
 ========================================================= */
 
 export async function removeFromWishlist(
-  itemOrProductId: string
+  productId: string
 ): Promise<Wishlist> {
   const response =
-    await apiFetch<WishlistApiResponse>(
+    await apiFetch<WishlistResponse>(
       `/api/wishlist/${encodeURIComponent(
-        itemOrProductId
+        productId
       )}`,
       {
-        method:
-          "DELETE",
+        method: "DELETE",
       }
     );
 
-  const wishlist =
-    requireWishlist(
-      response
+  dispatchWishlistUpdated();
+
+  return normalizeWishlist(
+    response
+  );
+}
+
+/* =========================================================
+   CHECK
+========================================================= */
+
+export async function isWishlisted(
+  productId: string
+): Promise<boolean> {
+  const response =
+    await apiFetch<WishlistCheckResponse>(
+      `/api/wishlist/check/${encodeURIComponent(
+        productId
+      )}`,
+      {
+        method: "GET",
+      }
     );
 
-  notifyWishlistUpdated(
-    wishlist
+  return Boolean(
+    response.isWishlisted ??
+      response.exists ??
+      response.data
+        ?.isWishlisted ??
+      response.data?.exists
   );
-
-  return wishlist;
 }
 
 /* =========================================================
@@ -235,43 +297,16 @@ export async function removeFromWishlist(
 
 export async function clearWishlist(): Promise<Wishlist> {
   const response =
-    await apiFetch<WishlistApiResponse>(
+    await apiFetch<WishlistResponse>(
       "/api/wishlist",
       {
-        method:
-          "DELETE",
+        method: "DELETE",
       }
     );
 
-  const wishlist =
-    requireWishlist(
-      response
-    );
+  dispatchWishlistUpdated();
 
-  notifyWishlistUpdated(
-    wishlist
-  );
-
-  return wishlist;
-}
-
-/* =========================================================
-   OLD PRODUCT LEVEL CHECK
-
-   Product detail page ke existing code ke liye keep kiya hai.
-========================================================= */
-
-export async function isWishlisted(
-  productId: string
-): Promise<boolean> {
-  const response =
-    await apiFetch<WishlistCheckApiResponse>(
-      `/api/wishlist/check/${encodeURIComponent(
-        productId
-      )}`
-    );
-
-  return Boolean(
-    response.isWishlisted
+  return normalizeWishlist(
+    response
   );
 }

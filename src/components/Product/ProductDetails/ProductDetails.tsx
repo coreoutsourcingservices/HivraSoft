@@ -3,6 +3,7 @@
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -12,38 +13,128 @@ import {
 
 import {
   getDefaultColor,
+  getProductCategorySlugs,
   getProductImageUrls,
   getProductName,
-  getProductPrices,
   type ApiColor,
   type ApiProduct,
+  type ApiSize,
 } from "@/src/services/products";
 
-import { ApiError, requestLogin } from "@/lib/api";
-import { addToCart } from "@/lib/cart";
 import {
-  addToWishlist,
-  isWishlisted,
-} from "@/lib/wishlist";
+  useStorefrontCommerce,
+} from "@/src/components/Storefront/StorefrontCommerceProvider";
+
+import ProductReviews from "@/src/components/Product/ProductReviews/ProductReviews";
+
+import type {
+  CatalogProduct,
+  CatalogSize,
+} from "@/types/catalog";
 
 /* =========================================================
-   TYPE
+   TYPES
 ========================================================= */
 
 export type ProductDetailsData =
   ApiProduct;
 
-type ProductDetailsProps = {
+type Props = {
   product: ProductDetailsData;
-
-  /*
-   * Current URL slug:
-   *
-   * mens-light-green-cotton-brief
-   * mens-dark-green-cotton-brief
-   */
   currentSlug: string;
 };
+
+type GalleryImage = {
+  url: string;
+  publicId?: string;
+  isDefault?: boolean;
+};
+
+type ProductGalleryProps = {
+  images: GalleryImage[];
+  name: string;
+  wished: boolean;
+  wishlistBusy: boolean;
+  onBack: () => void;
+  onToggleWishlist: () => void;
+};
+
+/* =========================================================
+   FIELD
+========================================================= */
+
+function field(
+  source: unknown,
+  key: string
+): unknown {
+  if (
+    !source ||
+    typeof source !== "object"
+  ) {
+    return undefined;
+  }
+
+  return (
+    source as Record<
+      string,
+      unknown
+    >
+  )[key];
+}
+
+/* =========================================================
+   ID
+========================================================= */
+
+function getId(
+  source: unknown
+): string {
+  return String(
+    field(
+      source,
+      "_id"
+    ) ||
+      field(
+        source,
+        "id"
+      ) ||
+      ""
+  ).trim();
+}
+
+/* =========================================================
+   POSITIVE NUMBER
+========================================================= */
+
+function positiveNumber(
+  ...values: unknown[]
+): number | undefined {
+  for (
+    const value of values
+  ) {
+    if (
+      value === null ||
+      value === undefined ||
+      value === ""
+    ) {
+      continue;
+    }
+
+    const number =
+      Number(value);
+
+    if (
+      Number.isFinite(
+        number
+      ) &&
+      number > 0
+    ) {
+      return number;
+    }
+  }
+
+  return undefined;
+}
 
 /* =========================================================
    CLEAN HTML
@@ -83,55 +174,1153 @@ function cleanDescriptionHtml(
 }
 
 /* =========================================================
-   GET FIRST NUMBER
+   GALLERY
 ========================================================= */
 
-function firstNumber(
-  ...values: unknown[]
-) {
-  for (
-    const value of values
-  ) {
+function ProductGallery({
+  images,
+  name,
+  wished,
+  wishlistBusy,
+  onBack,
+  onToggleWishlist,
+}: ProductGalleryProps) {
+  const [
+    active,
+    setActive,
+  ] =
+    useState(0);
+
+  const [
+    paused,
+    setPaused,
+  ] =
+    useState(false);
+
+  const [
+    zoomOpen,
+    setZoomOpen,
+  ] =
+    useState(false);
+
+  /*
+   * IMPORTANT:
+   *
+   * Pehle scrollIntoView() use ho raha tha.
+   * Usse mobile page khud scroll/jump ho raha tha.
+   *
+   * Ab sirf thumbnail container internally scroll karega.
+   */
+  const thumbnailContainerRef =
+    useRef<
+      HTMLDivElement | null
+    >(null);
+
+  const thumbnailRefs =
+    useRef<
+      Array<
+        HTMLButtonElement | null
+      >
+    >([]);
+
+  const touchStart =
+    useRef<
+      number | null
+    >(null);
+
+  /* =======================================================
+     RESET WHEN IMAGE SET CHANGES
+  ======================================================= */
+
+  useEffect(() => {
+    setActive(0);
+
+    const container =
+      thumbnailContainerRef.current;
+
+    if (container) {
+      container.scrollTo({
+        left: 0,
+        top: 0,
+        behavior: "auto",
+      });
+    }
+  }, [
+    images,
+  ]);
+
+  /* =======================================================
+     AUTO SLIDE
+  ======================================================= */
+
+  useEffect(() => {
     if (
-      value === undefined ||
-      value === null ||
-      value === ""
+      images.length <= 1 ||
+      paused ||
+      zoomOpen
     ) {
-      continue;
+      return;
     }
 
-    const number =
-      Number(value);
+    const timer =
+      window.setInterval(
+        () => {
+          setActive(
+            (
+              current
+            ) =>
+              (
+                current +
+                1
+              ) %
+              images.length
+          );
+        },
+        3500
+      );
+
+    return () => {
+      window.clearInterval(
+        timer
+      );
+    };
+  }, [
+    images.length,
+    paused,
+    zoomOpen,
+  ]);
+
+  /* =======================================================
+     ACTIVE THUMB SCROLL
+
+     ONLY THUMBNAIL CONTAINER SCROLLS
+  ======================================================= */
+
+  useEffect(() => {
+    const container =
+      thumbnailContainerRef.current;
+
+    const target =
+      thumbnailRefs.current[
+        active
+      ];
 
     if (
-      Number.isFinite(
-        number
+      !container ||
+      !target
+    ) {
+      return;
+    }
+
+    const desktop =
+      window.matchMedia(
+        "(min-width: 1024px)"
+      ).matches;
+
+    if (desktop) {
+      const centeredTop =
+        target.offsetTop -
+        container.clientHeight /
+          2 +
+        target.clientHeight /
+          2;
+
+      container.scrollTo({
+        top:
+          Math.max(
+            0,
+            centeredTop
+          ),
+
+        behavior:
+          "smooth",
+      });
+
+      return;
+    }
+
+    const centeredLeft =
+      target.offsetLeft -
+      container.clientWidth /
+        2 +
+      target.clientWidth /
+        2;
+
+    container.scrollTo({
+      left:
+        Math.max(
+          0,
+          centeredLeft
+        ),
+
+      behavior:
+        "smooth",
+    });
+  }, [
+    active,
+  ]);
+
+  /* =======================================================
+     BODY LOCK FOR ZOOM
+  ======================================================= */
+
+  useEffect(() => {
+    if (!zoomOpen) {
+      return;
+    }
+
+    const previous =
+      document.body.style
+        .overflow;
+
+    document.body.style.overflow =
+      "hidden";
+
+    return () => {
+      document.body.style.overflow =
+        previous;
+    };
+  }, [
+    zoomOpen,
+  ]);
+
+  /* =======================================================
+     PREVIOUS
+  ======================================================= */
+
+  const previous =
+    () => {
+      if (
+        images.length ===
+        0
+      ) {
+        return;
+      }
+
+      setActive(
+        (
+          current
+        ) =>
+          current === 0
+            ? images.length -
+              1
+            : current -
+              1
+      );
+    };
+
+  /* =======================================================
+     NEXT
+  ======================================================= */
+
+  const next =
+    () => {
+      if (
+        images.length ===
+        0
+      ) {
+        return;
+      }
+
+      setActive(
+        (
+          current
+        ) =>
+          (
+            current +
+            1
+          ) %
+          images.length
+      );
+    };
+
+  /* =======================================================
+     CURRENT
+  ======================================================= */
+
+  const current =
+    images[
+      Math.min(
+        active,
+
+        Math.max(
+          0,
+          images.length -
+            1
+        )
       )
-    ) {
-      return number;
-    }
-  }
+    ];
 
-  return undefined;
+  return (
+    <>
+      <div
+        className="
+          grid
+          gap-3
+
+          lg:grid-cols-[78px_minmax(0,1fr)]
+        "
+        onMouseEnter={() =>
+          setPaused(
+            true
+          )
+        }
+        onMouseLeave={() =>
+          setPaused(
+            false
+          )
+        }
+      >
+        {/* =================================================
+            THUMBNAILS
+
+            Mobile / Tablet = horizontal below image
+            Desktop = vertical left side
+        ================================================= */}
+
+        {images.length >
+          1 && (
+          <div
+            ref={
+              thumbnailContainerRef
+            }
+            className="
+              order-2
+
+              flex
+              gap-2
+
+              overflow-x-auto
+              overflow-y-hidden
+
+              overscroll-contain
+
+              pb-1
+
+              [scrollbar-width:none]
+
+              [&::-webkit-scrollbar]:hidden
+
+              lg:order-1
+              lg:max-h-[680px]
+              lg:flex-col
+              lg:overflow-x-hidden
+              lg:overflow-y-auto
+              lg:pr-1
+            "
+          >
+            {images.map(
+              (
+                image,
+                index
+              ) => (
+                <button
+                  key={`${image.publicId || image.url}-${index}`}
+                  ref={(
+                    element
+                  ) => {
+                    thumbnailRefs.current[
+                      index
+                    ] =
+                      element;
+                  }}
+                  type="button"
+                  onClick={() =>
+                    setActive(
+                      index
+                    )
+                  }
+                  onMouseEnter={() => {
+                    /*
+                     * Desktop hover only.
+                     * Mobile touch par unwanted hover switching nahi.
+                     */
+                    if (
+                      window.matchMedia(
+                        "(min-width: 1024px)"
+                      ).matches
+                    ) {
+                      setActive(
+                        index
+                      );
+                    }
+                  }}
+                  className={`
+                    h-[72px]
+                    w-[58px]
+
+                    flex-none
+
+                    cursor-pointer
+
+                    overflow-hidden
+
+                    rounded-[8px]
+
+                    border-2
+
+                    bg-[#F4F1EF]
+
+                    transition
+
+                    sm:h-[82px]
+                    sm:w-[66px]
+
+                    lg:h-[94px]
+                    lg:w-[74px]
+
+                    ${
+                      active ===
+                      index
+                        ? "border-[#B31345]"
+                        : "border-transparent hover:border-black/20"
+                    }
+                  `}
+                >
+                  <img
+                    src={
+                      image.url
+                    }
+                    alt={`${name} ${
+                      index +
+                      1
+                    }`}
+                    draggable={
+                      false
+                    }
+                    className="
+                      h-full
+                      w-full
+
+                      object-cover
+                    "
+                  />
+                </button>
+              )
+            )}
+          </div>
+        )}
+
+        {/* =================================================
+            MAIN IMAGE
+        ================================================= */}
+
+        <div
+          className="
+            order-1
+            min-w-0
+
+            lg:order-2
+          "
+        >
+          <div
+            className="
+              group
+
+              relative
+
+              aspect-[4/5]
+
+              w-full
+
+              overflow-hidden
+
+              rounded-[14px]
+
+              bg-[#F4F1EF]
+            "
+            onTouchStart={(
+              event
+            ) => {
+              touchStart.current =
+                event.touches[0]
+                  ?.clientX ??
+                null;
+            }}
+            onTouchEnd={(
+              event
+            ) => {
+              if (
+                touchStart.current ===
+                null
+              ) {
+                return;
+              }
+
+              const end =
+                event.changedTouches[0]
+                  ?.clientX ??
+                touchStart.current;
+
+              const difference =
+                end -
+                touchStart.current;
+
+              if (
+                Math.abs(
+                  difference
+                ) >
+                45
+              ) {
+                if (
+                  difference >
+                  0
+                ) {
+                  previous();
+                } else {
+                  next();
+                }
+              }
+
+              touchStart.current =
+                null;
+            }}
+          >
+            {/* =============================================
+                MOBILE / TABLET ACTIONS
+
+                Back + Wishlist SAME image wrapper ke andar.
+                Image next/refresh hone par position change nahi hogi.
+            ============================================= */}
+
+            <div
+              className="
+                pointer-events-none
+
+                absolute
+                left-3
+                right-3
+                top-3
+                z-40
+
+                flex
+                items-center
+                justify-between
+
+                lg:hidden
+              "
+            >
+              {/* BACK */}
+
+              <button
+                type="button"
+                aria-label="Go back"
+                onClick={(
+                  event
+                ) => {
+                  event.preventDefault();
+
+                  event.stopPropagation();
+
+                  onBack();
+                }}
+                className="
+                  pointer-events-auto
+
+                  flex
+                  h-10
+                  w-10
+
+                  cursor-pointer
+
+                  items-center
+                  justify-center
+
+                  rounded-full
+
+                  border
+                  border-black/[0.06]
+
+                  bg-white/95
+
+                  text-[#211A18]
+
+                  shadow-[0_3px_14px_rgba(0,0,0,.14)]
+
+                  backdrop-blur
+
+                  transition-transform
+
+                  active:scale-95
+                "
+              >
+                <BackIcon />
+              </button>
+
+              {/* WISHLIST */}
+
+              <button
+                type="button"
+                aria-label={
+                  wished
+                    ? "Remove from wishlist"
+                    : "Add to wishlist"
+                }
+                disabled={
+                  wishlistBusy
+                }
+                onClick={(
+                  event
+                ) => {
+                  event.preventDefault();
+
+                  event.stopPropagation();
+
+                  onToggleWishlist();
+                }}
+                className="
+                  pointer-events-auto
+
+                  flex
+                  h-10
+                  w-10
+
+                  cursor-pointer
+
+                  items-center
+                  justify-center
+
+                  rounded-full
+
+                  border
+                  border-black/[0.06]
+
+                  bg-white/95
+
+                  shadow-[0_3px_14px_rgba(0,0,0,.14)]
+
+                  backdrop-blur
+
+                  transition-transform
+
+                  active:scale-95
+
+                  disabled:cursor-not-allowed
+                  disabled:opacity-50
+                "
+              >
+                <GalleryHeartIcon
+                  filled={
+                    wished
+                  }
+                />
+              </button>
+            </div>
+
+            {/* =============================================
+                CURRENT IMAGE
+            ============================================= */}
+
+            {current ? (
+              <img
+                src={
+                  current.url
+                }
+                alt={
+                  name
+                }
+                draggable={
+                  false
+                }
+                onDoubleClick={() =>
+                  setZoomOpen(
+                    true
+                  )
+                }
+                className="
+                  h-full
+                  w-full
+
+                  cursor-zoom-in
+
+                  object-cover
+
+                  transition-transform
+                  duration-500
+
+                  group-hover:scale-[1.015]
+                "
+              />
+            ) : (
+              <div
+                className="
+                  grid
+                  h-full
+                  place-items-center
+
+                  text-sm
+
+                  text-black/30
+                "
+              >
+                No Image
+              </div>
+            )}
+
+            {/* =============================================
+                PREVIOUS / NEXT
+
+                Mobile = Swipe
+                Tablet/Desktop = buttons
+            ============================================= */}
+
+            {images.length >
+              1 && (
+              <>
+                <button
+                  type="button"
+                  aria-label="Previous image"
+                  onClick={(
+                    event
+                  ) => {
+                    event.preventDefault();
+
+                    event.stopPropagation();
+
+                    previous();
+                  }}
+                  className="
+                    absolute
+                    left-3
+                    top-1/2
+                    z-20
+
+                    hidden
+                    h-10
+                    w-10
+
+                    -translate-y-1/2
+
+                    cursor-pointer
+
+                    items-center
+                    justify-center
+
+                    rounded-full
+
+                    bg-white/90
+
+                    text-2xl
+
+                    shadow
+
+                    opacity-0
+
+                    transition
+
+                    hover:bg-white
+
+                    md:flex
+                    md:opacity-100
+
+                    lg:opacity-0
+                    lg:group-hover:opacity-100
+                  "
+                >
+                  ‹
+                </button>
+
+                <button
+                  type="button"
+                  aria-label="Next image"
+                  onClick={(
+                    event
+                  ) => {
+                    event.preventDefault();
+
+                    event.stopPropagation();
+
+                    next();
+                  }}
+                  className="
+                    absolute
+                    right-3
+                    top-1/2
+                    z-20
+
+                    hidden
+                    h-10
+                    w-10
+
+                    -translate-y-1/2
+
+                    cursor-pointer
+
+                    items-center
+                    justify-center
+
+                    rounded-full
+
+                    bg-white/90
+
+                    text-2xl
+
+                    shadow
+
+                    opacity-0
+
+                    transition
+
+                    hover:bg-white
+
+                    md:flex
+                    md:opacity-100
+
+                    lg:opacity-0
+                    lg:group-hover:opacity-100
+                  "
+                >
+                  ›
+                </button>
+              </>
+            )}
+
+            {/* =============================================
+                DESKTOP ZOOM BUTTON
+            ============================================= */}
+
+            {current && (
+              <button
+                type="button"
+                aria-label="Zoom image"
+                onClick={() =>
+                  setZoomOpen(
+                    true
+                  )
+                }
+                className="
+                  absolute
+                  right-3
+                  top-3
+                  z-30
+
+                  hidden
+                  h-10
+                  w-10
+
+                  cursor-pointer
+
+                  items-center
+                  justify-center
+
+                  rounded-full
+
+                  bg-white/90
+
+                  text-lg
+
+                  shadow
+
+                  lg:flex
+                "
+              >
+                ⛶
+              </button>
+            )}
+
+            {/* =============================================
+                DOTS
+            ============================================= */}
+
+            {images.length >
+              1 && (
+              <div
+                className="
+                  absolute
+                  bottom-3
+                  left-1/2
+                  z-30
+
+                  flex
+                  -translate-x-1/2
+
+                  gap-1.5
+                "
+              >
+                {images.map(
+                  (
+                    _,
+                    index
+                  ) => (
+                    <button
+                      key={
+                        index
+                      }
+                      type="button"
+                      aria-label={`Show image ${
+                        index +
+                        1
+                      }`}
+                      onClick={(
+                        event
+                      ) => {
+                        event.preventDefault();
+
+                        event.stopPropagation();
+
+                        setActive(
+                          index
+                        );
+                      }}
+                      className={`
+                        h-2
+
+                        cursor-pointer
+
+                        rounded-full
+
+                        transition-all
+
+                        ${
+                          active ===
+                          index
+                            ? "w-5 bg-[#EC4F83]"
+                            : "w-2 bg-white/75"
+                        }
+                      `}
+                    />
+                  )
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ===================================================
+          FULLSCREEN ZOOM
+      =================================================== */}
+
+      {zoomOpen &&
+        current && (
+        <div
+          className="
+            fixed
+            inset-0
+            z-[20000]
+
+            flex
+            items-center
+            justify-center
+
+            bg-black/90
+
+            p-4
+          "
+          onMouseDown={(
+            event
+          ) => {
+            if (
+              event.target ===
+              event.currentTarget
+            ) {
+              setZoomOpen(
+                false
+              );
+            }
+          }}
+        >
+          {/* CLOSE */}
+
+          <button
+            type="button"
+            aria-label="Close zoom"
+            onClick={() =>
+              setZoomOpen(
+                false
+              )
+            }
+            className="
+              absolute
+              right-4
+              top-4
+              z-30
+
+              flex
+              h-11
+              w-11
+
+              cursor-pointer
+
+              items-center
+              justify-center
+
+              rounded-full
+
+              bg-white
+
+              text-2xl
+            "
+          >
+            ×
+          </button>
+
+          {/* FULLSCREEN ARROWS */}
+
+          {images.length >
+            1 && (
+            <>
+              <button
+                type="button"
+                aria-label="Previous image"
+                onClick={
+                  previous
+                }
+                className="
+                  absolute
+                  left-3
+                  top-1/2
+                  z-30
+
+                  flex
+                  h-11
+                  w-11
+
+                  -translate-y-1/2
+
+                  cursor-pointer
+
+                  items-center
+                  justify-center
+
+                  rounded-full
+
+                  bg-white/90
+
+                  text-2xl
+
+                  sm:left-5
+                "
+              >
+                ‹
+              </button>
+
+              <button
+                type="button"
+                aria-label="Next image"
+                onClick={
+                  next
+                }
+                className="
+                  absolute
+                  right-3
+                  top-1/2
+                  z-30
+
+                  flex
+                  h-11
+                  w-11
+
+                  -translate-y-1/2
+
+                  cursor-pointer
+
+                  items-center
+                  justify-center
+
+                  rounded-full
+
+                  bg-white/90
+
+                  text-2xl
+
+                  sm:right-5
+                "
+              >
+                ›
+              </button>
+            </>
+          )}
+
+          <img
+            src={
+              current.url
+            }
+            alt={
+              name
+            }
+            draggable={
+              false
+            }
+            className="
+              max-h-[92vh]
+              max-w-[92vw]
+
+              select-none
+
+              object-contain
+            "
+          />
+        </div>
+      )}
+    </>
+  );
 }
 
 /* =========================================================
-   COMPONENT
+   GALLERY ICONS
+========================================================= */
+
+function BackIcon() {
+  return (
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="m15 18-6-6 6-6" />
+    </svg>
+  );
+}
+
+function GalleryHeartIcon({
+  filled,
+}: {
+  filled: boolean;
+}) {
+  return (
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill={
+        filled
+          ? "#B31345"
+          : "transparent"
+      }
+      stroke="#B31345"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M20.8 4.6a5.4 5.4 0 0 0-7.6 0L12 5.8l-1.2-1.2a5.4 5.4 0 0 0-7.6 7.6L12 21l8.8-8.8a5.4 5.4 0 0 0 0-7.6Z" />
+    </svg>
+  );
+}
+
+/* =========================================================
+   MAIN
 ========================================================= */
 
 export default function ProductDetails({
   product,
   currentSlug,
-}: ProductDetailsProps) {
+}: Props) {
   const router =
     useRouter();
 
+  const commerce =
+    useStorefrontCommerce();
+
   const productId =
-    String(
-      product._id ||
-        product.id ||
-        ""
-    );
+    getId(product);
 
   /* =======================================================
      COLORS
@@ -148,91 +1337,61 @@ export default function ProductDetails({
       }
 
       return product.colors.filter(
-        (color) =>
-          color?.isActive !==
+        (
+          color
+        ) =>
+          color.isActive !==
           false
       );
     }, [
       product.colors,
     ]);
 
-  /* =======================================================
-     FIND COLOR FROM CURRENT URL SLUG
-
-     Example:
-
-     URL:
-     mens-dark-green-cotton-brief
-
-     colors[].slugProduct:
-     mens-dark-green-cotton-brief
-
-     => Dark Green selected
-  ======================================================= */
-
   const urlColorIndex =
-    useMemo(() => {
-      if (
-        !currentSlug
-      ) {
-        return -1;
-      }
-
-      return activeColors.findIndex(
-        (color) =>
-          String(
-            color?.slugProduct ||
-              ""
-          ) === currentSlug
-      );
-    }, [
-      activeColors,
-      currentSlug,
-    ]);
-
-  /* =======================================================
-     DEFAULT COLOR
-  ======================================================= */
+    useMemo(
+      () =>
+        activeColors.findIndex(
+          (
+            color
+          ) =>
+            String(
+              color.slugProduct ||
+                ""
+            ) ===
+            currentSlug
+        ),
+      [
+        activeColors,
+        currentSlug,
+      ]
+    );
 
   const defaultColorIndex =
     useMemo(() => {
-      /*
-       * URL slug has highest priority.
-       */
-
       if (
-        urlColorIndex >= 0
+        urlColorIndex >=
+        0
       ) {
         return urlColorIndex;
       }
 
-      /*
-       * Otherwise backend default color.
-       */
-
-      const backendDefaultIndex =
+      const backendDefault =
         activeColors.findIndex(
-          (color) =>
-            color?.isDefault ===
+          (
+            color
+          ) =>
+            color.isDefault ===
             true
         );
 
-      if (
-        backendDefaultIndex >=
+      return backendDefault >=
         0
-      ) {
-        return backendDefaultIndex;
-      }
-
-      return 0;
+        ? backendDefault
+        : 0;
     }, [
       activeColors,
       urlColorIndex,
     ]);
-
-  /* =======================================================
-     STATE
-  ======================================================= */
 
   const [
     selectedColorIndex,
@@ -251,49 +1410,10 @@ export default function ProductDetails({
     >(null);
 
   const [
-    activeImageIndex,
-    setActiveImageIndex,
-  ] =
-    useState(0);
-
-  const [
     quantity,
     setQuantity,
   ] =
     useState(1);
-
-  const [
-    cartBusy,
-    setCartBusy,
-  ] = useState(false);
-
-  const [
-    wishlistBusy,
-    setWishlistBusy,
-  ] = useState(false);
-
-  const [
-    wishlisted,
-    setWishlisted,
-  ] = useState(false);
-
-  const [
-    actionMessage,
-    setActionMessage,
-  ] = useState<{
-    text: string;
-    type: "success" | "error";
-  } | null>(null);
-
-  /* =======================================================
-     SYNC COLOR WHEN URL CHANGES
-
-     /light-green
-           ↓ click Dark Green
-     /dark-green
-           ↓
-     selectedColorIndex = dark green
-  ======================================================= */
 
   useEffect(() => {
     setSelectedColorIndex(
@@ -304,63 +1424,15 @@ export default function ProductDetails({
       null
     );
 
-    setActiveImageIndex(
-      0
-    );
-
-    setQuantity(
-      1
-    );
+    setQuantity(1);
   }, [
     defaultColorIndex,
     currentSlug,
   ]);
 
-  /* =======================================================
-     WISHLIST STATUS + ACTION MESSAGE
-  ======================================================= */
-
-  useEffect(() => {
-    if (!productId) {
-      return;
-    }
-
-    let cancelled = false;
-
-    void isWishlisted(productId)
-      .then((value) => {
-        if (!cancelled) {
-          setWishlisted(value);
-        }
-      })
-      .catch(() => {
-        // Guest users are allowed to view the product page.
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [productId]);
-
-  useEffect(() => {
-    if (!actionMessage) {
-      return;
-    }
-
-    const timer = window.setTimeout(
-      () => setActionMessage(null),
-      2600
-    );
-
-    return () =>
-      window.clearTimeout(timer);
-  }, [actionMessage]);
-
-  /* =======================================================
-     SELECTED COLOR
-  ======================================================= */
-
-  const selectedColor =
+  const selectedColor:
+    | ApiColor
+    | null =
     activeColors[
       selectedColorIndex
     ] ||
@@ -368,20 +1440,30 @@ export default function ProductDetails({
       product
     );
 
+  const colorId =
+    getId(
+      selectedColor
+    );
+
   /* =======================================================
      IMAGES
   ======================================================= */
 
   const images =
-    useMemo(() => {
+    useMemo<
+      GalleryImage[]
+    >(() => {
       const colorImages =
         Array.isArray(
-          selectedColor?.images
+          selectedColor
+            ?.images
         )
           ? selectedColor.images.filter(
-              (image) =>
+              (
+                image
+              ) =>
                 Boolean(
-                  image?.url
+                  image.url
                 )
             )
           : [];
@@ -392,57 +1474,81 @@ export default function ProductDetails({
       ) {
         const defaultImage =
           colorImages.find(
-            (image) =>
-              image?.isDefault ===
+            (
+              image
+            ) =>
+              image.isDefault ===
               true
           );
 
         return [
           ...(defaultImage
-            ? [defaultImage]
+            ? [
+                defaultImage,
+              ]
             : []),
 
           ...colorImages.filter(
-            (image) =>
+            (
+              image
+            ) =>
               image !==
               defaultImage
           ),
-        ];
-      }
+        ].map(
+          (
+            image
+          ) => ({
+            url:
+              String(
+                image.url ||
+                  ""
+              ),
 
-      /*
-       * Fallback
-       */
+            publicId:
+              image.publicId,
+
+            isDefault:
+              image.isDefault,
+          })
+        );
+      }
 
       return getProductImageUrls(
         product
       ).map(
-        (url) => ({
+        (
+          url
+        ) => ({
           url,
         })
       );
     }, [
-      product,
       selectedColor,
+      product,
     ]);
 
   /* =======================================================
      SIZES
   ======================================================= */
 
-  const sizes =
+  const sizes:
+    ApiSize[] =
     useMemo(() => {
       if (
         !Array.isArray(
-          selectedColor?.sizes
+          selectedColor
+            ?.sizes
         )
       ) {
         return [];
       }
 
       return selectedColor.sizes.filter(
-        (size) =>
-          size?.isActive !==
+        (
+          size
+        ) =>
+          size.isActive !==
           false
       );
     }, [
@@ -458,119 +1564,42 @@ export default function ProductDetails({
       : undefined;
 
   /* =======================================================
-     TOTAL STOCK
-  ======================================================= */
-
-  const totalStock =
-    activeColors.reduce(
-      (
-        total,
-        color
-      ) => {
-        const colorSizes =
-          Array.isArray(
-            color?.sizes
-          )
-            ? color.sizes
-            : [];
-
-        return (
-          total +
-          colorSizes.reduce(
-            (
-              sum,
-              size
-            ) => {
-              if (
-                size
-                  ?.isActive ===
-                false
-              ) {
-                return sum;
-              }
-
-              return (
-                sum +
-                Math.max(
-                  0,
-                  Number(
-                    size
-                      ?.stock ||
-                      0
-                  )
-                )
-              );
-            },
-            0
-          )
-        );
-      },
-      0
-    );
-
-  /* =======================================================
-     CURRENT COLOR STOCK
-  ======================================================= */
-
-  const selectedColorStock =
-    sizes.reduce(
-      (
-        total,
-        size
-      ) =>
-        total +
-        Math.max(
-          0,
-          Number(
-            size?.stock ||
-              0
-          )
-        ),
-      0
-    );
-
-  /* =======================================================
-     CURRENT STOCK
-  ======================================================= */
-
-  const currentStock =
-    selectedSize
-      ? Math.max(
-          0,
-          Number(
-            selectedSize
-              ?.stock ||
-              0
-          )
-        )
-      : selectedColor
-        ? selectedColorStock
-        : totalStock;
-
-  /* =======================================================
-     NAME
-
-     Name automatically selected color se badlega.
+     TEXT
   ======================================================= */
 
   const name =
-    selectedColor
-      ?.nameProduct ||
-    getProductName(
-      product
+    String(
+      selectedColor
+        ?.nameProduct ||
+        getProductName(
+          product
+        )
     );
 
-  /* =======================================================
-     DESCRIPTION
-  ======================================================= */
+  const colorName =
+    String(
+      selectedColor
+        ?.nameColor ||
+        ""
+    );
+
+  const slug =
+    String(
+      selectedColor
+        ?.slugProduct ||
+        currentSlug ||
+        ""
+    );
 
   const shortDescription =
-    selectedColor
-      ?.shortDescription ||
-    product.shortDescription ||
-    "";
+    String(
+      selectedColor
+        ?.shortDescription ||
+        product.shortDescription ||
+        ""
+    );
 
-  const descriptionHtml =
+  const description =
     cleanDescriptionHtml(
       selectedColor
         ?.description ||
@@ -581,547 +1610,564 @@ export default function ProductDetails({
      PRICES
   ======================================================= */
 
-  const basePrices =
-    getProductPrices(
-      product
-    );
+  const showPrice =
+    positiveNumber(
+      field(
+        selectedSize,
+        "showPrice"
+      ),
 
-  const sellingPrice =
-    firstNumber(
-      selectedSize
-        ?.showPrice,
+      field(
+        selectedColor,
+        "showPrice"
+      ),
 
-      selectedSize
-        ?.discountedPrice,
+      field(
+        selectedSize,
+        "sellingPrice"
+      ),
 
-      selectedSize
-        ?.salePrice,
+      field(
+        selectedColor,
+        "sellingPrice"
+      ),
 
-      selectedSize
-        ?.sellingPrice,
+      field(
+        selectedSize,
+        "salePrice"
+      ),
 
-      selectedSize?.price,
+      field(
+        selectedColor,
+        "salePrice"
+      ),
 
-      selectedColor
-        ?.showPrice,
+      field(
+        selectedSize,
+        "price"
+      ),
 
-      selectedColor
-        ?.discountedPrice,
+      field(
+        selectedColor,
+        "price"
+      ),
 
-      selectedColor
-        ?.salePrice,
+      field(
+        product,
+        "showPrice"
+      ),
 
-      selectedColor
-        ?.sellingPrice,
+      field(
+        product,
+        "sellingPrice"
+      ),
 
-      selectedColor?.price,
-
-      basePrices.sellingPrice
+      field(
+        product,
+        "price"
+      )
     ) ?? 0;
 
-  const comparePrice =
-    firstNumber(
-      selectedSize
-        ?.compareAtPrice,
+  const originalPrice =
+    Math.max(
+      showPrice,
 
-      selectedSize
-        ?.actualPrice,
+      positiveNumber(
+        field(
+          selectedSize,
+          "originalPrice"
+        ),
 
-      selectedSize
-        ?.originalPrice,
+        field(
+          selectedColor,
+          "originalPrice"
+        ),
 
-      selectedSize?.mrp,
+        field(
+          selectedSize,
+          "mrp"
+        ),
 
-      selectedColor
-        ?.compareAtPrice,
+        field(
+          selectedColor,
+          "mrp"
+        ),
 
-      selectedColor
-        ?.actualPrice,
+        field(
+          product,
+          "originalPrice"
+        ),
 
-      selectedColor
-        ?.originalPrice,
+        field(
+          product,
+          "mrp"
+        ),
 
-      selectedColor?.mrp,
+        showPrice
+      ) ?? showPrice
+    );
 
-      basePrices.actualPrice
-    ) ??
-    sellingPrice;
+  const discountAmount =
+    originalPrice >
+    showPrice
+      ? originalPrice -
+        showPrice
+      : 0;
 
-  const actualPrice =
-    comparePrice >
-    sellingPrice
-      ? comparePrice
-      : sellingPrice;
-
-  const discount =
-    actualPrice >
-      sellingPrice &&
-    actualPrice >
+  const discountPercent =
+    originalPrice >
+      0 &&
+    discountAmount >
       0
       ? Math.round(
-          ((actualPrice -
-            sellingPrice) /
-            actualPrice) *
+          (
+            discountAmount /
+            originalPrice
+          ) *
             100
         )
       : 0;
 
   /* =======================================================
-     SELECT COLOR
-
-     ⭐ MAIN FIX
-
-     Color select
-       ↓
-     local state update
-       ↓
-     color.slugProduct
-       ↓
-     router.push()
-       ↓
-     browser URL changes
+     STOCK
   ======================================================= */
 
-  const selectColor = (
-    index: number
-  ) => {
-    const color =
-      activeColors[
-        index
-      ];
-
-    if (!color) {
-      return;
-    }
-
-    /* LOCAL UI UPDATE */
-
-    setSelectedColorIndex(
-      index
-    );
-
-    setSelectedSizeIndex(
-      null
-    );
-
-    setActiveImageIndex(
+  const totalColorStock =
+    sizes.reduce(
+      (
+        total,
+        size
+      ) =>
+        total +
+        Math.max(
+          0,
+          Number(
+            size.stock ||
+              0
+          )
+        ),
       0
     );
 
-    setQuantity(
-      1
+  const currentStock =
+    selectedSize
+      ? Math.max(
+          0,
+          Number(
+            selectedSize.stock ||
+              0
+          )
+        )
+      : totalColorStock;
+
+  /* =======================================================
+     CATALOG PRODUCT
+  ======================================================= */
+
+  const catalogProduct:
+    CatalogProduct =
+    useMemo(() => {
+      const normalizedSizes =
+        sizes
+          .map(
+            (
+              size
+            ): CatalogSize | null => {
+              const id =
+                getId(
+                  size
+                );
+
+              if (!id) {
+                return null;
+              }
+
+              const sizePrice =
+                positiveNumber(
+                  field(
+                    size,
+                    "showPrice"
+                  ),
+
+                  field(
+                    size,
+                    "sellingPrice"
+                  ),
+
+                  field(
+                    selectedColor,
+                    "showPrice"
+                  ),
+
+                  showPrice
+                ) ??
+                showPrice;
+
+              const sizeOriginal =
+                Math.max(
+                  sizePrice,
+
+                  positiveNumber(
+                    field(
+                      size,
+                      "originalPrice"
+                    ),
+
+                    field(
+                      size,
+                      "mrp"
+                    ),
+
+                    field(
+                      selectedColor,
+                      "originalPrice"
+                    ),
+
+                    originalPrice
+                  ) ??
+                    sizePrice
+                );
+
+              return {
+                id,
+
+                label:
+                  String(
+                    size.size ||
+                      size.name ||
+                      "Size"
+                  ),
+
+                stock:
+                  Math.max(
+                    0,
+                    Number(
+                      size.stock ||
+                        0
+                    )
+                  ),
+
+                showPrice:
+                  sizePrice,
+
+                originalPrice:
+                  sizeOriginal,
+              };
+            }
+          )
+          .filter(
+            (
+              size
+            ): size is CatalogSize =>
+              Boolean(size)
+          );
+
+      return {
+        variantKey:
+          `${productId}:${colorId}`,
+
+        productId,
+
+        colorId,
+
+        name,
+
+        slug,
+
+        colorName,
+
+        image1:
+          images[0]
+            ?.url ||
+          "",
+
+        image2:
+          images[1]
+            ?.url ||
+          images[0]
+            ?.url ||
+          "",
+
+        showPrice,
+
+        originalPrice,
+
+        discountAmount,
+
+        discountPercent,
+
+        categorySlugs:
+          getProductCategorySlugs(
+            product
+          ),
+
+        sizes:
+          normalizedSizes,
+
+        isFeatured:
+          product.isFeatured ===
+          true,
+
+        isNewLaunch:
+          product.isNewLaunch ===
+          true,
+      };
+    }, [
+      sizes,
+      selectedColor,
+      showPrice,
+      originalPrice,
+      productId,
+      colorId,
+      name,
+      slug,
+      colorName,
+      images,
+      discountAmount,
+      discountPercent,
+      product,
+    ]);
+
+  const wished =
+    commerce.isWishlisted(
+      catalogProduct
     );
 
-    /* =====================================================
-       URL SLUG UPDATE
-    ===================================================== */
+  const wishlistBusy =
+    commerce.isWishlistBusy(
+      catalogProduct
+    );
 
-    const nextSlug =
-      String(
-        color.slugProduct ||
-          ""
-      ).trim();
+  /* =======================================================
+     COLOR SELECT
+  ======================================================= */
 
-    if (
-      nextSlug &&
-      nextSlug !==
-        currentSlug
-    ) {
-      router.push(
-        `/product/${encodeURIComponent(
-          nextSlug
-        )}`,
-        {
-          scroll: false,
-        }
+  const selectColor =
+    (
+      index: number
+    ) => {
+      const color =
+        activeColors[
+          index
+        ];
+
+      if (!color) {
+        return;
+      }
+
+      setSelectedColorIndex(
+        index
       );
-    }
-  };
 
-  /* =======================================================
-     SELECT SIZE
-  ======================================================= */
+      setSelectedSizeIndex(
+        null
+      );
 
-  const selectSize = (
-    index: number
-  ) => {
-    const size =
-      sizes[index];
+      setQuantity(1);
 
-    if (
-      !size ||
-      size.isActive ===
-        false ||
-      Number(
-        size.stock ||
-          0
-      ) <= 0
-    ) {
-      return;
-    }
-
-    setSelectedSizeIndex(
-      index
-    );
-
-    setQuantity(
-      1
-    );
-  };
-
-  /* =======================================================
-     ADD TO CART / WISHLIST
-  ======================================================= */
-
-  const showActionMessage = (
-    text: string,
-    type: "success" | "error" =
-      "success"
-  ) => {
-    setActionMessage({ text, type });
-  };
-
-  const handleAddToBag =
-    async () => {
-      if (cartBusy) {
-        return;
-      }
-
-      const colorId =
+      const nextSlug =
         String(
-          selectedColor?._id ||
-            selectedColor?.id ||
+          color.slugProduct ||
             ""
+        ).trim();
+
+      if (
+        nextSlug &&
+        nextSlug !==
+          currentSlug
+      ) {
+        router.push(
+          `/product/${encodeURIComponent(
+            nextSlug
+          )}`,
+          {
+            scroll:
+              false,
+          }
         );
-
-      const sizeId =
-        String(
-          selectedSize?._id ||
-            selectedSize?.id ||
-            ""
-        );
-
-      if (!productId) {
-        showActionMessage(
-          "Product ID is missing.",
-          "error"
-        );
-        return;
-      }
-
-      if (!colorId) {
-        showActionMessage(
-          "Please select a product color.",
-          "error"
-        );
-        return;
-      }
-
-      if (!sizeId) {
-        showActionMessage(
-          "Please select a size.",
-          "error"
-        );
-        return;
-      }
-
-      try {
-        setCartBusy(true);
-
-        await addToCart({
-          productId,
-          colorId,
-          sizeId,
-          quantity,
-        });
-
-        showActionMessage(
-          "Product added to cart."
-        );
-      } catch (error) {
-        if (
-          error instanceof ApiError &&
-          error.status === 401
-        ) {
-          requestLogin();
-          showActionMessage(
-            "Please login to add products to cart.",
-            "error"
-          );
-        } else {
-          showActionMessage(
-            error instanceof Error
-              ? error.message
-              : "Unable to add product to cart.",
-            "error"
-          );
-        }
-      } finally {
-        setCartBusy(false);
       }
     };
 
-  const handleWishlist =
-    async () => {
+  /* =======================================================
+     SIZE SELECT
+  ======================================================= */
+
+  const selectSize =
+    (
+      index: number
+    ) => {
+      const size =
+        sizes[
+          index
+        ];
+
       if (
-        wishlistBusy ||
-        !productId
+        !size ||
+        Number(
+          size.stock ||
+            0
+        ) <= 0
       ) {
         return;
       }
 
-      try {
-        setWishlistBusy(true);
+      setSelectedSizeIndex(
+        index
+      );
 
-        const colorId =
-          String(
-            selectedColor?._id ||
-              selectedColor?.id ||
-              ""
-          );
-
-        const sizeId =
-          String(
-            selectedSize?._id ||
-              selectedSize?.id ||
-              ""
-          );
-
-        await addToWishlist(
-          productId,
-          {
-            colorId:
-              colorId || null,
-            sizeId:
-              sizeId || null,
-          }
-        );
-
-        setWishlisted(true);
-        showActionMessage(
-          "Product added to wishlist."
-        );
-      } catch (error) {
-        if (
-          error instanceof ApiError &&
-          error.status === 401
-        ) {
-          requestLogin();
-          showActionMessage(
-            "Please login to use wishlist.",
-            "error"
-          );
-        } else {
-          showActionMessage(
-            error instanceof Error
-              ? error.message
-              : "Unable to update wishlist.",
-            "error"
-          );
-        }
-      } finally {
-        setWishlistBusy(false);
-      }
+      setQuantity(1);
     };
 
   /* =======================================================
-     RENDER
+     ADD TO BAG
   ======================================================= */
+
+  const addToBag =
+    async () => {
+      if (
+        sizes.length >
+          0 &&
+        !selectedSize
+      ) {
+        return;
+      }
+
+      const sizeId =
+        getId(
+          selectedSize
+        );
+
+      if (
+        !productId ||
+        !colorId ||
+        !sizeId
+      ) {
+        return;
+      }
+
+      await commerce.addVariantToCart(
+        {
+          productId,
+
+          colorId,
+
+          sizeId,
+
+          name,
+
+          colorName,
+
+          sizeLabel:
+            String(
+              selectedSize
+                ?.size ||
+                selectedSize
+                  ?.name ||
+                ""
+            ),
+
+          image:
+            images[0]
+              ?.url,
+
+          quantity,
+        }
+      );
+    };
 
   return (
     <main
       className="
         min-h-screen
+
         bg-white
-        text-[#292526]
+
+        text-[#211A18]
       "
     >
-      {actionMessage && (
-        <div
-          className={`
-            fixed left-1/2 top-5 z-[260]
-            -translate-x-1/2
-            rounded-full px-5 py-3
-            text-[11px] font-semibold text-white
-            shadow-xl
-            ${
-              actionMessage.type === "success"
-                ? "bg-[#18834B]"
-                : "bg-[#B42318]"
-            }
-          `}
-          role="status"
-        >
-          {actionMessage.text}
-        </div>
-      )}
+      {/* ===================================================
+          PRODUCT FIRST
+      =================================================== */}
 
       <section
         className="
           mx-auto
 
           grid
+
           w-full
-          max-w-[1180px]
+          max-w-[1260px]
 
           grid-cols-1
-          gap-8
 
-          px-4
+          gap-7
+
+          px-3
           pb-12
-          pt-8
+          pt-4
 
-          md:px-6
+          sm:px-5
+          sm:pt-7
 
-          lg:grid-cols-[minmax(0,520px)_minmax(0,1fr)]
+          lg:grid-cols-[minmax(0,650px)_minmax(350px,1fr)]
           lg:gap-12
+          lg:px-6
+          lg:pb-20
+          lg:pt-10
         "
       >
-        {/* =================================================
-            PRODUCT IMAGE
-        ================================================= */}
-
-        <div>
-          <div
-            className="
-              relative
-
-              aspect-[4/5]
-
-              overflow-hidden
-
-              rounded-xl
-
-              bg-[#f3f3f3]
-            "
-          >
-            {images.length >
-            0 ? (
-              <img
-                src={
-                  images[
-                    Math.min(
-                      activeImageIndex,
-                      images.length -
-                        1
-                    )
-                  ]?.url
-                }
-                alt={
-                  name
-                }
-                className="
-                  h-full
-                  w-full
-                  object-cover
-                "
-              />
-            ) : (
-              <div
-                className="
-                  grid
-                  h-full
-                  place-items-center
-
-                  text-sm
-                  text-black/35
-                "
-              >
-                No Product Image
-              </div>
-            )}
-          </div>
-
-          {/* IMAGE THUMBNAILS */}
-
-          {images.length >
-            1 && (
-            <div
-              className="
-                mt-3
-
-                flex
-                gap-3
-
-                overflow-x-auto
-
-                pb-1
-              "
-            >
-              {images.map(
-                (
-                  image,
-                  index
-                ) => (
-                  <button
-                    key={`${("publicId" in image && image.publicId) || image.url}-${index}`}
-                    type="button"
-                    onClick={() =>
-                      setActiveImageIndex(
-                        index
-                      )
-                    }
-                    className={`
-                      h-20
-                      w-16
-                      shrink-0
-
-                      overflow-hidden
-
-                      rounded-lg
-
-                      border-2
-
-                      ${
-                        activeImageIndex ===
-                        index
-                          ? "border-[#8C1839]"
-                          : "border-transparent"
-                      }
-                    `}
-                  >
-                    <img
-                      src={
-                        image.url
-                      }
-                      alt={`${name} ${
-                        index + 1
-                      }`}
-                      className="
-                        h-full
-                        w-full
-                        object-cover
-                      "
-                    />
-                  </button>
-                )
-              )}
-            </div>
-          )}
-        </div>
+        <ProductGallery
+          images={
+            images
+          }
+          name={
+            name
+          }
+          wished={
+            wished
+          }
+          wishlistBusy={
+            wishlistBusy
+          }
+          onBack={() => {
+            router.back();
+          }}
+          onToggleWishlist={() => {
+            void commerce.toggleWishlist(
+              catalogProduct
+            );
+          }}
+        />
 
         {/* =================================================
-            RIGHT DETAILS
+            DETAILS
         ================================================= */}
 
         <div
           className="
-            pt-2
+            min-w-0
+
+            px-1
+
+            lg:sticky
+            lg:top-[110px]
+            lg:self-start
           "
         >
-          {/* BADGES */}
+          {/* FLAGS */}
 
           <div
             className="
               flex
-              flex-wrap
               gap-2
 
               text-[9px]
-              font-semibold
+              font-bold
               uppercase
-              tracking-[0.14em]
-              text-[#8C1839]
+
+              tracking-[0.15em]
+
+              text-[#B31345]
             "
           >
             {product.isNewLaunch && (
@@ -1137,32 +2183,39 @@ export default function ProductDetails({
             )}
           </div>
 
-          {/* NAME */}
+          {/* TITLE */}
 
           <h1
             className="
-              mt-3
+              mt-2
 
-              text-2xl
+              text-[22px]
               font-semibold
               leading-tight
-              text-[#211A18]
 
-              md:text-3xl
+              text-black
+
+              sm:text-[26px]
+
+              lg:text-[30px]
             "
           >
-            {name}
+            {
+              name
+            }
           </h1>
+
+          {/* SHORT DESCRIPTION */}
 
           {shortDescription && (
             <p
               className="
-                mt-4
-                max-w-xl
+                mt-3
 
-                text-sm
-                leading-6
-                text-[#211A18]/60
+                text-[12px]
+                leading-5
+
+                text-black/50
               "
             >
               {
@@ -1177,60 +2230,68 @@ export default function ProductDetails({
 
           <div
             className="
-              mt-6
+              mt-5
 
               flex
               flex-wrap
               items-center
-              gap-3
+
+              gap-2.5
             "
           >
-            <span
+            <strong
               className="
-                text-[24px]
-                font-semibold
-                text-[#211A18]
+                text-[22px]
+
+                text-black
               "
             >
               ₹
-              {sellingPrice.toLocaleString(
+              {showPrice.toLocaleString(
                 "en-IN"
               )}
-            </span>
+            </strong>
 
-            {actualPrice >
-              sellingPrice && (
-              <>
-                <span
-                  className="
-                    text-[14px]
-                    text-[#211A18]/35
-                    line-through
-                  "
-                >
-                  ₹
-                  {actualPrice.toLocaleString(
-                    "en-IN"
-                  )}
-                </span>
+            {originalPrice >
+              showPrice && (
+              <span
+                className="
+                  text-[12px]
 
-                <span
-                  className="
-                    rounded-full
+                  text-black/35
 
-                    bg-[#F8E5E8]
+                  line-through
+                "
+              >
+                ₹
+                {originalPrice.toLocaleString(
+                  "en-IN"
+                )}
+              </span>
+            )}
 
-                    px-3
-                    py-1.5
+            {discountPercent >
+              0 && (
+              <span
+                className="
+                  rounded-full
 
-                    text-[9px]
-                    font-semibold
-                    text-[#8C1839]
-                  "
-                >
-                  {discount}% OFF
-                </span>
-              </>
+                  bg-[#F8E7EC]
+
+                  px-2.5
+                  py-1
+
+                  text-[9px]
+                  font-bold
+
+                  text-[#B31345]
+                "
+              >
+                {
+                  discountPercent
+                }
+                % OFF
+              </span>
             )}
           </div>
 
@@ -1242,12 +2303,12 @@ export default function ProductDetails({
             0 && (
             <div
               className="
-                mt-8
+                mt-7
               "
             >
-              <div
+              <p
                 className="
-                  text-sm
+                  text-[11px]
                   font-semibold
                 "
               >
@@ -1256,23 +2317,31 @@ export default function ProductDetails({
                 <span
                   className="
                     font-normal
-                    text-black/55
+
+                    text-black/50
                   "
                 >
                   {
-                    selectedColor
-                      ?.nameColor
+                    colorName ||
+                    "Default"
                   }
                 </span>
-              </div>
+              </p>
 
               <div
                 className="
-                  mt-4
+                  mt-3
 
                   flex
-                  flex-wrap
-                  gap-3
+                  gap-2
+
+                  overflow-x-auto
+
+                  pb-1
+
+                  [scrollbar-width:none]
+
+                  [&::-webkit-scrollbar]:hidden
                 "
               >
                 {activeColors.map(
@@ -1280,29 +2349,36 @@ export default function ProductDetails({
                     color,
                     index
                   ) => {
+                    const colorImages =
+                      Array.isArray(
+                        color.images
+                      )
+                        ? color.images.filter(
+                            (
+                              image
+                            ) =>
+                              Boolean(
+                                image.url
+                              )
+                          )
+                        : [];
+
                     const image =
-                      color.images?.find(
+                      colorImages.find(
                         (
                           item
                         ) =>
-                          item.isDefault
-                      )?.url ||
-                      color.images?.[0]
-                        ?.url;
-
-                    const hex =
-                      (
-                        color as ApiColor & {
-                          hex?: string;
-                        }
-                      ).hex;
+                          item.isDefault ===
+                          true
+                      ) ||
+                      colorImages[0];
 
                     return (
                       <button
                         key={
-                          color._id ||
-                          color.slugProduct ||
-                          color.slugColor ||
+                          getId(
+                            color
+                          ) ||
                           index
                         }
                         type="button"
@@ -1311,13 +2387,14 @@ export default function ProductDetails({
                             index
                           )
                         }
-                        title={
-                          color.nameProduct ||
-                          color.nameColor
-                        }
                         className="
-                          w-[76px]
-                          text-center
+                          w-[62px]
+
+                          flex-none
+
+                          cursor-pointer
+
+                          text-left
                         "
                       >
                         <div
@@ -1326,75 +2403,53 @@ export default function ProductDetails({
 
                             overflow-hidden
 
-                            rounded-lg
+                            rounded-[8px]
 
                             border-2
-
-                            transition
 
                             ${
                               selectedColorIndex ===
                               index
                                 ? "border-[#211A18]"
-                                : "border-transparent hover:border-black/20"
+                                : "border-transparent"
                             }
                           `}
                         >
-                          {image ? (
+                          {image
+                            ?.url ? (
                             <img
                               src={
-                                image
+                                image.url
                               }
                               alt={
-                                color.nameProduct ||
                                 color.nameColor ||
                                 name
                               }
                               className="
                                 h-full
                                 w-full
+
                                 object-cover
                               "
                             />
-                          ) : (
-                            <div
-                              className="
-                                grid
-                                h-full
-                                place-items-center
-
-                                bg-[#f5f2ef]
-                              "
-                            >
-                              <span
-                                className="
-                                  h-8
-                                  w-8
-
-                                  rounded-full
-                                  border
-                                "
-                                style={{
-                                  backgroundColor:
-                                    hex ||
-                                    "#ddd",
-                                }}
-                              />
-                            </div>
-                          )}
+                          ) : null}
                         </div>
 
                         <span
                           className="
                             mt-1
+
                             block
                             truncate
 
-                            text-[10px]
+                            text-[8px]
+
+                            text-black/50
                           "
                         >
                           {
-                            color.nameColor
+                            color.nameColor ||
+                            "Default"
                           }
                         </span>
                       </button>
@@ -1406,24 +2461,24 @@ export default function ProductDetails({
           )}
 
           {/* =================================================
-              SIZE
+              SIZES
           ================================================= */}
 
           {sizes.length >
             0 && (
             <div
               className="
-                mt-8
+                mt-7
               "
             >
-              <div
+              <p
                 className="
-                  text-sm
+                  text-[11px]
                   font-semibold
                 "
               >
                 Select Size
-              </div>
+              </p>
 
               <div
                 className="
@@ -1431,7 +2486,8 @@ export default function ProductDetails({
 
                   flex
                   flex-wrap
-                  gap-3
+
+                  gap-2
                 "
               >
                 {sizes.map(
@@ -1448,8 +2504,10 @@ export default function ProductDetails({
                     return (
                       <button
                         key={
-                          size._id ||
-                          `${size.size || size.name}-${index}`
+                          getId(
+                            size
+                          ) ||
+                          index
                         }
                         type="button"
                         disabled={
@@ -1461,36 +2519,36 @@ export default function ProductDetails({
                           )
                         }
                         className={`
-                          min-w-12
+                          min-w-[48px]
 
-                          rounded-lg
+                          cursor-pointer
+
+                          rounded-[8px]
 
                           border
 
-                          px-4
-                          py-3
+                          px-3
+                          py-2.5
 
-                          text-xs
+                          text-[11px]
                           font-semibold
 
                           ${
                             selectedSizeIndex ===
                             index
                               ? "border-[#211A18] bg-[#211A18] text-white"
-                              : "border-black/20"
+                              : "border-black/20 bg-white text-black"
                           }
 
                           ${
                             disabled
-                              ? "cursor-not-allowed opacity-30 line-through"
-                              : ""
+                              ? "cursor-not-allowed bg-black/5 text-black/20 line-through"
+                              : "hover:border-[#B31345] hover:text-[#B31345]"
                           }
                         `}
                       >
-                        {
-                          size.size ||
-                          size.name
-                        }
+                        {size.size ||
+                          size.name}
                       </button>
                     );
                   }
@@ -1501,152 +2559,243 @@ export default function ProductDetails({
 
           {/* STOCK */}
 
-          <div
-            className="
-              mt-7
-              text-sm
-            "
+          <p
+            className={`
+              mt-5
+
+              text-[11px]
+              font-medium
+
+              ${
+                currentStock >
+                0
+                  ? "text-green-700"
+                  : "text-red-600"
+              }
+            `}
           >
             {currentStock >
-            0 ? (
-              <span
-                className="
-                  text-green-700
-                "
-              >
-                In Stock (
-                {currentStock})
-              </span>
-            ) : (
-              <span
-                className="
-                  text-red-600
-                "
-              >
-                Out of Stock
-              </span>
-            )}
-          </div>
+            0
+              ? `In Stock (${currentStock})`
+              : "Out of Stock"}
+          </p>
 
-          {/* QUANTITY + CART + WISHLIST */}
+          {/* =================================================
+              ACTIONS
+
+              Mobile / Tablet:
+              quantity + add to bag
+
+              Wishlist already image top-right.
+
+              Desktop:
+              quantity + add to bag + wishlist
+          ================================================= */}
 
           <div
             className="
-              mt-6
+              mt-5
+
               grid
-              grid-cols-[110px_minmax(0,1fr)_48px]
-              gap-3
+
+              grid-cols-[92px_minmax(0,1fr)]
+
+              gap-2
+
+              lg:grid-cols-[92px_minmax(0,1fr)_46px]
             "
           >
+            {/* QUANTITY */}
+
             <div
               className="
-                flex h-12
-                items-center justify-between
-                rounded-lg
-                border border-black/40
-                px-4
+                flex
+
+                h-11
+
+                items-center
+                justify-between
+
+                rounded-[8px]
+
+                border
+                border-black/20
+
+                px-3
               "
             >
               <button
                 type="button"
                 onClick={() =>
                   setQuantity(
-                    (value) =>
+                    (
+                      current
+                    ) =>
                       Math.max(
                         1,
-                        value - 1
+                        current -
+                          1
                       )
                   )
                 }
+                className="
+                  cursor-pointer
+                "
               >
                 −
               </button>
 
-              <strong>
-                {quantity}
+              <strong
+                className="
+                  text-[11px]
+                "
+              >
+                {
+                  quantity
+                }
               </strong>
 
               <button
                 type="button"
                 disabled={
+                  currentStock <=
+                    0 ||
                   quantity >=
-                    currentStock ||
-                  currentStock <= 0
+                    currentStock
                 }
                 onClick={() =>
                   setQuantity(
-                    (value) =>
+                    (
+                      current
+                    ) =>
                       Math.min(
                         currentStock,
-                        value + 1
+                        current +
+                          1
                       )
                   )
                 }
+                className="
+                  cursor-pointer
+
+                  disabled:cursor-not-allowed
+                  disabled:opacity-30
+                "
               >
                 +
               </button>
             </div>
 
-            <button
-              type="button"
-              disabled={
-                cartBusy ||
-                currentStock <= 0 ||
-                (sizes.length > 0 &&
-                  !selectedSize)
-              }
-              onClick={() =>
-                void handleAddToBag()
-              }
-              className="
-                h-12 rounded-lg
-                bg-[#2F2D2D] px-5
-                text-xs font-semibold
-                uppercase text-white
-                transition
-                hover:bg-[#9D173E]
-                disabled:cursor-not-allowed
-                disabled:bg-[#aaa]
-              "
-            >
-              {cartBusy
-                ? "Adding..."
-                : currentStock <= 0
-                  ? "Out Of Stock"
-                  : sizes.length > 0 &&
-                      !selectedSize
-                    ? "Select Size"
-                    : "Add To Bag"}
-            </button>
+            {/* ADD TO BAG */}
 
             <button
               type="button"
-              aria-label="Add to wishlist"
-              disabled={wishlistBusy}
-              onClick={() =>
-                void handleWishlist()
+              disabled={
+                currentStock <=
+                  0 ||
+                (
+                  sizes.length >
+                    0 &&
+                  !selectedSize
+                )
               }
+              onClick={() => {
+                void addToBag();
+              }}
+              className="
+                h-11
+
+                cursor-pointer
+
+                rounded-[8px]
+
+                bg-[#2E2A29]
+
+                text-[10px]
+                font-bold
+                uppercase
+
+                text-white
+
+                transition-colors
+
+                hover:bg-[#B31345]
+
+                disabled:cursor-not-allowed
+                disabled:bg-black/20
+              "
+            >
+              {sizes.length >
+                  0 &&
+                !selectedSize
+                ? "Select Size"
+                : "Add To Bag"}
+            </button>
+
+            {/* DESKTOP WISHLIST */}
+
+            <button
+              type="button"
+              disabled={
+                wishlistBusy
+              }
+              onClick={() => {
+                void commerce.toggleWishlist(
+                  catalogProduct
+                );
+              }}
               className={`
-                flex h-12 w-12
-                items-center justify-center
-                rounded-lg border
-                text-xl transition
-                disabled:cursor-wait
+                hidden
+                h-11
+
+                cursor-pointer
+
+                items-center
+                justify-center
+
+                rounded-[8px]
+
+                border
+
+                text-xl
+
+                lg:flex
+
                 ${
-                  wishlisted
-                    ? "border-[#9D173E] bg-[#9D173E] text-white"
-                    : "border-[#9D173E]/40 bg-white text-[#9D173E] hover:bg-[#9D173E] hover:text-white"
+                  wished
+                    ? "border-[#B31345] bg-[#B31345] text-white"
+                    : "border-[#B31345]/40 bg-white text-[#B31345]"
                 }
+
+                disabled:cursor-not-allowed
+                disabled:opacity-40
               `}
             >
-              {wishlisted ? "♥" : "♡"}
+              {wished
+                ? "♥"
+                : "♡"}
             </button>
           </div>
         </div>
       </section>
 
       {/* ===================================================
-          DESCRIPTION
+          REVIEWS SECOND
+      =================================================== */}
+
+      {productId && (
+        <ProductReviews
+          productId={
+            productId
+          }
+          productName={
+            name
+          }
+        />
+      )}
+
+      {/* ===================================================
+          DESCRIPTION THIRD
       =================================================== */}
 
       <section
@@ -1654,70 +2803,122 @@ export default function ProductDetails({
           border-t
           border-black/10
 
+          bg-white
+
           px-4
           py-12
 
-          md:px-6
+          sm:px-6
+
+          lg:py-18
         "
       >
         <div
           className="
             mx-auto
-            max-w-[1180px]
+
+            max-w-[960px]
           "
         >
-          <p
+          <div
             className="
-              text-[9px]
-              font-semibold
-              uppercase
-              tracking-[0.18em]
-              text-[#9D173E]
+              text-center
             "
           >
-            Product Information
-          </p>
+            <p
+              className="
+                text-[9px]
+                font-bold
+                uppercase
 
-          <h2
-            className="
-              mt-2
+                tracking-[0.2em]
 
-              text-2xl
-              font-semibold
-              text-[#211A18]
-            "
-          >
-            Product Description
-          </h2>
+                text-[#B31345]
+              "
+            >
+              Product Information
+            </p>
 
-          {descriptionHtml ? (
+            <h2
+              className="
+                mt-2
+
+                text-2xl
+                font-semibold
+
+                sm:text-3xl
+              "
+            >
+              Product Description
+            </h2>
+          </div>
+
+          {description ? (
             <div
               className="
-                prose
+                mx-auto
+                mt-8
 
-                mt-6
+                max-w-[880px]
 
-                max-w-4xl
-
-                text-sm
+                text-[13px]
                 leading-7
-                text-[#554A45]
+
+                text-[#39322F]
+
+                sm:text-[14px]
+
+                [&_h1]:my-5
+                [&_h1]:text-2xl
+                [&_h1]:font-bold
+
+                [&_h2]:my-5
+                [&_h2]:text-xl
+                [&_h2]:font-bold
+                [&_h2]:text-[#A91543]
+
+                [&_h3]:my-4
+                [&_h3]:text-lg
+                [&_h3]:font-semibold
+
+                [&_p]:my-4
+
+                [&_strong]:font-bold
+                [&_strong]:text-[#A91543]
+
+                [&_ul]:my-4
+                [&_ul]:list-disc
+                [&_ul]:pl-6
+
+                [&_ol]:my-4
+                [&_ol]:list-decimal
+                [&_ol]:pl-6
+
+                [&_li]:my-2
+
+                [&_img]:mx-auto
+                [&_img]:my-6
+                [&_img]:max-w-full
+                [&_img]:rounded-xl
               "
               dangerouslySetInnerHTML={{
                 __html:
-                  descriptionHtml,
+                  description,
               }}
             />
           ) : (
             <p
               className="
-                mt-5
+                mt-8
+
+                text-center
 
                 text-sm
-                text-black/45
+
+                text-black/40
               "
             >
-              No description
+              No product description
               available.
             </p>
           )}
@@ -1725,4 +2926,4 @@ export default function ProductDetails({
       </section>
     </main>
   );
-}   
+}

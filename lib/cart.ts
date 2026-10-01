@@ -3,92 +3,37 @@ import {
 } from "./api";
 
 /* =========================================================
-   ADD CART INPUT
+   TYPES
 ========================================================= */
 
-export type AddCartInput = {
+export type AddToCartInput = {
   productId: string;
-
   colorId: string;
-
   sizeId: string;
-
   quantity?: number;
 };
 
-/* =========================================================
-   RESPONSE
-========================================================= */
-
-type CartApiResponse = {
-  success: boolean;
-
-  message?: string;
-
+type CartCountResponse = {
   count?: number;
 
-  cart?: {
-    totalItems?: number;
+  cartCount?: number;
 
-    items?: Array<{
-      quantity?: number;
-    }>;
+  totalItems?: number;
+
+  data?: {
+    count?: number;
+
+    cartCount?: number;
+
+    totalItems?: number;
   };
 };
 
 /* =========================================================
-   GET COUNT
+   EVENTS
 ========================================================= */
 
-function getCount(
-  response: CartApiResponse
-): number | undefined {
-  if (
-    typeof response.count ===
-    "number"
-  ) {
-    return response.count;
-  }
-
-  if (
-    typeof response.cart
-      ?.totalItems ===
-    "number"
-  ) {
-    return response.cart
-      .totalItems;
-  }
-
-  if (
-    Array.isArray(
-      response.cart
-        ?.items
-    )
-  ) {
-    return response.cart!.items!.reduce(
-      (
-        total,
-        item
-      ) =>
-        total +
-        Number(
-          item.quantity ||
-            0
-        ),
-      0
-    );
-  }
-
-  return undefined;
-}
-
-/* =========================================================
-   NOTIFY HEADER
-========================================================= */
-
-function notifyCartUpdated(
-  response: CartApiResponse
-) {
+function dispatchCartUpdated() {
   if (
     typeof window ===
     "undefined"
@@ -96,19 +41,9 @@ function notifyCartUpdated(
     return;
   }
 
-  const count =
-    getCount(
-      response
-    );
-
   window.dispatchEvent(
-    new CustomEvent(
-      "hivrasoft-cart-updated",
-      {
-        detail: {
-          count,
-        },
-      }
+    new Event(
+      "hivrasoft-cart-updated"
     )
   );
 
@@ -120,18 +55,54 @@ function notifyCartUpdated(
 }
 
 /* =========================================================
+   GET CART
+========================================================= */
+
+export async function getCart() {
+  return apiFetch(
+    "/api/cart",
+    {
+      method: "GET",
+    }
+  );
+}
+
+/* =========================================================
+   GET CART COUNT
+========================================================= */
+
+export async function getCartCount(): Promise<number> {
+  const response =
+    await apiFetch<CartCountResponse>(
+      "/api/cart/count",
+      {
+        method: "GET",
+      }
+    );
+
+  return Number(
+    response?.count ??
+      response?.cartCount ??
+      response?.totalItems ??
+      response?.data?.count ??
+      response?.data?.cartCount ??
+      response?.data?.totalItems ??
+      0
+  );
+}
+
+/* =========================================================
    ADD TO CART
 ========================================================= */
 
 export async function addToCart(
-  input: AddCartInput
+  input: AddToCartInput
 ) {
   const response =
-    await apiFetch<CartApiResponse>(
+    await apiFetch(
       "/api/cart",
       {
-        method:
-          "POST",
+        method: "POST",
 
         body: {
           productId:
@@ -144,15 +115,118 @@ export async function addToCart(
             input.sizeId,
 
           quantity:
-            input.quantity ||
+            input.quantity ??
             1,
         },
       }
     );
 
-  notifyCartUpdated(
-    response
-  );
+  dispatchCartUpdated();
+
+  return response;
+}
+
+/* =========================================================
+   UPDATE ITEM
+========================================================= */
+
+export async function updateCartItem(
+  cartItemId: string,
+  quantity: number
+) {
+  const response =
+    await apiFetch(
+      `/api/cart/${encodeURIComponent(
+        cartItemId
+      )}`,
+      {
+        method: "PATCH",
+
+        body: {
+          quantity,
+        },
+      }
+    );
+
+  dispatchCartUpdated();
+
+  return response;
+}
+
+/* =========================================================
+   REMOVE ITEM
+========================================================= */
+
+export async function removeCartItem(
+  cartItemId: string
+) {
+  const response =
+    await apiFetch(
+      `/api/cart/${encodeURIComponent(
+        cartItemId
+      )}`,
+      {
+        method: "DELETE",
+      }
+    );
+
+  dispatchCartUpdated();
+
+  return response;
+}
+
+/* =========================================================
+   CLEAR CART
+========================================================= */
+
+export async function clearCart() {
+  const response =
+    await apiFetch(
+      "/api/cart",
+      {
+        method: "DELETE",
+      }
+    );
+
+  dispatchCartUpdated();
+
+  return response;
+}
+
+/* =========================================================
+   DISCOUNT CODE
+========================================================= */
+
+export async function applyDiscountCode(
+  code: string
+) {
+  const response =
+    await apiFetch(
+      "/api/cart/discount-code",
+      {
+        method: "POST",
+
+        body: {
+          code,
+        },
+      }
+    );
+
+  dispatchCartUpdated();
+
+  return response;
+}
+
+export async function removeDiscountCode() {
+  const response =
+    await apiFetch(
+      "/api/cart/discount-code",
+      {
+        method: "DELETE",
+      }
+    );
+
+  dispatchCartUpdated();
 
   return response;
 }

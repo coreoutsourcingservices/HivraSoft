@@ -14,39 +14,19 @@ export type CatalogSize = {
 };
 
 export type CatalogProduct = {
-  /*
-   * Unique card key.
-   *
-   * Same product ke multiple colors honge,
-   * isliye sirf productId unique nahi hai.
-   */
   variantKey: string;
 
   productId: string;
-
   colorId: string;
-  colorName: string;
 
   name: string;
-
-  /*
-   * IMPORTANT:
-   * Har color ka apna slugProduct.
-   *
-   * Example:
-   * beige-maternity-feeding-bra
-   * black-maternity-feeding-bra
-   */
   slug: string;
+
+  colorName: string;
 
   image1: string;
   image2: string;
 
-  /*
-   * showPrice = storefront price
-   *
-   * originalPrice = MRP / strike-through price
-   */
   showPrice: number;
   originalPrice: number;
 

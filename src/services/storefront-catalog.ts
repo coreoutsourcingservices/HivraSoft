@@ -1,4 +1,8 @@
 import {
+  API_URL,
+} from "@/lib/api";
+
+import {
   flattenCategorySubtree,
   type StorefrontCategoryNode,
 } from "@/src/services/categories";
@@ -14,17 +18,10 @@ import type {
   CatalogBanner,
   CatalogProduct,
   CatalogSize,
-} from "@/src/types/catalog";
+} from "@/types/catalog";
 
 /* =========================================================
-   GENERIC FIELD READER
-
-   Current backend has:
-   showPrice
-   originalPrice
-   discountPrice
-
-   Older TS types may not yet contain every field.
+   SAFE FIELD
 ========================================================= */
 
 function field(
@@ -33,20 +30,22 @@ function field(
 ): unknown {
   if (
     !source ||
-    typeof source !== "object"
+    typeof source !==
+      "object"
   ) {
     return undefined;
   }
 
   return (
-    source as Record<string, unknown>
+    source as Record<
+      string,
+      unknown
+    >
   )[key];
 }
 
 /* =========================================================
    POSITIVE NUMBER
-
-   Price 0 ko storefront valid price nahi maanenge.
 ========================================================= */
 
 function positiveNumber(
@@ -54,8 +53,8 @@ function positiveNumber(
 ): number | undefined {
   for (const value of values) {
     if (
-      value === undefined ||
       value === null ||
+      value === undefined ||
       value === ""
     ) {
       continue;
@@ -65,7 +64,9 @@ function positiveNumber(
       Number(value);
 
     if (
-      Number.isFinite(number) &&
+      Number.isFinite(
+        number
+      ) &&
       number > 0
     ) {
       return number;
@@ -80,27 +81,17 @@ function positiveNumber(
 ========================================================= */
 
 function getId(
-  value:
-    | {
-        _id?: string;
-        id?: string;
-      }
-    | null
-    | undefined
+  source: unknown
 ): string {
   return String(
-    value?._id ||
-      value?.id ||
-      ""
-  ).trim();
-}
-
-function getProductId(
-  product: ApiProduct
-): string {
-  return String(
-    product._id ||
-      product.id ||
+    field(
+      source,
+      "_id"
+    ) ||
+      field(
+        source,
+        "id"
+      ) ||
       ""
   ).trim();
 }
@@ -112,17 +103,26 @@ function getProductId(
 function getActiveColors(
   product: ApiProduct
 ): ApiColor[] {
+  const colors =
+    field(
+      product,
+      "colors"
+    );
+
   if (
-    !Array.isArray(
-      product.colors
-    )
+    !Array.isArray(colors)
   ) {
     return [];
   }
 
-  return product.colors.filter(
+  return (
+    colors as ApiColor[]
+  ).filter(
     (color) =>
-      color?.isActive !== false
+      field(
+        color,
+        "isActive"
+      ) !== false
   );
 }
 
@@ -133,84 +133,128 @@ function getActiveColors(
 function getActiveSizes(
   color: ApiColor
 ): ApiSize[] {
+  const sizes =
+    field(
+      color,
+      "sizes"
+    );
+
   if (
-    !Array.isArray(
-      color.sizes
-    )
+    !Array.isArray(sizes)
   ) {
     return [];
   }
 
-  return color.sizes.filter(
+  return (
+    sizes as ApiSize[]
+  ).filter(
     (size) =>
-      size?.isActive !== false
+      field(
+        size,
+        "isActive"
+      ) !== false
   );
 }
 
 /* =========================================================
-   COLOR IMAGES
+   IMAGES
 ========================================================= */
 
-function getColorImages(
-  color: ApiColor,
-  product: ApiProduct
+function getImages(
+  product: ApiProduct,
+  color: ApiColor
 ): string[] {
   const colorImages =
-    Array.isArray(color.images)
-      ? color.images
+    Array.isArray(
+      field(
+        color,
+        "images"
+      )
+    )
+      ? (
+          field(
+            color,
+            "images"
+          ) as Array<
+            Record<
+              string,
+              unknown
+            >
+          >
+        )
       : [];
 
   const defaultImage =
     colorImages.find(
       (image) =>
-        image?.isDefault === true &&
-        Boolean(image?.url)
+        image.isDefault ===
+          true &&
+        Boolean(
+          image.url
+        )
     );
 
-  const remaining =
+  const rest =
     colorImages.filter(
       (image) =>
-        Boolean(image?.url) &&
-        image !== defaultImage
+        image !==
+          defaultImage &&
+        Boolean(
+          image.url
+        )
+    );
+
+  const mainImagesRaw =
+    field(
+      product,
+      "mainImages"
     );
 
   const mainImages =
     Array.isArray(
-      product.mainImages
+      mainImagesRaw
     )
-      ? product.mainImages.filter(
+      ? (
+          mainImagesRaw as Array<
+            Record<
+              string,
+              unknown
+            >
+          >
+        ).filter(
           (image) =>
-            Boolean(image?.url)
+            Boolean(
+              image.url
+            )
         )
       : [];
 
-  const urls = [
+  const all = [
     ...(defaultImage
       ? [defaultImage]
       : []),
 
-    ...remaining,
+    ...rest,
 
     ...mainImages,
-  ]
-    .map((image) =>
-      String(
-        image?.url || ""
-      ).trim()
-    )
-    .filter(Boolean);
+  ];
 
   return Array.from(
-    new Set(urls)
+    new Set(
+      all
+        .map((image) =>
+          String(
+            image.url ||
+              ""
+          ).trim()
+        )
+        .filter(Boolean)
+    )
   );
 }
 
 /* =========================================================
    PRICE
-
-   originalPrice = MRP
-   showPrice     = selling price
-   discountPrice = saving amount
 ========================================================= */
 
 function getPrices(
@@ -218,35 +262,44 @@ function getPrices(
   color: ApiColor
 ) {
   const sizes =
-    getActiveSizes(color);
+    getActiveSizes(
+      color
+    );
 
   const pricedSize =
-    sizes.find((size) =>
-      Boolean(
-        positiveNumber(
-          field(size, "showPrice"),
+    sizes.find(
+      (size) =>
+        Boolean(
+          positiveNumber(
+            field(
+              size,
+              "showPrice"
+            ),
 
-          field(
-            size,
-            "sellingPrice"
-          ),
+            field(
+              size,
+              "sellingPrice"
+            ),
 
-          field(
-            size,
-            "salePrice"
-          ),
+            field(
+              size,
+              "salePrice"
+            ),
 
-          field(
-            size,
-            "price"
+            field(
+              size,
+              "price"
+            )
           )
         )
-      )
     );
 
   const showPrice =
     positiveNumber(
-      field(color, "showPrice"),
+      field(
+        color,
+        "showPrice"
+      ),
 
       field(
         color,
@@ -258,7 +311,10 @@ function getPrices(
         "salePrice"
       ),
 
-      field(color, "price"),
+      field(
+        color,
+        "price"
+      ),
 
       field(
         pricedSize,
@@ -301,59 +357,61 @@ function getPrices(
       )
     ) ?? 0;
 
-  const rawOriginal =
-    positiveNumber(
-      field(
-        color,
-        "originalPrice"
-      ),
-
-      field(
-        color,
-        "compareAtPrice"
-      ),
-
-      field(color, "mrp"),
-
-      field(
-        pricedSize,
-        "originalPrice"
-      ),
-
-      field(
-        pricedSize,
-        "compareAtPrice"
-      ),
-
-      field(
-        pricedSize,
-        "mrp"
-      ),
-
-      field(
-        product,
-        "originalPrice"
-      ),
-
-      field(
-        product,
-        "compareAtPrice"
-      ),
-
-      field(
-        product,
-        "mrp"
-      )
-    ) ?? showPrice;
-
   const originalPrice =
     Math.max(
       showPrice,
-      rawOriginal
+
+      positiveNumber(
+        field(
+          color,
+          "originalPrice"
+        ),
+
+        field(
+          color,
+          "compareAtPrice"
+        ),
+
+        field(
+          color,
+          "mrp"
+        ),
+
+        field(
+          pricedSize,
+          "originalPrice"
+        ),
+
+        field(
+          pricedSize,
+          "compareAtPrice"
+        ),
+
+        field(
+          pricedSize,
+          "mrp"
+        ),
+
+        field(
+          product,
+          "originalPrice"
+        ),
+
+        field(
+          product,
+          "compareAtPrice"
+        ),
+
+        field(
+          product,
+          "mrp"
+        )
+      ) ?? showPrice
     );
 
   const discountAmount =
-    originalPrice > showPrice
+    originalPrice >
+    showPrice
       ? originalPrice -
         showPrice
       : 0;
@@ -370,14 +428,17 @@ function getPrices(
 
   return {
     showPrice,
+
     originalPrice,
+
     discountAmount,
+
     discountPercent,
   };
 }
 
 /* =========================================================
-   SIZE MAPPING
+   SIZE MAP
 ========================================================= */
 
 function mapSize(
@@ -392,7 +453,7 @@ function mapSize(
     return null;
   }
 
-  const colorPrice =
+  const colorPrices =
     getPrices(
       product,
       color
@@ -400,7 +461,10 @@ function mapSize(
 
   const showPrice =
     positiveNumber(
-      field(size, "showPrice"),
+      field(
+        size,
+        "showPrice"
+      ),
 
       field(
         size,
@@ -412,9 +476,12 @@ function mapSize(
         "salePrice"
       ),
 
-      field(size, "price"),
+      field(
+        size,
+        "price"
+      ),
 
-      colorPrice.showPrice
+      colorPrices.showPrice
     ) ?? 0;
 
   const originalPrice =
@@ -432,9 +499,12 @@ function mapSize(
           "compareAtPrice"
         ),
 
-        field(size, "mrp"),
+        field(
+          size,
+          "mrp"
+        ),
 
-        colorPrice.originalPrice
+        colorPrices.originalPrice
       ) ?? showPrice
     );
 
@@ -443,8 +513,14 @@ function mapSize(
 
     label:
       String(
-        size.size ||
-          size.name ||
+        field(
+          size,
+          "size"
+        ) ||
+          field(
+            size,
+            "name"
+          ) ||
           "Size"
       ),
 
@@ -452,7 +528,11 @@ function mapSize(
       Math.max(
         0,
         Number(
-          size.stock || 0
+          field(
+            size,
+            "stock"
+          ) ||
+            0
         )
       ),
 
@@ -463,7 +543,7 @@ function mapSize(
 }
 
 /* =========================================================
-   ONE COLOR = ONE PRODUCT CARD
+   COLOR -> PRODUCT CARD
 ========================================================= */
 
 function mapColor(
@@ -471,7 +551,7 @@ function mapColor(
   color: ApiColor
 ): CatalogProduct | null {
   const productId =
-    getProductId(product);
+    getId(product);
 
   const colorId =
     getId(color);
@@ -485,8 +565,14 @@ function mapColor(
 
   const slug =
     String(
-      color.slugProduct ||
-        product.slug ||
+      field(
+        color,
+        "slugProduct"
+      ) ||
+        field(
+          product,
+          "slug"
+        ) ||
         ""
     )
       .trim()
@@ -497,19 +583,21 @@ function mapColor(
   }
 
   const images =
-    getColorImages(
-      color,
-      product
+    getImages(
+      product,
+      color
     );
 
-  const price =
+  const prices =
     getPrices(
       product,
       color
     );
 
   const sizes =
-    getActiveSizes(color)
+    getActiveSizes(
+      color
+    )
       .map((size) =>
         mapSize(
           product,
@@ -532,20 +620,29 @@ function mapColor(
 
     colorId,
 
-    colorName:
-      String(
-        color.nameColor ||
-          ""
-      ).trim(),
-
     name:
       String(
-        color.nameProduct ||
-          product.name ||
+        field(
+          color,
+          "nameProduct"
+        ) ||
+          field(
+            product,
+            "name"
+          ) ||
           "Product"
       ).trim(),
 
     slug,
+
+    colorName:
+      String(
+        field(
+          color,
+          "nameColor"
+        ) ||
+          ""
+      ).trim(),
 
     image1:
       images[0] || "",
@@ -556,16 +653,16 @@ function mapColor(
       "",
 
     showPrice:
-      price.showPrice,
+      prices.showPrice,
 
     originalPrice:
-      price.originalPrice,
+      prices.originalPrice,
 
     discountAmount:
-      price.discountAmount,
+      prices.discountAmount,
 
     discountPercent:
-      price.discountPercent,
+      prices.discountPercent,
 
     categorySlugs:
       getProductCategorySlugs(
@@ -576,18 +673,24 @@ function mapColor(
 
     isFeatured:
       Boolean(
-        product.isFeatured
+        field(
+          product,
+          "isFeatured"
+        )
       ),
 
     isNewLaunch:
       Boolean(
-        product.isNewLaunch
+        field(
+          product,
+          "isNewLaunch"
+        )
       ),
   };
 }
 
 /* =========================================================
-   PUBLIC MAPPER
+   PUBLIC PRODUCT MAPPER
 ========================================================= */
 
 export function mapProductToColorCards(
@@ -604,9 +707,9 @@ export function mapProductToColorCards(
     )
     .filter(
       (
-        card
-      ): card is CatalogProduct =>
-        Boolean(card)
+        item
+      ): item is CatalogProduct =>
+        Boolean(item)
     );
 }
 
@@ -620,52 +723,53 @@ function getProductCategoryIds(
   const result:
     string[] = [];
 
-  const push = (
-    value: unknown
-  ) => {
-    const id =
-      String(
-        value || ""
-      ).trim();
-
-    if (id) {
-      result.push(id);
-    }
-  };
-
   const categories =
-    Array.isArray(
-      product.categories
-    )
-      ? product.categories
-      : [];
+    field(
+      product,
+      "categories"
+    );
 
-  categories.forEach(
-    (category) => {
-      if (
-        typeof category ===
-        "string"
-      ) {
+  if (
+    Array.isArray(
+      categories
+    )
+  ) {
+    categories.forEach(
+      (category) => {
         if (
-          /^[a-f0-9]{24}$/i.test(
-            category
-          )
+          typeof category ===
+          "string"
         ) {
-          push(category);
+          if (
+            /^[a-f0-9]{24}$/i.test(
+              category
+            )
+          ) {
+            result.push(
+              category
+            );
+          }
+
+          return;
         }
 
-        return;
-      }
+        const id =
+          getId(
+            category
+          );
 
-      push(
-        category?._id ||
-          category?.id
-      );
-    }
-  );
+        if (id) {
+          result.push(id);
+        }
+      }
+    );
+  }
 
   const category =
-    product.category;
+    field(
+      product,
+      "category"
+    );
 
   if (category) {
     if (
@@ -677,13 +781,19 @@ function getProductCategoryIds(
           category
         )
       ) {
-        push(category);
+        result.push(
+          category
+        );
       }
     } else {
-      push(
-        category._id ||
-          category.id
-      );
+      const id =
+        getId(
+          category
+        );
+
+      if (id) {
+        result.push(id);
+      }
     }
   }
 
@@ -693,7 +803,7 @@ function getProductCategoryIds(
 }
 
 /* =========================================================
-   BELONGS TO CATEGORY/SUBTREE
+   PRODUCT BELONGS TO CATEGORY
 ========================================================= */
 
 export function productBelongsToCategory(
@@ -705,7 +815,7 @@ export function productBelongsToCategory(
       category
     );
 
-  const ids =
+  const categoryIds =
     new Set(
       subtree.map(
         (node) =>
@@ -713,7 +823,7 @@ export function productBelongsToCategory(
       )
     );
 
-  const slugs =
+  const categorySlugs =
     new Set(
       subtree.map(
         (node) =>
@@ -726,7 +836,7 @@ export function productBelongsToCategory(
       product
     ).some(
       (id) =>
-        ids.has(id)
+        categoryIds.has(id)
     )
   ) {
     return true;
@@ -736,48 +846,14 @@ export function productBelongsToCategory(
     product
   ).some(
     (slug) =>
-      slugs.has(slug)
+      categorySlugs.has(
+        slug
+      )
   );
 }
 
 /* =========================================================
-   NEW LAUNCH CHECK
-========================================================= */
-
-export function isNewLaunchProduct(
-  product: ApiProduct,
-  newLaunchCategory?:
-    StorefrontCategoryNode
-): boolean {
-  if (
-    product.isNewLaunch === true
-  ) {
-    return true;
-  }
-
-  if (
-    newLaunchCategory &&
-    productBelongsToCategory(
-      product,
-      newLaunchCategory
-    )
-  ) {
-    return true;
-  }
-
-  return getProductCategorySlugs(
-    product
-  ).some(
-    (slug) =>
-      slug ===
-        "new-launch" ||
-      slug ===
-        "new-launches"
-  );
-}
-
-/* =========================================================
-   CATEGORY BANNERS
+   CURRENT CATEGORY BANNERS
 
    NO PARENT FALLBACK.
 ========================================================= */
@@ -785,32 +861,44 @@ export function isNewLaunchProduct(
 export function getCategoryBanners(
   category: StorefrontCategoryNode,
   basePath: string,
-  slugs: string[]
+  slugParts: string[]
 ): CatalogBanner[] {
-  if (
-    !Array.isArray(
+  const images =
+    Array.isArray(
       category.images
-    ) ||
-    category.images.length ===
-      0
+    )
+      ? category.images.filter(
+          (image) =>
+            Boolean(
+              image?.url
+            )
+        )
+      : [];
+
+  if (
+    images.length ===
+    0
   ) {
     return [];
   }
 
-  const href =
-    slugs.length > 0
-      ? `${basePath}/${slugs.join(
+  const redirect =
+    slugParts.length ===
+    0
+      ? basePath
+      : `${basePath}/${slugParts.join(
           "/"
-        )}`
-      : basePath;
+        )}`;
 
-  return category.images.map(
+  return images.map(
     (
       image,
       index
     ) => ({
       image:
-        image.url,
+        String(
+          image.url
+        ),
 
       alt:
         image.alt ||
@@ -818,23 +906,22 @@ export function getCategoryBanners(
           index + 1
         }`,
 
-      redirect:
-        href,
+      redirect,
     })
   );
 }
 
 /* =========================================================
-   FIND CATEGORY RECURSIVELY
+   FIND CATEGORY ANYWHERE
 ========================================================= */
 
 export function findCategoryAnywhere(
-  tree: StorefrontCategoryNode[],
+  nodes: StorefrontCategoryNode[],
   slugs: string[]
 ):
   | StorefrontCategoryNode
   | undefined {
-  const wanted =
+  const accepted =
     new Set(
       slugs.map(
         (slug) =>
@@ -842,34 +929,129 @@ export function findCategoryAnywhere(
       )
     );
 
-  const visit = (
-    nodes: StorefrontCategoryNode[]
-  ):
-    | StorefrontCategoryNode
-    | undefined => {
-    for (
-      const node of nodes
+  for (
+    const node of nodes
+  ) {
+    if (
+      accepted.has(
+        node.slug.toLowerCase()
+      )
     ) {
-      if (
-        wanted.has(
-          node.slug.toLowerCase()
-        )
-      ) {
-        return node;
-      }
-
-      const found =
-        visit(
-          node.children
-        );
-
-      if (found) {
-        return found;
-      }
+      return node;
     }
 
-    return undefined;
-  };
+    const nested =
+      findCategoryAnywhere(
+        node.children,
+        slugs
+      );
 
-  return visit(tree);
+    if (nested) {
+      return nested;
+    }
+  }
+
+  return undefined;
+}
+
+/* =========================================================
+   NEW LAUNCH PRODUCTS API
+========================================================= */
+
+function normalizeProductsResponse(
+  payload: unknown
+): ApiProduct[] {
+  if (
+    Array.isArray(
+      payload
+    )
+  ) {
+    return payload as ApiProduct[];
+  }
+
+  if (
+    !payload ||
+    typeof payload !==
+      "object"
+  ) {
+    return [];
+  }
+
+  const object =
+    payload as Record<
+      string,
+      unknown
+    >;
+
+  if (
+    Array.isArray(
+      object.products
+    )
+  ) {
+    return object
+      .products as ApiProduct[];
+  }
+
+  if (
+    Array.isArray(
+      object.data
+    )
+  ) {
+    return object
+      .data as ApiProduct[];
+  }
+
+  if (
+    object.data &&
+    typeof object.data ===
+      "object"
+  ) {
+    const data =
+      object.data as Record<
+        string,
+        unknown
+      >;
+
+    if (
+      Array.isArray(
+        data.products
+      )
+    ) {
+      return data
+        .products as ApiProduct[];
+    }
+  }
+
+  return [];
+}
+
+export async function getNewLaunchProducts(): Promise<ApiProduct[]> {
+  const response =
+    await fetch(
+      `${API_URL}/api/products/new-launches`,
+      {
+        method: "GET",
+
+        cache:
+          "no-store",
+
+        headers: {
+          Accept:
+            "application/json",
+        },
+      }
+    );
+
+  if (!response.ok) {
+    throw new Error(
+      `Unable to load new launch products (${response.status})`
+    );
+  }
+
+  const payload =
+    await response.json();
+
+  return normalizeProductsResponse(
+    payload
+  );
 }

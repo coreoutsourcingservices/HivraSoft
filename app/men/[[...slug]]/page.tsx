@@ -7,363 +7,96 @@ import Header from "@/src/components/Header/Header";
 import MenCatalog from "@/src/components/Men/MenCatalog";
 
 import {
-  getMenBanners,
-  getMenPageDescription,
-  getMenPageTitle,
-  isValidMenPath,
-  type MenProduct,
-} from "@/src/data/men";
+  findCategoryRoot,
+  getActiveCategoryTree,
+  resolveCategoryPath,
+} from "@/src/services/categories";
 
 import {
   getActiveProducts,
-  normalizeStoreProduct,
-  type ApiProduct,
 } from "@/src/services/products";
 
-/* =========================================================
-   DYNAMIC
-========================================================= */
+import {
+  getCategoryBanners,
+  mapProductToColorCards,
+  productBelongsToCategory,
+} from "@/src/services/storefront-catalog";
 
 export const dynamic =
   "force-dynamic";
 
-/* =========================================================
-   TYPES
-========================================================= */
-
-type MenPageProps = {
+type Props = {
   params: Promise<{
     slug?: string[];
   }>;
 };
 
-/* =========================================================
-   MEN ROOT CATEGORY ALIASES
-========================================================= */
-
-const MEN_ROOT_SLUGS =
-  new Set([
-    "men",
-    "mens",
-    "menswear",
-    "male",
-  ]);
-
-/* =========================================================
-   IS MEN PRODUCT
-========================================================= */
-
-function isMenProduct(
-  product: ApiProduct
-): boolean {
-  const normalized =
-    normalizeStoreProduct(
-      product
-    );
-
-  return normalized
-    .categorySlugs
-    .some(
-      (slug) =>
-        MEN_ROOT_SLUGS.has(
-          slug
-        )
-    );
-}
-
-/* =========================================================
-   MATCH CURRENT ROUTE
-========================================================= */
-
-function matchesMenRoute(
-  product: ApiProduct,
-  category?: string,
-  subcategory?: string
-): boolean {
-  const normalized =
-    normalizeStoreProduct(
-      product
-    );
-
-  const categorySlugs =
-    normalized.categorySlugs;
-
-  /* =======================================================
-     MUST BELONG TO MEN
-  ======================================================= */
-
-  const belongsToMen =
-    categorySlugs.some(
-      (slug) =>
-        MEN_ROOT_SLUGS.has(
-          slug
-        )
-    );
-
-  if (!belongsToMen) {
-    return false;
-  }
-
-  /* =======================================================
-     /men
-  ======================================================= */
-
-  if (!category) {
-    return true;
-  }
-
-  /* =======================================================
-     /men/offers
-  ======================================================= */
-
-  if (
-    category === "offers"
-  ) {
-    return (
-      normalized.actualPrice >
-      normalized.sellingPrice
-    );
-  }
-
-  /* =======================================================
-     CATEGORY
-  ======================================================= */
-
-  if (
-    !categorySlugs.includes(
-      category
-    )
-  ) {
-    return false;
-  }
-
-  /* =======================================================
-     NO SUBCATEGORY
-  ======================================================= */
-
-  if (!subcategory) {
-    return true;
-  }
-
-  /* =======================================================
-     SUBCATEGORY
-  ======================================================= */
-
-  return categorySlugs.includes(
-    subcategory
-  );
-}
-
-/* =========================================================
-   API PRODUCT -> MEN PRODUCT
-========================================================= */
-
-function mapProductToMenProduct(
-  product: ApiProduct
-): MenProduct {
-  const normalized =
-    normalizeStoreProduct(
-      product
-    );
-
-  const hierarchy =
-    normalized
-      .categorySlugs
-      .filter(
-        (slug) =>
-          !MEN_ROOT_SLUGS.has(
-            slug
-          )
-      );
-
-  const mainCategory =
-    hierarchy[0] ||
-    "men";
-
-  const subcategories =
-    hierarchy.slice(1);
-
-  return {
-    id:
-      normalized.id,
-
-    name:
-      normalized.name,
-
-    slug:
-      normalized.slug,
-
-    image1:
-      normalized.image1,
-
-    image2:
-      normalized.image2,
-
-    actualPrice:
-      normalized.actualPrice,
-
-    discountedPrice:
-      normalized.sellingPrice,
-
-    category:
-      mainCategory,
-
-    subcategories,
-
-    onOffer:
-      normalized.actualPrice >
-      normalized.sellingPrice,
-
-    isFeatured:
-      normalized.isFeatured,
-
-    isNewLaunch:
-      normalized.isNewLaunch,
-  };
-}
-
-/* =========================================================
-   MEN PAGE
-========================================================= */
-
 export default async function MenPage({
   params,
-}: MenPageProps) {
-  const resolvedParams =
+}: Props) {
+  const resolved =
     await params;
 
   const slugParts =
-    resolvedParams.slug ??
-    [];
-
-  /* =======================================================
-     MAX:
-
-     /men
-     /men/underwear
-     /men/underwear/trunks
-  ======================================================= */
-
-  if (
-    slugParts.length >
-    2
-  ) {
-    notFound();
-  }
-
-  const category =
-    slugParts[0];
-
-  const subcategory =
-    slugParts[1];
-
-  /* =======================================================
-     URL VALIDATION
-  ======================================================= */
-
-  if (
-    !isValidMenPath(
-      category,
-      subcategory
+    (
+      resolved.slug ||
+      []
     )
-  ) {
+      .map((slug) =>
+        String(slug)
+          .trim()
+          .toLowerCase()
+      )
+      .filter(Boolean);
+
+  const tree =
+    await getActiveCategoryTree();
+
+  const menRoot =
+    findCategoryRoot(
+      tree,
+      "men"
+    );
+
+  if (!menRoot) {
     notFound();
   }
 
-  /* =======================================================
-     FETCH ACTIVE PRODUCTS
-  ======================================================= */
+  const selected =
+    resolveCategoryPath(
+      menRoot,
+      slugParts
+    );
+
+  if (!selected) {
+    notFound();
+  }
+
+  const currentCategory =
+    selected.at(-1) ||
+    menRoot;
 
   const apiProducts =
     await getActiveProducts();
 
-  /* =======================================================
-     DEBUG
-
-     Terminal me count show hoga.
-     Isse pata chalega API data aa raha hai ya nahi.
-  ======================================================= */
-
-  console.log(
-    "[MEN PAGE] Active products:",
-    apiProducts.length
-  );
-
-  /* =======================================================
-     ONLY MEN PRODUCTS
-  ======================================================= */
-
-  const menApiProducts =
-    apiProducts.filter(
-      isMenProduct
-    );
-
-  console.log(
-    "[MEN PAGE] Men products:",
-    menApiProducts.length
-  );
-
-  /* =======================================================
-     CURRENT CATEGORY PRODUCTS
-  ======================================================= */
-
   const products =
-    menApiProducts
-      .filter(
-        (product) =>
-          matchesMenRoute(
-            product,
-            category,
-            subcategory
-          )
+    apiProducts
+      .filter((product) =>
+        productBelongsToCategory(
+          product,
+          currentCategory
+        )
       )
-      .map(
-        mapProductToMenProduct
-      )
-      .filter(
-        (product) =>
-          Boolean(
-            product.id
-          ) &&
-          Boolean(
-            product.slug
-          )
+      .flatMap(
+        mapProductToColorCards
       );
 
-  console.log(
-    "[MEN PAGE] Visible products:",
-    products.length
-  );
-
-  /* =======================================================
-     BANNER
-  ======================================================= */
-
   const banners =
-    getMenBanners(
-      category,
-      subcategory
+    getCategoryBanners(
+      currentCategory,
+      "/men",
+      slugParts
     );
-
-  /* =======================================================
-     TEXT
-  ======================================================= */
-
-  const title =
-    getMenPageTitle(
-      category,
-      subcategory
-    );
-
-  const description =
-    getMenPageDescription(
-      category,
-      subcategory
-    );
-
-  /* =======================================================
-     RENDER
-  ======================================================= */
 
   return (
     <>
@@ -377,16 +110,22 @@ export default async function MenPage({
           banners
         }
         title={
-          title
+          currentCategory.name
         }
         description={
-          description
+          currentCategory.description ||
+          (
+            currentCategory.id ===
+            menRoot.id
+              ? "Explore HivraSoft men's collection."
+              : `Shop HivraSoft ${currentCategory.name}.`
+          )
         }
-        category={
-          category
+        categoryRoot={
+          menRoot
         }
-        subcategory={
-          subcategory
+        categoryPath={
+          slugParts
         }
       />
     </>
