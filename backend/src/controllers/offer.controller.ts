@@ -265,11 +265,12 @@ export function createAdminOffer(offerType: OfferType) {
 export function updateAdminOffer(offerType: OfferType) {
   return async (req: Request, res: Response) => {
     try {
-      if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      const id = req.params.id;
+      if (typeof id !== "string" || !mongoose.Types.ObjectId.isValid(id)) {
         return res.status(400).json({ success: false, message: "Invalid offer ID." });
       }
 
-      const offer = await Offer.findOne({ _id: req.params.id, offerType, isDeleted: { $ne: true } });
+      const offer = await Offer.findOne({ _id: id, offerType, isDeleted: { $ne: true } });
       if (!offer) return res.status(404).json({ success: false, message: "Offer not found." });
 
       const values = offerValues(req.body, offerType, offer);
@@ -305,11 +306,12 @@ export function updateAdminOffer(offerType: OfferType) {
 export function deleteAdminOffer(offerType: OfferType) {
   return async (req: Request, res: Response) => {
     try {
-      if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      const id = req.params.id;
+      if (typeof id !== "string" || !mongoose.Types.ObjectId.isValid(id)) {
         return res.status(400).json({ success: false, message: "Invalid offer ID." });
       }
 
-      const offer = await Offer.findOne({ _id: req.params.id, offerType, isDeleted: { $ne: true } });
+      const offer = await Offer.findOne({ _id: id, offerType, isDeleted: { $ne: true } });
       if (!offer) return res.status(404).json({ success: false, message: "Offer not found." });
 
       const values = offerValues({}, offerType, offer);
