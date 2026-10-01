@@ -1,9 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteCategoryController = exports.updateCategoryController = exports.getCategoryBySlugController = exports.getCategoryByIdController = exports.getCategoryTreeController = exports.getActiveCategoriesController = exports.getAllCategoriesController = exports.createCategoryController = void 0;
+exports.deleteCategoryController = exports.updateCategoryController = exports.getCategoryByIdController = exports.getCategoryBySlugController = exports.getCategoryTreeController = exports.getActiveCategoriesController = exports.getAllCategoriesController = exports.createCategoryController = void 0;
 const category_service_1 = require("../services/category.service");
 /* =========================================================
-   HELPER - ROUTE PARAM
+   ROUTE PARAM HELPER
 ========================================================= */
 const getRouteParam = (value, paramName) => {
     if (!value) {
@@ -22,8 +22,9 @@ const getRouteParam = (value, paramName) => {
 ========================================================= */
 const createCategoryController = async (req, res) => {
     try {
-        const { name, description, parentId, image, isActive, sortOrder, } = req.body;
-        if (!name) {
+        const { name, slug, description, parentId, images, isActive, sortOrder, } = req.body;
+        if (!name ||
+            !String(name).trim()) {
             return res
                 .status(400)
                 .json({
@@ -33,9 +34,10 @@ const createCategoryController = async (req, res) => {
         }
         const category = await (0, category_service_1.createCategory)({
             name,
+            slug,
             description,
             parentId,
-            image,
+            images,
             isActive,
             sortOrder,
         });
@@ -62,7 +64,7 @@ exports.createCategoryController = createCategoryController;
 /* =========================================================
    GET ALL CATEGORIES - ADMIN
 ========================================================= */
-const getAllCategoriesController = async (req, res) => {
+const getAllCategoriesController = async (_req, res) => {
     try {
         const categories = await (0, category_service_1.getAllCategories)();
         return res
@@ -71,6 +73,7 @@ const getAllCategoriesController = async (req, res) => {
             success: true,
             count: categories.length,
             categories,
+            data: categories,
         });
     }
     catch (error) {
@@ -88,7 +91,7 @@ exports.getAllCategoriesController = getAllCategoriesController;
 /* =========================================================
    GET ACTIVE CATEGORIES - STOREFRONT
 ========================================================= */
-const getActiveCategoriesController = async (req, res) => {
+const getActiveCategoriesController = async (_req, res) => {
     try {
         const categories = await (0, category_service_1.getActiveCategories)();
         return res
@@ -97,6 +100,7 @@ const getActiveCategoriesController = async (req, res) => {
             success: true,
             count: categories.length,
             categories,
+            data: categories,
         });
     }
     catch (error) {
@@ -113,6 +117,9 @@ const getActiveCategoriesController = async (req, res) => {
 exports.getActiveCategoriesController = getActiveCategoriesController;
 /* =========================================================
    GET CATEGORY TREE
+
+   GET /api/categories/tree
+   GET /api/categories/tree?active=true
 ========================================================= */
 const getCategoryTreeController = async (req, res) => {
     try {
@@ -123,7 +130,9 @@ const getCategoryTreeController = async (req, res) => {
             .status(200)
             .json({
             success: true,
+            count: categories.length,
             categories,
+            data: categories,
         });
     }
     catch (error) {
@@ -138,32 +147,6 @@ const getCategoryTreeController = async (req, res) => {
     }
 };
 exports.getCategoryTreeController = getCategoryTreeController;
-/* =========================================================
-   GET CATEGORY BY ID
-========================================================= */
-const getCategoryByIdController = async (req, res) => {
-    try {
-        const id = getRouteParam(req.params.id, "Category ID");
-        const category = await (0, category_service_1.getCategoryById)(id);
-        return res
-            .status(200)
-            .json({
-            success: true,
-            category,
-        });
-    }
-    catch (error) {
-        return res
-            .status(404)
-            .json({
-            success: false,
-            message: error instanceof Error
-                ? error.message
-                : "Category not found.",
-        });
-    }
-};
-exports.getCategoryByIdController = getCategoryByIdController;
 /* =========================================================
    GET CATEGORY BY SLUG
 ========================================================= */
@@ -191,6 +174,32 @@ const getCategoryBySlugController = async (req, res) => {
 };
 exports.getCategoryBySlugController = getCategoryBySlugController;
 /* =========================================================
+   GET CATEGORY BY ID
+========================================================= */
+const getCategoryByIdController = async (req, res) => {
+    try {
+        const id = getRouteParam(req.params.id, "Category ID");
+        const category = await (0, category_service_1.getCategoryById)(id);
+        return res
+            .status(200)
+            .json({
+            success: true,
+            category,
+        });
+    }
+    catch (error) {
+        return res
+            .status(404)
+            .json({
+            success: false,
+            message: error instanceof Error
+                ? error.message
+                : "Category not found.",
+        });
+    }
+};
+exports.getCategoryByIdController = getCategoryByIdController;
+/* =========================================================
    UPDATE CATEGORY
 ========================================================= */
 const updateCategoryController = async (req, res) => {
@@ -198,10 +207,10 @@ const updateCategoryController = async (req, res) => {
         const id = getRouteParam(req.params.id, "Category ID");
         const category = await (0, category_service_1.updateCategory)(id, {
             name: req.body.name,
-            description: req.body
-                .description,
+            slug: req.body.slug,
+            description: req.body.description,
             parentId: req.body.parentId,
-            image: req.body.image,
+            images: req.body.images,
             isActive: req.body.isActive,
             sortOrder: req.body.sortOrder,
         });
@@ -227,11 +236,18 @@ const updateCategoryController = async (req, res) => {
 exports.updateCategoryController = updateCategoryController;
 /* =========================================================
    DELETE CATEGORY
+
+   DELETE /api/categories/:id
+   DELETE /api/categories/:id?cascade=true
 ========================================================= */
 const deleteCategoryController = async (req, res) => {
     try {
         const id = getRouteParam(req.params.id, "Category ID");
-        const result = await (0, category_service_1.deleteCategory)(id);
+        const cascade = req.query.cascade ===
+            "true";
+        const result = await (0, category_service_1.deleteCategory)(id, {
+            cascade,
+        });
         return res
             .status(200)
             .json({
@@ -240,13 +256,20 @@ const deleteCategoryController = async (req, res) => {
         });
     }
     catch (error) {
+        const message = error instanceof Error
+            ? error.message
+            : "Unable to delete category.";
+        const statusCode = message.includes("Use cascade delete")
+            ? 409
+            : message ===
+                "Category not found."
+                ? 404
+                : 400;
         return res
-            .status(400)
+            .status(statusCode)
             .json({
             success: false,
-            message: error instanceof Error
-                ? error.message
-                : "Unable to delete category.",
+            message,
         });
     }
 };

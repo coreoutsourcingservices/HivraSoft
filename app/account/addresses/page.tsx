@@ -8,7 +8,7 @@ import {
   type FormEvent,
 } from "react";
 
-import Header from "@/components/Header/Header";
+import Header from "@/src/components/Header/Header";
 import AccountSidebar from "../components/AccountSidebar";
 
 import {
@@ -53,6 +53,9 @@ type Address = {
   phone: string;
   alternatePhone?: string;
 
+  homeNumber?: string;
+  officeNumber?: string;
+
   addressLine1: string;
   addressLine2?: string;
   landmark?: string;
@@ -83,6 +86,9 @@ type AddressForm = {
   phone: string;
   alternatePhone: string;
 
+  homeNumber: string;
+  officeNumber: string;
+
   addressLine1: string;
   addressLine2: string;
   landmark: string;
@@ -111,6 +117,9 @@ const emptyForm: AddressForm = {
   fullName: "",
   phone: "",
   alternatePhone: "",
+
+  homeNumber: "",
+  officeNumber: "",
 
   addressLine1: "",
   addressLine2: "",
@@ -340,6 +349,14 @@ export default function AddressesPage() {
         address.alternatePhone ||
         "",
 
+      homeNumber:
+        address.homeNumber ||
+        "",
+
+      officeNumber:
+        address.officeNumber ||
+        "",
+
       addressLine1:
         address.addressLine1 ||
         "",
@@ -476,6 +493,12 @@ export default function AddressesPage() {
 
             alternatePhone:
               form.alternatePhone,
+
+            homeNumber:
+              form.homeNumber,
+
+            officeNumber:
+              form.officeNumber,
 
             addressLine1:
               form.addressLine1,
@@ -1763,6 +1786,36 @@ export default function AddressesPage() {
               />
 
               <Field
+                label="Home / House Number"
+                value={
+                  form.homeNumber
+                }
+                onChange={(
+                  value
+                ) =>
+                  updateField(
+                    "homeNumber",
+                    value
+                  )
+                }
+              />
+
+              <Field
+                label="Office Number"
+                value={
+                  form.officeNumber
+                }
+                onChange={(
+                  value
+                ) =>
+                  updateField(
+                    "officeNumber",
+                    value
+                  )
+                }
+              />
+
+              <Field
                 label="Address Line 1"
                 required
                 value={
@@ -2107,7 +2160,27 @@ function AddressCard({
       1
     );
 
+  const addressNumber =
+    address.addressType === "work"
+      ? address.officeNumber
+        ? `Office No. ${address.officeNumber}`
+        : address.homeNumber
+          ? `Home No. ${address.homeNumber}`
+          : ""
+      : address.addressType === "home"
+        ? address.homeNumber
+          ? `Home No. ${address.homeNumber}`
+          : address.officeNumber
+            ? `Office No. ${address.officeNumber}`
+            : ""
+        : address.homeNumber
+          ? `Home No. ${address.homeNumber}`
+          : address.officeNumber
+            ? `Office No. ${address.officeNumber}`
+            : "";
+
   const fullAddress = [
+    addressNumber,
     address.addressLine1,
     address.addressLine2,
     address.landmark,

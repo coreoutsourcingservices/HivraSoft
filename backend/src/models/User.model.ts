@@ -15,11 +15,14 @@ export interface IUser extends Document {
   passwordHash?: string;
   email: string;
   phone: string;
+  gender: "male" | "female" | "other";
 
   role: UserRole;
 
   emailVerified: boolean;
   isActive: boolean;
+  accountStatus: "active" | "inactive" | "blocked";
+  lastActiveAt?: Date | null;
 
   avatar?: {
     url: string;
@@ -55,6 +58,13 @@ const userSchema = new Schema<IUser>(
       trim: true,
     },
 
+    gender: {
+      type: String,
+      enum: ["male", "female", "other"],
+      default: "other",
+      index: true,
+    },
+
     role: {
       type: String,
       enum: [
@@ -73,6 +83,20 @@ const userSchema = new Schema<IUser>(
     isActive: {
       type: Boolean,
       default: true,
+      index: true,
+    },
+
+    accountStatus: {
+      type: String,
+      enum: ["active", "inactive", "blocked"],
+      default: "active",
+      index: true,
+    },
+
+    lastActiveAt: {
+      type: Date,
+      default: null,
+      index: true,
     },
 
     avatar: {
@@ -91,6 +115,9 @@ const userSchema = new Schema<IUser>(
     timestamps: true,
   }
 );
+
+userSchema.index({ role: 1, createdAt: -1 });
+userSchema.index({ role: 1, accountStatus: 1, createdAt: -1 });
 
 const User: Model<IUser> =
   mongoose.models.User ||

@@ -11,6 +11,7 @@ import {
 } from "../services/auth.service";
 
 import User from "../models/User.model";
+import { trackUserActivity } from "../services/activity.service";
 
 
 
@@ -154,6 +155,11 @@ export const registerVerifyOtp =
         result.token
       );
 
+      await Promise.all([
+        trackUserActivity({ userId: String(result.user._id), type: "register" }),
+        result.user.updateOne({ $set: { lastActiveAt: new Date(), accountStatus: "active", isActive: true } }),
+      ]);
+
       return res
         .status(201)
         .json({
@@ -289,6 +295,11 @@ export const loginVerifyOtp =
         result.token
       );
 
+      await Promise.all([
+        trackUserActivity({ userId: String(result.user._id), type: "login" }),
+        result.user.updateOne({ $set: { lastActiveAt: new Date() } }),
+      ]);
+
       return res
         .status(200)
         .json({
@@ -368,6 +379,9 @@ export const getMe =
 
             phone:
               req.user.phone,
+
+            gender:
+              (req.user as any).gender || "other",
 
             role:
               req.user.role,
@@ -455,7 +469,7 @@ export const getAccountInfo = async (
         req.user._id
       )
         .select(
-          "name email phone avatar createdAt"
+          "name email phone gender avatar createdAt"
         )
         .lean();
 
@@ -492,6 +506,9 @@ export const getAccountInfo = async (
 
         phone:
           user.phone,
+
+        gender:
+          (user as any).gender || "other",
 
         avatar: {
           url:
@@ -540,174 +557,37 @@ export const updateAccountInfo = async (
   res: Response
 ) => {
   try {
-    /* =====================================================
-       AUTH CHECK
-    ===================================================== */
-
     if (!req.user?._id) {
-      return res.status(401).json({
-        success: false,
-        message:
-          "Authentication required.",
-      });
+      return res.status(401).json({ success: false, message: "Authentication required." });
     }
 
-    /* =====================================================
-       REQUEST BODY
-    ===================================================== */
-
-    const {
-      name,
-      phone,
-    } = req.body;
-
-    /* =====================================================
-       VALIDATION
-    ===================================================== */
-
-    if (
-      name === undefined &&
-      phone === undefined
-    ) {
-      return res.status(400).json({
-        success: false,
-
-        message:
-          "Name or phone is required.",
-      });
+    const { name, phone, gender } = req.body || {};
+    if (name === undefined && phone === undefined && gender === undefined) {
+      return res.status(400).json({ success: false, message: "Name, phone or gender is required." });
     }
 
-    const updateData: {
-      name?: string;
-      phone?: string;
-    } = {};
-
-    /* NAME */
-
+    const updateData: { name?: string; phone?: string; gender?: "male" | "female" | "other" } = {};
     if (name !== undefined) {
-      if (
-        typeof name !== "string" ||
-        name.trim().length < 2
-      ) {
-        return res.status(400).json({
-          success: false,
-
-          message:
-            "Name must be at least 2 characters.",
-        });
-      }
-
-      updateData.name =
-        name.trim();
+      if (typeof name !== "string" || name.trim().length < 2) return res.status(400).json({ success: false, message: "Name must be at least 2 characters." });
+      updateData.name = name.trim();
     }
-
-    /* PHONE */
-
     if (phone !== undefined) {
-      if (
-        typeof phone !== "string" ||
-        phone.trim().length < 7
-      ) {
-        return res.status(400).json({
-          success: false,
-
-          message:
-            "Please enter a valid phone number.",
-        });
-      }
-
-      updateData.phone =
-        phone.trim();
+      if (typeof phone !== "string" || phone.trim().length < 7) return res.status(400).json({ success: false, message: "Please enter a valid phone number." });
+      updateData.phone = phone.trim();
+    }
+    if (gender !== undefined) {
+      const normalized = String(gender).trim().toLowerCase();
+      if (!["male", "female", "other"].includes(normalized)) return res.status(400).json({ success: false, message: "Gender must be male, female or other." });
+      updateData.gender = normalized as "male" | "female" | "other";
     }
 
-    /* =====================================================
-       UPDATE USER
-    ===================================================== */
+    const user = await User.findByIdAndUpdate(req.user._id, { $set: updateData }, { new: true, runValidators: true })
+      .select("name email phone gender role avatar createdAt updatedAt")
+      .lean();
+    if (!user) return res.status(404).json({ success: false, message: "User not found." });
 
-    const user =
-      await User.findByIdAndUpdate(
-        req.user._id,
-
-        {
-          $set:
-            updateData,
-        },
-
-        {
-          new: true,
-          runValidators: true,
-        }
-      )
-        .select(
-          "name email phone avatar createdAt updatedAt"
-        )
-        .lean();
-
-    /* =====================================================
-       USER NOT FOUND
-    ===================================================== */
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message:
-          "User not found.",
-      });
-    }
-
-    /* =====================================================
-       SUCCESS
-    ===================================================== */
-
-    return res.status(200).json({
-      success: true,
-
-      message:
-        "Account updated successfully.",
-
-      account: {
-        id:
-          String(user._id),
-
-        name:
-          user.name,
-
-        email:
-          user.email,
-
-        phone:
-          user.phone,
-
-        avatar: {
-          url:
-            user.avatar?.url ||
-            "",
-
-          publicId:
-            user.avatar?.publicId ||
-            "",
-        },
-
-        memberSince:
-          user.createdAt,
-
-        updatedAt:
-          user.updatedAt,
-      },
-    });
+    return res.status(200).json({ success: true, message: "Account updated successfully.", account: { ...user, id: String(user._id), gender: (user as any).gender || "other" } });
   } catch (error) {
-    console.error(
-      "UPDATE ACCOUNT INFO ERROR:",
-      error
-    );
-
-    return res.status(500).json({
-      success: false,
-
-      message:
-        error instanceof Error
-          ? error.message
-          : "Unable to update account.",
-    });
+    return res.status(400).json({ success: false, message: error instanceof Error ? error.message : "Unable to update account." });
   }
 };

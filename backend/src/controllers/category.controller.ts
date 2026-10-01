@@ -60,6 +60,7 @@ export const createCategoryController =
     try {
       const {
         name,
+        slug,
         description,
         parentId,
         images,
@@ -85,6 +86,7 @@ export const createCategoryController =
       const category =
         await createCategory({
           name,
+          slug,
           description,
           parentId,
           images,
@@ -329,6 +331,9 @@ export const updateCategoryController =
           {
             name:
               req.body.name,
+
+            slug:
+              req.body.slug,
 
             description:
               req.body.description,

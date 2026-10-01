@@ -4,27 +4,41 @@ import {
   NextFunction,
 } from "express";
 
-export const requireAdmin = (
+const requireAdmin = (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   if (!req.user) {
-    return res.status(401).json({
-      success: false,
-      message: "Not authenticated.",
-    });
+    return res
+      .status(401)
+      .json({
+        success: false,
+        message:
+          "Not authenticated.",
+      });
   }
 
   if (
-    req.user.role !== "admin" &&
-    req.user.role !== "super_admin"
+    req.user.role !==
+      "admin" &&
+    req.user.role !==
+      "super_admin"
   ) {
-    return res.status(403).json({
-      success: false,
-      message: "Admin access required.",
-    });
+    return res
+      .status(403)
+      .json({
+        success: false,
+        message:
+          "Admin access required.",
+      });
   }
 
-  next();
+  return next();
 };
+
+export {
+  requireAdmin,
+};
+
+export default requireAdmin;

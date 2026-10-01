@@ -3,12 +3,22 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.sendOtpEmail = void 0;
+exports.sendOtpEmail = exports.sendEmail = void 0;
 const mail_1 = __importDefault(require("../config/mail"));
-const sendOtpEmail = async (email, otp) => {
+const sendEmail = async (input) => {
+    const to = String(input.to || "").trim();
+    if (!to)
+        throw new Error("Email recipient is required.");
     await mail_1.default.sendMail({
-        from: process.env.MAIL_FROM ||
-            process.env.SMTP_USER,
+        from: process.env.MAIL_FROM || process.env.SMTP_USER,
+        to,
+        subject: input.subject,
+        html: input.html,
+    });
+};
+exports.sendEmail = sendEmail;
+const sendOtpEmail = async (email, otp) => {
+    await (0, exports.sendEmail)({
         to: email,
         subject: "Your HivraSoft verification code",
         html: `
@@ -30,9 +40,7 @@ const sendOtpEmail = async (email, otp) => {
           HIVRASOFT
         </h2>
 
-        <p>
-          Your verification code is:
-        </p>
+        <p>Your verification code is:</p>
 
         <div
           style="
@@ -48,9 +56,7 @@ const sendOtpEmail = async (email, otp) => {
 
         <p>
           This OTP is valid for
-          ${process.env
-            .OTP_EXPIRES_MINUTES ||
-            "5"}
+          ${process.env.OTP_EXPIRES_MINUTES || "5"}
           minutes.
         </p>
 
@@ -61,8 +67,7 @@ const sendOtpEmail = async (email, otp) => {
             color:#777;
           "
         >
-          If you did not request this code,
-          please ignore this email.
+          If you did not request this code, please ignore this email.
         </p>
       </div>
     `,

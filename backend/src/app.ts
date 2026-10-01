@@ -12,9 +12,24 @@ import uploadRoutes from "./routes/upload.routes";
 import  addressRoutes from "./routes/user/address.routes"
 import bannerRoutes from "./routes/banner.routes";
 import wishlistRoutes from "./routes/wishlist.routes";
+import cartRoutes from "./routes/cart.routes";
+import orderRoutes from "./routes/order.routes";
+import blogRoutes from "./routes/blog.routes";
+import { blogCategoryRoutes, blogTagRoutes } from "./routes/blog-taxonomy.routes";
+import searchRoutes from "./routes/search.routes";
+import notificationRoutes from "./routes/notification.routes";
+import reviewRoutes from "./routes/review.routes";
+import userSettingsRoutes from "./routes/user-settings.routes";
+import { razorpayWebhookController } from "./controllers/order.controller";
 
 const app =
   express();
+
+// Hostinger forwards requests through its reverse proxy. Trust only the
+// nearest hop so client-supplied earlier X-Forwarded-For entries are ignored.
+if (process.env.NODE_ENV === "production") {
+  app.set("trust proxy", 1);
+}
 
 /* =========================================================
    CORS
@@ -35,6 +50,12 @@ app.use(
 /* =========================================================
    BODY PARSER
 ========================================================= */
+
+app.post(
+  "/api/payments/razorpay/webhook",
+  express.raw({ type: "application/json", limit: "2mb" }),
+  razorpayWebhookController
+);
 
 app.use(
   express.json({
@@ -111,6 +132,15 @@ app.use(
   productRoutes
 );
 
+/* =========================================================
+   GLOBAL STOREFRONT SEARCH
+========================================================= */
+
+app.use(
+  "/api/search",
+  searchRoutes
+);
+
 app.use(
   "/api/uploads",
   uploadRoutes
@@ -129,6 +159,26 @@ app.use(
   "/api/wishlist",
   wishlistRoutes
 );
+app.use(
+  "/api/cart",
+  cartRoutes
+);
+app.use(
+  "/api/orders",
+  orderRoutes
+);
+
+app.use("/api/blogs", blogRoutes);
+app.use("/api/blog-categories", blogCategoryRoutes);
+app.use("/api/blog-tags", blogTagRoutes);
+
+app.use(
+  "/api/notifications",
+  notificationRoutes
+);
+
+app.use("/api/reviews", reviewRoutes);
+app.use("/api/user-settings", userSettingsRoutes);
 
 /* =========================================================
    404

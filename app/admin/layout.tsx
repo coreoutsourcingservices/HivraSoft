@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
 import { cookies } from "next/headers";
-import AdminLogin from "@/components/Admin/AdminLogin";
+import AdminLogin from "@/src/components/Admin/AdminLogin";
 
-import AdminShell from "@/components/Admin/AdminShell";
+import AdminShell from "@/src/components/Admin/AdminShell";
 
 export default async function AdminLayout({
   children,

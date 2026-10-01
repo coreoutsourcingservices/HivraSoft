@@ -6,12 +6,14 @@ import mongoose, {
 
 export type OtpPurpose =
   | "register"
-  | "login";
+  | "login"
+  | "email_change";
 
 export interface IOtp extends Document {
   email: string;
   otpHash: string;
   purpose: OtpPurpose;
+  userId?: mongoose.Types.ObjectId | null;
   attempts: number;
   expiresAt: Date;
   createdAt: Date;
@@ -34,8 +36,15 @@ const otpSchema = new Schema<IOtp>(
 
     purpose: {
       type: String,
-      enum: ["register", "login"],
+      enum: ["register", "login", "email_change"],
       required: true,
+    },
+
+    userId: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+      index: true,
     },
 
     attempts: {

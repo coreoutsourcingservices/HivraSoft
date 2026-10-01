@@ -35,6 +35,8 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
 const userSchema = new mongoose_1.Schema({
+    username: { type: String, unique: true, sparse: true, trim: true },
+    passwordHash: { type: String, select: false },
     name: {
         type: String,
         required: true,
@@ -53,6 +55,12 @@ const userSchema = new mongoose_1.Schema({
         required: true,
         trim: true,
     },
+    gender: {
+        type: String,
+        enum: ["male", "female", "other"],
+        default: "other",
+        index: true,
+    },
     role: {
         type: String,
         enum: [
@@ -69,6 +77,18 @@ const userSchema = new mongoose_1.Schema({
     isActive: {
         type: Boolean,
         default: true,
+        index: true,
+    },
+    accountStatus: {
+        type: String,
+        enum: ["active", "inactive", "blocked"],
+        default: "active",
+        index: true,
+    },
+    lastActiveAt: {
+        type: Date,
+        default: null,
+        index: true,
     },
     avatar: {
         url: {
@@ -83,6 +103,8 @@ const userSchema = new mongoose_1.Schema({
 }, {
     timestamps: true,
 });
+userSchema.index({ role: 1, createdAt: -1 });
+userSchema.index({ role: 1, accountStatus: 1, createdAt: -1 });
 const User = mongoose_1.default.models.User ||
     mongoose_1.default.model("User", userSchema);
 exports.default = User;

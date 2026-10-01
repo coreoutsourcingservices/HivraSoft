@@ -27,6 +27,8 @@ import {
 export type CreateCategoryInput = {
   name: string;
 
+  slug?: string;
+
   description?: string;
 
   parentId?: string | null;
@@ -40,6 +42,8 @@ export type CreateCategoryInput = {
 
 export type UpdateCategoryInput = {
   name?: string;
+
+  slug?: string;
 
   description?: string;
 
@@ -341,13 +345,17 @@ const ensureCategoryImagesFolder =
 
 const generateUniqueSlug =
   async (
-    name: string,
+    value: string,
     excludeId?: string
   ): Promise<string> => {
     const baseSlug =
       createSlug(
-        name
+        value
       );
+
+    if (!baseSlug) {
+      throw new Error("Category slug is required.");
+    }
 
     let slug =
       baseSlug;
@@ -481,7 +489,7 @@ export const createCategory =
 
     const slug =
       await generateUniqueSlug(
-        name
+        input.slug?.trim() || name
       );
 
     const parentInfo =
@@ -755,9 +763,21 @@ export const updateCategory =
       category.name =
         name;
 
+      if (input.slug === undefined) {
+        category.slug =
+          await generateUniqueSlug(
+            name,
+            categoryId
+          );
+      }
+    }
+
+    /* MANUAL / AUTO SLUG */
+
+    if (input.slug !== undefined) {
       category.slug =
         await generateUniqueSlug(
-          name,
+          input.slug.trim() || category.name,
           categoryId
         );
     }

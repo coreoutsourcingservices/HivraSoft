@@ -93,7 +93,11 @@ export const addWishlistItemController =
       const result =
         await addProductToWishlist(
           userId,
-          productId
+          productId,
+          {
+            colorId: typeof req.body?.colorId === "string" ? req.body.colorId.trim() : null,
+            sizeId: typeof req.body?.sizeId === "string" ? req.body.sizeId.trim() : null,
+          }
         );
 
       return res

@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 
-import Loader from "@/components/Loader/Loader";
-import IntroExperience from "@/components/IntroExperience/IntroExperience";
-import DivaStory from "@/components/DivaStory/DivaStory";
+import Loader from "@/src/components/Loader/Loader";
+import IntroExperience from "@/src/components/IntroExperience/IntroExperience";
+import DivaStory from "@/src/components/DivaStory/DivaStory";
 
 export default function LandingPage() {
   const [loaderFinished, setLoaderFinished] = useState(false);

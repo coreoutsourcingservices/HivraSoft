@@ -35,229 +35,552 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
 /* =========================================================
-   IMAGE SCHEMA
+   PRODUCT IMAGE SCHEMA
 ========================================================= */
 const productImageSchema = new mongoose_1.Schema({
     url: {
         type: String,
-        required: true,
+        required: [
+            true,
+            "Product image URL is required.",
+        ],
         trim: true,
     },
     publicId: {
         type: String,
-        required: true,
+        required: [
+            true,
+            "Product image publicId is required.",
+        ],
         trim: true,
     },
+    isDefault: {
+        type: Boolean,
+        default: false,
+    },
 }, {
+    /*
+     * Image ke andar MongoDB _id nahi banega.
+     */
     _id: false,
 });
 /* =========================================================
-   SIZE SCHEMA
+   PRODUCT SIZE SCHEMA
 ========================================================= */
 const productSizeSchema = new mongoose_1.Schema({
     size: {
         type: String,
-        required: true,
-        trim: true,
-        uppercase: true,
-    },
-    sku: {
-        type: String,
-        required: true,
+        required: [
+            true,
+            "Product size is required.",
+        ],
         trim: true,
         uppercase: true,
     },
     stock: {
         type: Number,
-        required: true,
+        required: [
+            true,
+            "Product stock is required.",
+        ],
         default: 0,
-        min: 0,
+        min: [
+            0,
+            "Stock cannot be negative.",
+        ],
+        validate: {
+            validator: (value) => {
+                return Number.isInteger(value);
+            },
+            message: "Stock must be a whole number.",
+        },
+    },
+    originalPrice: {
+        type: Number,
+        required: [
+            true,
+            "Original price is required.",
+        ],
+        default: 0,
+        min: [
+            0,
+            "Original price cannot be negative.",
+        ],
+    },
+    showPrice: {
+        type: Number,
+        required: [
+            true,
+            "Show price is required.",
+        ],
+        default: 0,
+        min: [
+            0,
+            "Show price cannot be negative.",
+        ],
+    },
+    discountPrice: {
+        type: Number,
+        required: [
+            true,
+            "Discount price is required.",
+        ],
+        default: 0,
+        min: [
+            0,
+            "Discount price cannot be negative.",
+        ],
     },
     isActive: {
         type: Boolean,
         default: true,
     },
 }, {
+    /*
+     * Size ke andar _id chahiye.
+     *
+     * Example:
+     *
+     * {
+     *   "_id": "...",
+     *   "size": "M",
+     *   "stock": 30,
+     *   "isActive": true
+     * }
+     */
     _id: true,
 });
 /* =========================================================
-   COLOR SCHEMA
+   PRODUCT COLOR SCHEMA
 ========================================================= */
 const productColorSchema = new mongoose_1.Schema({
-    name: {
+    /* =====================================================
+       PRODUCT NAME
+    ===================================================== */
+    nameProduct: {
         type: String,
-        required: true,
+        required: [
+            true,
+            "Product name is required.",
+        ],
         trim: true,
+        maxlength: [
+            200,
+            "Product name cannot exceed 200 characters.",
+        ],
     },
-    slug: {
+    /* =====================================================
+       PRODUCT SLUG
+    ===================================================== */
+    slugProduct: {
         type: String,
-        required: true,
+        required: [
+            true,
+            "Product slug is required.",
+        ],
+        trim: true,
         lowercase: true,
+        maxlength: [
+            250,
+            "Product slug cannot exceed 250 characters.",
+        ],
+    },
+    /* =====================================================
+       COLOR NAME
+    ===================================================== */
+    nameColor: {
+        type: String,
+        required: [
+            true,
+            "Color name is required.",
+        ],
         trim: true,
     },
+    /* =====================================================
+       COLOR SLUG
+    ===================================================== */
+    slugColor: {
+        type: String,
+        required: [
+            true,
+            "Color slug is required.",
+        ],
+        trim: true,
+        lowercase: true,
+    },
+    /* =====================================================
+       COLOR HEX
+    ===================================================== */
     hex: {
         type: String,
         default: "",
         trim: true,
     },
+    /* =====================================================
+       DEFAULT COLOR
+    ===================================================== */
+    isDefault: {
+        type: Boolean,
+        default: false,
+    },
+    /* =====================================================
+       COLOR-LEVEL PRICING
+    ===================================================== */
+    originalPrice: {
+        type: Number,
+        required: [
+            true,
+            "Original price is required.",
+        ],
+        default: 0,
+        min: [
+            0,
+            "Original price cannot be negative.",
+        ],
+    },
+    showPrice: {
+        type: Number,
+        required: [
+            true,
+            "Show price is required.",
+        ],
+        default: 0,
+        min: [
+            0,
+            "Show price cannot be negative.",
+        ],
+    },
+    discountPrice: {
+        type: Number,
+        required: [
+            true,
+            "Discount price is required.",
+        ],
+        default: 0,
+        min: [
+            0,
+            "Discount price cannot be negative.",
+        ],
+    },
+    /* =====================================================
+       SHORT DESCRIPTION
+    ===================================================== */
+    shortDescription: {
+        type: String,
+        default: "",
+        trim: true,
+        maxlength: [
+            1000,
+            "Short description cannot exceed 1000 characters.",
+        ],
+    },
+    /* =====================================================
+       FULL DESCRIPTION
+    ===================================================== */
+    description: {
+        type: String,
+        default: "",
+    },
+    /* =====================================================
+       TAGS
+    ===================================================== */
+    tags: {
+        type: [String],
+        default: [],
+    },
+    /* =====================================================
+       SEO TITLE
+    ===================================================== */
+    seoTitle: {
+        type: String,
+        default: "",
+        trim: true,
+        maxlength: [
+            200,
+            "SEO title cannot exceed 200 characters.",
+        ],
+    },
+    /* =====================================================
+       SEO DESCRIPTION
+    ===================================================== */
+    seoDescription: {
+        type: String,
+        default: "",
+        trim: true,
+        maxlength: [
+            1000,
+            "SEO description cannot exceed 1000 characters.",
+        ],
+    },
+    /* =====================================================
+       PRODUCT IMAGES
+    ===================================================== */
     images: {
         type: [
             productImageSchema,
         ],
         default: [],
-        validate: {
-            validator: (value) => {
-                return (value.length <= 2);
-            },
-            message: "Each product color can have maximum 2 images.",
-        },
     },
+    /* =====================================================
+       PRODUCT SIZES
+    ===================================================== */
     sizes: {
         type: [
             productSizeSchema,
         ],
         default: [],
     },
-    isActive: {
-        type: Boolean,
-        default: true,
-    },
-    sortOrder: {
-        type: Number,
-        default: 0,
-    },
 }, {
+    /*
+     * Stable color ID is required by cart/wishlist tracking.
+     * Existing products are migrated once at backend startup.
+     */
     _id: true,
 });
 /* =========================================================
-   PRODUCT SCHEMA
+   PRODUCT RATING SCHEMA
+========================================================= */
+const productRatingSchema = new mongoose_1.Schema({
+    average: {
+        type: Number,
+        default: 0,
+        min: [
+            0,
+            "Rating cannot be less than 0.",
+        ],
+        max: [
+            5,
+            "Rating cannot be greater than 5.",
+        ],
+    },
+    count: {
+        type: Number,
+        default: 0,
+        min: [
+            0,
+            "Rating count cannot be negative.",
+        ],
+    },
+}, {
+    _id: false,
+});
+/* =========================================================
+   MAIN PRODUCT SCHEMA
 ========================================================= */
 const productSchema = new mongoose_1.Schema({
-    name: {
-        type: String,
-        required: true,
-        trim: true,
-        maxlength: 200,
+    /* =====================================================
+       RATINGS
+    ===================================================== */
+    ratings: {
+        type: productRatingSchema,
+        default: () => ({
+            average: 0,
+            count: 0,
+        }),
     },
-    slug: {
-        type: String,
-        required: true,
-        unique: true,
-        lowercase: true,
-        trim: true,
-    },
-    shortDescription: {
-        type: String,
-        default: "",
-        trim: true,
-        maxlength: 500,
-    },
-    description: {
-        type: String,
-        default: "",
-        trim: true,
-    },
-    categories: [
-        {
-            type: mongoose_1.Schema.Types
-                .ObjectId,
-            ref: "Category",
-        },
-    ],
-    price: {
-        type: Number,
-        required: true,
-        min: 0,
-    },
-    compareAtPrice: {
-        type: Number,
-        default: 0,
-        min: 0,
-    },
-    costPrice: {
-        type: Number,
-        default: 0,
-        min: 0,
-    },
-    mainImages: {
+    /* =====================================================
+       CATEGORIES
+    ===================================================== */
+    categories: {
         type: [
-            productImageSchema,
+            {
+                type: mongoose_1.Schema.Types
+                    .ObjectId,
+                ref: "Category",
+            },
+        ],
+        required: [
+            true,
+            "Product category is required.",
         ],
         default: [],
         validate: {
-            validator: (value) => {
-                return (value.length <=
-                    4);
+            validator: (categories) => {
+                return (Array.isArray(categories) &&
+                    categories.length >
+                        0);
             },
-            message: "Product can have maximum 4 main images.",
+            message: "At least one category is required.",
         },
     },
+    /* =====================================================
+       COLOR PRODUCT
+    ===================================================== */
+    isColor: {
+        type: Boolean,
+        required: true,
+        default: true,
+    },
+    /* =====================================================
+       COLORS
+    ===================================================== */
     colors: {
         type: [
             productColorSchema,
         ],
         default: [],
     },
-    status: {
-        type: String,
-        enum: [
-            "draft",
-            "active",
-            "inactive",
-        ],
-        default: "draft",
+    /* =====================================================
+       ACTIVE
+    ===================================================== */
+    isActive: {
+        type: Boolean,
+        default: true,
     },
+    /* =====================================================
+       FEATURED
+    ===================================================== */
     isFeatured: {
         type: Boolean,
         default: false,
     },
+    /* =====================================================
+       NEW LAUNCH
+    ===================================================== */
     isNewLaunch: {
         type: Boolean,
         default: false,
     },
-    tags: {
-        type: [
-            String,
-        ],
-        default: [],
-    },
-    seoTitle: {
-        type: String,
-        default: "",
-        trim: true,
-        maxlength: 200,
-    },
-    seoDescription: {
-        type: String,
-        default: "",
-        trim: true,
-        maxlength: 500,
-    },
 }, {
+    /*
+     * Automatically:
+     *
+     * createdAt
+     * updatedAt
+     */
     timestamps: true,
+});
+/* =========================================================
+   VALIDATION
+========================================================= */
+productSchema.pre("validate", function () {
+    /* =====================================================
+       isColor = true
+       Minimum 1 color required
+    ===================================================== */
+    if (this.isColor &&
+        this.colors.length === 0) {
+        this.invalidate("colors", "At least one color is required when isColor is true.");
+    }
+    /* =====================================================
+       isColor = false
+       One internal default details block is allowed.
+
+       Product name, slug, images, sizes and pricing are
+       stored inside colors[] even for a no-color product.
+       The storefront uses isColor=false to hide the color UI.
+    ===================================================== */
+    if (!this.isColor &&
+        this.colors.length > 1) {
+        this.invalidate("colors", "Only one default product details block is allowed when isColor is false.");
+    }
+    /* =====================================================
+       ONLY ONE DEFAULT COLOR
+    ===================================================== */
+    if (this.isColor &&
+        this.colors.length > 0) {
+        const defaultColors = this.colors.filter((color) => {
+            return (color.isDefault ===
+                true);
+        });
+        if (defaultColors.length >
+            1) {
+            this.invalidate("colors", "Only one color can be default.");
+        }
+    }
+    /* =====================================================
+       DUPLICATE PRODUCT SLUG CHECK INSIDE COLORS
+    ===================================================== */
+    const productSlugs = this.colors.map((color) => color.slugProduct);
+    const uniqueProductSlugs = new Set(productSlugs);
+    if (productSlugs.length !==
+        uniqueProductSlugs.size) {
+        this.invalidate("colors", "Duplicate product slug is not allowed.");
+    }
+    /* =====================================================
+       DUPLICATE COLOR CHECK
+    ===================================================== */
+    const colorSlugs = this.colors.map((color) => color.slugColor);
+    const uniqueColorSlugs = new Set(colorSlugs);
+    if (colorSlugs.length !==
+        uniqueColorSlugs.size) {
+        this.invalidate("colors", "Duplicate color is not allowed.");
+    }
+    /* =====================================================
+       ONLY ONE DEFAULT IMAGE PER COLOR
+    ===================================================== */
+    for (const color of this.colors) {
+        const defaultImages = color.images.filter((image) => {
+            return (image.isDefault ===
+                true);
+        });
+        if (defaultImages.length >
+            1) {
+            this.invalidate("colors", `Only one default image is allowed for ${color.nameProduct}.`);
+        }
+    }
 });
 /* =========================================================
    INDEXES
 ========================================================= */
+/*
+ * Category filter:
+ *
+ * /products?category=...
+ */
 productSchema.index({
     categories: 1,
 });
+/*
+ * Active products
+ */
 productSchema.index({
-    status: 1,
+    isActive: 1,
 });
+/*
+ * Featured products
+ */
 productSchema.index({
     isFeatured: 1,
 });
+/*
+ * New launches
+ */
 productSchema.index({
     isNewLaunch: 1,
 });
+/*
+ * Top rated products
+ */
+productSchema.index({
+    "ratings.average": -1,
+});
+/*
+ * Latest products
+ */
 productSchema.index({
     createdAt: -1,
 });
+/*
+ * Product slug lookup
+ */
 productSchema.index({
-    name: "text",
-    description: "text",
-    tags: "text",
+    "colors.slugProduct": 1,
+});
+/*
+ * Color lookup
+ */
+productSchema.index({
+    "colors.slugColor": 1,
+});
+/*
+ * SEO/search text
+ */
+productSchema.index({
+    "colors.nameProduct": "text",
+    "colors.shortDescription": "text",
+    "colors.description": "text",
+    "colors.tags": "text",
 });
 /* =========================================================
    MODEL

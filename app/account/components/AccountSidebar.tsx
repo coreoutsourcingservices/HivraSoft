@@ -60,7 +60,7 @@ const sidebarLinks = [
   },
   {
     label: "Wishlist",
-    href: "/wishlist",
+    href: "/account/wishlist",
     icon: "♡",
   },
   {
@@ -68,11 +68,11 @@ const sidebarLinks = [
     href: "/account/addresses",
     icon: "⌖",
   },
-//   {
-//     label: "Payment Methods",
-//     href: "/account/payment-methods",
-//     icon: "▣",
-//   },
+  {
+    label: "Card",
+    href: "/account/card",
+    icon: "▣",
+  },
   {
     label: "Account Settings",
     href: "/account/settings",

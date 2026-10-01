@@ -104,27 +104,29 @@ const createSafeFolder =
    "front-view"
 ========================================================= */
 
+const stripFileExtension =
+  (value: string): string =>
+    value.replace(
+      /\.[a-z0-9]{2,8}$/i,
+      ""
+    );
+
 const createSafeImageName =
   (
     imageNameInput: unknown
-  ):
-    | string
-    | undefined => {
+  ): string | undefined => {
     if (
       typeof imageNameInput !==
       "string" ||
       !imageNameInput.trim()
     ) {
-      /*
-        Product uploader jaise existing callers
-        imageName nahi bhejte.
-        Unke liye Cloudinary unique filename use karega.
-      */
       return undefined;
     }
 
     return createSafeSegment(
-      imageNameInput,
+      stripFileExtension(
+        imageNameInput.trim()
+      ),
       "image"
     );
   };
@@ -159,9 +161,21 @@ export const uploadImageController =
       const folder =
         `hivrasoft/${safeFolder}`;
 
+      /*
+        Product uploader may send imageName explicitly.
+        Otherwise use the uploaded file's original filename.
+        Example: "Black Bikini Front.jpg" -> public_id "black-bikini-front".
+      */
+      const requestedImageName =
+        typeof req.body.imageName ===
+          "string" &&
+        req.body.imageName.trim()
+          ? req.body.imageName
+          : req.file.originalname;
+
       const imageName =
         createSafeImageName(
-          req.body.imageName
+          requestedImageName
         );
 
       const result =
@@ -205,6 +219,20 @@ export const uploadImageController =
                 .split("/")
                 .pop() ||
               "",
+
+            /*
+              name/alt are returned so admin can persist them with Product.
+              Frontend should prefer image.alt and fall back to image.name.
+            */
+            name:
+              stripFileExtension(
+                req.file.originalname
+              ),
+
+            alt:
+              stripFileExtension(
+                req.file.originalname
+              ),
           },
         });
     } catch (error) {

@@ -327,6 +327,9 @@ export const createAddress = async (
       phone,
       alternatePhone,
 
+      homeNumber,
+      officeNumber,
+
       addressLine1,
       addressLine2,
       landmark,
@@ -552,6 +555,16 @@ export const createAddress = async (
         alternatePhone:
           cleanString(
             alternatePhone
+          ),
+
+        homeNumber:
+          cleanString(
+            homeNumber
+          ),
+
+        officeNumber:
+          cleanString(
+            officeNumber
           ),
 
         addressLine1:
@@ -869,6 +882,9 @@ export const updateAddress =
         phone,
         alternatePhone,
 
+        homeNumber,
+        officeNumber,
+
         addressLine1,
         addressLine2,
         landmark,
@@ -1026,6 +1042,26 @@ export const updateAddress =
         address.alternatePhone =
           cleanString(
             alternatePhone
+          );
+      }
+
+      if (
+        homeNumber !==
+        undefined
+      ) {
+        address.homeNumber =
+          cleanString(
+            homeNumber
+          );
+      }
+
+      if (
+        officeNumber !==
+        undefined
+      ) {
+        address.officeNumber =
+          cleanString(
+            officeNumber
           );
       }
 

@@ -26,6 +26,12 @@ export interface IAddress extends Document {
   phone: string;
   alternatePhone?: string;
 
+  /** Home / house / flat number entered by the customer. */
+  homeNumber?: string;
+
+  /** Office / unit / suite number entered by the customer. */
+  officeNumber?: string;
+
   addressLine1: string;
   addressLine2?: string;
   landmark?: string;
@@ -92,6 +98,24 @@ const addressSchema =
         trim: true,
         default: "",
         maxlength: 20,
+      },
+
+      /* ===============================================
+         HOME / OFFICE NUMBER
+      =============================================== */
+
+      homeNumber: {
+        type: String,
+        trim: true,
+        default: "",
+        maxlength: 80,
+      },
+
+      officeNumber: {
+        type: String,
+        trim: true,
+        default: "",
+        maxlength: 80,
       },
 
       /* ===============================================

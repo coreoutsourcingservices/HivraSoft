@@ -4,7 +4,7 @@ import {
   useSearchParams,
 } from "next/navigation";
 
-import BannerForm from "@/components/Admin/BannerForm";
+import BannerForm from "@/src/components/Admin/BannerForm";
 
 export default function NewBannerPage() {
   const searchParams =

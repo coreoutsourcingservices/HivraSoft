@@ -1,19 +1,30 @@
 import transporter from "../config/mail";
 
+export type SendEmailInput = {
+  to: string;
+  subject: string;
+  html: string;
+};
+
+export const sendEmail = async (input: SendEmailInput): Promise<void> => {
+  const to = String(input.to || "").trim();
+  if (!to) throw new Error("Email recipient is required.");
+
+  await transporter.sendMail({
+    from: process.env.MAIL_FROM || process.env.SMTP_USER,
+    to,
+    subject: input.subject,
+    html: input.html,
+  });
+};
+
 export const sendOtpEmail = async (
   email: string,
   otp: string
 ): Promise<void> => {
-  await transporter.sendMail({
-    from:
-      process.env.MAIL_FROM ||
-      process.env.SMTP_USER,
-
+  await sendEmail({
     to: email,
-
-    subject:
-      "Your HivraSoft verification code",
-
+    subject: "Your HivraSoft verification code",
     html: `
       <div
         style="
@@ -33,9 +44,7 @@ export const sendOtpEmail = async (
           HIVRASOFT
         </h2>
 
-        <p>
-          Your verification code is:
-        </p>
+        <p>Your verification code is:</p>
 
         <div
           style="
@@ -51,11 +60,7 @@ export const sendOtpEmail = async (
 
         <p>
           This OTP is valid for
-          ${
-            process.env
-              .OTP_EXPIRES_MINUTES ||
-            "5"
-          }
+          ${process.env.OTP_EXPIRES_MINUTES || "5"}
           minutes.
         </p>
 
@@ -66,8 +71,7 @@ export const sendOtpEmail = async (
             color:#777;
           "
         >
-          If you did not request this code,
-          please ignore this email.
+          If you did not request this code, please ignore this email.
         </p>
       </div>
     `,
