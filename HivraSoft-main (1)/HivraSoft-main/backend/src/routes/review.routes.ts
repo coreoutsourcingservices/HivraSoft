@@ -1,0 +1,12 @@
+import { Router } from "express";
+import { authenticate } from "../middleware/auth.middleware";
+import { reviewUpload } from "../middleware/reviewUpload.middleware";
+import { createReview, getProductReviews, getMyReviews, updateMyReview, deleteMyReview, addUserQuestion } from "../controllers/review.controller";
+const router = Router();
+router.get("/product/:productId", getProductReviews);
+router.get("/my-reviews", authenticate, getMyReviews);
+router.post("/", authenticate, reviewUpload, createReview);
+router.patch("/:id", authenticate, updateMyReview);
+router.delete("/:id", authenticate, deleteMyReview);
+router.post("/:id/questions", authenticate, addUserQuestion);
+export default router;
