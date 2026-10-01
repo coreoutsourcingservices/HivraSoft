@@ -17,6 +17,7 @@ import {
   ShoppingCart,
   Heart,
   FileText,
+  House,
 } from "lucide-react";
 
 export default function AdminSidebar() {
@@ -29,11 +30,13 @@ export default function AdminSidebar() {
     pathname.startsWith("/admin/reviews");
   const blogRoute = pathname.startsWith("/admin/blog");
   const extraRoute = pathname.startsWith("/admin/extra-add");
+  const homepageRoute = pathname.startsWith("/admin/homepage");
 
   const [productsOpen, setProductsOpen] = useState(productRoute);
   const [usersOpen, setUsersOpen] = useState(userRoute);
   const [blogOpen, setBlogOpen] = useState(blogRoute);
   const [extraOpen, setExtraOpen] = useState(extraRoute);
+  const [homepageOpen, setHomepageOpen] = useState(homepageRoute);
 
   return (
     <aside className="flex max-h-[calc(100dvh-4rem)] w-full flex-col bg-[#211A18] text-white lg:h-dvh lg:max-h-none">
@@ -78,6 +81,25 @@ export default function AdminSidebar() {
           <MenuLink href="/admin/banners" active={pathname.startsWith("/admin/banners")}>
             Banners
           </MenuLink>
+
+          <DropdownMenu
+            label="Homepage"
+            active={homepageRoute}
+            open={homepageOpen}
+            onToggle={() => setHomepageOpen((current) => !current)}
+            icon={<House size={17} />}
+          >
+            <SubMenuLink href="/admin/homepage/on-trend-picks" active={pathname === "/admin/homepage/on-trend-picks"}>
+              On Trend Picks
+            </SubMenuLink>
+            <SubMenuLink href="/admin/homepage/always-in-it" active={pathname === "/admin/homepage/always-in-it"}>
+              Always In It
+            </SubMenuLink>
+            <SubMenuLink href="/admin/homepage/prime-selection" active={pathname === "/admin/homepage/prime-selection"}>
+              Prime Selection
+            </SubMenuLink>
+          </DropdownMenu>
+
 
           <MenuLink href="/admin/orders" active={pathname.startsWith("/admin/orders")}>
             Orders
