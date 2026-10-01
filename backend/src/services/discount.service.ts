@@ -1,7 +1,9 @@
 import DiscountSetting from "../models/DiscountSetting.model";
 import DiscountCode from "../models/DiscountCode.model";
+import { calculateOfferDiscounts } from "./offer.service";
 
 export type DiscountableLine = {
+  lineId?: string;
   productId: string;
   unitPrice: number;
   quantity: number;
@@ -47,18 +49,14 @@ function allocateFixedDiscount(target: number, bases: number[]) {
 
 export async function calculateDiscounts(lines: DiscountableLine[], code?: string | null) {
   const now = new Date();
-  const baseAmount = roundMoney(
-    lines.reduce(
-      (sum, line) =>
-        sum +
-        Math.max(0, Number(line.unitPrice || 0)) * Math.max(0, Number(line.quantity || 0)),
-      0
-    )
+  const lineBases = lines.map((line) =>
+    roundMoney(Math.max(0, Number(line.unitPrice || 0)) * Math.max(0, Number(line.quantity || 0)))
   );
-
+  const baseAmount = roundMoney(lineBases.reduce((sum, amount) => sum + amount, 0));
   const normalizedCode = String(code || "").trim().toUpperCase();
 
-  const [auto, coupon] = await Promise.all([
+  const [offerResult, auto, coupon] = await Promise.all([
+    calculateOfferDiscounts(lines),
     DiscountSetting.findOne({
       isDeleted: { $ne: true },
       isActive: true,
@@ -84,15 +82,17 @@ export async function calculateDiscounts(lines: DiscountableLine[], code?: strin
       : Promise.resolve(null),
   ]);
 
+  const offerByIndex = offerResult.itemOffers;
+  const afterOfferBases = lineBases.map((base, index) =>
+    roundMoney(Math.max(0, base - Number(offerByIndex[index]?.offerDiscount || 0)))
+  );
+
   const autoValueType = auto?.valueType === "fixed" ? "fixed" : "percentage";
   const autoPercentage = autoValueType === "percentage" ? Math.max(0, Number(auto?.percentage || 0)) : 0;
   const autoFixedAmount = autoValueType === "fixed" ? Math.max(0, Number(auto?.fixedAmount || 0)) : 0;
   const autoExcluded = new Set((auto?.excludedProducts || []).map((id: any) => String(id)));
 
-  const lineBases = lines.map((line) =>
-    roundMoney(Math.max(0, Number(line.unitPrice || 0)) * Math.max(0, Number(line.quantity || 0)))
-  );
-  const autoEligibleBases = lineBases.map((base, index) =>
+  const autoEligibleBases = afterOfferBases.map((base, index) =>
     auto && !autoExcluded.has(String(lines[index]?.productId || "")) ? base : 0
   );
   const autoFixedAllocations =
@@ -127,12 +127,13 @@ export async function calculateDiscounts(lines: DiscountableLine[], code?: strin
       : 0;
   const couponProducts = new Set((coupon?.productIds || []).map((id: any) => String(id)));
 
-  const afterAutoBases = lineBases.map((base, index) => {
+  const afterAutoBases = afterOfferBases.map((base, index) => {
     const automaticEligible = Boolean(auto && autoEligibleBases[index] > 0);
-    const autoAmount =
-      automaticEligible && autoValueType === "percentage"
+    const autoAmount = automaticEligible
+      ? autoValueType === "percentage"
         ? roundMoney(base * (autoPercentage / 100))
-        : autoFixedAllocations[index] || 0;
+        : roundMoney(autoFixedAllocations[index] || 0)
+      : 0;
     return roundMoney(Math.max(0, base - autoAmount));
   });
 
@@ -151,18 +152,22 @@ export async function calculateDiscounts(lines: DiscountableLine[], code?: strin
 
   const itemDiscounts = lines.map((line, index) => {
     const base = lineBases[index];
+    const offerItem = offerByIndex[index];
+    const offerDiscount = roundMoney(Math.min(base, Math.max(0, Number(offerItem?.offerDiscount || 0))));
+    const afterOffer = roundMoney(Math.max(0, base - offerDiscount));
+
     const automaticEligible = Boolean(auto && autoEligibleBases[index] > 0);
     const autoAmount = automaticEligible
       ? autoValueType === "fixed"
-        ? roundMoney(autoFixedAllocations[index] || 0)
-        : roundMoney(base * (autoPercentage / 100))
+        ? roundMoney(Math.min(afterOffer, autoFixedAllocations[index] || 0))
+        : roundMoney(afterOffer * (autoPercentage / 100))
       : 0;
-    const afterAuto = roundMoney(Math.max(0, base - autoAmount));
+    const afterAuto = roundMoney(Math.max(0, afterOffer - autoAmount));
 
     const codeEligible = Boolean(couponCanApply && couponEligibleBases[index] > 0);
     const codeAmount = codeEligible
       ? couponValueType === "fixed"
-        ? roundMoney(couponFixedAllocations[index] || 0)
+        ? roundMoney(Math.min(afterAuto, couponFixedAllocations[index] || 0))
         : roundMoney(afterAuto * (couponPercentage / 100))
       : 0;
 
@@ -170,18 +175,24 @@ export async function calculateDiscounts(lines: DiscountableLine[], code?: strin
     codeDiscount += codeAmount;
 
     return {
+      lineId: line.lineId || "",
       productId: line.productId,
+      offerId: offerItem?.offerId || null,
+      offerName: offerItem?.offerName || "",
+      offerType: offerItem?.offerType || null,
+      offerDiscount,
       automaticValueType: autoValueType,
       automaticPercentage: automaticEligible && autoValueType === "percentage" ? autoPercentage : 0,
       automaticDiscount: autoAmount,
       codeValueType: couponValueType,
       codePercentage: codeEligible && couponValueType === "percentage" ? couponPercentage : 0,
       codeDiscount: codeAmount,
-      totalDiscount: roundMoney(autoAmount + codeAmount),
-      finalLineTotal: roundMoney(Math.max(0, base - autoAmount - codeAmount)),
+      totalDiscount: roundMoney(offerDiscount + autoAmount + codeAmount),
+      finalLineTotal: roundMoney(Math.max(0, base - offerDiscount - autoAmount - codeAmount)),
     };
   });
 
+  const offerDiscount = roundMoney(offerResult.amount);
   automaticDiscount = roundMoney(automaticDiscount);
   codeDiscount = roundMoney(codeDiscount);
 
@@ -192,6 +203,11 @@ export async function calculateDiscounts(lines: DiscountableLine[], code?: strin
       : Math.max(0, Number(auto.maxAmount));
 
   return {
+    offers: {
+      active: offerResult.appliedOffers.length > 0,
+      amount: offerDiscount,
+      applied: offerResult.appliedOffers,
+    },
     automatic: {
       active: Boolean(auto),
       matched: Boolean(auto),
@@ -229,8 +245,9 @@ export async function calculateDiscounts(lines: DiscountableLine[], code?: strin
         }
       : null,
     itemDiscounts,
+    offerDiscount,
     automaticDiscount,
     codeDiscount,
-    totalDiscount: roundMoney(automaticDiscount + codeDiscount),
+    totalDiscount: roundMoney(offerDiscount + automaticDiscount + codeDiscount),
   };
 }

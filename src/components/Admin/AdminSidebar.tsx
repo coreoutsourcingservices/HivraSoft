@@ -29,12 +29,14 @@ export default function AdminSidebar() {
     pathname.startsWith("/admin/notifications") ||
     pathname.startsWith("/admin/reviews");
   const blogRoute = pathname.startsWith("/admin/blog");
+  const offerRoute = pathname.startsWith("/admin/offers");
   const extraRoute = pathname.startsWith("/admin/extra-add");
   const homepageRoute = pathname.startsWith("/admin/homepage");
 
   const [productsOpen, setProductsOpen] = useState(productRoute);
   const [usersOpen, setUsersOpen] = useState(userRoute);
   const [blogOpen, setBlogOpen] = useState(blogRoute);
+  const [offersOpen, setOffersOpen] = useState(offerRoute);
   const [extraOpen, setExtraOpen] = useState(extraRoute);
   const [homepageOpen, setHomepageOpen] = useState(homepageRoute);
 
@@ -77,6 +79,27 @@ export default function AdminSidebar() {
           >
             Categories
           </MenuLink>
+
+          <DropdownMenu
+            label="Offers"
+            active={offerRoute}
+            open={offersOpen}
+            onToggle={() => setOffersOpen((current) => !current)}
+            icon={<Tag size={17} />}
+          >
+            <SubMenuLink
+              href="/admin/offers/buy-get"
+              active={pathname === "/admin/offers/buy-get"}
+            >
+              Buy & Get Offer
+            </SubMenuLink>
+            <SubMenuLink
+              href="/admin/offers/fixed-price-bundle"
+              active={pathname === "/admin/offers/fixed-price-bundle"}
+            >
+              Fixed Price Bundle
+            </SubMenuLink>
+          </DropdownMenu>
 
           <MenuLink href="/admin/banners" active={pathname.startsWith("/admin/banners")}>
             Banners

@@ -98,6 +98,13 @@ import {
   deleteDeliveryChargeRule,
 } from "../controllers/delivery-charge.controller";
 
+import {
+  listAdminOffers,
+  createAdminOffer,
+  updateAdminOffer,
+  deleteAdminOffer,
+} from "../controllers/offer.controller";
+
 
 const router = Router();
 
@@ -258,5 +265,15 @@ router.get("/delivery-charges", authenticateAdmin, listDeliveryChargeRules);
 router.post("/delivery-charges", authenticateAdmin, createDeliveryChargeRule);
 router.patch("/delivery-charges/:id", authenticateAdmin, updateDeliveryChargeRule);
 router.delete("/delivery-charges/:id", authenticateAdmin, deleteDeliveryChargeRule);
+
+router.get("/offers/buy-get", authenticateAdmin, listAdminOffers("buy_get"));
+router.post("/offers/buy-get", authenticateAdmin, createAdminOffer("buy_get"));
+router.patch("/offers/buy-get/:id", authenticateAdmin, updateAdminOffer("buy_get"));
+router.delete("/offers/buy-get/:id", authenticateAdmin, deleteAdminOffer("buy_get"));
+
+router.get("/offers/fixed-price-bundle", authenticateAdmin, listAdminOffers("fixed_price_bundle"));
+router.post("/offers/fixed-price-bundle", authenticateAdmin, createAdminOffer("fixed_price_bundle"));
+router.patch("/offers/fixed-price-bundle/:id", authenticateAdmin, updateAdminOffer("fixed_price_bundle"));
+router.delete("/offers/fixed-price-bundle/:id", authenticateAdmin, deleteAdminOffer("fixed_price_bundle"));
 
 export default router;

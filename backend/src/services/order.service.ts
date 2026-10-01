@@ -135,9 +135,10 @@ async function buildOrderSnapshot(userId: string, payload: any, paymentMethod: "
   });
 
   const subtotal = roundMoney(Number((cart as any).subtotal || 0));
+  const offerDiscount = roundMoney(Number((cart as any).offerDiscount || 0));
   const automaticDiscount = roundMoney(Number((cart as any).automaticDiscount || 0));
   const codeDiscount = roundMoney(Number((cart as any).codeDiscount || 0));
-  const discount = roundMoney(Number((cart as any).discount || automaticDiscount + codeDiscount));
+  const discount = roundMoney(Number((cart as any).discount || offerDiscount + automaticDiscount + codeDiscount));
   const tax = roundMoney(Number((cart as any).tax || 0));
   const deliveryCharge = await calculateDeliveryCharge(subtotal, paymentMethod);
   const shipping = roundMoney(deliveryCharge.charge);
@@ -154,6 +155,8 @@ async function buildOrderSnapshot(userId: string, payload: any, paymentMethod: "
     items,
     shippingAddress,
     subtotal,
+    offerDiscount,
+    offerDiscountDetails: (cart as any).discountSummary?.offers || {},
     automaticDiscount,
     automaticDiscountDetails: (cart as any).discountSummary?.automatic || {},
     codeDiscount,

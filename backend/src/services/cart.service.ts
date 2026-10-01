@@ -408,6 +408,7 @@ const buildCartResponse =
       items
         .filter((item: any) => item.available && item.product?._id)
         .map((item: any) => ({
+          lineId: String(item._id || ""),
           productId: String(item.product._id),
           unitPrice: Number(item.unitPrice || 0),
           quantity: Number(item.quantity || 0),
@@ -415,13 +416,15 @@ const buildCartResponse =
       cart.discountCode || null
     );
 
-    const discountByProduct = new Map(
-      discountResult.itemDiscounts.map((item) => [item.productId, item])
+    const discountByLine = new Map(
+      discountResult.itemDiscounts.map((item) => [String(item.lineId || item.productId), item])
     );
 
     const discountedItems = items.map((item: any) => {
       if (!item.product?._id) return item;
-      const discount = discountByProduct.get(String(item.product._id));
+      const discount =
+        discountByLine.get(String(item._id || "")) ||
+        discountByLine.get(String(item.product._id));
       return { ...item, discount: discount || null };
     });
 
@@ -442,10 +445,15 @@ const buildCartResponse =
       items: discountedItems,
       totalItems,
       subtotal,
+      offerDiscount: discountResult.offerDiscount,
       automaticDiscount: discountResult.automaticDiscount,
       codeDiscount: discountResult.codeDiscount,
       discount: discountResult.totalDiscount,
-      discountSummary: { automatic: discountResult.automatic, code: discountResult.code },
+      discountSummary: {
+        offers: discountResult.offers,
+        automatic: discountResult.automatic,
+        code: discountResult.code,
+      },
       appliedDiscountCode: cart.discountCode || "",
       taxableAmount: taxResult.taxableAmount,
       tax: taxResult.amount,
