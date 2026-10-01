@@ -2596,7 +2596,7 @@ export default function ProductForm({
                 ? "assertive"
                 : "polite"
             }
-            className={`fixed right-5 top-7 z-[100] w-[calc(100%-40px)] max-w-sm rounded-2xl border px-5 py-4 text-sm font-semibold shadow-[0_20px_60px_rgba(0,0,0,0.18)] backdrop-blur-sm ${
+            className={`fixed right-5 top-7 z-[100] w-[calc(100%-40px)] max-w-sm overflow-hidden rounded-2xl border shadow-[0_20px_60px_rgba(0,0,0,0.18)] backdrop-blur-sm ${
               error
                 ? "border-red-200 bg-red-50 text-red-700"
                 : uploadMessage
@@ -2604,9 +2604,33 @@ export default function ProductForm({
                   : "border-emerald-200 bg-emerald-50 text-emerald-700"
             }`}
           >
-            {error ||
-              uploadMessage ||
-              success}
+            <div className="flex items-start gap-3 px-5 py-4">
+              <div className="min-w-0 flex-1 text-sm font-semibold leading-5">
+                {error ||
+                  uploadMessage ||
+                  success}
+              </div>
+
+              <button
+                type="button"
+                aria-label="Close notification"
+                title="Close"
+                onClick={() => {
+                  setError("");
+                  setSuccess("");
+                  setUploadMessage("");
+                }}
+                className={`grid h-8 w-8 shrink-0 place-items-center rounded-full border text-lg font-medium leading-none transition ${
+                  error
+                    ? "border-red-200 bg-white/80 text-red-600 hover:bg-red-100"
+                    : uploadMessage
+                      ? "border-amber-200 bg-white/80 text-amber-700 hover:bg-amber-100"
+                      : "border-emerald-200 bg-white/80 text-emerald-700 hover:bg-emerald-100"
+                }`}
+              >
+                ×
+              </button>
+            </div>
           </div>
         )}
 
