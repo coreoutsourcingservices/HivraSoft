@@ -1,5 +1,7 @@
 "use client";
 
+import { confirmAdminAction } from "@/src/components/Admin/AdminConfirmProvider";
+
 import Link from "next/link";
 
 import {
@@ -359,10 +361,12 @@ export default function ProductsManager() {
         return;
       }
 
-      const confirmed =
-        window.confirm(
-          `Delete "${name}"?\n\nProduct and its Cloudinary images will also be deleted.`
-        );
+      const confirmed = await confirmAdminAction({
+        title: "Delete Product?",
+        itemName: name,
+        description: "The product will move to Trash for 30 days. Cloudinary images will be preserved until permanent deletion.",
+        confirmLabel: "Move to Trash",
+      });
 
       if (
         !confirmed

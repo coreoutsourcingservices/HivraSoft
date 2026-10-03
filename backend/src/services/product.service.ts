@@ -26,6 +26,8 @@ import {
   getCloudinaryFolderFromPublicId,
 } from "./cloudinary.service";
 
+import { softDeleteEntity } from "./admin-trash.service";
+
 /* =========================================================
    TYPES
 ========================================================= */
@@ -2570,59 +2572,19 @@ export const getCatalogProductBySlug =
 
 export const deleteProduct =
   async (
-    productId: string
+    productId: string,
+    deletedBy?: string | null
   ) => {
-    if (
-      !Types.ObjectId.isValid(
-        productId
-      )
-    ) {
-      throw new Error(
-        "Invalid product ID."
-      );
+    if (!Types.ObjectId.isValid(productId)) {
+      throw new Error("Invalid product ID.");
     }
 
-    const product =
-      await Product.findById(
-        productId
-      );
-
-    if (!product) {
-      throw new Error(
-        "Product not found."
-      );
-    }
-
-    const publicIds =
-      getProductImagePublicIds(
-        product
-      );
-
-    if (
-      publicIds.length >
-      0
-    ) {
-      await deleteCloudinaryImages(
-        publicIds
-      );
-    }
-
-    await Product.deleteOne({
-      _id:
-        product._id,
-    });
-
-    await cleanupFolders(
-      publicIds
-    );
+    const result = await softDeleteEntity("product", productId, deletedBy);
 
     return {
       success: true,
-
-      message:
-        "Product deleted successfully.",
-
-      deletedImages:
-        publicIds.length,
+      message: result.message,
+      movedToTrash: true,
+      retentionDays: 30,
     };
   };

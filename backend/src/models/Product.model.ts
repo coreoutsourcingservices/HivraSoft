@@ -5,6 +5,8 @@ import mongoose, {
   Types,
 } from "mongoose";
 
+import { applySoftDeletePlugin } from "../utils/softDelete";
+
 /* =========================================================
    PRODUCT IMAGE TYPE
 ========================================================= */
@@ -906,6 +908,8 @@ productSchema.index({
   "colors.tags":
     "text",
 });
+
+applySoftDeletePlugin(productSchema);
 
 /* =========================================================
    MODEL

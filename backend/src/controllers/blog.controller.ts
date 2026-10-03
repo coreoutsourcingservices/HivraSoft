@@ -11,6 +11,7 @@ import {
   updateBlog,
 } from "../services/blog.service";
 import { createSlug } from "../utils/slug";
+import { softDeleteEntity } from "../services/admin-trash.service";
 
 function text(value: unknown) {
   return typeof value === "string" ? value.trim() : String(value ?? "").trim();
@@ -109,11 +110,10 @@ export async function deleteAdminBlog(req: Request, res: Response) {
   try {
     const id = String(req.params.id || "");
     if (!Types.ObjectId.isValid(id)) return res.status(400).json({ success: false, message: "Invalid blog ID." });
-    const deleted = await Blog.findByIdAndDelete(id);
-    if (!deleted) return res.status(404).json({ success: false, message: "Blog not found." });
-    return res.json({ success: true, message: "Blog deleted." });
+    const result = await softDeleteEntity("blog", id, currentAdminId(req));
+    return res.json({ success: true, message: result.message });
   } catch (error) {
-    return res.status(500).json({ success: false, message: duplicateMessage(error) });
+    return res.status(/not found/i.test(duplicateMessage(error)) ? 404 : 400).json({ success: false, message: duplicateMessage(error) });
   }
 }
 
@@ -174,13 +174,16 @@ export async function updateAdminBlogCategory(req: Request, res: Response) {
 }
 
 export async function deleteAdminBlogCategory(req: Request, res: Response) {
-  const id = String(req.params.id || "");
-  if (!Types.ObjectId.isValid(id)) return res.status(400).json({ success: false, message: "Invalid category ID." });
-  const used = await Blog.exists({ category: id });
-  if (used) return res.status(409).json({ success: false, message: "Category is used by a blog and cannot be deleted." });
-  const deleted = await BlogCategory.findByIdAndDelete(id);
-  if (!deleted) return res.status(404).json({ success: false, message: "Category not found." });
-  return res.json({ success: true, message: "Category deleted." });
+  try {
+    const id = String(req.params.id || "");
+    if (!Types.ObjectId.isValid(id)) return res.status(400).json({ success: false, message: "Invalid category ID." });
+    const used = await Blog.exists({ category: id });
+    if (used) return res.status(409).json({ success: false, message: "Category is used by a blog and cannot be deleted." });
+    const result = await softDeleteEntity("blog_category", id, currentAdminId(req));
+    return res.json({ success: true, message: result.message });
+  } catch (error) {
+    return res.status(/not found/i.test(duplicateMessage(error)) ? 404 : 400).json({ success: false, message: duplicateMessage(error) });
+  }
 }
 
 export async function listAdminBlogTags(_req: Request, res: Response) {
@@ -216,12 +219,14 @@ export async function updateAdminBlogTag(req: Request, res: Response) {
 }
 
 export async function deleteAdminBlogTag(req: Request, res: Response) {
-  const id = String(req.params.id || "");
-  if (!Types.ObjectId.isValid(id)) return res.status(400).json({ success: false, message: "Invalid tag ID." });
-  await Blog.updateMany({ tags: id }, { $pull: { tags: new Types.ObjectId(id) } });
-  const deleted = await BlogTag.findByIdAndDelete(id);
-  if (!deleted) return res.status(404).json({ success: false, message: "Tag not found." });
-  return res.json({ success: true, message: "Tag deleted." });
+  try {
+    const id = String(req.params.id || "");
+    if (!Types.ObjectId.isValid(id)) return res.status(400).json({ success: false, message: "Invalid tag ID." });
+    const result = await softDeleteEntity("blog_tag", id, currentAdminId(req));
+    return res.json({ success: true, message: result.message });
+  } catch (error) {
+    return res.status(/not found/i.test(duplicateMessage(error)) ? 404 : 400).json({ success: false, message: duplicateMessage(error) });
+  }
 }
 
 export async function listPublicBlogController(req: Request, res: Response) {

@@ -1,3 +1,4 @@
+import { applySoftDeletePlugin } from "../utils/softDelete";
 import mongoose, { Document, Model, Schema, Types } from "mongoose";
 
 export type DeliveryPaymentMethod = "cod" | "online";
@@ -62,6 +63,8 @@ const deliveryChargeRuleSchema = new Schema<IDeliveryChargeRule>(
 );
 
 deliveryChargeRuleSchema.index({ isDeleted: 1, paymentMethod: 1, minAmount: 1, maxAmount: 1 });
+
+applySoftDeletePlugin(deliveryChargeRuleSchema);
 
 const DeliveryChargeRule: Model<IDeliveryChargeRule> =
   (mongoose.models.DeliveryChargeRule as Model<IDeliveryChargeRule>) ||

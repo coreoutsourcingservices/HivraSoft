@@ -1,3 +1,4 @@
+import { applySoftDeletePlugin } from "../utils/softDelete";
 import mongoose, { Schema, Document, Model, Types } from "mongoose";
 
 export type OfferType = "buy_get" | "fixed_price_bundle";
@@ -99,6 +100,8 @@ offerSchema.index(
 offerSchema.index({ offerType: 1, isDeleted: 1, isActive: 1, updatedAt: -1 });
 offerSchema.index({ productIds: 1, isActive: 1 });
 offerSchema.index({ categoryIds: 1, isActive: 1 });
+
+applySoftDeletePlugin(offerSchema);
 
 const Offer: Model<IOffer> =
   (mongoose.models.Offer as Model<IOffer>) || mongoose.model<IOffer>("Offer", offerSchema);

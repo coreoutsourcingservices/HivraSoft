@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import mongoose from "mongoose";
+import { softDeleteEntity } from "../services/admin-trash.service";
 import Offer, {
   type OfferHistoryAction,
   type OfferType,
@@ -310,18 +311,10 @@ export function deleteAdminOffer(offerType: OfferType) {
       if (typeof id !== "string" || !mongoose.Types.ObjectId.isValid(id)) {
         return res.status(400).json({ success: false, message: "Invalid offer ID." });
       }
-
-      const offer = await Offer.findOne({ _id: id, offerType, isDeleted: { $ne: true } });
+      const offer = await Offer.findOne({ _id: id, offerType, isDeleted: { $ne: true } }).select("_id").lean();
       if (!offer) return res.status(404).json({ success: false, message: "Offer not found." });
-
-      const values = offerValues({}, offerType, offer);
-      values.isActive = false;
-      offer.isActive = false;
-      offer.isDeleted = true;
-      offer.history.push(historyEntry("deleted", values, req) as any);
-      await offer.save();
-
-      return res.json({ success: true, message: "Offer deleted." });
+      const result = await softDeleteEntity("offer", id, req.user?._id ? String(req.user._id) : null);
+      return res.json({ success: true, message: result.message });
     } catch (error) {
       return res.status(400).json({
         success: false,

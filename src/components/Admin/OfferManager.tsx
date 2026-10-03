@@ -1,5 +1,7 @@
 "use client";
 
+import { confirmAdminAction } from "@/src/components/Admin/AdminConfirmProvider";
+
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Gift, IndianRupee, Pencil, Trash2 } from "lucide-react";
 import OfferTargetSelector from "./OfferTargetSelector";
@@ -247,7 +249,13 @@ export default function OfferManager({ type }: Props) {
   }
 
   async function deleteOffer(offer: Offer) {
-    if (!window.confirm(`Delete “${offer.name}”?`)) return;
+    const confirmed = await confirmAdminAction({
+      title: "Delete Offer?",
+      itemName: offer.name,
+      description: "The offer will move to Trash for 30 days and will stop applying on the storefront immediately.",
+      confirmLabel: "Move to Trash",
+    });
+    if (!confirmed) return;
     try {
       setBusyId(offer._id);
       setError("");

@@ -1,3 +1,4 @@
+import { applySoftDeletePlugin } from "../utils/softDelete";
 import mongoose, { Schema, type Document, type Model } from "mongoose";
 
 export interface IBlogCategory extends Document {
@@ -28,6 +29,8 @@ const blogCategorySchema = new Schema<IBlogCategory>(
   },
   { timestamps: true, versionKey: false }
 );
+
+applySoftDeletePlugin(blogCategorySchema);
 
 const BlogCategory: Model<IBlogCategory> =
   (mongoose.models.BlogCategory as Model<IBlogCategory>) ||

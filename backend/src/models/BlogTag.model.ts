@@ -1,3 +1,4 @@
+import { applySoftDeletePlugin } from "../utils/softDelete";
 import mongoose, { Schema, type Document, type Model } from "mongoose";
 
 export interface IBlogTag extends Document {
@@ -14,6 +15,8 @@ const blogTagSchema = new Schema<IBlogTag>(
   },
   { timestamps: true, versionKey: false }
 );
+
+applySoftDeletePlugin(blogTagSchema);
 
 const BlogTag: Model<IBlogTag> =
   (mongoose.models.BlogTag as Model<IBlogTag>) || mongoose.model<IBlogTag>("BlogTag", blogTagSchema);

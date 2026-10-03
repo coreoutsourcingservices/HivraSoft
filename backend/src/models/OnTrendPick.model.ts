@@ -1,3 +1,4 @@
+import { applySoftDeletePlugin } from "../utils/softDelete";
 import mongoose, { Schema, Document, Model, Types } from "mongoose";
 
 export type HomepageChangeAction = "created" | "updated" | "status_changed" | "deleted";
@@ -76,6 +77,8 @@ const onTrendPickSchema = new Schema<IOnTrendPick>(
 );
 
 onTrendPickSchema.index({ isDeleted: 1, isActive: 1, order: 1, createdAt: 1 });
+
+applySoftDeletePlugin(onTrendPickSchema);
 
 const OnTrendPick: Model<IOnTrendPick> =
   (mongoose.models.OnTrendPick as Model<IOnTrendPick>) ||

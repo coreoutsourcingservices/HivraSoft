@@ -1,5 +1,7 @@
 "use client";
 
+import { confirmAdminAction } from "@/src/components/Admin/AdminConfirmProvider";
+
 import { useCallback, useEffect, useState } from "react";
 import { Edit3, Plus, Trash2, X } from "lucide-react";
 import { createBlogCategory, createBlogTag, deleteBlogCategory, deleteBlogTag, getBlogCategories, getBlogTags, updateBlogCategory, updateBlogTag, uploadBlogImage, type BlogTaxonomy } from "@/lib/blog";
@@ -23,7 +25,7 @@ export default function BlogTaxonomyManager({ kind }: { kind: Kind }) {
     if (!name.trim()) return setError(`${isCategory ? "Category" : "Tag"} name is required.`);
     try { setSaving(true); setError(""); const body:any = { name:name.trim(), slug:slug.trim() || slugify(name) }; if (isCategory) Object.assign(body,{description,image,isActive}); if (editingId) { if (isCategory) await updateBlogCategory(editingId,body); else await updateBlogTag(editingId,body); } else { if (isCategory) await createBlogCategory(body); else await createBlogTag(body); } clear(); await load(); } catch(e) { setError(e instanceof Error?e.message:"Unable to save."); } finally { setSaving(false); }
   }
-  async function remove(item: BlogTaxonomy) { if (!confirm(`Delete \"${item.name}\"?`)) return; try { if(isCategory) await deleteBlogCategory(item._id); else await deleteBlogTag(item._id); if(editingId===item._id) clear(); await load(); } catch(e){ alert(e instanceof Error?e.message:"Unable to delete."); } }
+  async function remove(item: BlogTaxonomy) { const confirmed = await confirmAdminAction({ title: `Delete Blog ${isCategory ? "Category" : "Tag"}?`, itemName: item.name, description: "This record will move to Trash for 30 days and can be restored during that period.", confirmLabel: "Move to Trash" }); if (!confirmed) return; try { if(isCategory) await deleteBlogCategory(item._id); else await deleteBlogTag(item._id); if(editingId===item._id) clear(); await load(); } catch(e){ alert(e instanceof Error?e.message:"Unable to delete."); } }
   async function upload(file: File) { try { setSaving(true); const result=await uploadBlogImage(file, `blog-category-${slugify(name)||"image"}`); setImage({url:result.url,publicId:result.publicId,width:result.width,height:result.height}); } catch(e){ setError(e instanceof Error?e.message:"Upload failed."); } finally { setSaving(false); } }
 
   return <div className="min-h-full bg-[#F8F5F2] p-4 sm:p-6 lg:p-8"><div className="mx-auto max-w-[1250px]"><div className="mb-6"><p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-[#A51D45]">Blog Management</p><h1 className="mt-2 text-3xl font-semibold">Blog {isCategory?"Categories":"Tags"}</h1></div><div className="grid gap-5 lg:grid-cols-[390px_1fr]">

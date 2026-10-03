@@ -5,6 +5,8 @@ import mongoose, {
   Types,
 } from "mongoose";
 
+import { applySoftDeletePlugin } from "../utils/softDelete";
+
 /* =========================================================
    TYPES
 ========================================================= */
@@ -530,6 +532,8 @@ bannerSchema.index({
 bannerSchema.index({
   "videos.product": 1,
 });
+
+applySoftDeletePlugin(bannerSchema);
 
 /* =========================================================
    MODEL

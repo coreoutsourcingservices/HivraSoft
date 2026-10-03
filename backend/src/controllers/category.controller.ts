@@ -401,6 +401,7 @@ export const deleteCategoryController =
           id,
           {
             cascade,
+            deletedBy: req.user?._id ? String(req.user._id) : null,
           }
         );
 

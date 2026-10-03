@@ -1,5 +1,7 @@
 "use client";
 
+import { confirmAdminAction } from "@/src/components/Admin/AdminConfirmProvider";
+
 import { useCallback, useEffect, useState } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import {
@@ -125,7 +127,13 @@ export default function AlwaysInItAdminPage() {
   }
 
   async function deleteItem(item: AlwaysItem) {
-    if (!window.confirm(`Delete ${item.gender} Always In It? History will remain saved.`)) return;
+    const confirmed = await confirmAdminAction({
+      title: "Delete Always In It?",
+      itemName: item.gender === "women" ? "Women" : "Men",
+      description: "This homepage record will move to Trash for 30 days. Its Cloudinary image will be preserved until permanent deletion.",
+      confirmLabel: "Move to Trash",
+    });
+    if (!confirmed) return;
     try {
       setBusyId(item._id);
       setError("");

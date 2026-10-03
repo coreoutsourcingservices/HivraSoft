@@ -1,5 +1,7 @@
 "use client";
 
+import { confirmAdminAction } from "@/src/components/Admin/AdminConfirmProvider";
+
 import {
   type MouseEvent,
   useCallback,
@@ -373,13 +375,13 @@ export default function PrimeSelectionAdminPage() {
   }
 
   async function deleteItem(item: PrimeItem) {
-    if (
-      !window.confirm(
-        `Delete ${item.gender} Prime Selection? History will remain saved.`,
-      )
-    ) {
-      return;
-    }
+    const confirmed = await confirmAdminAction({
+      title: "Delete Prime Selection?",
+      itemName: item.gender === "women" ? "Women" : "Men",
+      description: "This Prime Selection record and its hotspots will move to Trash for 30 days. Cloudinary media will be preserved until permanent deletion.",
+      confirmLabel: "Move to Trash",
+    });
+    if (!confirmed) return;
 
     try {
       setBusyId(item._id);

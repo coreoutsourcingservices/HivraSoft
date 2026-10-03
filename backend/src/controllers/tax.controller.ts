@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import mongoose from "mongoose";
+import { softDeleteEntity } from "../services/admin-trash.service";
 import TaxSetting, { type TaxRuleAction, type TaxValueType } from "../models/TaxSetting.model";
 import Product from "../models/Product.model";
 import { normalizeExcludedProductIds } from "../services/tax.service";
@@ -259,18 +260,8 @@ export async function deleteTaxSettingAdmin(req: Request, res: Response) {
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ success: false, message: "Invalid tax rule ID." });
     }
-
-    const rule = await TaxSetting.findOne({ _id: id, isDeleted: { $ne: true } });
-    if (!rule) return res.status(404).json({ success: false, message: "Tax rule not found." });
-
-    const values = await taxValues({ isActive: false }, rule);
-    rule.isActive = false;
-    rule.isDeleted = true;
-    rule.history.push(historySnapshot("deleted", values, req) as any);
-    if (rule.history.length > 100) rule.history.splice(0, rule.history.length - 100);
-    await rule.save();
-
-    return res.json({ success: true, message: "Tax rule deleted.", ...(await taxResponse()) });
+    const result = await softDeleteEntity("tax", id, req.user?._id ? String(req.user._id) : null);
+    return res.json({ success: true, message: result.message, ...(await taxResponse()) });
   } catch (error) {
     return res.status(400).json({
       success: false,

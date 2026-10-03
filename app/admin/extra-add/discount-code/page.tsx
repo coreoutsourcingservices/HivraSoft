@@ -1,5 +1,7 @@
 "use client";
 
+import { confirmAdminAction } from "@/src/components/Admin/AdminConfirmProvider";
+
 import { useEffect, useState } from "react";
 import DiscountProductSelector from "@/src/components/Admin/DiscountProductSelector";
 
@@ -125,7 +127,13 @@ export default function DiscountCodePage() {
   }
 
   async function deleteCode(item: DiscountCodeItem) {
-    if (!window.confirm(`Delete discount code ${item.code}?`)) return;
+    const confirmed = await confirmAdminAction({
+      title: "Delete Discount Code?",
+      itemName: item.code,
+      description: "The discount code will be moved to Trash for 30 days and will stop applying immediately.",
+      confirmLabel: "Move to Trash",
+    });
+    if (!confirmed) return;
     try {
       setBusyId(item._id); setError(""); setSuccess("");
       const response = await fetch(`${API_URL}/api/admin/discounts/codes/${item._id}`, { method: "DELETE", credentials: "include" });

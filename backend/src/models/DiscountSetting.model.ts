@@ -1,3 +1,4 @@
+import { applySoftDeletePlugin } from "../utils/softDelete";
 import mongoose, { Schema, Document, Model, Types } from "mongoose";
 
 export type ExtraValueType = "percentage" | "fixed";
@@ -75,6 +76,8 @@ const discountSettingSchema = new Schema<IDiscountSetting>(
 );
 
 discountSettingSchema.index({ isDeleted: 1, isActive: 1, minAmount: 1, maxAmount: 1 });
+
+applySoftDeletePlugin(discountSettingSchema);
 
 const DiscountSetting: Model<IDiscountSetting> =
   (mongoose.models.DiscountSetting as Model<IDiscountSetting>) ||

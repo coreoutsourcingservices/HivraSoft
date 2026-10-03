@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import {
   Bell,
@@ -18,10 +18,29 @@ import {
   Heart,
   FileText,
   House,
+  Trash2,
 } from "lucide-react";
 
 export default function AdminSidebar() {
   const pathname = usePathname();
+  const [trashCount, setTrashCount] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/admin/trash?limit=1`, {
+      credentials: "include",
+      cache: "no-store",
+    })
+      .then(async (response) => {
+        if (!response.ok) return null;
+        return response.json();
+      })
+      .then((data) => {
+        if (!cancelled) setTrashCount(Number(data?.stats?.total || 0));
+      })
+      .catch(() => undefined);
+    return () => { cancelled = true; };
+  }, [pathname]);
 
   const productRoute = pathname.startsWith("/admin/products");
   const userRoute =
@@ -210,6 +229,17 @@ export default function AdminSidebar() {
               Delivery Charges
             </SubMenuLink>
           </DropdownMenu>
+
+          <MenuLink href="/admin/trash" active={pathname.startsWith("/admin/trash")} icon={<Trash2 size={17} />}>
+            <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
+              <span>Trash</span>
+              {trashCount > 0 && (
+                <span className="rounded-full bg-white/10 px-2 py-0.5 text-[8px] font-bold text-white/75">
+                  {trashCount > 99 ? "99+" : trashCount}
+                </span>
+              )}
+            </span>
+          </MenuLink>
 
           <MenuLink href="/admin/settings" active={pathname.startsWith("/admin/settings")}>
             Settings

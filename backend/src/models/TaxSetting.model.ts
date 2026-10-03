@@ -1,3 +1,4 @@
+import { applySoftDeletePlugin } from "../utils/softDelete";
 import mongoose, { Schema, Document, Model, Types } from "mongoose";
 
 export type TaxValueType = "percentage" | "fixed";
@@ -79,6 +80,8 @@ const taxSettingSchema = new Schema<ITaxSetting>(
 );
 
 taxSettingSchema.index({ isDeleted: 1, isActive: 1, minAmount: 1, maxAmount: 1 });
+
+applySoftDeletePlugin(taxSettingSchema);
 
 const TaxSetting: Model<ITaxSetting> =
   (mongoose.models.TaxSetting as Model<ITaxSetting>) ||

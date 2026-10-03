@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import mongoose from "mongoose";
+import { softDeleteEntity } from "../services/admin-trash.service";
 import DeliveryChargeRule, { type DeliveryPaymentMethod } from "../models/DeliveryChargeRule.model";
 import { normalizeDeliveryPaymentMethod } from "../services/delivery-charge.service";
 
@@ -180,22 +181,8 @@ export async function deleteDeliveryChargeRule(req: Request, res: Response) {
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ success: false, message: "Invalid delivery charge rule ID." });
     }
-    const rule = await DeliveryChargeRule.findOne({ _id: id, isDeleted: { $ne: true } });
-    if (!rule) return res.status(404).json({ success: false, message: "Delivery charge rule not found." });
-
-    const values = {
-      paymentMethod: rule.paymentMethod,
-      minAmount: Number(rule.minAmount || 0),
-      maxAmount: rule.maxAmount === null || rule.maxAmount === undefined ? null : Number(rule.maxAmount),
-      charge: Number(rule.charge || 0),
-      isActive: false,
-    };
-    rule.isActive = false;
-    rule.isDeleted = true;
-    rule.history.push(historySnapshot("deleted", values, req) as any);
-    if (rule.history.length > 100) rule.history.splice(0, rule.history.length - 100);
-    await rule.save();
-    return res.json({ success: true, message: "Delivery charge rule deleted." });
+    const result = await softDeleteEntity("delivery_charge", id, req.user?._id ? String(req.user._id) : null);
+    return res.json({ success: true, message: result.message });
   } catch (error) {
     return res.status(400).json({
       success: false,
