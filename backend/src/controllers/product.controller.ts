@@ -9,6 +9,7 @@ import {
   getActiveProducts,
   getFeaturedProducts,
   getNewLaunchProducts,
+  getRelatedProducts,
   getProductById,
   getProductBySlug,
   getProductCatalog,
@@ -299,6 +300,72 @@ export const getNewLaunchProductsController =
               error,
               "Unable to load new launch products."
             ),
+        });
+    }
+  };
+
+/* =========================================================
+   RELATED PRODUCTS
+   PUBLIC
+
+   GET /api/products/:id/related?limit=4
+   GET /api/products/:id/related?limit=5
+========================================================= */
+
+export const getRelatedProductsController =
+  async (
+    req: Request,
+    res: Response
+  ) => {
+    try {
+      const productId =
+        getRouteParam(
+          req.params.id,
+          "Product ID"
+        );
+
+      const requestedLimit =
+        Number(
+          req.query.limit || 5
+        );
+
+      const limit =
+        requestedLimit === 4
+          ? 4
+          : 5;
+
+      const products =
+        await getRelatedProducts(
+          productId,
+          limit
+        );
+
+      return res
+        .status(200)
+        .json({
+          success: true,
+          count:
+            products.length,
+          limit,
+          products,
+        });
+    } catch (error) {
+      const message =
+        getErrorMessage(
+          error,
+          "Unable to load related products."
+        );
+
+      return res
+        .status(
+          message ===
+            "Product not found."
+            ? 404
+            : 400
+        )
+        .json({
+          success: false,
+          message,
         });
     }
   };

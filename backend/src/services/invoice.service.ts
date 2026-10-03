@@ -322,7 +322,26 @@ function buildInvoicePage(
     const taxPercentage = amount(order.taxPercentage);
     const taxDetails = order.taxDetails && typeof order.taxDetails === "object" ? order.taxDetails : {};
     const taxValueType = String(taxDetails.valueType || "percentage").toLowerCase();
-    const shipping = amount(order.shipping);
+    const deliveryCharge =
+      order.deliveryCharge && typeof order.deliveryCharge === "object"
+        ? order.deliveryCharge
+        : {};
+    const shipping = Math.max(
+      amount(order.shipping ?? order.shippingCharge),
+      amount(deliveryCharge.charge)
+    );
+    const paymentMethod = String(order.paymentMethod || "").toLowerCase();
+    const deliveryLabel =
+      paymentMethod === "cod"
+        ? "COD Charge"
+        : paymentMethod === "online" || paymentMethod === "razorpay"
+          ? "Online Delivery Charge"
+          : "Delivery Charge";
+    const showDeliveryCharge =
+      shipping > 0 ||
+      paymentMethod === "cod" ||
+      paymentMethod === "online" ||
+      paymentMethod === "razorpay";
 
     if (automaticDiscount > 0) {
       summaryRows.push([
@@ -347,8 +366,8 @@ function buildInvoicePage(
       summaryRows.push([taxLabel, money(taxAmount), false]);
     }
 
-    if (shipping > 0) {
-      summaryRows.push(["Shipping", money(shipping), false]);
+    if (showDeliveryCharge) {
+      summaryRows.push([deliveryLabel, money(shipping), false]);
     }
 
     summaryRows.push(["Order Total", money(order.total), true]);

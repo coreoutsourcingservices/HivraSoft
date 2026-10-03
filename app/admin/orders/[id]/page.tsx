@@ -382,11 +382,32 @@ export default function AdminOrderDetailsPage() {
   const taxDetails = record(order.taxDetails);
   const taxValueType = text(taxDetails.valueType, "percentage").toLowerCase();
 
+  const deliveryChargeDetails =
+    record(order.deliveryCharge);
+
   const shippingAmount =
-    numberValue(
-      order.shipping ??
-        order.shippingCharge
+    Math.max(
+      numberValue(
+        order.shipping ??
+          order.shippingCharge
+      ),
+      numberValue(
+        deliveryChargeDetails.charge
+      )
     );
+
+  const deliveryChargeLabel =
+    paymentMethod === "COD"
+      ? "COD charge"
+      : paymentMethod === "ONLINE" || paymentMethod === "RAZORPAY"
+        ? "Online delivery charge"
+        : "Delivery charge";
+
+  const shouldShowDeliveryCharge =
+    shippingAmount > 0 ||
+    paymentMethod === "COD" ||
+    paymentMethod === "ONLINE" ||
+    paymentMethod === "RAZORPAY";
 
   const grandTotal =
     numberValue(
@@ -1150,18 +1171,15 @@ export default function AdminOrderDetailsPage() {
                 </div>
               )}
 
-              {/* SHIPPING ONLY WHEN VALUE > 0 */}
-              {shippingAmount >
-                0 && (
+              {/* DELIVERY / COD CHARGE */}
+              {shouldShowDeliveryCharge && (
                 <div className="flex items-center justify-between gap-4">
                   <span className="text-[11px] text-[#241C19]/55">
-                    Shipping
+                    {deliveryChargeLabel}
                   </span>
 
                   <span className="text-[11px] font-semibold text-[#241C19]">
-                    {money(
-                      shippingAmount
-                    )}
+                    {money(shippingAmount)}
                   </span>
                 </div>
               )}

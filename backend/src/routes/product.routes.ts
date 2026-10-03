@@ -21,6 +21,8 @@ import {
 
   getNewLaunchProductsController,
 
+  getRelatedProductsController,
+
   getCatalogProductsController,
 
   getCatalogProductBySlugController,
@@ -93,6 +95,12 @@ router.get(
 router.get(
   "/slug/:slug",
   getProductBySlugController
+);
+
+/* Related products (4 or 5 items) */
+router.get(
+  "/:id/related",
+  getRelatedProductsController
 );
 
 /* =========================================================
