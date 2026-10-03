@@ -9,6 +9,12 @@ export type CatalogSize = {
   size: string;
   stock: number;
   isActive?: boolean;
+<<<<<<< HEAD
+=======
+  originalPrice?: number;
+  showPrice?: number;
+  discountPrice?: number;
+>>>>>>> aman
 };
 
 export type CatalogCategory = {
@@ -34,6 +40,12 @@ export type CatalogColor = {
   seoDescription?: string;
   images?: CatalogImage[];
   sizes?: CatalogSize[];
+<<<<<<< HEAD
+=======
+  originalPrice?: number;
+  showPrice?: number;
+  discountPrice?: number;
+>>>>>>> aman
 };
 
 export type CatalogProduct = {
@@ -84,6 +96,13 @@ export function toDisplayProduct(product: CatalogProduct | any): DisplayProduct 
   const safe: CatalogProduct = product || ({ _id: "" } as CatalogProduct);
   const color = getDefaultColor(safe);
   const images = Array.isArray(color?.images) ? color!.images!.filter((image) => Boolean(image?.url)) : [];
+<<<<<<< HEAD
+=======
+  const sizes = Array.isArray(color?.sizes) ? color!.sizes!.filter((size) => size?.isActive !== false) : [];
+  const defaultSize = sizes[0];
+  const price = Number(defaultSize?.showPrice ?? color?.showPrice ?? 0);
+  const compareAtPrice = Number(defaultSize?.originalPrice ?? color?.originalPrice ?? price);
+>>>>>>> aman
 
   return {
     ...safe,
@@ -97,6 +116,11 @@ export function toDisplayProduct(product: CatalogProduct | any): DisplayProduct 
     seoDescription: color?.seoDescription || color?.shortDescription || "",
     mainImages: images,
     stock: getProductTotalStock(safe),
+<<<<<<< HEAD
+=======
+    price,
+    compareAtPrice: compareAtPrice > price ? compareAtPrice : price,
+>>>>>>> aman
   };
 }
 

@@ -7,6 +7,7 @@ import Header from "@/src/components/Header/Header";
 import MenCatalog from "@/src/components/Men/MenCatalog";
 
 import {
+<<<<<<< HEAD
   getMenBanners,
   getMenPageDescription,
   getMenPageTitle,
@@ -23,20 +24,41 @@ import {
 /* =========================================================
    DYNAMIC
 ========================================================= */
+=======
+  findCategoryRoot,
+  getActiveCategoryTree,
+  resolveCategoryPath,
+} from "@/src/services/categories";
+
+import {
+  getActiveProducts,
+} from "@/src/services/products";
+
+import {
+  getCategoryBanners,
+  mapProductToColorCards,
+  productBelongsToCategory,
+} from "@/src/services/storefront-catalog";
+>>>>>>> aman
 
 export const dynamic =
   "force-dynamic";
 
+<<<<<<< HEAD
 /* =========================================================
    TYPES
 ========================================================= */
 
 type MenPageProps = {
+=======
+type Props = {
+>>>>>>> aman
   params: Promise<{
     slug?: string[];
   }>;
 };
 
+<<<<<<< HEAD
 /* =========================================================
    MEN ROOT CATEGORY ALIASES
 ========================================================= */
@@ -273,10 +295,57 @@ export default async function MenPage({
   /* =======================================================
      FETCH ACTIVE PRODUCTS
   ======================================================= */
+=======
+export default async function MenPage({
+  params,
+}: Props) {
+  const resolved =
+    await params;
+
+  const slugParts =
+    (
+      resolved.slug ||
+      []
+    )
+      .map((slug) =>
+        String(slug)
+          .trim()
+          .toLowerCase()
+      )
+      .filter(Boolean);
+
+  const tree =
+    await getActiveCategoryTree();
+
+  const menRoot =
+    findCategoryRoot(
+      tree,
+      "men"
+    );
+
+  if (!menRoot) {
+    notFound();
+  }
+
+  const selected =
+    resolveCategoryPath(
+      menRoot,
+      slugParts
+    );
+
+  if (!selected) {
+    notFound();
+  }
+
+  const currentCategory =
+    selected.at(-1) ||
+    menRoot;
+>>>>>>> aman
 
   const apiProducts =
     await getActiveProducts();
 
+<<<<<<< HEAD
   /* =======================================================
      DEBUG
 
@@ -365,6 +434,27 @@ export default async function MenPage({
      RENDER
   ======================================================= */
 
+=======
+  const products =
+    apiProducts
+      .filter((product) =>
+        productBelongsToCategory(
+          product,
+          currentCategory
+        )
+      )
+      .flatMap(
+        mapProductToColorCards
+      );
+
+  const banners =
+    getCategoryBanners(
+      currentCategory,
+      "/men",
+      slugParts
+    );
+
+>>>>>>> aman
   return (
     <>
       <Header />
@@ -377,6 +467,7 @@ export default async function MenPage({
           banners
         }
         title={
+<<<<<<< HEAD
           title
         }
         description={
@@ -387,6 +478,24 @@ export default async function MenPage({
         }
         subcategory={
           subcategory
+=======
+          currentCategory.name
+        }
+        description={
+          currentCategory.description ||
+          (
+            currentCategory.id ===
+            menRoot.id
+              ? "Explore HivraSoft men's collection."
+              : `Shop HivraSoft ${currentCategory.name}.`
+          )
+        }
+        categoryRoot={
+          menRoot
+        }
+        categoryPath={
+          slugParts
+>>>>>>> aman
         }
       />
     </>

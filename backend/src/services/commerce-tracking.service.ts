@@ -114,7 +114,10 @@ export async function listCommerceTracking(kind: CommerceTrackingKind, query: Co
       },
     },
     { $set: { userDoc: { $arrayElemAt: ["$userDoc", 0] } } },
+<<<<<<< HEAD
     { $match: { "userDoc.role": "customer" } },
+=======
+>>>>>>> aman
     {
       $lookup: {
         from: "products",
@@ -124,6 +127,7 @@ export async function listCommerceTracking(kind: CommerceTrackingKind, query: Co
       },
     },
     { $set: { productDoc: { $arrayElemAt: ["$productDoc", 0] } } },
+<<<<<<< HEAD
     {
       $lookup: {
         from: "categories",
@@ -132,6 +136,8 @@ export async function listCommerceTracking(kind: CommerceTrackingKind, query: Co
         as: "categoryDocs",
       },
     },
+=======
+>>>>>>> aman
   ];
 
   if (search) {
@@ -203,9 +209,12 @@ export async function listCommerceTracking(kind: CommerceTrackingKind, query: Co
       product: {
         id: productId,
         ...product,
+<<<<<<< HEAD
         categoryName: Array.isArray(activity.categoryDocs)
           ? activity.categoryDocs.map((category: any) => String(category?.name || "").trim()).filter(Boolean).join(", ")
           : "",
+=======
+>>>>>>> aman
         colorId,
         sizeId,
       },
@@ -214,6 +223,12 @@ export async function listCommerceTracking(kind: CommerceTrackingKind, query: Co
       updatedAt: activeItem?.updatedAt || activity.updatedAt || activity.createdAt,
       status,
       email: {
+<<<<<<< HEAD
+=======
+        addedSent: Boolean((metadata as any).addedEmailSentAt),
+        addedSentAt: (metadata as any).addedEmailSentAt || null,
+        reminder20MinSent: false,
+>>>>>>> aman
         reminder24HourSent: false,
         reminder48HourSent: false,
       },
@@ -246,6 +261,10 @@ export async function listCommerceTracking(kind: CommerceTrackingKind, query: Co
           && String(notification.product || "") === row.product.id
           && String(notification?.metadata?.addedAt || "") === addedAtIso;
       });
+<<<<<<< HEAD
+=======
+      row.email.reminder20MinSent = related.some((notification: any) => Number(notification?.metadata?.stageMinutes) === 20 && Boolean(notification?.metadata?.emailSentAt));
+>>>>>>> aman
       row.email.reminder24HourSent = related.some((notification: any) => Number(notification?.metadata?.stageMinutes) === 1440 && Boolean(notification?.metadata?.emailSentAt));
       row.email.reminder48HourSent = related.some((notification: any) => Number(notification?.metadata?.stageMinutes) === 2880 && Boolean(notification?.metadata?.emailSentAt));
     }

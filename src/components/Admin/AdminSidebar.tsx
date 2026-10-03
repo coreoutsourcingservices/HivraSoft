@@ -17,7 +17,10 @@ import {
   ShoppingCart,
   Heart,
   FileText,
+<<<<<<< HEAD
   House,
+=======
+>>>>>>> aman
 } from "lucide-react";
 
 export default function AdminSidebar() {
@@ -29,16 +32,24 @@ export default function AdminSidebar() {
     pathname.startsWith("/admin/notifications") ||
     pathname.startsWith("/admin/reviews");
   const blogRoute = pathname.startsWith("/admin/blog");
+<<<<<<< HEAD
   const offerRoute = pathname.startsWith("/admin/offers");
   const extraRoute = pathname.startsWith("/admin/extra-add");
   const homepageRoute = pathname.startsWith("/admin/homepage");
+=======
+  const extraRoute = pathname.startsWith("/admin/extra-add");
+>>>>>>> aman
 
   const [productsOpen, setProductsOpen] = useState(productRoute);
   const [usersOpen, setUsersOpen] = useState(userRoute);
   const [blogOpen, setBlogOpen] = useState(blogRoute);
+<<<<<<< HEAD
   const [offersOpen, setOffersOpen] = useState(offerRoute);
   const [extraOpen, setExtraOpen] = useState(extraRoute);
   const [homepageOpen, setHomepageOpen] = useState(homepageRoute);
+=======
+  const [extraOpen, setExtraOpen] = useState(extraRoute);
+>>>>>>> aman
 
   return (
     <aside className="flex max-h-[calc(100dvh-4rem)] w-full flex-col bg-[#211A18] text-white lg:h-dvh lg:max-h-none">
@@ -80,6 +91,7 @@ export default function AdminSidebar() {
             Categories
           </MenuLink>
 
+<<<<<<< HEAD
           <DropdownMenu
             label="Offers"
             active={offerRoute}
@@ -101,10 +113,13 @@ export default function AdminSidebar() {
             </SubMenuLink>
           </DropdownMenu>
 
+=======
+>>>>>>> aman
           <MenuLink href="/admin/banners" active={pathname.startsWith("/admin/banners")}>
             Banners
           </MenuLink>
 
+<<<<<<< HEAD
           <DropdownMenu
             label="Homepage"
             active={homepageRoute}
@@ -124,6 +139,8 @@ export default function AdminSidebar() {
           </DropdownMenu>
 
 
+=======
+>>>>>>> aman
           <MenuLink href="/admin/orders" active={pathname.startsWith("/admin/orders")}>
             Orders
           </MenuLink>

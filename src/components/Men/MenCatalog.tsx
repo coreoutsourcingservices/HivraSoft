@@ -3,6 +3,7 @@
 import Link from "next/link";
 
 import {
+<<<<<<< HEAD
   useEffect,
   useMemo,
   useRef,
@@ -251,12 +252,132 @@ function MenBannerSlider({
       )}
     </section>
   );
+=======
+  useMemo,
+  useState,
+} from "react";
+
+import CategoryBannerSlider from "@/src/components/Storefront/CategoryBannerSlider";
+
+import StorefrontProductCard from "@/src/components/Storefront/StorefrontProductCard";
+
+import type {
+  StorefrontCategoryNode,
+} from "@/src/services/categories";
+
+import type {
+  CatalogBanner,
+  CatalogProduct,
+} from "@/types/catalog";
+
+type Props = {
+  products: CatalogProduct[];
+
+  banners: CatalogBanner[];
+
+  title: string;
+
+  description: string;
+
+  categoryRoot:
+    StorefrontCategoryNode;
+
+  categoryPath:
+    string[];
+};
+
+type SortValue =
+  | "featured"
+  | "newest"
+  | "price-low"
+  | "price-high";
+
+/* =========================================================
+   URL
+========================================================= */
+
+function categoryHref(
+  slugs: string[]
+) {
+  return slugs.length ===
+    0
+    ? "/men"
+    : `/men/${slugs
+        .map(
+          encodeURIComponent
+        )
+        .join("/")}`;
+}
+
+function sortNodes(
+  nodes: StorefrontCategoryNode[]
+) {
+  return [
+    ...nodes,
+  ].sort(
+    (
+      a,
+      b
+    ) => {
+      if (
+        a.sortOrder !==
+        b.sortOrder
+      ) {
+        return (
+          a.sortOrder -
+          b.sortOrder
+        );
+      }
+
+      return a.name.localeCompare(
+        b.name
+      );
+    }
+  );
+}
+
+function selectedNodesFromPath(
+  root: StorefrontCategoryNode,
+  path: string[]
+) {
+  const result:
+    StorefrontCategoryNode[] =
+    [];
+
+  let children =
+    root.children;
+
+  for (
+    const slug of path
+  ) {
+    const found =
+      children.find(
+        (child) =>
+          child.slug ===
+          slug
+      );
+
+    if (!found) {
+      break;
+    }
+
+    result.push(
+      found
+    );
+
+    children =
+      found.children;
+  }
+
+  return result;
+>>>>>>> aman
 }
 
 /* =========================================================
    CATEGORY NAVIGATION
 ========================================================= */
 
+<<<<<<< HEAD
 function MenNavigation({
   category,
   subcategory,
@@ -274,18 +395,60 @@ function MenNavigation({
         ),
       [
         category,
+=======
+function CategoryNavigation({
+  root,
+  path,
+}: {
+  root:
+    StorefrontCategoryNode;
+
+  path: string[];
+}) {
+  const selectedNodes =
+    useMemo(
+      () =>
+        selectedNodesFromPath(
+          root,
+          path
+        ),
+      [
+        root,
+        path,
+      ]
+    );
+
+  const rootChildren =
+    useMemo(
+      () =>
+        sortNodes(
+          root.children
+        ),
+      [
+        root.children,
+>>>>>>> aman
       ]
     );
 
   return (
+<<<<<<< HEAD
     <div
       className="
         w-full
         overflow-hidden
+=======
+    <section
+      className="
+        mx-auto
+        mt-12
+
+        w-[calc(100%-64px)]
+>>>>>>> aman
 
         rounded-[20px]
 
         border
+<<<<<<< HEAD
         border-[#211A18]/10
 
         bg-[#EFE5DB]
@@ -720,16 +883,230 @@ function ProductCard({
         </div>
       </div>
     </article>
+=======
+        border-[#DDD2C5]
+
+        bg-[#F0E6DA]
+
+        px-6
+        py-5
+      "
+    >
+      <div
+        className="
+          flex
+          flex-wrap
+          items-center
+          justify-center
+          gap-3
+
+          border-b
+          border-[#DDD2C5]
+
+          pb-5
+        "
+      >
+        <Link
+          href="/men"
+          className={`
+            rounded-full
+
+            px-6
+            py-3
+
+            text-[11px]
+            font-semibold
+
+            tracking-[0.12em]
+
+            ${
+              path.length ===
+              0
+                ? "bg-[#B31345] text-white"
+                : "bg-white text-[#211A18]"
+            }
+          `}
+        >
+          ALL MEN
+        </Link>
+
+        {rootChildren.map(
+          (node) => (
+            <Link
+              key={
+                node.id
+              }
+              href={categoryHref(
+                [
+                  node.slug,
+                ]
+              )}
+              className={`
+                rounded-full
+
+                px-6
+                py-3
+
+                text-[11px]
+                font-semibold
+                uppercase
+
+                tracking-[0.12em]
+
+                ${
+                  path[0] ===
+                  node.slug
+                    ? "bg-[#B31345] text-white"
+                    : "bg-white text-[#211A18]"
+                }
+              `}
+            >
+              {
+                node.name
+              }
+            </Link>
+          )
+        )}
+      </div>
+
+      {selectedNodes.map(
+        (
+          node,
+          index
+        ) => {
+          const children =
+            sortNodes(
+              node.children
+            );
+
+          if (
+            children.length ===
+            0
+          ) {
+            return null;
+          }
+
+          const base =
+            path.slice(
+              0,
+              index + 1
+            );
+
+          const activeChild =
+            path[
+              index +
+                1
+            ];
+
+          return (
+            <div
+              key={
+                node.id
+              }
+              className="
+                flex
+                flex-wrap
+                items-center
+                justify-center
+
+                gap-x-8
+                gap-y-3
+
+                border-b
+                border-[#DDD2C5]
+
+                py-5
+
+                last:border-b-0
+              "
+            >
+              <Link
+                href={categoryHref(
+                  base
+                )}
+                className={`
+                  border-b-2
+
+                  px-1
+                  pb-2
+
+                  text-[10px]
+                  font-semibold
+                  uppercase
+
+                  ${
+                    !activeChild
+                      ? "border-[#B31345] text-[#B31345]"
+                      : "border-transparent"
+                  }
+                `}
+              >
+                ALL{" "}
+                {
+                  node.name
+                }
+              </Link>
+
+              {children.map(
+                (
+                  child
+                ) => (
+                  <Link
+                    key={
+                      child.id
+                    }
+                    href={categoryHref(
+                      [
+                        ...base,
+
+                        child.slug,
+                      ]
+                    )}
+                    className={`
+                      border-b-2
+
+                      px-1
+                      pb-2
+
+                      text-[10px]
+                      font-semibold
+                      uppercase
+
+                      ${
+                        activeChild ===
+                        child.slug
+                          ? "border-[#B31345] text-[#B31345]"
+                          : "border-transparent"
+                      }
+                    `}
+                  >
+                    {
+                      child.name
+                    }
+                  </Link>
+                )
+              )}
+            </div>
+          );
+        }
+      )}
+    </section>
+>>>>>>> aman
   );
 }
 
 /* =========================================================
+<<<<<<< HEAD
    CATALOG
+=======
+   MAIN
+>>>>>>> aman
 ========================================================= */
 
 export default function MenCatalog({
   products,
   banners,
+<<<<<<< HEAD
   category,
   subcategory,
 }: MenCatalogProps) {
@@ -738,10 +1115,18 @@ export default function MenCatalog({
       null
     );
 
+=======
+  title,
+  description,
+  categoryRoot,
+  categoryPath,
+}: Props) {
+>>>>>>> aman
   const [
     sort,
     setSort,
   ] =
+<<<<<<< HEAD
     useState(
       "featured"
     );
@@ -796,11 +1181,73 @@ export default function MenCatalog({
             a.isFeatured
           )
       );
+=======
+    useState<SortValue>(
+      "featured"
+    );
+
+  const sortedProducts =
+    useMemo(() => {
+      const list = [
+        ...products,
+      ];
+
+      switch (sort) {
+        case "price-low":
+          return list.sort(
+            (
+              a,
+              b
+            ) =>
+              a.showPrice -
+              b.showPrice
+          );
+
+        case "price-high":
+          return list.sort(
+            (
+              a,
+              b
+            ) =>
+              b.showPrice -
+              a.showPrice
+          );
+
+        case "newest":
+          return list.sort(
+            (
+              a,
+              b
+            ) =>
+              Number(
+                b.isNewLaunch
+              ) -
+              Number(
+                a.isNewLaunch
+              )
+          );
+
+        default:
+          return list.sort(
+            (
+              a,
+              b
+            ) =>
+              Number(
+                b.isFeatured
+              ) -
+              Number(
+                a.isFeatured
+              )
+          );
+      }
+>>>>>>> aman
     }, [
       products,
       sort,
     ]);
 
+<<<<<<< HEAD
   /* =======================================================
      ANIMATION
   ======================================================= */
@@ -874,27 +1321,57 @@ export default function MenCatalog({
         min-h-screen
 
         bg-[#F8F5F2]
+=======
+  return (
+    <main
+      className="
+        min-h-screen
+
+        bg-[#FAF8F6]
+>>>>>>> aman
 
         text-[#211A18]
       "
     >
+<<<<<<< HEAD
       <MenBannerSlider
+=======
+      <CategoryBannerSlider
+>>>>>>> aman
         banners={
           banners
         }
       />
 
+<<<<<<< HEAD
       <section
         className="
           px-4
           py-12
 
           md:px-8
+=======
+      <CategoryNavigation
+        root={
+          categoryRoot
+        }
+        path={
+          categoryPath
+        }
+      />
+
+      <section
+        className="
+          px-8
+          pb-20
+          pt-10
+>>>>>>> aman
         "
       >
         <div
           className="
             mx-auto
+<<<<<<< HEAD
             max-w-[1450px]
           "
         >
@@ -943,6 +1420,77 @@ export default function MenCatalog({
                 ? "Product"
                 : "Products"}
             </p>
+=======
+
+            max-w-[1500px]
+          "
+        >
+          <div
+            className="
+              mb-8
+
+              flex
+              flex-col
+              gap-5
+
+              border-b
+              border-black/10
+
+              pb-5
+
+              md:flex-row
+              md:items-end
+              md:justify-between
+            "
+          >
+            <div>
+              <p
+                className="
+                  text-[10px]
+                  font-semibold
+                  uppercase
+
+                  tracking-[0.22em]
+
+                  text-[#B31345]
+                "
+              >
+                {
+                  products.length
+                } PRODUCTS
+              </p>
+
+              <h1
+                className="
+                  mt-2
+
+                  text-3xl
+                  font-semibold
+                "
+              >
+                {
+                  title
+                }
+              </h1>
+
+              <p
+                className="
+                  mt-2
+
+                  max-w-2xl
+
+                  text-sm
+                  leading-6
+
+                  text-black/55
+                "
+              >
+                {
+                  description
+                }
+              </p>
+            </div>
+>>>>>>> aman
 
             <select
               value={
@@ -953,6 +1501,7 @@ export default function MenCatalog({
               ) =>
                 setSort(
                   event.target
+<<<<<<< HEAD
                     .value
                 )
               }
@@ -963,10 +1512,24 @@ export default function MenCatalog({
 
                 border
                 border-[#211A18]/15
+=======
+                    .value as SortValue
+                )
+              }
+              className="
+                h-10
+                min-w-[165px]
+
+                rounded-lg
+
+                border
+                border-black/15
+>>>>>>> aman
 
                 bg-white
 
                 px-4
+<<<<<<< HEAD
                 py-3
 
                 text-[9px]
@@ -975,29 +1538,49 @@ export default function MenCatalog({
                 tracking-[0.1em]
 
                 outline-none
+=======
+
+                text-[11px]
+>>>>>>> aman
               "
             >
               <option value="featured">
                 Featured
               </option>
 
+<<<<<<< HEAD
               <option value="low-high">
                 Price Low to High
               </option>
 
               <option value="high-low">
+=======
+              <option value="newest">
+                New Launch
+              </option>
+
+              <option value="price-low">
+                Price Low to High
+              </option>
+
+              <option value="price-high">
+>>>>>>> aman
                 Price High to Low
               </option>
             </select>
           </div>
 
+<<<<<<< HEAD
           {/* PRODUCTS */}
 
+=======
+>>>>>>> aman
           {sortedProducts.length >
           0 ? (
             <div
               className="
                 grid
+<<<<<<< HEAD
 
                 grid-cols-2
 
@@ -1008,10 +1591,21 @@ export default function MenCatalog({
                 md:gap-x-6
 
                 lg:grid-cols-4
+=======
+                grid-cols-1
+
+                gap-x-6
+                gap-y-10
+
+                sm:grid-cols-2
+                lg:grid-cols-3
+                xl:grid-cols-4
+>>>>>>> aman
               "
             >
               {sortedProducts.map(
                 (
+<<<<<<< HEAD
                   product,
                   index
                 ) => (
@@ -1020,6 +1614,13 @@ export default function MenCatalog({
                       product.id ||
                       product.slug ||
                       index
+=======
+                  product
+                ) => (
+                  <StorefrontProductCard
+                    key={
+                      product.variantKey
+>>>>>>> aman
                     }
                     product={
                       product
@@ -1031,6 +1632,7 @@ export default function MenCatalog({
           ) : (
             <div
               className="
+<<<<<<< HEAD
                 flex
                 min-h-[330px]
                 items-center
@@ -1106,6 +1708,21 @@ export default function MenCatalog({
                   View All Men
                 </Link>
               </div>
+=======
+                rounded-2xl
+
+                border
+                border-black/10
+
+                bg-white
+
+                py-16
+
+                text-center
+              "
+            >
+              No products found.
+>>>>>>> aman
             </div>
           )}
         </div>

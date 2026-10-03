@@ -65,11 +65,15 @@ export async function listAdminBlogs(req: Request, res: Response) {
         .limit(limit)
         .lean(),
     ]);
+<<<<<<< HEAD
     const adminBlogs = blogs.map((blog: any) => {
       const { likes = [], ...rest } = blog;
       return { ...rest, likeCount: Array.isArray(likes) ? likes.length : 0 };
     });
     return res.json({ success: true, blogs: adminBlogs, pagination: { page, limit, total, totalPages: Math.max(1, Math.ceil(total / limit)) } });
+=======
+    return res.json({ success: true, blogs, pagination: { page, limit, total, totalPages: Math.max(1, Math.ceil(total / limit)) } });
+>>>>>>> aman
   } catch (error) {
     return res.status(500).json({ success: false, message: duplicateMessage(error) });
   }
@@ -293,6 +297,7 @@ export async function getPublicBlogBySlug(req: Request, res: Response) {
       ...(tagIds.length ? [{ tags: { $in: tagIds } }] : []),
     ] }];
     const related = (categoryId || tagIds.length)
+<<<<<<< HEAD
       ? await Blog.find(relatedQuery).select("title slug excerpt featuredImage publishedAt readingTime category likes").populate("category", "name slug").sort({ publishedAt: -1 }).limit(4).lean()
       : [];
 
@@ -333,6 +338,12 @@ export async function likePublicBlog(req: Request, res: Response) {
       liked: true,
       likeCount: Array.isArray((blog as any).likes) ? (blog as any).likes.length : 0,
     });
+=======
+      ? await Blog.find(relatedQuery).select("title slug excerpt featuredImage publishedAt readingTime category").populate("category", "name slug").sort({ publishedAt: -1 }).limit(4).lean()
+      : [];
+
+    return res.json({ success: true, blog, related });
+>>>>>>> aman
   } catch (error) {
     return res.status(500).json({ success: false, message: duplicateMessage(error) });
   }

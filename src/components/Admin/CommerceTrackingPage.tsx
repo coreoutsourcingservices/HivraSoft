@@ -2,7 +2,11 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+<<<<<<< HEAD
 import { FileSpreadsheet, Heart, Loader2, Search, ShoppingCart } from "lucide-react";
+=======
+import { Heart, Loader2, Search, ShoppingCart } from "lucide-react";
+>>>>>>> aman
 import {
   getAdminCartTracking,
   getAdminWishlistTracking,
@@ -14,6 +18,7 @@ function money(value: unknown) {
   return `₹${Number.isFinite(amount) ? amount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "0.00"}`;
 }
 
+<<<<<<< HEAD
 function parsedDate(value: unknown) {
   if (!value) return null;
   const date = new Date(String(value));
@@ -23,12 +28,19 @@ function parsedDate(value: unknown) {
 function dateTime(value: unknown) {
   const date = parsedDate(value);
   if (!date) return "—";
+=======
+function dateTime(value: unknown) {
+  if (!value) return "—";
+  const date = new Date(String(value));
+  if (Number.isNaN(date.getTime())) return "—";
+>>>>>>> aman
   return date.toLocaleString("en-IN", {
     day: "2-digit",
     month: "short",
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+<<<<<<< HEAD
     hour12: true,
   });
 }
@@ -129,6 +141,11 @@ function downloadExcel(kind: "cart" | "wishlist", rows: CommerceTrackingRow[]) {
   URL.revokeObjectURL(href);
 }
 
+=======
+  });
+}
+
+>>>>>>> aman
 function StatusBadge({ status }: { status: string }) {
   const classes = status === "PURCHASED"
     ? "bg-emerald-50 text-emerald-700"
@@ -144,8 +161,13 @@ function StatusBadge({ status }: { status: string }) {
 
 function EmailBadge({ label, sent }: { label: string; sent: boolean }) {
   return (
+<<<<<<< HEAD
     <span className={`inline-flex rounded-full border px-2 py-1 text-[8px] font-semibold uppercase tracking-wide ${sent ? "border-emerald-200 bg-emerald-100 text-emerald-800" : "border-transparent bg-[#F7F3EF] text-[#211A18]/40"}`}>
       {label}: {sent ? "Complete" : "Pending"}
+=======
+    <span className={`inline-flex rounded-full px-2 py-1 text-[8px] font-semibold uppercase tracking-wide ${sent ? "bg-emerald-50 text-emerald-700" : "bg-[#F7F3EF] text-[#211A18]/40"}`}>
+      {label}: {sent ? "Sent" : "Pending"}
+>>>>>>> aman
     </span>
   );
 }
@@ -160,6 +182,7 @@ export default function CommerceTrackingPage({ kind }: { kind: "cart" | "wishlis
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [loading, setLoading] = useState(true);
+<<<<<<< HEAD
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState("");
 
@@ -226,11 +249,41 @@ export default function CommerceTrackingPage({ kind }: { kind: "cart" | "wishlis
     }
   }
 
+=======
+  const [error, setError] = useState("");
+
+  const load = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const result = isCart
+        ? await getAdminCartTracking({ page, limit: 20, search: search.trim(), status, dateFrom, dateTo })
+        : await getAdminWishlistTracking({ page, limit: 20, search: search.trim(), status, dateFrom, dateTo });
+      setRows(result.tracking);
+      setPagination(result.pagination);
+    } catch (err) {
+      setRows([]);
+      setError(err instanceof Error ? err.message : `Unable to load ${kind} tracking.`);
+    } finally {
+      setLoading(false);
+    }
+  }, [dateFrom, dateTo, isCart, kind, page, search, status]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => void load(), 250);
+    return () => window.clearTimeout(timer);
+  }, [load]);
+
+>>>>>>> aman
   const Icon = isCart ? ShoppingCart : Heart;
   const title = isCart ? "Cart Tracking" : "Wishlist Tracking";
   const description = isCart
     ? "See which customer added which product, quantity, exact time, purchase status and email reminders."
+<<<<<<< HEAD
     : "See which customer saved which product, quantity, exact time, purchase status and email reminders.";
+=======
+    : "See which customer saved which product, exact time, purchase status and email reminders.";
+>>>>>>> aman
 
   return (
     <section className="mx-auto w-full max-w-[1600px]">
@@ -244,6 +297,7 @@ export default function CommerceTrackingPage({ kind }: { kind: "cart" | "wishlis
             </div>
             <p className="mt-1 max-w-3xl text-xs leading-5 text-[#211A18]/50">{description}</p>
           </div>
+<<<<<<< HEAD
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
@@ -257,6 +311,10 @@ export default function CommerceTrackingPage({ kind }: { kind: "cart" | "wishlis
             <div className="rounded-xl bg-[#F7F3EF] px-4 py-3 text-[10px] font-semibold text-[#211A18]/60">
               {pagination.total.toLocaleString("en-IN")} tracking record{pagination.total === 1 ? "" : "s"}
             </div>
+=======
+          <div className="rounded-xl bg-[#F7F3EF] px-4 py-3 text-[10px] font-semibold text-[#211A18]/60">
+            {pagination.total.toLocaleString("en-IN")} tracking record{pagination.total === 1 ? "" : "s"}
+>>>>>>> aman
           </div>
         </div>
 
@@ -311,7 +369,11 @@ export default function CommerceTrackingPage({ kind }: { kind: "cart" | "wishlis
               <tr className="text-[9px] uppercase tracking-[0.12em] text-[#211A18]/50">
                 <th className="px-4 py-3">User</th>
                 <th className="px-4 py-3">Product</th>
+<<<<<<< HEAD
                 <th className="px-4 py-3">Quantity</th>
+=======
+                {isCart && <th className="px-4 py-3">Qty</th>}
+>>>>>>> aman
                 <th className="px-4 py-3">Price</th>
                 <th className="px-4 py-3">Added At</th>
                 <th className="px-4 py-3">Status</th>
@@ -320,9 +382,15 @@ export default function CommerceTrackingPage({ kind }: { kind: "cart" | "wishlis
             </thead>
             <tbody className="divide-y divide-[#211A18]/7">
               {loading ? (
+<<<<<<< HEAD
                 <tr><td colSpan={7} className="py-16 text-center text-xs text-[#211A18]/45"><Loader2 className="mx-auto mb-2 animate-spin" size={20} />Loading tracking...</td></tr>
               ) : rows.length === 0 ? (
                 <tr><td colSpan={7} className="py-16 text-center text-xs text-[#211A18]/45">No tracking records found.</td></tr>
+=======
+                <tr><td colSpan={isCart ? 7 : 6} className="py-16 text-center text-xs text-[#211A18]/45"><Loader2 className="mx-auto mb-2 animate-spin" size={20} />Loading tracking...</td></tr>
+              ) : rows.length === 0 ? (
+                <tr><td colSpan={isCart ? 7 : 6} className="py-16 text-center text-xs text-[#211A18]/45">No tracking records found.</td></tr>
+>>>>>>> aman
               ) : rows.map((row) => (
                 <tr key={row.id} className="text-[10px] text-[#211A18]/65 hover:bg-[#FAF8F6]/60">
                   <td className="px-4 py-4 align-top">
@@ -353,7 +421,11 @@ export default function CommerceTrackingPage({ kind }: { kind: "cart" | "wishlis
                       </div>
                     </div>
                   </td>
+<<<<<<< HEAD
                   <td className="px-4 py-4 align-top font-semibold text-[#211A18]">{row.quantity}</td>
+=======
+                  {isCart && <td className="px-4 py-4 align-top font-semibold text-[#211A18]">{row.quantity}</td>}
+>>>>>>> aman
                   <td className="px-4 py-4 align-top font-semibold text-[#211A18]">{money(row.product.price)}</td>
                   <td className="px-4 py-4 align-top">
                     <div className="font-medium text-[#211A18]">{dateTime(row.addedAt)}</div>
@@ -361,7 +433,13 @@ export default function CommerceTrackingPage({ kind }: { kind: "cart" | "wishlis
                   </td>
                   <td className="px-4 py-4 align-top"><StatusBadge status={row.status} /></td>
                   <td className="px-4 py-4 align-top">
+<<<<<<< HEAD
                     <div className="flex max-w-[280px] flex-wrap gap-1.5">
+=======
+                    <div className="flex max-w-[260px] flex-wrap gap-1.5">
+                      <EmailBadge label="Added" sent={row.email.addedSent} />
+                      <EmailBadge label="20 Min" sent={row.email.reminder20MinSent} />
+>>>>>>> aman
                       <EmailBadge label="24 Hour" sent={row.email.reminder24HourSent} />
                       <EmailBadge label="48 Hr / 2 Day" sent={row.email.reminder48HourSent} />
                     </div>

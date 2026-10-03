@@ -261,6 +261,13 @@ export default function Account({
         setLoginOpen(false);
       };
 
+    const handleAuthRequired =
+      () => {
+        onBeforeOpen?.();
+        setDropdownOpen(false);
+        setLoginOpen(true);
+      };
+
     window.addEventListener(
       "hivrasoft-auth-changed",
       handleAuthChanged
@@ -269,6 +276,11 @@ export default function Account({
     window.addEventListener(
       "hivrasoft-auth-logout",
       handleAuthLogout
+    );
+
+    window.addEventListener(
+      "hivrasoft-auth-required",
+      handleAuthRequired
     );
 
     return () => {
@@ -281,8 +293,13 @@ export default function Account({
         "hivrasoft-auth-logout",
         handleAuthLogout
       );
+
+      window.removeEventListener(
+        "hivrasoft-auth-required",
+        handleAuthRequired
+      );
     };
-  }, [loadCurrentUser]);
+  }, [loadCurrentUser, onBeforeOpen]);
 
   /* =======================================================
      CLICK OUTSIDE

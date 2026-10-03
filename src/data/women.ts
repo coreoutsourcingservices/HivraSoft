@@ -15,6 +15,14 @@
    TYPES
 ========================================================= */
 
+export type WomenProductSize = {
+  id: string;
+  label: string;
+  stock: number;
+  sellingPrice: number;
+  actualPrice: number;
+};
+
 export type WomenProduct = {
   id?: string;
   isFeatured?: boolean;
@@ -32,6 +40,10 @@ export type WomenProduct = {
   category: string;
 
   subcategories: string[];
+
+  colorId?: string;
+  colorName?: string;
+  sizes?: WomenProductSize[];
 
   onOffer?: boolean;
 };

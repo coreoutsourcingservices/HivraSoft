@@ -7,6 +7,7 @@ import Header from "@/src/components/Header/Header";
 import WomenCatalog from "@/src/components/Women/WomenCatalog";
 
 import {
+<<<<<<< HEAD
   getWomenBanners,
   getWomenPageDescription,
   getWomenPageTitle,
@@ -33,13 +34,33 @@ export const dynamic =
 /* =========================================================
    PROPS
 ========================================================= */
+=======
+  findCategoryRoot,
+  getActiveCategoryTree,
+  resolveCategoryPath,
+} from "@/src/services/categories";
 
-type WomenPageProps = {
+import {
+  getActiveProducts,
+} from "@/src/services/products";
+>>>>>>> aman
+
+import {
+  getCategoryBanners,
+  mapProductToColorCards,
+  productBelongsToCategory,
+} from "@/src/services/storefront-catalog";
+
+export const dynamic =
+  "force-dynamic";
+
+type Props = {
   params: Promise<{
     slug?: string[];
   }>;
 };
 
+<<<<<<< HEAD
 /* =========================================================
    WOMEN PRODUCT CHECK
 ========================================================= */
@@ -279,13 +300,16 @@ function mapProductToWomenProduct(
    PAGE
 ========================================================= */
 
+=======
+>>>>>>> aman
 export default async function WomenPage({
   params,
-}: WomenPageProps) {
-  const resolvedParams =
+}: Props) {
+  const resolved =
     await params;
 
   const slugParts =
+<<<<<<< HEAD
     resolvedParams.slug ??
     [];
 
@@ -310,22 +334,61 @@ export default async function WomenPage({
     slugParts[1];
 
   /* Validate URL syntax */
-
-  if (
-    !isValidWomenPath(
-      category,
-      subcategory
+=======
+    (
+      resolved.slug ||
+      []
     )
-  ) {
+      .map((slug) =>
+        String(slug)
+          .trim()
+          .toLowerCase()
+      )
+      .filter(Boolean);
+
+  /* =======================================================
+     CATEGORY TREE
+  ======================================================= */
+>>>>>>> aman
+
+  const tree =
+    await getActiveCategoryTree();
+
+  const womenRoot =
+    findCategoryRoot(
+      tree,
+      "women"
+    );
+
+  if (!womenRoot) {
     notFound();
   }
 
   /* =======================================================
+<<<<<<< HEAD
      FETCH ALL ACTIVE PRODUCTS
   ======================================================= */
 
   const allProducts =
     await getActiveProducts();
+=======
+     CURRENT CATEGORY
+  ======================================================= */
+
+  const selected =
+    resolveCategoryPath(
+      womenRoot,
+      slugParts
+    );
+
+  if (!selected) {
+    notFound();
+  }
+
+  const currentCategory =
+    selected.at(-1) ||
+    womenRoot;
+>>>>>>> aman
 
   /* =======================================================
      ALL WOMEN PRODUCTS
@@ -354,6 +417,7 @@ export default async function WomenPage({
      FILTER CURRENT ROUTE
   ======================================================= */
 
+<<<<<<< HEAD
   const products =
     womenProducts
       .filter((product) =>
@@ -365,18 +429,38 @@ export default async function WomenPage({
       )
       .map(
         mapProductToWomenProduct
+=======
+  const apiProducts =
+    await getActiveProducts();
+
+  const products =
+    apiProducts
+      .filter((product) =>
+        productBelongsToCategory(
+          product,
+          currentCategory
+        )
+      )
+      .flatMap(
+        mapProductToColorCards
+>>>>>>> aman
       );
 
   /* =======================================================
-     BANNERS
+     BANNER
+
+     ONLY CURRENT CATEGORY.
+     NO WOMEN ROOT FALLBACK.
   ======================================================= */
 
   const banners =
-    getWomenBanners(
-      category,
-      subcategory
+    getCategoryBanners(
+      currentCategory,
+      "/women",
+      slugParts
     );
 
+<<<<<<< HEAD
   /* =======================================================
      TITLE
   ======================================================= */
@@ -401,20 +485,36 @@ export default async function WomenPage({
      RENDER
   ======================================================= */
 
+=======
+>>>>>>> aman
   return (
     <>
       <Header />
 
       <WomenCatalog
-        products={products}
-        banners={banners}
-        title={title}
-        description={
-          description
+        products={
+          products
         }
-        category={category}
-        subcategory={
-          subcategory
+        banners={
+          banners
+        }
+        title={
+          currentCategory.name
+        }
+        description={
+          currentCategory.description ||
+          (
+            currentCategory.id ===
+            womenRoot.id
+              ? "Explore HivraSoft women's collection designed around comfort and confidence."
+              : `Shop HivraSoft ${currentCategory.name}.`
+          )
+        }
+        categoryRoot={
+          womenRoot
+        }
+        categoryPath={
+          slugParts
         }
       />
     </>

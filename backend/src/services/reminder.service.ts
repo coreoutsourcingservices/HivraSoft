@@ -9,6 +9,7 @@ import { sendCartReminderEmail, sendWishlistReminderEmail } from "./commerce-ema
 
 const MINUTE_MS = 60_000;
 
+<<<<<<< HEAD
 const COMMERCE_REMINDER_STAGES = [1440, 2880] as const;
 
 function configuredStages(value: string | undefined) {
@@ -22,6 +23,18 @@ function configuredStages(value: string | undefined) {
   // Cart and wishlist emails are intentionally limited to 24h and 48h / 2 day.
   COMMERCE_REMINDER_STAGES.forEach((stage) => configured.add(stage));
   return Array.from(configured).sort((a, b) => a - b);
+=======
+function configuredStages(value: string | undefined, requiredStages: number[]) {
+  const parsed = String(value || "")
+    .split(",")
+    .map((item) => Number(item.trim()))
+    .filter((item) => Number.isFinite(item) && item > 0)
+    .map((item) => Math.floor(item));
+
+  // Always keep the required commerce reminder stages active even when an older
+  // .env still contains only 20,1440. Extra configured stages remain supported.
+  return Array.from(new Set([...requiredStages, ...parsed])).sort((a, b) => a - b);
+>>>>>>> aman
 }
 
 function reminderStageText(stageMinutes: number) {
@@ -220,8 +233,13 @@ async function sendReminderOnce(input: {
 
 export async function runAbandonedCartWishlistReminders() {
   const now = Date.now();
+<<<<<<< HEAD
   const cartStages = configuredStages(process.env.CART_REMINDER_MINUTES);
   const wishlistStages = configuredStages(process.env.WISHLIST_REMINDER_MINUTES);
+=======
+  const cartStages = configuredStages(process.env.CART_REMINDER_MINUTES, [20, 1440, 2880]);
+  const wishlistStages = configuredStages(process.env.WISHLIST_REMINDER_MINUTES, [20, 1440, 2880]);
+>>>>>>> aman
   const oldestNeededMinutes = Math.min(...cartStages, ...wishlistStages);
   const cutoff = new Date(now - oldestNeededMinutes * MINUTE_MS);
 

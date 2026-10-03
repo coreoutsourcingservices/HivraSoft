@@ -13,7 +13,11 @@ import {
   verifyRazorpayPaymentSignature,
 } from "./razorpay.service";
 import { calculateDeliveryCharge, normalizeDeliveryPaymentMethod } from "./delivery-charge.service";
+<<<<<<< HEAD
 import { sendAdminOrderNotificationEmailOnce, sendOrderConfirmationEmailOnce } from "./commerce-email.service";
+=======
+import { sendOrderConfirmationEmailOnce } from "./commerce-email.service";
+>>>>>>> aman
 
 const roundMoney = (value: number) => Math.round((Number(value || 0) + Number.EPSILON) * 100) / 100;
 
@@ -135,10 +139,16 @@ async function buildOrderSnapshot(userId: string, payload: any, paymentMethod: "
   });
 
   const subtotal = roundMoney(Number((cart as any).subtotal || 0));
+<<<<<<< HEAD
   const offerDiscount = roundMoney(Number((cart as any).offerDiscount || 0));
   const automaticDiscount = roundMoney(Number((cart as any).automaticDiscount || 0));
   const codeDiscount = roundMoney(Number((cart as any).codeDiscount || 0));
   const discount = roundMoney(Number((cart as any).discount || offerDiscount + automaticDiscount + codeDiscount));
+=======
+  const automaticDiscount = roundMoney(Number((cart as any).automaticDiscount || 0));
+  const codeDiscount = roundMoney(Number((cart as any).codeDiscount || 0));
+  const discount = roundMoney(Number((cart as any).discount || automaticDiscount + codeDiscount));
+>>>>>>> aman
   const tax = roundMoney(Number((cart as any).tax || 0));
   const deliveryCharge = await calculateDeliveryCharge(subtotal, paymentMethod);
   const shipping = roundMoney(deliveryCharge.charge);
@@ -155,8 +165,11 @@ async function buildOrderSnapshot(userId: string, payload: any, paymentMethod: "
     items,
     shippingAddress,
     subtotal,
+<<<<<<< HEAD
     offerDiscount,
     offerDiscountDetails: (cart as any).discountSummary?.offers || {},
+=======
+>>>>>>> aman
     automaticDiscount,
     automaticDiscountDetails: (cart as any).discountSummary?.automatic || {},
     codeDiscount,
@@ -391,9 +404,12 @@ export async function createOrderFromCart(userId: string, payload: any) {
   void sendOrderConfirmationEmailOnce(order.toObject()).catch((error) =>
     console.error("ORDER CONFIRMATION EMAIL ERROR:", error)
   );
+<<<<<<< HEAD
   void sendAdminOrderNotificationEmailOnce(order.toObject()).catch((error) =>
     console.error("ADMIN ORDER EMAIL ERROR:", error)
   );
+=======
+>>>>>>> aman
   return order;
 }
 
@@ -521,9 +537,12 @@ async function finalizePaidOrder(orderId: string, paymentId: string, source: "ve
     void sendOrderConfirmationEmailOnce(updated.toObject()).catch((error) =>
       console.error("ORDER CONFIRMATION EMAIL ERROR:", error)
     );
+<<<<<<< HEAD
     void sendAdminOrderNotificationEmailOnce(updated.toObject()).catch((error) =>
       console.error("ADMIN ORDER EMAIL ERROR:", error)
     );
+=======
+>>>>>>> aman
     await trackUserActivity({
       userId: String(updated.user),
       type: "order_paid",

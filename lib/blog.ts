@@ -38,7 +38,10 @@ export type BlogRecord = {
   scheduledAt?: string | null;
   readingTime: number;
   views: number;
+<<<<<<< HEAD
   likeCount?: number;
+=======
+>>>>>>> aman
   isFeatured: boolean;
   customCss?: string;
   revisions?: Array<Record<string, any>>;
@@ -125,8 +128,11 @@ export async function getPublicBlogs(query: Record<string, string | number | und
 export async function getPublicBlog(slug: string) {
   return apiFetch<{ success: boolean; blog: BlogRecord; related: BlogRecord[] }>(`/api/blogs/${encodeURIComponent(slug)}`);
 }
+<<<<<<< HEAD
 
 
 export async function likePublicBlog(slug: string) {
   return apiFetch<{ success: boolean; liked: boolean; likeCount: number }>(`/api/blogs/${encodeURIComponent(slug)}/like`, { method: "POST" });
 }
+=======
+>>>>>>> aman

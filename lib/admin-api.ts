@@ -265,7 +265,10 @@ export type CommerceTrackingRow = {
     slug: string;
     colorName: string;
     sizeName: string;
+<<<<<<< HEAD
     categoryName: string;
+=======
+>>>>>>> aman
     price: number;
     imageUrl: string;
     colorId: string;
@@ -276,6 +279,12 @@ export type CommerceTrackingRow = {
   updatedAt: string;
   status: CommerceTrackingStatus;
   email: {
+<<<<<<< HEAD
+=======
+    addedSent: boolean;
+    addedSentAt?: string | null;
+    reminder20MinSent: boolean;
+>>>>>>> aman
     reminder24HourSent: boolean;
     reminder48HourSent: boolean;
   };
