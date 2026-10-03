@@ -1247,6 +1247,130 @@ export const getNewLaunchProducts =
   };
 
 /* =========================================================
+   GET RELATED PRODUCTS
+   PUBLIC / STOREFRONT
+
+   - Uses shared categories first.
+   - Fills any remaining slots with other active products.
+   - limit is intentionally capped at 5 for a compact
+     related-products section.
+========================================================= */
+
+export const getRelatedProducts =
+  async (
+    productId: string,
+    requestedLimit = 5
+  ) => {
+    if (
+      !Types.ObjectId.isValid(
+        productId
+      )
+    ) {
+      throw new Error(
+        "Invalid product ID."
+      );
+    }
+
+    const limit =
+      Number(requestedLimit) === 4
+        ? 4
+        : 5;
+
+    const sourceProduct =
+      await Product.findOne({
+        _id: productId,
+        isActive: true,
+      })
+        .select("_id categories")
+        .lean();
+
+    if (!sourceProduct) {
+      throw new Error(
+        "Product not found."
+      );
+    }
+
+    const categoryIds =
+      Array.isArray(
+        (sourceProduct as any).categories
+      )
+        ? (sourceProduct as any).categories
+        : [];
+
+    const related: any[] = [];
+
+    if (categoryIds.length > 0) {
+      const categoryMatches =
+        await Product.find({
+          _id: {
+            $ne: new Types.ObjectId(productId),
+          },
+          isActive: true,
+          categories: {
+            $in: categoryIds,
+          },
+        })
+          .populate(
+            "categories",
+            "_id name slug level"
+          )
+          .sort({
+            isFeatured: -1,
+            isNewLaunch: -1,
+            createdAt: -1,
+          })
+          .limit(limit);
+
+      related.push(
+        ...categoryMatches
+      );
+    }
+
+    if (related.length < limit) {
+      const excludedIds = [
+        new Types.ObjectId(productId),
+        ...related.map(
+          (product: any) =>
+            product._id
+        ),
+      ];
+
+      const fallbackProducts =
+        await Product.find({
+          _id: {
+            $nin: excludedIds,
+          },
+          isActive: true,
+        })
+          .populate(
+            "categories",
+            "_id name slug level"
+          )
+          .sort({
+            isFeatured: -1,
+            isNewLaunch: -1,
+            createdAt: -1,
+          })
+          .limit(
+            limit - related.length
+          );
+
+      related.push(
+        ...fallbackProducts
+      );
+    }
+
+    return related
+      .slice(0, limit)
+      .map((product) =>
+        formatProductResponse(
+          product,
+          true
+        )
+      );
+  };
+
+/* =========================================================
    GET PRODUCT BY ID
 ========================================================= */
 

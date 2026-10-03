@@ -82,6 +82,7 @@ const orderSchema = new Schema<IOrder>(
     taxPercentage: { type: Number, default: 0, min: 0, max: 100 },
     taxDetails: { type: Schema.Types.Mixed, default: {} },
     shipping: { type: Number, default: 0, min: 0 },
+    deliveryCharge: { type: Schema.Types.Mixed, default: {} },
     total: { type: Number, required: true, min: 0 },
     status: {
       type: String,

@@ -175,6 +175,7 @@ async function buildOrderSnapshot(userId: string, payload: any, paymentMethod: "
       ruleId: deliveryCharge.rule?.id || null,
       minAmount: deliveryCharge.rule?.minAmount ?? null,
       maxAmount: deliveryCharge.rule?.maxAmount ?? null,
+      matched: deliveryCharge.matched,
     },
     total,
   };

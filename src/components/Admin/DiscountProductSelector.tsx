@@ -241,8 +241,8 @@ export default function DiscountProductSelector({
   };
 
   return (
-    <section className="rounded-[24px] border border-[#211A18]/10 bg-white p-5 md:p-6">
-      <div className="flex flex-col gap-4 border-b border-[#211A18]/8 pb-5 md:flex-row md:items-start md:justify-between">
+    <section className="min-w-0 rounded-[20px] border border-[#211A18]/10 bg-white p-4 sm:rounded-[24px] sm:p-5 md:p-6">
+      <div className="flex flex-col gap-4 border-b border-[#211A18]/8 pb-4 sm:pb-5 md:flex-row md:items-start md:justify-between">
         <div>
           <h3 className="text-[18px] font-semibold text-[#211A18]">
             {title}
@@ -252,7 +252,7 @@ export default function DiscountProductSelector({
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <span className="rounded-full bg-[#F8E8ED] px-3 py-1.5 text-[10px] font-semibold text-[#8C1839]">
             {selectedIds.length} selected
           </span>
@@ -262,7 +262,7 @@ export default function DiscountProductSelector({
         </div>
       </div>
 
-      <div className="mt-5 grid gap-3 lg:grid-cols-[240px_1fr_auto]">
+      <div className="mt-4 grid min-w-0 grid-cols-1 gap-3 sm:mt-5 lg:grid-cols-[minmax(180px,240px)_minmax(0,1fr)_auto]">
         <div className="relative">
           <button
             type="button"
@@ -347,7 +347,7 @@ export default function DiscountProductSelector({
           )}
         </div>
 
-        <div className="flex h-12 items-center gap-3 rounded-[14px] border border-[#211A18]/10 bg-[#FAF8F6] px-4">
+        <div className="flex h-12 min-w-0 items-center gap-3 rounded-[14px] border border-[#211A18]/10 bg-[#FAF8F6] px-3 sm:px-4">
           <Search
             size={16}
             className="shrink-0 text-[#211A18]/35"
@@ -371,7 +371,7 @@ export default function DiscountProductSelector({
             loading ||
             !visibleIds.length
           }
-          className="h-12 rounded-[14px] border border-[#8C1839]/15 bg-[#FFF5F8] px-4 text-[11px] font-semibold text-[#8C1839] disabled:cursor-not-allowed disabled:opacity-40"
+          className="h-12 w-full rounded-[14px] border border-[#8C1839]/15 bg-[#FFF5F8] px-4 text-[11px] font-semibold text-[#8C1839] disabled:cursor-not-allowed disabled:opacity-40 lg:w-auto"
         >
           {allVisibleSelected
             ? "Clear shown"
@@ -416,7 +416,7 @@ export default function DiscountProductSelector({
                   toggleProduct(product._id)
                 }
                 disabled={disabled}
-                className={`flex w-full items-center gap-3 rounded-[16px] border p-3 text-left transition ${
+                className={`flex w-full min-w-0 items-center gap-3 rounded-[16px] border p-3 text-left transition ${
                   checked
                     ? "border-[#8C1839]/25 bg-[#FFF6F8]"
                     : "border-[#211A18]/8 bg-white hover:border-[#211A18]/15 hover:bg-[#FCFAF8]"

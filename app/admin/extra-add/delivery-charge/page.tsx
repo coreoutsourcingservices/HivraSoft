@@ -303,8 +303,8 @@ export default function DeliveryChargePage() {
 
             <p className="mt-2 max-w-3xl text-[12px] leading-5 text-white/65 sm:mt-3 sm:text-[13px] sm:leading-6">
               Set separate COD and online-payment charges by base order price
-              range. Rules can be activated or disabled without removing their
-              history.
+              range. An active rule is charged only when the order subtotal is
+              inside that range; leave Maximum blank for no upper limit.
             </p>
           </div>
 
