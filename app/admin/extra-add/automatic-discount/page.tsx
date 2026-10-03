@@ -171,8 +171,9 @@ export default function AutomaticDiscountPage() {
   async function deleteRule(rule: AutomaticRule) {
     const confirmed = await confirmAdminAction({
       title: "Delete Automatic Discount?",
+      itemName: rule.name || "Automatic Discount",
       description: "The automatic discount will be moved to Trash for 30 days and will stop applying immediately.",
-      confirmLabel: "OK",
+      confirmLabel: "Move to Trash",
       cancelLabel: "Cancel",
     });
     if (!confirmed) return;

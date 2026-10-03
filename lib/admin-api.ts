@@ -270,6 +270,8 @@ export type CommerceTrackingRow = {
     imageUrl: string;
     colorId: string;
     sizeId: string;
+    isAvailable?: boolean;
+    hasSnapshot?: boolean;
   };
   quantity: number;
   addedAt: string;

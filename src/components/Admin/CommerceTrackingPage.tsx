@@ -136,7 +136,7 @@ function StatusBadge({ status }: { status: string }) {
       ? "bg-slate-100 text-slate-600"
       : "bg-amber-50 text-amber-700";
   return (
-    <span className={`inline-flex rounded-full px-2.5 py-1 text-[9px] font-semibold uppercase tracking-wide ${classes}`}>
+    <span className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-[9px] font-semibold uppercase tracking-wide ${classes}`}>
       {status.replaceAll("_", " ")}
     </span>
   );
@@ -144,8 +144,16 @@ function StatusBadge({ status }: { status: string }) {
 
 function EmailBadge({ label, sent }: { label: string; sent: boolean }) {
   return (
-    <span className={`inline-flex rounded-full border px-2 py-1 text-[8px] font-semibold uppercase tracking-wide ${sent ? "border-emerald-200 bg-emerald-100 text-emerald-800" : "border-transparent bg-[#F7F3EF] text-[#211A18]/40"}`}>
-      {label}: {sent ? "Complete" : "Pending"}
+    <span
+      className={`inline-flex min-w-[112px] items-center justify-center whitespace-nowrap rounded-full border px-2.5 py-1 text-[8px] font-semibold uppercase tracking-wide ${
+        sent
+          ? "border-emerald-200 bg-emerald-100 text-emerald-800"
+          : "border-transparent bg-[#F7F3EF] text-[#211A18]/40"
+      }`}
+    >
+      <span>{label}</span>
+      <span className="mx-1 opacity-45">·</span>
+      <span>{sent ? "Complete" : "Pending"}</span>
     </span>
   );
 }
@@ -305,8 +313,17 @@ export default function CommerceTrackingPage({ kind }: { kind: "cart" | "wishlis
           </div>
         )}
 
-        <div className="mt-5 overflow-x-auto rounded-2xl border border-[#211A18]/8">
-          <table className="w-full min-w-[1120px] text-left">
+        <div className="mt-5 overflow-x-auto rounded-2xl border border-[#211A18]/8 bg-white">
+          <table className="w-full min-w-[1240px] table-fixed text-left">
+            <colgroup>
+              <col className="w-[220px]" />
+              <col className="w-[370px]" />
+              <col className="w-[90px]" />
+              <col className="w-[110px]" />
+              <col className="w-[185px]" />
+              <col className="w-[120px]" />
+              <col className="w-[170px]" />
+            </colgroup>
             <thead className="bg-[#FAF8F6]">
               <tr className="text-[9px] uppercase tracking-[0.12em] text-[#211A18]/50">
                 <th className="px-4 py-3">User</th>
@@ -326,30 +343,35 @@ export default function CommerceTrackingPage({ kind }: { kind: "cart" | "wishlis
               ) : rows.map((row) => (
                 <tr key={row.id} className="text-[10px] text-[#211A18]/65 hover:bg-[#FAF8F6]/60">
                   <td className="px-4 py-4 align-top">
-                    <div className="flex items-center gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
                       {row.user.photo ? (
                         <img src={row.user.photo} alt={row.user.name} className="h-9 w-9 rounded-full border border-[#211A18]/10 object-cover" />
                       ) : (
                         <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#8C1839]/10 font-semibold text-[#8C1839]">{row.user.name.slice(0, 1).toUpperCase()}</div>
                       )}
-                      <div>
-                        <Link href={`/admin/customers/${encodeURIComponent(row.user.id)}`} className="font-semibold text-[#211A18] hover:text-[#8C1839]">{row.user.name}</Link>
-                        <div className="mt-1 text-[9px] text-[#211A18]/45">{row.user.email || "—"}</div>
-                        <div className="mt-0.5 text-[9px] text-[#211A18]/35">{row.user.phone || "—"}</div>
+                      <div className="min-w-0">
+                        <Link href={`/admin/customers/${encodeURIComponent(row.user.id)}`} className="block truncate font-semibold text-[#211A18] hover:text-[#8C1839]">{row.user.name}</Link>
+                        <div className="mt-1 truncate text-[9px] text-[#211A18]/45">{row.user.email || "—"}</div>
+                        <div className="mt-0.5 truncate text-[9px] text-[#211A18]/35">{row.user.phone || "—"}</div>
                       </div>
                     </div>
                   </td>
                   <td className="px-4 py-4 align-top">
-                    <div className="flex items-center gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
                       {row.product.imageUrl ? (
-                        <img src={row.product.imageUrl} alt={row.product.name} className="h-12 w-12 rounded-xl border border-[#211A18]/10 object-cover" />
+                        <img src={row.product.imageUrl} alt={row.product.name || "Product"} className="h-12 w-12 shrink-0 rounded-xl border border-[#211A18]/10 object-cover" />
                       ) : (
-                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#F7F3EF] text-[8px] text-[#211A18]/35">No image</div>
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#F7F3EF] px-1 text-center text-[8px] leading-3 text-[#211A18]/35">No image</div>
                       )}
-                      <div>
-                        <div className="font-semibold text-[#211A18]">{row.product.name}</div>
-                        <div className="mt-1 text-[9px] text-[#211A18]/45">{[row.product.colorName, row.product.sizeName].filter(Boolean).join(" / ") || "Default variant"}</div>
-                        <div className="mt-0.5 max-w-[220px] truncate text-[8px] text-[#211A18]/30">{row.product.id}</div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex min-w-0 items-center gap-2">
+                          <div className="truncate font-semibold text-[#211A18]">{row.product.name || "Product unavailable"}</div>
+                          {row.product.isAvailable === false ? (
+                            <span className="shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-[7px] font-semibold uppercase tracking-wide text-amber-700">Unavailable</span>
+                          ) : null}
+                        </div>
+                        <div className="mt-1 truncate text-[9px] text-[#211A18]/45">{[row.product.colorName, row.product.sizeName].filter(Boolean).join(" / ") || (row.product.isAvailable === false ? "Historical tracking" : "Default variant")}</div>
+                        <div className="mt-0.5 truncate text-[8px] text-[#211A18]/30">{row.product.id}</div>
                       </div>
                     </div>
                   </td>
@@ -361,7 +383,7 @@ export default function CommerceTrackingPage({ kind }: { kind: "cart" | "wishlis
                   </td>
                   <td className="px-4 py-4 align-top"><StatusBadge status={row.status} /></td>
                   <td className="px-4 py-4 align-top">
-                    <div className="flex max-w-[280px] flex-wrap gap-1.5">
+                    <div className="grid w-fit gap-1.5">
                       <EmailBadge label="24 Hour" sent={row.email.reminder24HourSent} />
                       <EmailBadge label="48 Hr / 2 Day" sent={row.email.reminder48HourSent} />
                     </div>

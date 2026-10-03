@@ -519,6 +519,7 @@ export const addItemToCart =
     }
 
     const {
+      color,
       size,
     } = getVariant(
       product,
@@ -625,6 +626,18 @@ export const addItemToCart =
         quantity,
         finalQuantity: nextQuantity,
         addedAt: trackingAddedAt,
+        productSnapshot: {
+          name: String((color as any)?.nameProduct || "Product"),
+          slug: String((color as any)?.slugProduct || ""),
+          colorName: String((color as any)?.nameColor || ""),
+          sizeName: String((size as any)?.size || ""),
+          price: Number((size as any)?.showPrice ?? (color as any)?.showPrice ?? 0),
+          imageUrl: String(
+            ((color as any)?.images || []).find((image: any) => image?.isDefault === true)?.url
+              || (color as any)?.images?.[0]?.url
+              || ""
+          ),
+        },
       },
     });
 

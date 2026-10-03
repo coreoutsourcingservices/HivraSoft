@@ -153,7 +153,6 @@ export default function AdminHeader() {
   })();
 
   const resultCount = groups.reduce((total, group) => total + group.items.length, 0);
-  const compactSearch = ["/admin/cart", "/admin/wishlist", "/admin/trash"].includes(pathname);
 
   return (
     <header className="sticky top-0 z-40 border-b border-[#211A18]/10 bg-[#F7F3EF]/95 backdrop-blur-xl">
@@ -169,15 +168,17 @@ export default function AdminHeader() {
 
         <div
           ref={searchWrapRef}
-          className={`relative ml-auto hidden w-full md:block ${compactSearch ? "max-w-[440px]" : "max-w-[560px]"}`}
+          className="relative ml-auto hidden w-full max-w-[500px] md:block"
         >
-          <div className={`flex h-12 items-center gap-3 rounded-2xl border bg-white px-4 shadow-sm transition ${
-            searchOpen ? "border-[#8C1839]/25 ring-4 ring-[#8C1839]/[0.05]" : "border-black/[0.08]"
+          <div className={`flex h-11 items-center gap-2.5 rounded-xl border bg-white/95 px-3.5 shadow-[0_5px_18px_rgba(45,29,23,0.06)] transition ${
+            searchOpen
+              ? "border-[#8C1839]/30 ring-4 ring-[#8C1839]/[0.05]"
+              : "border-black/[0.08] hover:border-black/[0.14]"
           }`}>
             {searching ? (
               <LoaderCircle size={17} className="shrink-0 animate-spin text-[#8C1839]" />
             ) : (
-              <Search size={17} className="shrink-0 text-black/35" />
+              <Search size={16} className="shrink-0 text-black/35" />
             )}
             <input
               type="search"
@@ -185,7 +186,7 @@ export default function AdminHeader() {
               onFocus={() => setSearchOpen(true)}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search products, orders, customers, categories..."
-              className="min-w-0 flex-1 bg-transparent text-[12px] outline-none placeholder:text-black/30"
+              className="min-w-0 flex-1 bg-transparent text-[11px] outline-none placeholder:text-black/30"
             />
             {query ? (
               <button
@@ -194,13 +195,13 @@ export default function AdminHeader() {
                   setQuery("");
                   setGroups([]);
                 }}
-                className="grid h-7 w-7 place-items-center rounded-lg text-black/30 hover:bg-black/[0.05] hover:text-black/60"
+                className="grid h-7 w-7 place-items-center rounded-lg text-black/30 transition hover:bg-black/[0.05] hover:text-black/65"
                 aria-label="Clear search"
               >
                 <X size={14} />
               </button>
             ) : (
-              <span className="rounded-lg bg-[#F4F0ED] px-2 py-1 text-[9px] font-semibold text-black/35">2+ chars</span>
+              <span className="rounded-md bg-[#F4F0ED] px-2 py-1 text-[8px] font-semibold text-black/35">2+ chars</span>
             )}
           </div>
 

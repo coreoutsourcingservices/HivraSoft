@@ -308,13 +308,13 @@ export default function AdminTrashPage() {
             })}
           </div>
 
-          <div className="flex h-11 w-full items-center gap-3 rounded-xl border border-black/[0.08] bg-[#FAF8F6] px-3 xl:max-w-[300px]">
-            <Search size={15} className="text-black/30" />
+          <div className="flex h-10 w-full items-center gap-2.5 rounded-xl border border-black/[0.08] bg-[#FAF8F6] px-3 transition focus-within:border-[#8C1839]/30 focus-within:bg-white focus-within:ring-4 focus-within:ring-[#8C1839]/[0.04] xl:w-[250px] xl:flex-none">
+            <Search size={14} className="shrink-0 text-black/30" />
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Search deleted items..."
-              className="min-w-0 flex-1 bg-transparent text-[11px] outline-none placeholder:text-black/30"
+              className="min-w-0 flex-1 bg-transparent text-[10px] outline-none placeholder:text-black/30"
             />
             {search && (
               <button type="button" onClick={() => setSearch("")} className="text-black/30 hover:text-black/60" aria-label="Clear search">

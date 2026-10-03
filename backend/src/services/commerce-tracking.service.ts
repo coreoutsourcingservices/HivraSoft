@@ -47,12 +47,35 @@ function getVariant(product: any, colorId: string, sizeId: string) {
   const images = Array.isArray(color?.images) ? color.images : [];
   const image = images.find((entry: any) => entry?.isDefault === true) || images[0] || null;
   return {
-    name: String(color?.nameProduct || "Product"),
+    name: String(color?.nameProduct || "Product unavailable"),
     slug: String(color?.slugProduct || ""),
     colorName: String(color?.nameColor || ""),
     sizeName: String(size?.size || ""),
     price: Number(size?.showPrice ?? color?.showPrice ?? 0),
     imageUrl: String(image?.url || ""),
+  };
+}
+
+function getProductSnapshot(metadata: any) {
+  const snapshot = metadata?.productSnapshot;
+  if (!snapshot || typeof snapshot !== "object") return null;
+
+  const name = text(snapshot.name);
+  const slug = text(snapshot.slug);
+  const colorName = text(snapshot.colorName);
+  const sizeName = text(snapshot.sizeName);
+  const imageUrl = text(snapshot.imageUrl);
+  const price = Number(snapshot.price ?? 0);
+
+  if (!name && !slug && !colorName && !sizeName && !imageUrl && !Number.isFinite(price)) return null;
+
+  return {
+    name: name || "Product unavailable",
+    slug,
+    colorName,
+    sizeName,
+    price: Number.isFinite(price) ? price : 0,
+    imageUrl,
   };
 }
 
@@ -141,6 +164,8 @@ export async function listCommerceTracking(kind: CommerceTrackingKind, query: Co
       { "userDoc.email": rx },
       { "userDoc.phone": rx },
       { "productDoc.colors.nameProduct": rx },
+      { "metadata.productSnapshot.name": rx },
+      { "metadata.productSnapshot.colorName": rx },
     ];
     if (Types.ObjectId.isValid(search)) {
       const id = new Types.ObjectId(search);
@@ -185,7 +210,8 @@ export async function listCommerceTracking(kind: CommerceTrackingKind, query: Co
     const activeItem = activeItemFor(kind, activeByUser.get(userId), productId, colorId, sizeId);
     const purchased = purchaseExists(orders as any[], userId, productId, normalizedAddedAt);
     const status = purchased ? "PURCHASED" : activeItem ? (kind === "cart" ? "IN_CART" : "IN_WISHLIST") : "REMOVED";
-    const product = getVariant(activity.productDoc, colorId, sizeId);
+    const snapshot = getProductSnapshot(metadata);
+    const product = snapshot || getVariant(activity.productDoc, colorId, sizeId);
     const quantity = kind === "cart"
       ? Number(activeItem?.quantity ?? (metadata as any).finalQuantity ?? (metadata as any).quantity ?? 1)
       : 1;
@@ -208,6 +234,8 @@ export async function listCommerceTracking(kind: CommerceTrackingKind, query: Co
           : "",
         colorId,
         sizeId,
+        isAvailable: Boolean(activity.productDoc),
+        hasSnapshot: Boolean(snapshot),
       },
       quantity,
       addedAt: normalizedAddedAt,
