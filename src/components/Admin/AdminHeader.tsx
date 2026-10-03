@@ -153,6 +153,7 @@ export default function AdminHeader() {
   })();
 
   const resultCount = groups.reduce((total, group) => total + group.items.length, 0);
+  const compactSearch = ["/admin/cart", "/admin/wishlist", "/admin/trash"].includes(pathname);
 
   return (
     <header className="sticky top-0 z-40 border-b border-[#211A18]/10 bg-[#F7F3EF]/95 backdrop-blur-xl">
@@ -166,7 +167,10 @@ export default function AdminHeader() {
           </h1>
         </div>
 
-        <div ref={searchWrapRef} className="relative ml-auto hidden w-full max-w-[560px] md:block">
+        <div
+          ref={searchWrapRef}
+          className={`relative ml-auto hidden w-full md:block ${compactSearch ? "max-w-[440px]" : "max-w-[560px]"}`}
+        >
           <div className={`flex h-12 items-center gap-3 rounded-2xl border bg-white px-4 shadow-sm transition ${
             searchOpen ? "border-[#8C1839]/25 ring-4 ring-[#8C1839]/[0.05]" : "border-black/[0.08]"
           }`}>

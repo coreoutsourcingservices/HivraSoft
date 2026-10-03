@@ -172,7 +172,8 @@ export default function AutomaticDiscountPage() {
     const confirmed = await confirmAdminAction({
       title: "Delete Automatic Discount?",
       description: "The automatic discount will be moved to Trash for 30 days and will stop applying immediately.",
-      confirmLabel: "Move to Trash",
+      confirmLabel: "OK",
+      cancelLabel: "Cancel",
     });
     if (!confirmed) return;
     try {

@@ -137,11 +137,11 @@ export default function AdminConfirmProvider() {
             </div>
           ) : null}
 
-          <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <div className="mt-6 grid grid-cols-2 gap-3">
             <button
               type="button"
               onClick={() => close(false)}
-              className="h-11 rounded-xl border border-black/[0.08] bg-white px-5 text-[11px] font-semibold text-black/60 transition hover:bg-[#F7F4F1]"
+              className="h-11 min-w-0 rounded-xl border border-black/[0.10] bg-white px-4 text-[11px] font-semibold text-black/65 transition hover:bg-[#F7F4F1]"
             >
               {options.cancelLabel || "Cancel"}
             </button>
@@ -149,13 +149,13 @@ export default function AdminConfirmProvider() {
               type="button"
               disabled={!canConfirm}
               onClick={() => close(true)}
-              className={`h-11 rounded-xl px-5 text-[11px] font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-40 ${
+              className={`h-11 min-w-0 rounded-xl px-4 text-[11px] font-semibold text-white shadow-sm transition disabled:cursor-not-allowed disabled:opacity-40 ${
                 options.destructive === false
                   ? "bg-[#211A18] hover:bg-[#8C1839]"
-                  : "bg-red-600 hover:bg-red-700"
+                  : "bg-[#A51D45] hover:bg-[#8C1839]"
               }`}
             >
-              {options.confirmLabel || "Move to Trash"}
+              {options.confirmLabel || "OK"}
             </button>
           </div>
         </div>

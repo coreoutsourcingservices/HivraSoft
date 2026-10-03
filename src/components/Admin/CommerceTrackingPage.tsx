@@ -261,7 +261,7 @@ export default function CommerceTrackingPage({ kind }: { kind: "cart" | "wishlis
         </div>
 
         <div className="mt-5 grid gap-3 lg:grid-cols-5">
-          <label className="relative lg:col-span-2">
+          <label className="relative lg:col-span-2 lg:max-w-[420px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#211A18]/35" size={15} />
             <input
               value={search}

@@ -308,7 +308,7 @@ export default function AdminTrashPage() {
             })}
           </div>
 
-          <div className="flex h-11 w-full items-center gap-3 rounded-xl border border-black/[0.08] bg-[#FAF8F6] px-3 xl:max-w-sm">
+          <div className="flex h-11 w-full items-center gap-3 rounded-xl border border-black/[0.08] bg-[#FAF8F6] px-3 xl:max-w-[300px]">
             <Search size={15} className="text-black/30" />
             <input
               value={search}
