@@ -366,11 +366,16 @@ export default function CommerceTrackingPage({ kind }: { kind: "cart" | "wishlis
                       <div className="min-w-0 flex-1">
                         <div className="flex min-w-0 items-center gap-2">
                           <div className="truncate font-semibold text-[#211A18]">{row.product.name || "Product unavailable"}</div>
-                          {row.product.isAvailable === false ? (
+                          {row.product.isAvailable === false && row.product.hasOrderSnapshot ? (
+                            <span className="shrink-0 rounded-full bg-sky-50 px-2 py-0.5 text-[7px] font-semibold uppercase tracking-wide text-sky-700">Order data</span>
+                          ) : row.product.isAvailable === false ? (
                             <span className="shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-[7px] font-semibold uppercase tracking-wide text-amber-700">Unavailable</span>
                           ) : null}
                         </div>
-                        <div className="mt-1 truncate text-[9px] text-[#211A18]/45">{[row.product.colorName, row.product.sizeName].filter(Boolean).join(" / ") || (row.product.isAvailable === false ? "Historical tracking" : "Default variant")}</div>
+                        <div className="mt-1 truncate text-[9px] text-[#211A18]/45">
+                          {[row.product.colorName, row.product.sizeName].filter(Boolean).join(" / ")
+                            || (row.product.hasOrderSnapshot ? "Saved from order" : row.product.isAvailable === false ? "Historical tracking" : "Default variant")}
+                        </div>
                         <div className="mt-0.5 truncate text-[8px] text-[#211A18]/30">{row.product.id}</div>
                       </div>
                     </div>

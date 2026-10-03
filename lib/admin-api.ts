@@ -272,6 +272,7 @@ export type CommerceTrackingRow = {
     sizeId: string;
     isAvailable?: boolean;
     hasSnapshot?: boolean;
+    hasOrderSnapshot?: boolean;
   };
   quantity: number;
   addedAt: string;
