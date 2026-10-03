@@ -2,12 +2,8 @@ import { Types } from "mongoose";
 
 import Wishlist from "../models/Wishlist.model";
 import Product from "../models/Product.model";
-<<<<<<< HEAD
-import { trackUserActivity } from "./activity.service";
-=======
 import { markActivityEmailSent, trackUserActivity } from "./activity.service";
 import { sendWishlistAddedEmail } from "./commerce-email.service";
->>>>>>> aman
 
 const WISHLIST_PRODUCT_SELECT = [
   "name",
@@ -132,11 +128,7 @@ export const addProductToWishlist = async (
       ],
     });
 
-<<<<<<< HEAD
-    await trackUserActivity({
-=======
     const activity = await trackUserActivity({
->>>>>>> aman
       userId,
       type: "wishlist_add",
       productId,
@@ -147,123 +139,6 @@ export const addProductToWishlist = async (
       },
     });
 
-<<<<<<< HEAD
-    return { wishlist: await populateWishlistById(wishlist._id), alreadyExists: false };
-  }
-
-  const existing = wishlist.items.find(sameVariant);
-  if (existing) {
-    return { wishlist: await populateWishlistById(wishlist._id), alreadyExists: true };
-  }
-
-  const now = new Date();
-  wishlist.items.push({
-    product: productObjectId,
-    colorId: selectedColorId,
-    sizeId: selectedSizeId,
-    addedAt: now,
-    updatedAt: now,
-  });
-  await wishlist.save();
-
-  await trackUserActivity({
-    userId,
-    type: "wishlist_add",
-    productId,
-    metadata: {
-      colorId: selected.colorId,
-      sizeId: selected.sizeId,
-      addedAt: now,
-    },
-  });
-
-  return { wishlist: await populateWishlistById(wishlist._id), alreadyExists: false };
-};
-
-export const getUserWishlist = async (userId: string) => {
-  validateObjectId(userId, "user");
-
-  const wishlist = await Wishlist.findOne({
-    user: new Types.ObjectId(userId),
-  }).populate({
-    path: "items.product",
-    select: WISHLIST_PRODUCT_SELECT,
-  });
-
-  return wishlist || createEmptyWishlistResponse(userId);
-};
-
-export const checkProductInWishlist = async (userId: string, productId: string) => {
-  validateObjectId(userId, "user");
-  validateObjectId(productId, "product");
-
-  const exists = await Wishlist.exists({
-    user: new Types.ObjectId(userId),
-    "items.product": new Types.ObjectId(productId),
-  });
-
-  return Boolean(exists);
-};
-
-export const removeProductFromWishlist = async (
-  userId: string,
-  itemOrProductId: string
-) => {
-  validateObjectId(userId, "user");
-  validateObjectId(itemOrProductId, "wishlist item or product");
-
-  const wishlist = await Wishlist.findOne({ user: new Types.ObjectId(userId) });
-  if (!wishlist) throw new Error("Wishlist not found.");
-
-  const target = new Types.ObjectId(itemOrProductId);
-  const byItemId = wishlist.items.find((item: any) => String(item._id || "") === itemOrProductId);
-  const removedItems = byItemId
-    ? wishlist.items.filter((item: any) => String(item._id || "") === itemOrProductId)
-    : wishlist.items.filter((item) => item.product.equals(target));
-
-  if (!removedItems.length) {
-    throw new Error("Product is not in wishlist.");
-  }
-
-  wishlist.items = byItemId
-    ? wishlist.items.filter((item: any) => String(item._id || "") !== itemOrProductId)
-    : wishlist.items.filter((item) => !item.product.equals(target));
-
-  await wishlist.save();
-
-  for (const removed of removedItems) {
-    await trackUserActivity({
-      userId,
-      type: "wishlist_remove",
-      productId: String(removed.product),
-      metadata: {
-        wishlistItemId: String((removed as any)._id || ""),
-        colorId: String(removed.colorId || ""),
-        sizeId: String(removed.sizeId || ""),
-        addedAt: removed.addedAt,
-      },
-    });
-  }
-
-  return populateWishlistById(wishlist._id);
-};
-
-export const clearUserWishlist = async (userId: string) => {
-  validateObjectId(userId, "user");
-
-  const wishlist = await Wishlist.findOne({ user: new Types.ObjectId(userId) });
-  if (!wishlist) return createEmptyWishlistResponse(userId);
-
-  const clearedItems = wishlist.items.length;
-  wishlist.items = [];
-  await wishlist.save();
-
-  if (clearedItems > 0) {
-    await trackUserActivity({
-      userId,
-      type: "wishlist_clear",
-      metadata: { clearedItems },
-=======
     void sendWishlistAddedEmail({
       userId,
       productId,
@@ -380,14 +255,11 @@ export const removeProductFromWishlist = async (
         sizeId: String(removed.sizeId || ""),
         addedAt: removed.addedAt,
       },
->>>>>>> aman
     });
   }
 
   return populateWishlistById(wishlist._id);
 };
-<<<<<<< HEAD
-=======
 
 export const clearUserWishlist = async (userId: string) => {
   validateObjectId(userId, "user");
@@ -409,4 +281,3 @@ export const clearUserWishlist = async (userId: string) => {
 
   return populateWishlistById(wishlist._id);
 };
->>>>>>> aman

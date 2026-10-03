@@ -22,11 +22,8 @@ export interface IOrder extends Document {
   customer: Record<string, unknown>;
   items: any[];
   subtotal: number;
-<<<<<<< HEAD
   offerDiscount: number;
   offerDiscountDetails?: Record<string, unknown>;
-=======
->>>>>>> aman
   automaticDiscount: number;
   automaticDiscountDetails?: Record<string, unknown>;
   codeDiscount: number;
@@ -72,11 +69,8 @@ const orderSchema = new Schema<IOrder>(
     customer: { type: Schema.Types.Mixed, default: {} },
     items: { type: [Schema.Types.Mixed] as any, default: [] },
     subtotal: { type: Number, required: true, min: 0 },
-<<<<<<< HEAD
     offerDiscount: { type: Number, default: 0, min: 0 },
     offerDiscountDetails: { type: Schema.Types.Mixed, default: {} },
-=======
->>>>>>> aman
     automaticDiscount: { type: Number, default: 0, min: 0 },
     automaticDiscountDetails: { type: Schema.Types.Mixed, default: {} },
     codeDiscount: { type: Number, default: 0, min: 0 },

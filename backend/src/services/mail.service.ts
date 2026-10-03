@@ -4,14 +4,11 @@ export type SendEmailInput = {
   to: string;
   subject: string;
   html: string;
-<<<<<<< HEAD
   attachments?: Array<{
     filename: string;
     path: string;
     cid: string;
   }>;
-=======
->>>>>>> aman
 };
 
 export const sendEmail = async (input: SendEmailInput): Promise<void> => {
@@ -23,10 +20,7 @@ export const sendEmail = async (input: SendEmailInput): Promise<void> => {
     to,
     subject: input.subject,
     html: input.html,
-<<<<<<< HEAD
     attachments: input.attachments,
-=======
->>>>>>> aman
   });
 };
 

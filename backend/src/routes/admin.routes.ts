@@ -98,7 +98,6 @@ import {
   deleteDeliveryChargeRule,
 } from "../controllers/delivery-charge.controller";
 
-<<<<<<< HEAD
 import {
   listAdminOffers,
   createAdminOffer,
@@ -106,8 +105,6 @@ import {
   deleteAdminOffer,
 } from "../controllers/offer.controller";
 
-=======
->>>>>>> aman
 
 const router = Router();
 
@@ -269,7 +266,6 @@ router.post("/delivery-charges", authenticateAdmin, createDeliveryChargeRule);
 router.patch("/delivery-charges/:id", authenticateAdmin, updateDeliveryChargeRule);
 router.delete("/delivery-charges/:id", authenticateAdmin, deleteDeliveryChargeRule);
 
-<<<<<<< HEAD
 router.get("/offers/buy-get", authenticateAdmin, listAdminOffers("buy_get"));
 router.post("/offers/buy-get", authenticateAdmin, createAdminOffer("buy_get"));
 router.patch("/offers/buy-get/:id", authenticateAdmin, updateAdminOffer("buy_get"));
@@ -280,6 +276,4 @@ router.post("/offers/fixed-price-bundle", authenticateAdmin, createAdminOffer("f
 router.patch("/offers/fixed-price-bundle/:id", authenticateAdmin, updateAdminOffer("fixed_price_bundle"));
 router.delete("/offers/fixed-price-bundle/:id", authenticateAdmin, deleteAdminOffer("fixed_price_bundle"));
 
-=======
->>>>>>> aman
 export default router;

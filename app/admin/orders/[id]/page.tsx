@@ -352,14 +352,11 @@ export default function AdminOrderDetailsPage() {
       order.subtotal
     );
 
-<<<<<<< HEAD
   const offerDiscount =
     numberValue(
       order.offerDiscount
     );
 
-=======
->>>>>>> aman
   const automaticDiscount =
     numberValue(
       order.automaticDiscount
@@ -1083,7 +1080,6 @@ export default function AdminOrderDetailsPage() {
                 </span>
               </div>
 
-<<<<<<< HEAD
               {/* OFFER DISCOUNT */}
               {offerDiscount > 0 && (
                 <div className="flex items-center justify-between gap-4">
@@ -1096,8 +1092,6 @@ export default function AdminOrderDetailsPage() {
                 </div>
               )}
 
-=======
->>>>>>> aman
               {/* AUTO DISCOUNT */}
               {automaticDiscount >
                 0 && (

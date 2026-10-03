@@ -91,17 +91,6 @@ export async function getCart(): Promise<Cart> {
       _id: String(x._id || x.id || `${product._id}-${x.sku || i}`),
       product,
       colorId: String(x.colorId?._id || x.colorId || x.color?._id || ""),
-<<<<<<< HEAD
-      colorName: x.colorName || x.color?.nameColor || x.color?.name,
-      colorSlug: x.colorSlug || x.color?.slugColor || x.color?.slug,
-      sizeId: String(x.sizeId?._id || x.sizeId || x.size?._id || ""),
-      size: typeof x.size === "string" ? x.size : x.size?.size,
-      sku: x.sku || x.size?.sku,
-      quantity: qty,
-      unitPrice: unit,
-      lineTotal: Number(x.lineTotal ?? x.totalPrice ?? unit * qty),
-      image: x.image || product.mainImages?.[0]?.url || x.color?.images?.[0]?.url,
-=======
       colorName: x.colorName || x.selectedColor?.name || x.color?.nameColor || x.color?.name,
       colorSlug: x.colorSlug || x.selectedColor?.slug || x.color?.slugColor || x.color?.slug,
       sizeId: String(x.sizeId?._id || x.sizeId || x.size?._id || ""),
@@ -111,7 +100,6 @@ export async function getCart(): Promise<Cart> {
       unitPrice: unit,
       lineTotal: Number(x.lineTotal ?? x.subtotal ?? x.totalPrice ?? unit * qty),
       image: x.image || product.mainImages?.[0]?.url || x.selectedColor?.images?.[0]?.url || x.color?.images?.[0]?.url,
->>>>>>> aman
     };
   });
   const subtotal = Number(raw.subtotal ?? items.reduce((s, x) => s + x.lineTotal, 0));
@@ -120,11 +108,7 @@ export async function getCart(): Promise<Cart> {
   return {
     _id: raw._id,
     items,
-<<<<<<< HEAD
-    itemCount: Number(raw.itemCount ?? items.reduce((s, x) => s + x.quantity, 0)),
-=======
     itemCount: Number(raw.itemCount ?? raw.totalItems ?? items.reduce((s, x) => s + x.quantity, 0)),
->>>>>>> aman
     subtotal,
     discount,
     shipping,
@@ -133,21 +117,12 @@ export async function getCart(): Promise<Cart> {
 }
 
 export async function addToCart(input: { productId: string; colorId?: string; sizeId?: string; quantity?: number }) {
-<<<<<<< HEAD
-  return request("/api/cart/items", { method: "POST", body: JSON.stringify({ ...input, quantity: input.quantity || 1 }) });
-}
-export async function updateCartItem(itemId: string, quantity: number) {
-  return request(`/api/cart/items/${encodeURIComponent(itemId)}`, { method: "PATCH", body: JSON.stringify({ quantity }) });
-}
-export async function removeCartItem(itemId: string) { return request(`/api/cart/items/${encodeURIComponent(itemId)}`, { method: "DELETE" }); }
-=======
   return request("/api/cart", { method: "POST", body: JSON.stringify({ ...input, quantity: input.quantity || 1 }) });
 }
 export async function updateCartItem(itemId: string, quantity: number) {
   return request(`/api/cart/${encodeURIComponent(itemId)}`, { method: "PATCH", body: JSON.stringify({ quantity }) });
 }
 export async function removeCartItem(itemId: string) { return request(`/api/cart/${encodeURIComponent(itemId)}`, { method: "DELETE" }); }
->>>>>>> aman
 export async function clearCart() { return request("/api/cart", { method: "DELETE" }); }
 
 export async function getWishlist(): Promise<WishlistItem[]> {
