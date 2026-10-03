@@ -106,6 +106,14 @@ import {
 } from "../controllers/offer.controller";
 
 
+import {
+  globalAdminSearch,
+  getAdminTrash,
+  restoreAdminTrash,
+  permanentlyDeleteAdminTrash,
+  emptyAdminTrash,
+} from "../controllers/admin-tools.controller";
+
 const router = Router();
 
 router.post(
@@ -176,6 +184,11 @@ router.get("/me", authenticateAdmin, (req: Request, res: Response) => {
 });
 
 router.get("/dashboard", authenticateAdmin, getAdminDashboard);
+router.get("/global-search", authenticateAdmin, globalAdminSearch);
+router.get("/trash", authenticateAdmin, getAdminTrash);
+router.post("/trash/:type/:id/restore", authenticateAdmin, restoreAdminTrash);
+router.delete("/trash/:type/:id/permanent", authenticateAdmin, permanentlyDeleteAdminTrash);
+router.delete("/trash/empty", authenticateAdmin, emptyAdminTrash);
 router.get("/blogs", authenticateAdmin, listAdminBlogs);
 router.post("/blogs", authenticateAdmin, createAdminBlog);
 router.get("/blogs/:id", authenticateAdmin, getAdminBlog);

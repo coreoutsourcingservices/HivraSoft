@@ -6,6 +6,7 @@ import { Menu, X } from "lucide-react";
 
 import AdminSidebar from "./AdminSidebar";
 import AdminHeader from "./AdminHeader";
+import AdminConfirmProvider from "./AdminConfirmProvider";
 
 export default function AdminShell({
   children,
@@ -17,7 +18,9 @@ export default function AdminShell({
   const menuOpen = menuRoute === pathname;
 
   return (
-    <div
+    <>
+      <AdminConfirmProvider />
+      <div
       className="
         min-h-screen
         bg-[#F7F3EF]
@@ -72,5 +75,6 @@ export default function AdminShell({
         </main>
       </div>
     </div>
+    </>
   );
 }

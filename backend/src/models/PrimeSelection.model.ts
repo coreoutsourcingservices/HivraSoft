@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document, Model, Types } from "mongoose";
 import type { IHomepageImage } from "./OnTrendPick.model";
 import type { HomepageGender } from "./AlwaysInIt.model";
+import { applySoftDeletePlugin } from "../utils/softDelete";
 
 export type PrimeSelectionAction =
   | "created"
@@ -15,7 +16,7 @@ export interface IPrimeHotspot {
   _id?: Types.ObjectId;
   x: number;
   y: number;
-  /** Multiple products can be attached to one hotspot. */
+/** Multiple products can be attached to one hotspot. */
   productIds: Types.ObjectId[];
   /** Legacy single-product field kept so old database records keep working. */
   productId?: Types.ObjectId | null;
@@ -117,6 +118,8 @@ const primeSelectionSchema = new Schema<IPrimeSelection>(
 );
 
 primeSelectionSchema.index({ isDeleted: 1, gender: 1, isActive: 1 });
+
+applySoftDeletePlugin(primeSelectionSchema);
 
 const PrimeSelection: Model<IPrimeSelection> =
   (mongoose.models.PrimeSelection as Model<IPrimeSelection>) ||

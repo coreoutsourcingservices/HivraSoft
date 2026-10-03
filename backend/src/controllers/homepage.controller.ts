@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import mongoose from "mongoose";
+import { softDeleteEntity } from "../services/admin-trash.service";
 import OnTrendPick, {
   type HomepageChangeAction,
   type IHomepageImage,
@@ -356,15 +357,8 @@ export async function deleteAdminOnTrendPick(req: Request, res: Response) {
   try {
     const id = String(req.params.id || "");
     if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ success: false, message: "Invalid item ID." });
-    const item = await OnTrendPick.findOne({ _id: id, isDeleted: { $ne: true } });
-    if (!item) return res.status(404).json({ success: false, message: "On-trend pick not found." });
-    const values = await onTrendValues({ isActive: false }, item);
-    item.isActive = false;
-    item.isDeleted = true;
-    item.history.push(onTrendHistory("deleted", values, req) as any);
-    trimHistory(item.history as any[]);
-    await item.save();
-    return res.json({ success: true, message: "On-trend pick deleted.", ...(await onTrendAdminPayload()) });
+    const result = await softDeleteEntity("on_trend_pick", id, req.user?._id ? String(req.user._id) : null);
+    return res.json({ success: true, message: result.message, ...(await onTrendAdminPayload()) });
   } catch (error) {
     return res.status(400).json({ success: false, message: error instanceof Error ? error.message : "Unable to delete on-trend pick." });
   }
@@ -500,15 +494,8 @@ export async function deleteAdminAlwaysInIt(req: Request, res: Response) {
   try {
     const id = String(req.params.id || "");
     if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ success: false, message: "Invalid item ID." });
-    const item = await AlwaysInIt.findOne({ _id: id, isDeleted: { $ne: true } });
-    if (!item) return res.status(404).json({ success: false, message: "Always In It record not found." });
-    const values = await alwaysValues({ isActive: false }, item);
-    item.isActive = false;
-    item.isDeleted = true;
-    item.history.push(alwaysHistory("deleted", values, req) as any);
-    trimHistory(item.history as any[]);
-    await item.save();
-    return res.json({ success: true, message: "Always In It record deleted.", ...(await alwaysAdminPayload()) });
+    const result = await softDeleteEntity("always_in_it", id, req.user?._id ? String(req.user._id) : null);
+    return res.json({ success: true, message: result.message, ...(await alwaysAdminPayload()) });
   } catch (error) {
     return res.status(400).json({ success: false, message: error instanceof Error ? error.message : "Unable to delete Always In It." });
   }
@@ -682,15 +669,8 @@ export async function deleteAdminPrimeSelection(req: Request, res: Response) {
   try {
     const id = String(req.params.id || "");
     if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ success: false, message: "Invalid item ID." });
-    const item = await PrimeSelection.findOne({ _id: id, isDeleted: { $ne: true } });
-    if (!item) return res.status(404).json({ success: false, message: "Prime Selection not found." });
-    const values = await primeValues({ isActive: false }, item);
-    item.isActive = false;
-    item.isDeleted = true;
-    item.history.push(primeHistory("deleted", values, req) as any);
-    trimHistory(item.history as any[]);
-    await item.save();
-    return res.json({ success: true, message: "Prime Selection deleted.", ...(await primeAdminPayload()) });
+    const result = await softDeleteEntity("prime_selection", id, req.user?._id ? String(req.user._id) : null);
+    return res.json({ success: true, message: result.message, ...(await primeAdminPayload()) });
   } catch (error) {
     return res.status(400).json({ success: false, message: error instanceof Error ? error.message : "Unable to delete Prime Selection." });
   }

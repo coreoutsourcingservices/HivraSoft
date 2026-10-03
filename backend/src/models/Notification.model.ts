@@ -1,3 +1,4 @@
+import { applySoftDeletePlugin } from "../utils/softDelete";
 import mongoose, { Schema, Document, Model, Types } from "mongoose";
 
 export type NotificationType =
@@ -155,6 +156,8 @@ notificationSchema.index(
     partialFilterExpression: { dedupeKey: { $type: "string" } },
   }
 );
+
+applySoftDeletePlugin(notificationSchema);
 
 const Notification: Model<INotification> =
   (mongoose.models.Notification as Model<INotification>) ||

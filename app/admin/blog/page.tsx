@@ -1,5 +1,7 @@
 "use client";
 
+import { confirmAdminAction } from "@/src/components/Admin/AdminConfirmProvider";
+
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { Copy, Edit3, Plus, Search, Trash2 } from "lucide-react";
@@ -44,7 +46,13 @@ export default function AdminBlogsPage() {
   useEffect(() => { void load(); }, [load]);
 
   async function remove(blog: BlogRecord) {
-    if (!window.confirm(`Delete \"${blog.title}\"?`)) return;
+    const confirmed = await confirmAdminAction({
+      title: "Delete Blog?",
+      itemName: blog.title,
+      description: "The blog will move to Trash for 30 days. Its uploaded media will be preserved until permanent deletion.",
+      confirmLabel: "Move to Trash",
+    });
+    if (!confirmed) return;
     try {
       setBusyId(blog._id);
       await deleteAdminBlog(blog._id);

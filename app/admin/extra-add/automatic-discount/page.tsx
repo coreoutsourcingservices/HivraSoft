@@ -1,5 +1,7 @@
 "use client";
 
+import { confirmAdminAction } from "@/src/components/Admin/AdminConfirmProvider";
+
 import { useEffect, useState } from "react";
 import DiscountProductSelector from "@/src/components/Admin/DiscountProductSelector";
 
@@ -167,7 +169,14 @@ export default function AutomaticDiscountPage() {
   }
 
   async function deleteRule(rule: AutomaticRule) {
-    if (!window.confirm("Delete this automatic discount rule?")) return;
+    const confirmed = await confirmAdminAction({
+      title: "Delete Automatic Discount?",
+      itemName: rule.name || "Automatic Discount",
+      description: "The automatic discount will be moved to Trash for 30 days and will stop applying immediately.",
+      confirmLabel: "Move to Trash",
+      cancelLabel: "Cancel",
+    });
+    if (!confirmed) return;
     try {
       setBusyId(rule._id); setError(""); setSuccess("");
       const response = await fetch(`${API_URL}/api/admin/discounts/automatic/${rule._id}`, {

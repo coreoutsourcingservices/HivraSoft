@@ -46,6 +46,29 @@ const createEmptyWishlistResponse = (userId: string) => ({
   updatedAt: null,
 });
 
+function buildTrackingProductSnapshot(product: any, colorId?: string | null, sizeId?: string | null) {
+  const colors = Array.isArray(product?.colors) ? product.colors : [];
+  const color = colors.find((item: any) => String(item?._id || "") === String(colorId || ""))
+    || colors.find((item: any) => item?.isDefault === true)
+    || colors[0]
+    || null;
+  const sizes = Array.isArray(color?.sizes) ? color.sizes : [];
+  const size = sizes.find((item: any) => String(item?._id || "") === String(sizeId || ""))
+    || sizes[0]
+    || null;
+  const images = Array.isArray(color?.images) ? color.images : [];
+  const image = images.find((item: any) => item?.isDefault === true) || images[0] || null;
+
+  return {
+    name: String(color?.nameProduct || "Product"),
+    slug: String(color?.slugProduct || ""),
+    colorName: String(color?.nameColor || ""),
+    sizeName: String(size?.size || ""),
+    price: Number(size?.showPrice ?? color?.showPrice ?? 0),
+    imageUrl: String(image?.url || ""),
+  };
+}
+
 function validateVariant(product: any, input: WishlistVariantInput) {
   const colorId = String(input.colorId || "").trim();
   const sizeId = String(input.sizeId || "").trim();
@@ -136,6 +159,7 @@ export const addProductToWishlist = async (
         colorId: selected.colorId,
         sizeId: selected.sizeId,
         addedAt: now,
+        productSnapshot: buildTrackingProductSnapshot(product, selected.colorId, selected.sizeId),
       },
     });
 
@@ -176,6 +200,7 @@ export const addProductToWishlist = async (
       colorId: selected.colorId,
       sizeId: selected.sizeId,
       addedAt: now,
+      productSnapshot: buildTrackingProductSnapshot(product, selected.colorId, selected.sizeId),
     },
   });
 

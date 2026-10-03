@@ -1,5 +1,7 @@
 "use client";
 
+import { confirmAdminAction } from "@/src/components/Admin/AdminConfirmProvider";
+
 import {
   FormEvent,
   ReactNode,
@@ -1327,10 +1329,12 @@ export default function CategoryManager() {
         return;
       }
 
-      const confirmed =
-        window.confirm(
-          `Delete "${category.name}"?\n\nIts ${category.images.length} Cloudinary image(s) will also be deleted.`
-        );
+      const confirmed = await confirmAdminAction({
+        title: "Delete Category?",
+        itemName: category.name,
+        description: `The category will move to Trash for 30 days. Its ${category.images.length} Cloudinary image(s) will be preserved until permanent deletion.`,
+        confirmLabel: "Move to Trash",
+      });
 
       if (
         !confirmed

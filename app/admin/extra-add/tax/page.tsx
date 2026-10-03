@@ -1,5 +1,7 @@
 "use client";
 
+import { confirmAdminAction } from "@/src/components/Admin/AdminConfirmProvider";
+
 import { useEffect, useState } from "react";
 import { ReceiptText } from "lucide-react";
 import DiscountProductSelector from "@/src/components/Admin/DiscountProductSelector";
@@ -172,7 +174,12 @@ export default function TaxSettingsPage() {
   }
 
   async function deleteRule(rule: TaxRule) {
-    if (!window.confirm("Delete this tax rule?")) return;
+    const confirmed = await confirmAdminAction({
+      title: "Delete Tax Rule?",
+      description: "The tax rule will be moved to Trash for 30 days and will stop applying immediately.",
+      confirmLabel: "Move to Trash",
+    });
+    if (!confirmed) return;
     try {
       setBusyId(rule._id); setError(""); setSuccess("");
       const response = await fetch(`${API_URL}/api/admin/tax/${rule._id}`, { method: "DELETE", credentials: "include" });

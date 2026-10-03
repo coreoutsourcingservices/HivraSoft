@@ -4,6 +4,7 @@ import Notification from "../models/Notification.model";
 import User from "../models/User.model";
 import { matchingCustomerIds } from "../services/customer-admin.service";
 import sanitizeHtml from "sanitize-html";
+import { softDeleteEntity } from "../services/admin-trash.service";
 
 function sanitizeNotificationHtml(value: string) {
   return sanitizeHtml(value, {
@@ -176,12 +177,8 @@ export async function deleteAdminNotification(req: Request, res: Response) {
       return res.status(400).json({ success: false, message: "Invalid notification ID." });
     }
 
-    const item = await Notification.findByIdAndDelete(id);
-    if (!item) {
-      return res.status(404).json({ success: false, message: "Notification not found." });
-    }
-
-    return res.json({ success: true, message: "Notification deleted." });
+    const result = await softDeleteEntity("notification", id, currentUserId(req));
+    return res.json({ success: true, message: result.message });
   } catch (error) {
     return res.status(400).json({
       success: false,

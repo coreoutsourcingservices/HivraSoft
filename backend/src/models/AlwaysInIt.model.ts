@@ -1,3 +1,4 @@
+import { applySoftDeletePlugin } from "../utils/softDelete";
 import mongoose, { Schema, Document, Model, Types } from "mongoose";
 import type { HomepageChangeAction, IHomepageImage } from "./OnTrendPick.model";
 
@@ -64,6 +65,8 @@ const alwaysInItSchema = new Schema<IAlwaysInIt>(
 );
 
 alwaysInItSchema.index({ isDeleted: 1, gender: 1, isActive: 1 });
+
+applySoftDeletePlugin(alwaysInItSchema);
 
 const AlwaysInIt: Model<IAlwaysInIt> =
   (mongoose.models.AlwaysInIt as Model<IAlwaysInIt>) ||

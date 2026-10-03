@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import mongoose from "mongoose";
+import { softDeleteEntity } from "../services/admin-trash.service";
 import DiscountSetting, {
   type ExtraValueType,
   type PricingRuleAction,
@@ -354,17 +355,8 @@ export async function deleteAutomaticDiscount(req: Request, res: Response) {
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ success: false, message: "Invalid automatic discount rule ID." });
     }
-    const rule = await DiscountSetting.findOne({ _id: id, isDeleted: { $ne: true } });
-    if (!rule) return res.status(404).json({ success: false, message: "Automatic discount rule not found." });
-
-    const values = automaticValues({ isActive: false }, rule);
-    rule.isActive = false;
-    rule.isDeleted = true;
-    rule.history.push(automaticHistory("deleted", values, req) as any);
-    if (rule.history.length > 100) rule.history.splice(0, rule.history.length - 100);
-    await rule.save();
-
-    return res.json({ success: true, message: "Automatic discount rule deleted.", ...(await automaticResponse()) });
+    const result = await softDeleteEntity("automatic_discount", id, req.user?._id ? String(req.user._id) : null);
+    return res.json({ success: true, message: result.message, ...(await automaticResponse()) });
   } catch (error) {
     return res.status(400).json({
       success: false,
@@ -621,18 +613,8 @@ export async function deleteDiscountCode(req: Request, res: Response) {
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ success: false, message: "Invalid discount code ID." });
     }
-
-    const item = await DiscountCode.findOne({ _id: id, isDeleted: { $ne: true } });
-    if (!item) return res.status(404).json({ success: false, message: "Discount code not found." });
-
-    const values = codeValues({ isActive: false }, item);
-    item.isActive = false;
-    item.isDeleted = true;
-    item.history.push(codeHistory("deleted", values, req) as any);
-    if (item.history.length > 100) item.history.splice(0, item.history.length - 100);
-    await item.save();
-
-    return res.json({ success: true, message: "Discount code deleted.", ...(await codesResponse()) });
+    const result = await softDeleteEntity("discount_code", id, req.user?._id ? String(req.user._id) : null);
+    return res.json({ success: true, message: result.message, ...(await codesResponse()) });
   } catch (error) {
     return res.status(400).json({
       success: false,

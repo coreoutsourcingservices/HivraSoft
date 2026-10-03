@@ -1061,7 +1061,8 @@ export const deleteProductController =
 
       const result =
         await deleteProduct(
-          id
+          id,
+          req.user?._id ? String(req.user._id) : null
         );
 
       return res

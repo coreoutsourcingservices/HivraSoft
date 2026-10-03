@@ -1,5 +1,7 @@
 "use client";
 
+import { confirmAdminAction } from "@/src/components/Admin/AdminConfirmProvider";
+
 import Link from "next/link";
 import type { CatalogProduct } from "@/lib/product-catalog";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -94,7 +96,14 @@ export default function ProductsManager() {
   };
 
   const deleteProduct = async (id: string, name: string) => {
-    if (actionId || !window.confirm(`Delete "${name}"?\n\nProduct and its Cloudinary images will be deleted.`)) return;
+    if (actionId) return;
+    const confirmed = await confirmAdminAction({
+      title: "Delete Product?",
+      itemName: name,
+      description: "The product will move to Trash for 30 days. Cloudinary images are preserved until permanent deletion.",
+      confirmLabel: "Move to Trash",
+    });
+    if (!confirmed) return;
     try {
       setActionId(id); setError(""); setSuccess("");
       const response = await fetch(`${API_URL}/api/products/${id}`, {

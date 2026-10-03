@@ -1,5 +1,7 @@
 "use client";
 
+import { confirmAdminAction } from "@/src/components/Admin/AdminConfirmProvider";
+
 import { useEffect, useState } from "react";
 import { Truck } from "lucide-react";
 
@@ -241,7 +243,12 @@ export default function DeliveryChargePage() {
   }
 
   async function deleteRule(rule: DeliveryRule) {
-    if (!window.confirm("Delete this delivery charge rule?")) return;
+    const confirmed = await confirmAdminAction({
+      title: "Delete Delivery Charge Rule?",
+      description: "The delivery rule will be moved to Trash for 30 days and will stop applying immediately.",
+      confirmLabel: "Move to Trash",
+    });
+    if (!confirmed) return;
 
     try {
       setBusyId(rule._id);

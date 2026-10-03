@@ -642,7 +642,8 @@ export const deleteBannerController =
 
       const result =
         await deleteBanner(
-          bannerId
+          bannerId,
+          req.user?._id ? String(req.user._id) : null
         );
 
       return res

@@ -21,6 +21,8 @@ import {
   uploadVideoBuffer,
 } from "./cloudinary.service";
 
+import { softDeleteEntity } from "./admin-trash.service";
+
 /* =========================================================
    TYPES
 ========================================================= */
@@ -1553,46 +1555,17 @@ export const updateBanner =
 
 export const deleteBanner =
   async (
-    bannerId: string
+    bannerId: string,
+    deletedBy?: string | null
   ) => {
-    validateBannerId(
-      bannerId
-    );
+    validateBannerId(bannerId);
 
-    const banner =
-      await Banner.findById(
-        bannerId
-      );
-
-    if (!banner) {
-      throw new Error(
-        "Banner not found."
-      );
-    }
-
-    if (
-      banner.images.length >
-      0
-    ) {
-      await deleteBannerImages(
-        banner.images
-      );
-    }
-
-    if (
-      banner.videos.length >
-      0
-    ) {
-      await deleteBannerVideos(
-        banner.videos
-      );
-    }
-
-    await banner.deleteOne();
+    const result = await softDeleteEntity("banner", bannerId, deletedBy);
 
     return {
       bannerId,
-      message:
-        "Banner and Cloudinary media deleted successfully.",
+      message: result.message,
+      movedToTrash: true,
+      retentionDays: 30,
     };
   };

@@ -1,5 +1,7 @@
 "use client";
 
+import { confirmAdminAction } from "@/src/components/Admin/AdminConfirmProvider";
+
 import {
   useCallback,
   useEffect,
@@ -142,10 +144,12 @@ export default function BannerListPage() {
   const handleDelete = async (
     banner: Banner
   ) => {
-    const confirmed =
-      window.confirm(
-        `Delete "${banner.title}"? Cloudinary media will also be deleted.`
-      );
+    const confirmed = await confirmAdminAction({
+      title: "Delete Banner?",
+      itemName: banner.title,
+      description: "The banner will move to Trash for 30 days. Cloudinary images/videos will be kept until permanent deletion.",
+      confirmLabel: "Move to Trash",
+    });
 
     if (!confirmed) {
       return;

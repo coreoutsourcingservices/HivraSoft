@@ -1,5 +1,7 @@
 "use client";
 
+import { confirmAdminAction } from "@/src/components/Admin/AdminConfirmProvider";
+
 import { useEffect, useMemo, useState } from "react";
 import { Bell, Filter, Send, Trash2, Users } from "lucide-react";
 
@@ -130,7 +132,12 @@ export default function AdminNotificationsPage() {
   }
 
   async function deleteNotification(id: string) {
-    if (!window.confirm("Delete this notification?")) return;
+    const confirmed = await confirmAdminAction({
+      title: "Delete Notification?",
+      description: "The notification will be moved to Trash and kept for 30 days. You can restore it during this period.",
+      confirmLabel: "Move to Trash",
+    });
+    if (!confirmed) return;
     try {
       setBusyId(id); setError("");
       const response = await fetch(`${API_URL}/api/admin/notifications/${id}`, { method: "DELETE", credentials: "include" });

@@ -1,3 +1,4 @@
+import { applySoftDeletePlugin } from "../utils/softDelete";
 import mongoose, { Schema, type Document, type Model, type Types } from "mongoose";
 
 export type BlogStatus = "DRAFT" | "PUBLISHED" | "SCHEDULED" | "PRIVATE";
@@ -116,6 +117,8 @@ blogSchema.index({ status: 1, publishedAt: -1 });
 blogSchema.index({ category: 1, status: 1, publishedAt: -1 });
 blogSchema.index({ tags: 1, status: 1, publishedAt: -1 });
 blogSchema.index({ isFeatured: 1, status: 1, publishedAt: -1 });
+
+applySoftDeletePlugin(blogSchema);
 
 const Blog: Model<IBlog> = (mongoose.models.Blog as Model<IBlog>) || mongoose.model<IBlog>("Blog", blogSchema);
 

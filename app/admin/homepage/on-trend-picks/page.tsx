@@ -1,5 +1,7 @@
 "use client";
 
+import { confirmAdminAction } from "@/src/components/Admin/AdminConfirmProvider";
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import {
@@ -172,7 +174,12 @@ export default function OnTrendPicksAdminPage() {
   }
 
   async function deleteItem(item: OnTrendItem) {
-    if (!window.confirm("Delete this On Trend Pick? History will remain saved.")) return;
+    const confirmed = await confirmAdminAction({
+      title: "Delete On-Trend Pick?",
+      description: "This homepage card will move to Trash for 30 days. Its image will not be removed from Cloudinary yet.",
+      confirmLabel: "Move to Trash",
+    });
+    if (!confirmed) return;
     try {
       setBusyId(item._id);
       setError("");

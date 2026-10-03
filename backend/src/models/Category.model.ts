@@ -5,6 +5,8 @@ import mongoose, {
   Types,
 } from "mongoose";
 
+import { applySoftDeletePlugin } from "../utils/softDelete";
+
 /* =========================================================
    CATEGORY IMAGE
 
@@ -202,6 +204,8 @@ categorySchema.index({
   sortOrder: 1,
   name: 1,
 });
+
+applySoftDeletePlugin(categorySchema);
 
 /* =========================================================
    MODEL
