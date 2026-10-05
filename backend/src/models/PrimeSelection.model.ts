@@ -12,11 +12,20 @@ export type PrimeSelectionAction =
   | "hotspot_deleted"
   | "deleted";
 
+export interface IPrimeProductSelection {
+  productId: Types.ObjectId;
+  colorId: Types.ObjectId | null;
+  colorName: string;
+  colorSlug: string;
+}
+
 export interface IPrimeHotspot {
   _id?: Types.ObjectId;
   x: number;
   y: number;
-/** Multiple products can be attached to one hotspot. */
+  /** Exact product + color chosen for this hotspot. */
+  productSelections: IPrimeProductSelection[];
+  /** Kept for backward compatibility with old storefront code and old records. */
   productIds: Types.ObjectId[];
   /** Legacy single-product field kept so old database records keep working. */
   productId?: Types.ObjectId | null;
@@ -54,12 +63,22 @@ const imageSchema = new Schema<IHomepageImage>(
   { _id: false, versionKey: false }
 );
 
+const primeProductSelectionSchema = new Schema<IPrimeProductSelection>(
+  {
+    productId: { type: Schema.Types.ObjectId, ref: "Product", required: true },
+    colorId: { type: Schema.Types.ObjectId, default: null },
+    colorName: { type: String, default: "", trim: true },
+    colorSlug: { type: String, default: "", trim: true },
+  },
+  { _id: false, versionKey: false }
+);
+
 const hotspotSchema = new Schema<IPrimeHotspot>(
   {
     x: { type: Number, required: true, min: 0, max: 100 },
     y: { type: Number, required: true, min: 0, max: 100 },
+    productSelections: { type: [primeProductSelectionSchema], default: [] },
     productIds: [{ type: Schema.Types.ObjectId, ref: "Product" }],
-    // Backward compatibility for records created before multi-product hotspots.
     productId: { type: Schema.Types.ObjectId, ref: "Product", default: null },
     categoryId: { type: Schema.Types.ObjectId, ref: "Category", default: null },
     isActive: { type: Boolean, default: true },
@@ -71,6 +90,7 @@ const historyHotspotSchema = new Schema<IPrimeHotspot>(
   {
     x: { type: Number, required: true, min: 0, max: 100 },
     y: { type: Number, required: true, min: 0, max: 100 },
+    productSelections: { type: [primeProductSelectionSchema], default: [] },
     productIds: [{ type: Schema.Types.ObjectId, ref: "Product" }],
     productId: { type: Schema.Types.ObjectId, ref: "Product", default: null },
     categoryId: { type: Schema.Types.ObjectId, ref: "Category", default: null },

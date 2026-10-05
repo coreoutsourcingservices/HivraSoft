@@ -8,7 +8,7 @@ import { confirmAdminAction } from "@/src/components/Admin/AdminConfirmProvider"
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Pencil, Plus, Trash2 } from "lucide-react";
 
 import {
 
@@ -105,6 +105,8 @@ export default function OnTrendPicksAdminPage() {
   const [saving, setSaving] = useState(false);
 
   const [busyId, setBusyId] = useState("");
+
+  const [reorderBusy, setReorderBusy] = useState(false);
 
   const [error, setError] = useState("");
 
@@ -348,6 +350,115 @@ export default function OnTrendPicksAdminPage() {
 
 
 
+  async function toggleItemStatus(item: OnTrendItem) {
+    try {
+      setBusyId(item._id);
+      setError("");
+      setSuccess("");
+
+      const response = await fetch(
+        `${HOMEPAGE_API_URL}/api/admin/on-trend-picks/${item._id}`,
+        {
+          method: "PATCH",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ isActive: !item.isActive }),
+        },
+      );
+
+      const data = await readJson(response);
+      if (!response.ok) {
+        throw new Error(data?.message || "Unable to change status.");
+      }
+
+      setItems(Array.isArray(data?.items) ? data.items : []);
+      setHistory(Array.isArray(data?.history) ? data.history : []);
+      setSuccess(
+        data?.message ||
+          `On Trend Pick ${item.isActive ? "deactivated" : "activated"}.`,
+      );
+    } catch (statusError) {
+      setError(
+        statusError instanceof Error
+          ? statusError.message
+          : "Unable to change status.",
+      );
+    } finally {
+      setBusyId("");
+    }
+  }
+
+  async function moveItem(itemId: string, direction: -1 | 1) {
+    const currentIndex = items.findIndex((item) => item._id === itemId);
+    const targetIndex = currentIndex + direction;
+    if (
+      currentIndex < 0 ||
+      targetIndex < 0 ||
+      targetIndex >= items.length ||
+      reorderBusy
+    ) {
+      return;
+    }
+
+    const reordered = [...items];
+    [reordered[currentIndex], reordered[targetIndex]] = [
+      reordered[targetIndex],
+      reordered[currentIndex],
+    ];
+
+    const normalized = reordered.map((item, index) => ({
+      ...item,
+      order: index,
+    }));
+
+    // Optimistic UI: click karte hi card upar/niche aa jayega.
+    setItems(normalized);
+    setReorderBusy(true);
+    setError("");
+    setSuccess("");
+
+    try {
+      let latestData: any = null;
+
+      // Existing PATCH API use karke order persist kar rahe hain.
+      // Sab items ko 0..N index milta hai, isliye duplicate order bhi fix ho jata hai.
+      for (const nextItem of normalized) {
+        const original = items.find((item) => item._id === nextItem._id);
+        if (Number(original?.order ?? 0) === nextItem.order) continue;
+
+        const response = await fetch(
+          `${HOMEPAGE_API_URL}/api/admin/on-trend-picks/${nextItem._id}`,
+          {
+            method: "PATCH",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ order: nextItem.order }),
+          },
+        );
+        const data = await readJson(response);
+        if (!response.ok) {
+          throw new Error(data?.message || "Unable to change item index.");
+        }
+        latestData = data;
+      }
+
+      if (latestData) {
+        setItems(Array.isArray(latestData?.items) ? latestData.items : normalized);
+        setHistory(Array.isArray(latestData?.history) ? latestData.history : history);
+      }
+      setSuccess("On Trend Picks index updated.");
+    } catch (moveError) {
+      await load();
+      setError(
+        moveError instanceof Error
+          ? moveError.message
+          : "Unable to change item index.",
+      );
+    } finally {
+      setReorderBusy(false);
+    }
+  }
+
   async function deleteItem(item: OnTrendItem) {
 
     const confirmed = await confirmAdminAction({
@@ -436,7 +547,7 @@ export default function OnTrendPicksAdminPage() {
 
           </div>
 
-          <div className="rounded-[16px] bg-white/[0.08] px-4 py-3 text-[11px] text-white/65">{items.length} active records</div>
+          <div className="rounded-[16px] bg-white/[0.08] px-4 py-3 text-[11px] text-white/65">{items.filter((item) => item.isActive).length} active records</div>
 
         </div>
 
@@ -574,35 +685,6 @@ export default function OnTrendPicksAdminPage() {
 
 
 
-          {/* UI only - no backend/API/database connection */}
-          <div className="mt-4 rounded-[18px] border border-[#211A18]/10 bg-[#FAF8F6] p-4">
-
-            <p className="text-[12px] font-semibold text-[#211A18]">Gender</p>
-
-            <div className="mt-3 grid grid-cols-2 gap-3">
-
-              <div className="rounded-[14px] border border-[#211A18]/8 bg-white px-4 py-3">
-
-                <p className="text-[10px] text-[#211A18]/50">Men</p>
-
-                <p className="mt-1 text-[20px] font-semibold leading-none text-[#211A18]">1</p>
-
-              </div>
-
-              <div className="rounded-[14px] border border-[#211A18]/8 bg-white px-4 py-3">
-
-                <p className="text-[10px] text-[#211A18]/50">Women</p>
-
-                <p className="mt-1 text-[20px] font-semibold leading-none text-[#211A18]">0</p>
-
-              </div>
-
-            </div>
-
-          </div>
-
-
-
           <div className="mt-4"><ActiveToggle checked={isActive} onChange={setIsActive} /></div>
 
 
@@ -623,7 +705,7 @@ export default function OnTrendPicksAdminPage() {
 
           <div className="flex items-center justify-between border-b border-[#211A18]/8 pb-5">
 
-            <div><h2 className="text-[18px] font-semibold">On Trend Items</h2><p className="mt-1 text-[10px] text-[#211A18]/45">Edit ya delete kisi bhi card ko karo.</p></div>
+            <div><h2 className="text-[18px] font-semibold">On Trend Items</h2><p className="mt-1 text-[10px] text-[#211A18]/45">↑ / ↓ se card ka index/order change karo. Edit, status ya delete bhi yahin se karo.</p></div>
 
             <span className="rounded-full bg-[#F2EEEA] px-3 py-1.5 text-[10px] font-semibold">{items.length} items</span>
 
@@ -643,7 +725,7 @@ export default function OnTrendPicksAdminPage() {
 
             <div className="mt-4 space-y-3">
 
-              {items.map((item) => (
+              {items.map((item, index) => (
 
                 <div key={item._id} className="flex flex-col gap-4 rounded-[18px] bg-[#FAF8F6] p-4 sm:flex-row sm:items-center">
 
@@ -653,7 +735,7 @@ export default function OnTrendPicksAdminPage() {
 
                     <div className="flex flex-wrap items-center gap-2">
 
-                      <p className="text-[12px] font-semibold">Order {item.order ?? 0}</p>
+                      <p className="text-[12px] font-semibold">Index {index + 1}</p>
 
                       <span className={`rounded-full px-2 py-1 text-[9px] font-semibold ${item.isActive ? "bg-emerald-100 text-emerald-700" : "bg-zinc-200 text-zinc-600"}`}>{item.isActive ? "Active" : "Inactive"}</span>
 
@@ -665,7 +747,40 @@ export default function OnTrendPicksAdminPage() {
 
                   </div>
 
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
+
+                    <button
+                      type="button"
+                      disabled={reorderBusy || index === 0}
+                      onClick={() => void moveItem(item._id, -1)}
+                      title="Move up / decrease index"
+                      className="grid h-9 w-9 place-items-center rounded-xl border border-[#211A18]/10 bg-white text-[#211A18]/65 transition hover:border-[#A51D45]/25 hover:text-[#A51D45] disabled:cursor-not-allowed disabled:opacity-25"
+                    >
+                      <ArrowUp size={13} />
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={reorderBusy || index === items.length - 1}
+                      onClick={() => void moveItem(item._id, 1)}
+                      title="Move down / increase index"
+                      className="grid h-9 w-9 place-items-center rounded-xl border border-[#211A18]/10 bg-white text-[#211A18]/65 transition hover:border-[#A51D45]/25 hover:text-[#A51D45] disabled:cursor-not-allowed disabled:opacity-25"
+                    >
+                      <ArrowDown size={13} />
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={busyId === item._id}
+                      onClick={() => void toggleItemStatus(item)}
+                      className={`rounded-xl border px-3 py-2 text-[10px] font-semibold disabled:opacity-50 ${
+                        item.isActive
+                          ? "border-amber-100 bg-amber-50 text-amber-700"
+                          : "border-emerald-100 bg-emerald-50 text-emerald-700"
+                      }`}
+                    >
+                      {item.isActive ? "Deactivate" : "Activate"}
+                    </button>
 
                     <button type="button" onClick={() => editItem(item)} className="rounded-xl border border-[#211A18]/10 bg-white px-3 py-2 text-[10px] font-semibold">Edit</button>
 

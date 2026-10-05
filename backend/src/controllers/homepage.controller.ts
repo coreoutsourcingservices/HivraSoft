@@ -8,6 +8,7 @@ import OnTrendPick, {
 import AlwaysInIt, { type HomepageGender } from "../models/AlwaysInIt.model";
 import PrimeSelection, {
   type IPrimeHotspot,
+  type IPrimeProductSelection,
   type PrimeSelectionAction,
 } from "../models/PrimeSelection.model";
 import Product from "../models/Product.model";
@@ -99,9 +100,84 @@ async function normalizeProductIds(value: unknown) {
   return unique.map((id) => new mongoose.Types.ObjectId(id));
 }
 
+async function normalizeProductSelections(
+  value: unknown,
+  fallbackProductIds: unknown[] = []
+): Promise<IPrimeProductSelection[]> {
+  const rawSelections = Array.isArray(value) ? value : [];
+  const legacyIds = Array.isArray(fallbackProductIds) ? fallbackProductIds : [];
+
+  const requested = rawSelections.length > 0
+    ? rawSelections.map((item: any) => ({
+        productId: String(item?.productId?._id || item?.productId || "").trim(),
+        colorId: String(item?.colorId?._id || item?.colorId || "").trim(),
+        colorSlug: String(item?.colorSlug || "").trim(),
+      }))
+    : legacyIds.map((item: any) => ({
+        productId: String(item?._id || item || "").trim(),
+        colorId: "",
+        colorSlug: "",
+      }));
+
+  const uniqueByProduct = new Map<string, { productId: string; colorId: string; colorSlug: string }>();
+  for (const item of requested) {
+    if (!item.productId) continue;
+    if (!mongoose.Types.ObjectId.isValid(item.productId)) {
+      throw new Error(`Invalid product ID: ${item.productId}`);
+    }
+    uniqueByProduct.set(item.productId, item);
+  }
+
+  if (uniqueByProduct.size === 0) return [];
+
+  const ids = [...uniqueByProduct.keys()];
+  const products = await Product.find({ _id: { $in: ids } })
+    .select("colors isActive")
+    .lean();
+
+  const productMap = new Map(products.map((product: any) => [String(product._id), product]));
+  const missing = ids.find((id) => !productMap.has(id));
+  if (missing) throw new Error(`Product not found: ${missing}`);
+
+  const result: IPrimeProductSelection[] = [];
+
+  for (const [productId, requestedSelection] of uniqueByProduct.entries()) {
+    const product: any = productMap.get(productId);
+    const colors = Array.isArray(product?.colors) ? product.colors : [];
+    if (colors.length === 0) {
+      throw new Error(`Selected product ${productId} has no colors.`);
+    }
+
+    let color = requestedSelection.colorId
+      ? colors.find((item: any) => String(item?._id || "") === requestedSelection.colorId)
+      : null;
+
+    if (!color && requestedSelection.colorSlug) {
+      color = colors.find(
+        (item: any) => String(item?.slugColor || "") === requestedSelection.colorSlug
+      );
+    }
+
+    if (!color) {
+      color = colors.find((item: any) => item?.isDefault === true) || colors[0];
+    }
+
+    if (!color?._id) {
+      throw new Error(`Unable to resolve a color for product ${productId}.`);
+    }
+
+    result.push({
+      productId: new mongoose.Types.ObjectId(productId),
+      colorId: new mongoose.Types.ObjectId(String(color._id)),
+      colorName: String(color?.nameColor || "Color"),
+      colorSlug: String(color?.slugColor || ""),
+    });
+  }
+
+  return result;
+}
+
 async function normalizeHotspot(value: any): Promise<IPrimeHotspot> {
-  // New records use productIds[]. Old records may still contain productId.
-  // If productIds is empty but a legacy productId exists, migrate it automatically.
   const rawProductIds =
     Array.isArray(value?.productIds) && value.productIds.length > 0
       ? value.productIds
@@ -109,13 +185,17 @@ async function normalizeHotspot(value: any): Promise<IPrimeHotspot> {
         ? [value.productId]
         : [];
 
-  const productIds = await normalizeProductIds(rawProductIds);
+  const productSelections = await normalizeProductSelections(
+    value?.productSelections,
+    rawProductIds
+  );
+  const productIds = productSelections.map((item) => item.productId);
   const categoryId = objectIdOrNull(value?.categoryId, "Category ID");
 
-  if (productIds.length > 0 && categoryId) {
+  if (productSelections.length > 0 && categoryId) {
     throw new Error("Select either products or a category for one hotspot, not both.");
   }
-  if (productIds.length === 0 && !categoryId) {
+  if (productSelections.length === 0 && !categoryId) {
     throw new Error("Every hotspot must have at least one product or a category.");
   }
   if (categoryId) {
@@ -126,8 +206,8 @@ async function normalizeHotspot(value: any): Promise<IPrimeHotspot> {
   return {
     x: normalizePosition(value?.x, "Hotspot X"),
     y: normalizePosition(value?.y, "Hotspot Y"),
+    productSelections,
     productIds,
-    // New writes no longer use the single-product field.
     productId: null,
     categoryId,
     isActive: boolValue(value?.isActive, true),
@@ -185,6 +265,26 @@ export async function getHomepageAdminOptions(_req: Request, res: Response) {
       const image = defaultProductImage(color);
       const sizes = Array.isArray(color?.sizes) ? color.sizes : [];
       const firstSize = sizes.find((size: any) => size?.isActive !== false) || sizes[0];
+      const colorOptions = (Array.isArray(product?.colors) ? product.colors : []).map((item: any) => {
+        const itemImage = defaultProductImage(item);
+        const itemStock = (Array.isArray(item?.sizes) ? item.sizes : []).reduce(
+          (sum: number, size: any) =>
+            sum + (size?.isActive === false ? 0 : Math.max(0, Number(size?.stock || 0))),
+          0
+        );
+        return {
+          _id: String(item?._id || ""),
+          name: String(item?.nameColor || "Color"),
+          slug: String(item?.slugColor || ""),
+          hex: String(item?.hex || "#D9D9D9"),
+          isDefault: item?.isDefault === true,
+          stock: itemStock,
+          image: itemImage
+            ? { url: String(itemImage.url || ""), publicId: String(itemImage.publicId || "") }
+            : null,
+        };
+      });
+
       return {
         _id: String(product._id),
         name: String(color?.nameProduct || "Unnamed product"),
@@ -194,6 +294,7 @@ export async function getHomepageAdminOptions(_req: Request, res: Response) {
         showPrice: Number(color?.showPrice ?? firstSize?.showPrice ?? 0),
         stock: productStock(product),
         image: image ? { url: String(image.url || ""), publicId: String(image.publicId || "") } : null,
+        colors: colorOptions,
         categories: (Array.isArray(product.categories) ? product.categories : []).filter(Boolean).map((category: any) => ({
           _id: String(category._id),
           name: String(category.name || "Category"),
@@ -529,6 +630,7 @@ function primeHistory(action: PrimeSelectionAction, values: PrimeValues, req: Re
     hotspots: values.hotspots.map((hotspot) => ({
       x: hotspot.x,
       y: hotspot.y,
+      productSelections: hotspot.productSelections,
       productIds: hotspot.productIds,
       productId: null,
       categoryId: hotspot.categoryId,
@@ -557,6 +659,7 @@ export async function getPublicPrimeSelection(req: Request, res: Response) {
     const items = await PrimeSelection.find(query)
       .sort({ gender: 1 })
       .select("name gender mainImage hotspots isActive")
+      .populate({ path: "hotspots.productSelections.productId", match: { isActive: true }, select: "categories colors isActive" })
       .populate({ path: "hotspots.productIds", match: { isActive: true }, select: "categories colors isActive" })
       .populate({ path: "hotspots.productId", match: { isActive: true }, select: "categories colors isActive" })
       .populate({ path: "hotspots.categoryId", match: { isActive: true }, select: "name slug images isActive" })
@@ -569,9 +672,35 @@ export async function getPublicPrimeSelection(req: Request, res: Response) {
       hotspots: (Array.isArray(item.hotspots) ? item.hotspots : [])
         .filter((hotspot: any) => hotspot?.isActive !== false)
         .map((hotspot: any) => {
-          const products = Array.isArray(hotspot.productIds)
-            ? hotspot.productIds.filter(Boolean)
+          const selections = Array.isArray(hotspot.productSelections)
+            ? hotspot.productSelections.filter((selection: any) => selection?.productId)
             : [];
+
+          let products = selections.map((selection: any) => {
+            const product = selection.productId;
+            const colors = Array.isArray(product?.colors) ? product.colors : [];
+            const selectedColor =
+              colors.find((color: any) => String(color?._id || "") === String(selection.colorId || "")) ||
+              colors.find((color: any) => String(color?.slugColor || "") === String(selection.colorSlug || "")) ||
+              colors.find((color: any) => color?.isDefault === true) ||
+              colors[0] ||
+              null;
+
+            return {
+              ...product,
+              selectedColorId: selection.colorId ? String(selection.colorId) : null,
+              selectedColorName: String(selection.colorName || selectedColor?.nameColor || ""),
+              selectedColorSlug: String(selection.colorSlug || selectedColor?.slugColor || ""),
+              selectedColor,
+            };
+          });
+
+          if (products.length === 0) {
+            products = Array.isArray(hotspot.productIds)
+              ? hotspot.productIds.filter(Boolean)
+              : [];
+          }
+
           if (hotspot.productId) {
             const legacyId = String(hotspot.productId?._id || hotspot.productId);
             const alreadyAdded = products.some(
@@ -579,6 +708,7 @@ export async function getPublicPrimeSelection(req: Request, res: Response) {
             );
             if (!alreadyAdded) products.unshift(hotspot.productId);
           }
+
           return { ...hotspot, products };
         })
         .filter((hotspot: any) => hotspot.categoryId || hotspot.products.length > 0),
@@ -637,6 +767,13 @@ export async function updateAdminPrimeSelection(req: Request, res: Response) {
       list.map((hotspot) => ({
         x: hotspot.x,
         y: hotspot.y,
+        productSelections: (hotspot.productSelections || [])
+          .map((selection) => ({
+            productId: String(selection.productId),
+            colorId: selection.colorId ? String(selection.colorId) : "",
+            colorSlug: selection.colorSlug || "",
+          }))
+          .sort((a, b) => a.productId.localeCompare(b.productId)),
         productIds: (hotspot.productIds || []).map((id) => String(id)).sort(),
         categoryId: hotspot.categoryId ? String(hotspot.categoryId) : null,
         isActive: hotspot.isActive,
@@ -708,6 +845,11 @@ export async function updatePrimeHotspot(req: Request, res: Response) {
     const hotspot = await normalizeHotspot({
       x: req.body?.x ?? hotspotDoc.x,
       y: req.body?.y ?? hotspotDoc.y,
+      productSelections: req.body?.productSelections !== undefined
+        ? req.body.productSelections
+        : Array.isArray(hotspotDoc.productSelections)
+          ? hotspotDoc.productSelections
+          : [],
       productIds: req.body?.productIds !== undefined
         ? req.body.productIds
         : (Array.isArray(hotspotDoc.productIds) && hotspotDoc.productIds.length > 0

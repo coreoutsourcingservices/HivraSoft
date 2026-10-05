@@ -16,9 +16,10 @@ import {
   formatDateTime,
   HOMEPAGE_API_URL,
   ImageUploadField,
-  MultiProductPicker,
+  PrimeProductColorPicker,
   readJson,
   type HomepageImage,
+  type HomepageProductColorSelection,
   useHomepageOptions,
 } from "@/src/components/Admin/HomepageAdminShared";
 
@@ -29,6 +30,7 @@ type Hotspot = {
   _id?: string;
   x: number;
   y: number;
+  productSelections: HomepageProductColorSelection[];
   productIds: string[];
   /** Legacy value may still come from old database records. */
   productId?: string | null;
@@ -60,7 +62,7 @@ type DraftHotspot = {
   x: number;
   y: number;
   type: HotspotType;
-  productIds: string[];
+  productSelections: HomepageProductColorSelection[];
   categoryId: string;
   isActive: boolean;
 };
@@ -69,7 +71,7 @@ const newDraft = (x = 50, y = 50): DraftHotspot => ({
   x,
   y,
   type: "product",
-  productIds: [],
+  productSelections: [],
   categoryId: "",
   isActive: true,
 });
@@ -163,7 +165,7 @@ export default function PrimeSelectionAdminPage() {
   }
 
   function normalizeHotspotForState(hotspot: Hotspot): Hotspot {
-    const productIds =
+    const legacyProductIds =
       Array.isArray(hotspot.productIds) && hotspot.productIds.length > 0
         ? hotspot.productIds
             .map((id: any) => String(id?._id || id))
@@ -172,11 +174,41 @@ export default function PrimeSelectionAdminPage() {
           ? [String((hotspot.productId as any)?._id || hotspot.productId)]
           : [];
 
+    const incomingSelections = Array.isArray((hotspot as any).productSelections)
+      ? (hotspot as any).productSelections
+      : [];
+
+    const productSelections: HomepageProductColorSelection[] =
+      incomingSelections.length > 0
+        ? incomingSelections
+            .map((selection: any) => ({
+              productId: String(
+                selection?.productId?._id || selection?.productId || "",
+              ),
+              colorId: String(selection?.colorId?._id || selection?.colorId || ""),
+              colorName: String(selection?.colorName || ""),
+              colorSlug: String(selection?.colorSlug || ""),
+            }))
+            .filter((selection: HomepageProductColorSelection) => selection.productId)
+        : legacyProductIds.map((productId) => {
+            const product = products.find((item) => item._id === productId);
+            const color =
+              product?.colors?.find((item) => item.isDefault) ||
+              product?.colors?.[0];
+            return {
+              productId,
+              colorId: color?._id || "",
+              colorName: color?.name || "",
+              colorSlug: color?.slug || "",
+            };
+          });
+
     return {
       _id: hotspot._id ? String(hotspot._id) : undefined,
       x: Number(hotspot.x || 0),
       y: Number(hotspot.y || 0),
-      productIds,
+      productSelections,
+      productIds: productSelections.map((selection) => selection.productId),
       productId: null,
       categoryId: hotspot.categoryId
         ? String((hotspot.categoryId as any)?._id || hotspot.categoryId)
@@ -226,8 +258,8 @@ export default function PrimeSelectionAdminPage() {
       x: Number(hotspot.x),
       y: Number(hotspot.y),
       type: hotspot.categoryId ? "category" : "product",
-      productIds: Array.isArray(hotspot.productIds)
-        ? hotspot.productIds
+      productSelections: Array.isArray(hotspot.productSelections)
+        ? hotspot.productSelections
         : [],
       categoryId: hotspot.categoryId || "",
       isActive: hotspot.isActive !== false,
@@ -238,8 +270,19 @@ export default function PrimeSelectionAdminPage() {
   function saveHotspotDraft() {
     if (!draft) return;
 
-    if (draft.type === "product" && draft.productIds.length === 0) {
+    if (
+      draft.type === "product" &&
+      draft.productSelections.length === 0
+    ) {
       setError("Hotspot ke liye kam se kam 1 product select karo.");
+      return;
+    }
+
+    if (
+      draft.type === "product" &&
+      draft.productSelections.some((selection) => !selection.colorId)
+    ) {
+      setError("Har selected product ka color choose karo.");
       return;
     }
 
@@ -248,6 +291,9 @@ export default function PrimeSelectionAdminPage() {
       return;
     }
 
+    const productSelections =
+      draft.type === "product" ? draft.productSelections : [];
+
     const next: Hotspot = {
       ...(editingHotspotIndex !== null &&
       hotspots[editingHotspotIndex]?._id
@@ -255,7 +301,8 @@ export default function PrimeSelectionAdminPage() {
         : {}),
       x: Number(draft.x.toFixed(2)),
       y: Number(draft.y.toFixed(2)),
-      productIds: draft.type === "product" ? draft.productIds : [],
+      productSelections,
+      productIds: productSelections.map((selection) => selection.productId),
       productId: null,
       categoryId: draft.type === "category" ? draft.categoryId : null,
       isActive: draft.isActive,
@@ -286,17 +333,24 @@ export default function PrimeSelectionAdminPage() {
   }
 
   function hotspotLabel(hotspot: Hotspot) {
-    if (Array.isArray(hotspot.productIds) && hotspot.productIds.length > 0) {
-      const names = hotspot.productIds
+    if (
+      Array.isArray(hotspot.productSelections) &&
+      hotspot.productSelections.length > 0
+    ) {
+      const names = hotspot.productSelections
         .slice(0, 2)
-        .map(
-          (id) =>
-            productMap.get(String(id)) || `Product ${String(id).slice(-6)}`,
-        );
+        .map((selection) => {
+          const productName =
+            productMap.get(String(selection.productId)) ||
+            `Product ${String(selection.productId).slice(-6)}`;
+          return selection.colorName
+            ? `${productName} - ${selection.colorName}`
+            : productName;
+        });
 
       const extra =
-        hotspot.productIds.length > 2
-          ? ` +${hotspot.productIds.length - 2} more`
+        hotspot.productSelections.length > 2
+          ? ` +${hotspot.productSelections.length - 2} more`
           : "";
 
       return `${names.join(", ")}${extra}`;
@@ -343,6 +397,7 @@ export default function PrimeSelectionAdminPage() {
             hotspots: hotspots.map((hotspot) => ({
               x: hotspot.x,
               y: hotspot.y,
+              productSelections: hotspot.productSelections,
               productIds: hotspot.productIds,
               productId: null,
               categoryId: hotspot.categoryId,
@@ -707,7 +762,7 @@ export default function PrimeSelectionAdminPage() {
                         ? {
                             ...current,
                             type: event.target.value as HotspotType,
-                            productIds: [],
+                            productSelections: [],
                             categoryId: "",
                           }
                         : current,
@@ -728,15 +783,16 @@ export default function PrimeSelectionAdminPage() {
                     </div>
                   ) : (
                     <div className="min-w-0 overflow-hidden">
-                      <MultiProductPicker
+                      <PrimeProductColorPicker
                         products={products}
-                        selectedIds={draft.productIds}
-                        onChange={(productIds) =>
+                        selections={draft.productSelections}
+                        disabled={optionsLoading}
+                        onChange={(productSelections) =>
                           setDraft((current) =>
                             current
                               ? {
                                   ...current,
-                                  productIds,
+                                  productSelections,
                                   categoryId: "",
                                 }
                               : current,
@@ -757,7 +813,7 @@ export default function PrimeSelectionAdminPage() {
                           ? {
                               ...current,
                               categoryId,
-                              productIds: [],
+                              productSelections: [],
                             }
                           : current,
                       )
@@ -833,8 +889,8 @@ export default function PrimeSelectionAdminPage() {
                         X {hotspot.x.toFixed(2)}% · Y {hotspot.y.toFixed(2)}% ·{" "}
                         {hotspot.categoryId
                           ? "Category"
-                          : `${hotspot.productIds.length} product${
-                              hotspot.productIds.length === 1 ? "" : "s"
+                          : `${hotspot.productSelections.length} product${
+                              hotspot.productSelections.length === 1 ? "" : "s"
                             }`} · {hotspot.isActive ? "Active" : "Inactive"}
                       </p>
                     </div>

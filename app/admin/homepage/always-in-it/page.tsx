@@ -126,6 +126,44 @@ export default function AlwaysInItAdminPage() {
     }
   }
 
+  async function toggleItemStatus(item: AlwaysItem) {
+    try {
+      setBusyId(item._id);
+      setError("");
+      setSuccess("");
+
+      const response = await fetch(
+        `${HOMEPAGE_API_URL}/api/admin/always-in-it/${item._id}`,
+        {
+          method: "PATCH",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ isActive: !item.isActive }),
+        },
+      );
+
+      const data = await readJson(response);
+      if (!response.ok) {
+        throw new Error(data?.message || "Unable to change status.");
+      }
+
+      setItems(Array.isArray(data?.items) ? data.items : []);
+      setHistory(Array.isArray(data?.history) ? data.history : []);
+      setSuccess(
+        data?.message ||
+          `Always In It ${item.isActive ? "deactivated" : "activated"}.`,
+      );
+    } catch (statusError) {
+      setError(
+        statusError instanceof Error
+          ? statusError.message
+          : "Unable to change status.",
+      );
+    } finally {
+      setBusyId("");
+    }
+  }
+
   async function deleteItem(item: AlwaysItem) {
     const confirmed = await confirmAdminAction({
       title: "Delete Always In It?",
@@ -202,7 +240,7 @@ export default function AlwaysInItAdminPage() {
           <MultiProductPicker products={products} selectedIds={productIds} onChange={setProductIds} />
 
           <section className="rounded-[24px] border border-[#211A18]/10 bg-white p-5 md:p-6">
-            <div className="flex items-center justify-between border-b border-[#211A18]/8 pb-5"><div><h2 className="text-[18px] font-semibold">Always In It Records</h2><p className="mt-1 text-[10px] text-[#211A18]/45">Edit or delete Men/Women data.</p></div><span className="rounded-full bg-[#F2EEEA] px-3 py-1.5 text-[10px] font-semibold">{items.length} records</span></div>
+            <div className="flex items-center justify-between border-b border-[#211A18]/8 pb-5"><div><h2 className="text-[18px] font-semibold">Always In It Records</h2><p className="mt-1 text-[10px] text-[#211A18]/45">Activate, deactivate, edit or delete Men/Women data.</p></div><span className="rounded-full bg-[#F2EEEA] px-3 py-1.5 text-[10px] font-semibold">{items.length} records</span></div>
             {loading ? (
               <div className="py-12 text-center text-[12px] text-[#211A18]/40">Loading...</div>
             ) : items.length === 0 ? (
@@ -217,7 +255,22 @@ export default function AlwaysInItAdminPage() {
                       <p className="mt-2 text-[10px] text-[#211A18]/50">{Array.isArray(item.productIds) ? item.productIds.length : 0} products selected</p>
                       <p className="mt-1 text-[9px] text-[#211A18]/35">Updated {formatDateTime(item.updatedAt)}</p>
                     </div>
-                    <div className="flex gap-2"><button type="button" onClick={() => editItem(item)} className="rounded-xl border border-[#211A18]/10 bg-white px-3 py-2 text-[10px] font-semibold">Edit</button><button type="button" disabled={busyId === item._id} onClick={() => void deleteItem(item)} className="flex items-center gap-1 rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-[10px] font-semibold text-red-600 disabled:opacity-50"><Trash2 size={12} />Delete</button></div>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        disabled={busyId === item._id}
+                        onClick={() => void toggleItemStatus(item)}
+                        className={`rounded-xl border px-3 py-2 text-[10px] font-semibold disabled:opacity-50 ${
+                          item.isActive
+                            ? "border-amber-100 bg-amber-50 text-amber-700"
+                            : "border-emerald-100 bg-emerald-50 text-emerald-700"
+                        }`}
+                      >
+                        {item.isActive ? "Deactivate" : "Activate"}
+                      </button>
+                      <button type="button" onClick={() => editItem(item)} className="rounded-xl border border-[#211A18]/10 bg-white px-3 py-2 text-[10px] font-semibold">Edit</button>
+                      <button type="button" disabled={busyId === item._id} onClick={() => void deleteItem(item)} className="flex items-center gap-1 rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-[10px] font-semibold text-red-600 disabled:opacity-50"><Trash2 size={12} />Delete</button>
+                    </div>
                   </div>
                 ))}
               </div>
