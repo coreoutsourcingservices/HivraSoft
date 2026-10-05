@@ -28,6 +28,8 @@ router.get("/featured", product_controller_1.getFeaturedProductsController);
 router.get("/new-launches", product_controller_1.getNewLaunchProductsController);
 /* Product by slug */
 router.get("/slug/:slug", product_controller_1.getProductBySlugController);
+/* Related products (4 or 5 items) */
+router.get("/:id/related", product_controller_1.getRelatedProductsController);
 /* =========================================================
    ADMIN - PRODUCTS
 ========================================================= */

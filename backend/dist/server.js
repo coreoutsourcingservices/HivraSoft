@@ -8,6 +8,7 @@ const node_http_1 = require("node:http");
 const app_1 = __importDefault(require("./app"));
 const database_1 = __importDefault(require("./config/database"));
 const reminder_service_1 = require("./services/reminder.service");
+const admin_trash_service_1 = require("./services/admin-trash.service");
 const product_migration_service_1 = require("./services/product-migration.service");
 const PORT = Number(process.env.PORT || 5000);
 let ready = false;
@@ -34,6 +35,7 @@ const startServer = async () => {
             console.log(`✅ Added stable color IDs to ${migratedProducts} product(s).`);
         }
         (0, reminder_service_1.startReminderScheduler)();
+        (0, admin_trash_service_1.startTrashCleanupScheduler)();
         ready = true;
         console.log(`✅ HivraSoft backend running on http://localhost:${PORT}`);
     }

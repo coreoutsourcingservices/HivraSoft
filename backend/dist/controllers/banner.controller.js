@@ -344,7 +344,7 @@ exports.updateBannerController = updateBannerController;
 const deleteBannerController = async (req, res) => {
     try {
         const bannerId = getRouteParam(req.params.id, "Banner ID");
-        const result = await (0, banner_service_1.deleteBanner)(bannerId);
+        const result = await (0, banner_service_1.deleteBanner)(bannerId, req.user?._id ? String(req.user._id) : null);
         return res
             .status(200)
             .json({

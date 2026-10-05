@@ -6,9 +6,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.getCategoryTree = exports.deleteCategory = exports.updateCategory = exports.getCategoryBySlug = exports.getCategoryById = exports.getActiveCategories = exports.getAllCategories = exports.createCategory = void 0;
 const mongoose_1 = require("mongoose");
 const Category_model_1 = __importDefault(require("../models/Category.model"));
-const Product_model_1 = __importDefault(require("../models/Product.model"));
 const slug_1 = require("../utils/slug");
 const cloudinary_service_1 = require("./cloudinary.service");
+const admin_trash_service_1 = require("./admin-trash.service");
 /* =========================================================
    IMAGE NORMALIZER
 ========================================================= */
@@ -467,116 +467,35 @@ exports.updateCategory = updateCategory;
    empty Cloudinary folders cleanup
 ========================================================= */
 const deleteCategory = async (categoryId, options = {}) => {
-    /* =====================================================
-       VALIDATE ID
-    ===================================================== */
     if (!mongoose_1.Types.ObjectId.isValid(categoryId)) {
         throw new Error("Invalid category ID.");
     }
     const categoryObjectId = new mongoose_1.Types.ObjectId(categoryId);
-    /* =====================================================
-       FIND ROOT CATEGORY
-    ===================================================== */
     const category = await Category_model_1.default.findById(categoryObjectId);
-    if (!category) {
+    if (!category)
         throw new Error("Category not found.");
-    }
-    /* =====================================================
-       FIND COMPLETE SUBTREE
-
-       ancestors[] makes this possible in one query.
-
-       Root category itself + every descendant where
-       ancestors contains the root category id.
-    ===================================================== */
     const subtree = await Category_model_1.default.find({
-        $or: [
-            {
-                _id: categoryObjectId,
-            },
-            {
-                ancestors: categoryObjectId,
-            },
-        ],
-    }).sort({
-        level: -1,
-    });
+        $or: [{ _id: categoryObjectId }, { ancestors: categoryObjectId }],
+    }).sort({ level: -1 });
     const descendantCount = Math.max(0, subtree.length - 1);
-    if (descendantCount > 0 &&
-        !options.cascade) {
-        throw new Error(`"${category.name}" has ${descendantCount} subcategor${descendantCount === 1
-            ? "y"
-            : "ies"}. Use cascade delete to delete the complete category tree.`);
+    if (descendantCount > 0 && !options.cascade) {
+        throw new Error(`"${category.name}" has ${descendantCount} subcategor${descendantCount === 1 ? "y" : "ies"}. Use cascade delete to delete the complete category tree.`);
     }
-    /* =====================================================
-       CATEGORY IDS
-    ===================================================== */
-    const categoryIds = subtree.map((item) => item._id);
-    /* =====================================================
-       COLLECT ALL CLOUDINARY PUBLIC IDS
-    ===================================================== */
-    const publicIds = Array.from(new Set(subtree.flatMap((item) => (item.images || [])
-        .map((image) => image.publicId
-        ?.trim())
-        .filter((publicId) => Boolean(publicId)))));
-    /* =====================================================
-       COLLECT CLOUDINARY FOLDERS
-    ===================================================== */
-    const folders = Array.from(new Set(publicIds
-        .map(cloudinary_service_1.getCloudinaryFolderFromPublicId)
-        .filter(Boolean)));
-    /* =====================================================
-       DELETE CLOUDINARY IMAGES FIRST
-
-       If Cloudinary fails, MongoDB category data stays intact
-       so the admin can safely retry the deletion.
-    ===================================================== */
-    if (publicIds.length > 0) {
-        await (0, cloudinary_service_1.deleteCloudinaryImages)(publicIds);
+    let moved = 0;
+    for (const item of subtree) {
+        await (0, admin_trash_service_1.softDeleteEntity)("category", String(item._id), options.deletedBy);
+        moved += 1;
     }
-    /* =====================================================
-       REMOVE CATEGORY REFERENCES FROM PRODUCTS
-
-       Product.categories[] can contain root or child ids.
-       Pull every deleted id so products do not keep dangling
-       category references.
-    ===================================================== */
-    const productCleanup = await Product_model_1.default.updateMany({
-        categories: {
-            $in: categoryIds,
-        },
-    }, {
-        $pull: {
-            categories: {
-                $in: categoryIds,
-            },
-        },
-    });
-    /* =====================================================
-       DELETE CATEGORY TREE
-    ===================================================== */
-    const deleteResult = await Category_model_1.default.deleteMany({
-        _id: {
-            $in: categoryIds,
-        },
-    });
-    /* =====================================================
-       DELETE EMPTY CLOUDINARY FOLDERS
-
-       Best effort only. Images are already deleted.
-    ===================================================== */
-    await Promise.allSettled(folders.map((folder) => (0, cloudinary_service_1.deleteCloudinaryFolderIfEmpty)(folder)));
-    /* =====================================================
-       RESPONSE
-    ===================================================== */
     return {
-        message: subtree.length > 1
-            ? `"${category.name}" and all subcategories deleted successfully.`
-            : `"${category.name}" deleted successfully.`,
-        deletedCategories: deleteResult.deletedCount,
-        deletedSubcategories: Math.max(0, deleteResult.deletedCount - 1),
-        deletedImages: publicIds.length,
-        updatedProducts: productCleanup.modifiedCount,
+        message: moved > 1
+            ? `"${category.name}" and all subcategories moved to Trash.`
+            : `"${category.name}" moved to Trash.`,
+        deletedCategories: moved,
+        deletedSubcategories: Math.max(0, moved - 1),
+        deletedImages: 0,
+        updatedProducts: 0,
+        movedToTrash: true,
+        retentionDays: 30,
     };
 };
 exports.deleteCategory = deleteCategory;

@@ -3,13 +3,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteProduct = exports.getCatalogProductBySlug = exports.getProductCatalog = exports.toCatalogProduct = exports.updateProductRatingSummary = exports.deleteProductSize = exports.updateProductSize = exports.addProductSize = exports.setDefaultProductColor = exports.setDefaultProductColorImage = exports.deleteProductColorImage = exports.uploadProductColorImages = exports.updateProduct = exports.getProductBySlug = exports.getProductById = exports.getNewLaunchProducts = exports.getFeaturedProducts = exports.getActiveProducts = exports.getAllProducts = exports.createProduct = void 0;
+exports.deleteProduct = exports.getCatalogProductBySlug = exports.getProductCatalog = exports.toCatalogProduct = exports.updateProductRatingSummary = exports.deleteProductSize = exports.updateProductSize = exports.addProductSize = exports.setDefaultProductColor = exports.setDefaultProductColorImage = exports.deleteProductColorImage = exports.uploadProductColorImages = exports.updateProduct = exports.getProductBySlug = exports.getProductById = exports.getRelatedProducts = exports.getNewLaunchProducts = exports.getFeaturedProducts = exports.getActiveProducts = exports.getAllProducts = exports.createProduct = void 0;
 const mongoose_1 = require("mongoose");
 const Product_model_1 = __importDefault(require("../models/Product.model"));
 const Category_model_1 = __importDefault(require("../models/Category.model"));
 const slug_1 = require("../utils/slug");
 const productHtml_1 = require("../utils/productHtml");
 const cloudinary_service_1 = require("./cloudinary.service");
+const admin_trash_service_1 = require("./admin-trash.service");
 /* =========================================================
    CLOUDINARY PRODUCT ROOT
 ========================================================= */
@@ -535,6 +536,79 @@ const getNewLaunchProducts = async () => {
     return products.map((product) => formatProductResponse(product, true));
 };
 exports.getNewLaunchProducts = getNewLaunchProducts;
+/* =========================================================
+   GET RELATED PRODUCTS
+   PUBLIC / STOREFRONT
+
+   - Uses shared categories first.
+   - Fills any remaining slots with other active products.
+   - limit is intentionally capped at 5 for a compact
+     related-products section.
+========================================================= */
+const getRelatedProducts = async (productId, requestedLimit = 5) => {
+    if (!mongoose_1.Types.ObjectId.isValid(productId)) {
+        throw new Error("Invalid product ID.");
+    }
+    const limit = Number(requestedLimit) === 4
+        ? 4
+        : 5;
+    const sourceProduct = await Product_model_1.default.findOne({
+        _id: productId,
+        isActive: true,
+    })
+        .select("_id categories")
+        .lean();
+    if (!sourceProduct) {
+        throw new Error("Product not found.");
+    }
+    const categoryIds = Array.isArray(sourceProduct.categories)
+        ? sourceProduct.categories
+        : [];
+    const related = [];
+    if (categoryIds.length > 0) {
+        const categoryMatches = await Product_model_1.default.find({
+            _id: {
+                $ne: new mongoose_1.Types.ObjectId(productId),
+            },
+            isActive: true,
+            categories: {
+                $in: categoryIds,
+            },
+        })
+            .populate("categories", "_id name slug level")
+            .sort({
+            isFeatured: -1,
+            isNewLaunch: -1,
+            createdAt: -1,
+        })
+            .limit(limit);
+        related.push(...categoryMatches);
+    }
+    if (related.length < limit) {
+        const excludedIds = [
+            new mongoose_1.Types.ObjectId(productId),
+            ...related.map((product) => product._id),
+        ];
+        const fallbackProducts = await Product_model_1.default.find({
+            _id: {
+                $nin: excludedIds,
+            },
+            isActive: true,
+        })
+            .populate("categories", "_id name slug level")
+            .sort({
+            isFeatured: -1,
+            isNewLaunch: -1,
+            createdAt: -1,
+        })
+            .limit(limit - related.length);
+        related.push(...fallbackProducts);
+    }
+    return related
+        .slice(0, limit)
+        .map((product) => formatProductResponse(product, true));
+};
+exports.getRelatedProducts = getRelatedProducts;
 /* =========================================================
    GET PRODUCT BY ID
 ========================================================= */
@@ -1108,27 +1182,16 @@ exports.getCatalogProductBySlug = getCatalogProductBySlug;
    3. Delete MongoDB product
    4. Delete empty folders
 ========================================================= */
-const deleteProduct = async (productId) => {
+const deleteProduct = async (productId, deletedBy) => {
     if (!mongoose_1.Types.ObjectId.isValid(productId)) {
         throw new Error("Invalid product ID.");
     }
-    const product = await Product_model_1.default.findById(productId);
-    if (!product) {
-        throw new Error("Product not found.");
-    }
-    const publicIds = getProductImagePublicIds(product);
-    if (publicIds.length >
-        0) {
-        await (0, cloudinary_service_1.deleteCloudinaryImages)(publicIds);
-    }
-    await Product_model_1.default.deleteOne({
-        _id: product._id,
-    });
-    await cleanupFolders(publicIds);
+    const result = await (0, admin_trash_service_1.softDeleteEntity)("product", productId, deletedBy);
     return {
         success: true,
-        message: "Product deleted successfully.",
-        deletedImages: publicIds.length,
+        message: result.message,
+        movedToTrash: true,
+        retentionDays: 30,
     };
 };
 exports.deleteProduct = deleteProduct;

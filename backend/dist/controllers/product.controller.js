@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteProductController = exports.deleteProductSizeController = exports.updateProductSizeController = exports.addProductSizeController = exports.setDefaultProductColorController = exports.setDefaultProductColorImageController = exports.deleteProductColorImageController = exports.uploadProductColorImagesController = exports.updateProductController = exports.getProductBySlugController = exports.getProductByIdController = exports.getCatalogProductBySlugController = exports.getCatalogProductsController = exports.getNewLaunchProductsController = exports.getFeaturedProductsController = exports.getActiveProductsController = exports.getAllProductsController = exports.createProductController = void 0;
+exports.deleteProductController = exports.deleteProductSizeController = exports.updateProductSizeController = exports.addProductSizeController = exports.setDefaultProductColorController = exports.setDefaultProductColorImageController = exports.deleteProductColorImageController = exports.uploadProductColorImagesController = exports.updateProductController = exports.getProductBySlugController = exports.getProductByIdController = exports.getCatalogProductBySlugController = exports.getCatalogProductsController = exports.getRelatedProductsController = exports.getNewLaunchProductsController = exports.getFeaturedProductsController = exports.getActiveProductsController = exports.getAllProductsController = exports.createProductController = void 0;
 const product_service_1 = require("../services/product.service");
 /* =========================================================
    ROUTE PARAM HELPER
@@ -167,6 +167,44 @@ const getNewLaunchProductsController = async (_req, res) => {
     }
 };
 exports.getNewLaunchProductsController = getNewLaunchProductsController;
+/* =========================================================
+   RELATED PRODUCTS
+   PUBLIC
+
+   GET /api/products/:id/related?limit=4
+   GET /api/products/:id/related?limit=5
+========================================================= */
+const getRelatedProductsController = async (req, res) => {
+    try {
+        const productId = getRouteParam(req.params.id, "Product ID");
+        const requestedLimit = Number(req.query.limit || 5);
+        const limit = requestedLimit === 4
+            ? 4
+            : 5;
+        const products = await (0, product_service_1.getRelatedProducts)(productId, limit);
+        return res
+            .status(200)
+            .json({
+            success: true,
+            count: products.length,
+            limit,
+            products,
+        });
+    }
+    catch (error) {
+        const message = getErrorMessage(error, "Unable to load related products.");
+        return res
+            .status(message ===
+            "Product not found."
+            ? 404
+            : 400)
+            .json({
+            success: false,
+            message,
+        });
+    }
+};
+exports.getRelatedProductsController = getRelatedProductsController;
 /* =========================================================
    CLEAN PRODUCT CATALOG
    PUBLIC / FRONTEND
@@ -556,7 +594,7 @@ exports.deleteProductSizeController = deleteProductSizeController;
 const deleteProductController = async (req, res) => {
     try {
         const id = getRouteParam(req.params.id, "Product ID");
-        const result = await (0, product_service_1.deleteProduct)(id);
+        const result = await (0, product_service_1.deleteProduct)(id, req.user?._id ? String(req.user._id) : null);
         return res
             .status(200)
             .json(result);

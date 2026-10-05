@@ -247,6 +247,7 @@ const deleteCategoryController = async (req, res) => {
             "true";
         const result = await (0, category_service_1.deleteCategory)(id, {
             cascade,
+            deletedBy: req.user?._id ? String(req.user._id) : null,
         });
         return res
             .status(200)

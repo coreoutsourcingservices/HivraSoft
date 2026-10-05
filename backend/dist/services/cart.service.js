@@ -43,7 +43,6 @@ const Product_model_1 = __importDefault(require("../models/Product.model"));
 const DiscountCode_model_1 = __importDefault(require("../models/DiscountCode.model"));
 const discount_service_1 = require("./discount.service");
 const activity_service_1 = require("./activity.service");
-const commerce_email_service_1 = require("./commerce-email.service");
 const tax_service_1 = require("./tax.service");
 /* =========================================================
    HELPERS
@@ -204,15 +203,17 @@ const buildCartResponse = async (cart) => {
     const discountResult = await (0, discount_service_1.calculateDiscounts)(items
         .filter((item) => item.available && item.product?._id)
         .map((item) => ({
+        lineId: String(item._id || ""),
         productId: String(item.product._id),
         unitPrice: Number(item.unitPrice || 0),
         quantity: Number(item.quantity || 0),
     })), cart.discountCode || null);
-    const discountByProduct = new Map(discountResult.itemDiscounts.map((item) => [item.productId, item]));
+    const discountByLine = new Map(discountResult.itemDiscounts.map((item) => [String(item.lineId || item.productId), item]));
     const discountedItems = items.map((item) => {
         if (!item.product?._id)
             return item;
-        const discount = discountByProduct.get(String(item.product._id));
+        const discount = discountByLine.get(String(item._id || "")) ||
+            discountByLine.get(String(item.product._id));
         return { ...item, discount: discount || null };
     });
     const discountedSubtotal = Math.max(0, subtotal - discountResult.totalDiscount);
@@ -229,10 +230,15 @@ const buildCartResponse = async (cart) => {
         items: discountedItems,
         totalItems,
         subtotal,
+        offerDiscount: discountResult.offerDiscount,
         automaticDiscount: discountResult.automaticDiscount,
         codeDiscount: discountResult.codeDiscount,
         discount: discountResult.totalDiscount,
-        discountSummary: { automatic: discountResult.automatic, code: discountResult.code },
+        discountSummary: {
+            offers: discountResult.offers,
+            automatic: discountResult.automatic,
+            code: discountResult.code,
+        },
         appliedDiscountCode: cart.discountCode || "",
         taxableAmount: taxResult.taxableAmount,
         tax: taxResult.amount,
@@ -258,7 +264,7 @@ const addItemToCart = async (userId, data) => {
     if (product.isActive === false) {
         throw new Error("Product is not available for purchase.");
     }
-    const { size, } = getVariant(product, data.colorId, data.sizeId);
+    const { color, size, } = getVariant(product, data.colorId, data.sizeId);
     const cart = await getOrCreateCart(userId);
     const existingItem = cart.items.find(item => String(item.product) ===
         data.productId &&
@@ -298,7 +304,7 @@ const addItemToCart = async (userId, data) => {
         });
     }
     await cart.save();
-    const activity = await (0, activity_service_1.trackUserActivity)({
+    await (0, activity_service_1.trackUserActivity)({
         userId,
         type: "cart_add",
         productId: data.productId,
@@ -308,24 +314,19 @@ const addItemToCart = async (userId, data) => {
             quantity,
             finalQuantity: nextQuantity,
             addedAt: trackingAddedAt,
+            productSnapshot: {
+                name: String(color?.nameProduct || "Product"),
+                slug: String(color?.slugProduct || ""),
+                colorName: String(color?.nameColor || ""),
+                sizeName: String(size?.size || ""),
+                price: Number(size?.showPrice ?? color?.showPrice ?? 0),
+                imageUrl: String((color?.images || []).find((image) => image?.isDefault === true)?.url
+                    || color?.images?.[0]?.url
+                    || ""),
+            },
         },
     });
-    const response = await buildCartResponse(cart);
-    void (0, commerce_email_service_1.sendCartAddedEmail)({
-        userId,
-        productId: data.productId,
-        colorId: data.colorId,
-        sizeId: data.sizeId,
-        quantity: nextQuantity,
-        cartTotal: Number(response.total || 0),
-    })
-        .then((sent) => {
-        if (sent && activity?._id) {
-            return (0, activity_service_1.markActivityEmailSent)(String(activity._id));
-        }
-    })
-        .catch((error) => console.error("CART ADDED EMAIL ERROR:", error));
-    return response;
+    return buildCartResponse(cart);
 };
 exports.addItemToCart = addItemToCart;
 /* =========================================================

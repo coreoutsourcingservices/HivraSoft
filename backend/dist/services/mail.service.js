@@ -14,6 +14,7 @@ const sendEmail = async (input) => {
         to,
         subject: input.subject,
         html: input.html,
+        attachments: input.attachments,
     });
 };
 exports.sendEmail = sendEmail;

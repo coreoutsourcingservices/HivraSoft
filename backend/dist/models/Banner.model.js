@@ -34,6 +34,7 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
+const softDelete_1 = require("../utils/softDelete");
 /* =========================================================
    COMMON MEDIA FIELDS
 ========================================================= */
@@ -338,6 +339,7 @@ bannerSchema.index({
 bannerSchema.index({
     "videos.product": 1,
 });
+(0, softDelete_1.applySoftDeletePlugin)(bannerSchema);
 /* =========================================================
    MODEL
 ========================================================= */

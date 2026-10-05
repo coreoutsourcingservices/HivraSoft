@@ -16,6 +16,8 @@ const discount_controller_1 = require("../controllers/discount.controller");
 const review_controller_1 = require("../controllers/review.controller");
 const tax_controller_1 = require("../controllers/tax.controller");
 const delivery_charge_controller_1 = require("../controllers/delivery-charge.controller");
+const offer_controller_1 = require("../controllers/offer.controller");
+const admin_tools_controller_1 = require("../controllers/admin-tools.controller");
 const router = (0, express_1.Router)();
 router.post("/login", (0, express_rate_limit_1.rateLimit)({
     windowMs: 15 * 60 * 1000,
@@ -72,6 +74,11 @@ router.get("/me", authenticateAdmin, (req, res) => {
     });
 });
 router.get("/dashboard", authenticateAdmin, admin_controller_1.getAdminDashboard);
+router.get("/global-search", authenticateAdmin, admin_tools_controller_1.globalAdminSearch);
+router.get("/trash", authenticateAdmin, admin_tools_controller_1.getAdminTrash);
+router.post("/trash/:type/:id/restore", authenticateAdmin, admin_tools_controller_1.restoreAdminTrash);
+router.delete("/trash/:type/:id/permanent", authenticateAdmin, admin_tools_controller_1.permanentlyDeleteAdminTrash);
+router.delete("/trash/empty", authenticateAdmin, admin_tools_controller_1.emptyAdminTrash);
 router.get("/blogs", authenticateAdmin, blog_controller_1.listAdminBlogs);
 router.post("/blogs", authenticateAdmin, blog_controller_1.createAdminBlog);
 router.get("/blogs/:id", authenticateAdmin, blog_controller_1.getAdminBlog);
@@ -154,5 +161,13 @@ router.get("/delivery-charges", authenticateAdmin, delivery_charge_controller_1.
 router.post("/delivery-charges", authenticateAdmin, delivery_charge_controller_1.createDeliveryChargeRule);
 router.patch("/delivery-charges/:id", authenticateAdmin, delivery_charge_controller_1.updateDeliveryChargeRule);
 router.delete("/delivery-charges/:id", authenticateAdmin, delivery_charge_controller_1.deleteDeliveryChargeRule);
+router.get("/offers/buy-get", authenticateAdmin, (0, offer_controller_1.listAdminOffers)("buy_get"));
+router.post("/offers/buy-get", authenticateAdmin, (0, offer_controller_1.createAdminOffer)("buy_get"));
+router.patch("/offers/buy-get/:id", authenticateAdmin, (0, offer_controller_1.updateAdminOffer)("buy_get"));
+router.delete("/offers/buy-get/:id", authenticateAdmin, (0, offer_controller_1.deleteAdminOffer)("buy_get"));
+router.get("/offers/fixed-price-bundle", authenticateAdmin, (0, offer_controller_1.listAdminOffers)("fixed_price_bundle"));
+router.post("/offers/fixed-price-bundle", authenticateAdmin, (0, offer_controller_1.createAdminOffer)("fixed_price_bundle"));
+router.patch("/offers/fixed-price-bundle/:id", authenticateAdmin, (0, offer_controller_1.updateAdminOffer)("fixed_price_bundle"));
+router.delete("/offers/fixed-price-bundle/:id", authenticateAdmin, (0, offer_controller_1.deleteAdminOffer)("fixed_price_bundle"));
 exports.default = router;
 //# sourceMappingURL=admin.routes.js.map

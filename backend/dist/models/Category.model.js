@@ -34,6 +34,7 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
+const softDelete_1 = require("../utils/softDelete");
 /* =========================================================
    IMAGE SCHEMA
 ========================================================= */
@@ -158,6 +159,7 @@ categorySchema.index({
     sortOrder: 1,
     name: 1,
 });
+(0, softDelete_1.applySoftDeletePlugin)(categorySchema);
 /* =========================================================
    MODEL
 ========================================================= */

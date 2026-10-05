@@ -9,6 +9,7 @@ const Banner_model_1 = __importDefault(require("../models/Banner.model"));
 const Category_model_1 = __importDefault(require("../models/Category.model"));
 const Product_model_1 = __importDefault(require("../models/Product.model"));
 const cloudinary_service_1 = require("./cloudinary.service");
+const admin_trash_service_1 = require("./admin-trash.service");
 /* =========================================================
    POPULATE
 ========================================================= */
@@ -746,24 +747,14 @@ exports.updateBanner = updateBanner;
 
    Cloudinary first, MongoDB after successful media cleanup.
 ========================================================= */
-const deleteBanner = async (bannerId) => {
+const deleteBanner = async (bannerId, deletedBy) => {
     validateBannerId(bannerId);
-    const banner = await Banner_model_1.default.findById(bannerId);
-    if (!banner) {
-        throw new Error("Banner not found.");
-    }
-    if (banner.images.length >
-        0) {
-        await deleteBannerImages(banner.images);
-    }
-    if (banner.videos.length >
-        0) {
-        await deleteBannerVideos(banner.videos);
-    }
-    await banner.deleteOne();
+    const result = await (0, admin_trash_service_1.softDeleteEntity)("banner", bannerId, deletedBy);
     return {
         bannerId,
-        message: "Banner and Cloudinary media deleted successfully.",
+        message: result.message,
+        movedToTrash: true,
+        retentionDays: 30,
     };
 };
 exports.deleteBanner = deleteBanner;

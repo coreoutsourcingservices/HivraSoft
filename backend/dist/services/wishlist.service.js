@@ -8,7 +8,6 @@ const mongoose_1 = require("mongoose");
 const Wishlist_model_1 = __importDefault(require("../models/Wishlist.model"));
 const Product_model_1 = __importDefault(require("../models/Product.model"));
 const activity_service_1 = require("./activity.service");
-const commerce_email_service_1 = require("./commerce-email.service");
 const WISHLIST_PRODUCT_SELECT = [
     "name",
     "slug",
@@ -40,6 +39,27 @@ const createEmptyWishlistResponse = (userId) => ({
     createdAt: null,
     updatedAt: null,
 });
+function buildTrackingProductSnapshot(product, colorId, sizeId) {
+    const colors = Array.isArray(product?.colors) ? product.colors : [];
+    const color = colors.find((item) => String(item?._id || "") === String(colorId || ""))
+        || colors.find((item) => item?.isDefault === true)
+        || colors[0]
+        || null;
+    const sizes = Array.isArray(color?.sizes) ? color.sizes : [];
+    const size = sizes.find((item) => String(item?._id || "") === String(sizeId || ""))
+        || sizes[0]
+        || null;
+    const images = Array.isArray(color?.images) ? color.images : [];
+    const image = images.find((item) => item?.isDefault === true) || images[0] || null;
+    return {
+        name: String(color?.nameProduct || "Product"),
+        slug: String(color?.slugProduct || ""),
+        colorName: String(color?.nameColor || ""),
+        sizeName: String(size?.size || ""),
+        price: Number(size?.showPrice ?? color?.showPrice ?? 0),
+        imageUrl: String(image?.url || ""),
+    };
+}
 function validateVariant(product, input) {
     const colorId = String(input.colorId || "").trim();
     const sizeId = String(input.sizeId || "").trim();
@@ -102,7 +122,7 @@ const addProductToWishlist = async (userId, productId, variant = {}) => {
                 },
             ],
         });
-        const activity = await (0, activity_service_1.trackUserActivity)({
+        await (0, activity_service_1.trackUserActivity)({
             userId,
             type: "wishlist_add",
             productId,
@@ -110,19 +130,9 @@ const addProductToWishlist = async (userId, productId, variant = {}) => {
                 colorId: selected.colorId,
                 sizeId: selected.sizeId,
                 addedAt: now,
+                productSnapshot: buildTrackingProductSnapshot(product, selected.colorId, selected.sizeId),
             },
         });
-        void (0, commerce_email_service_1.sendWishlistAddedEmail)({
-            userId,
-            productId,
-            colorId: selected.colorId,
-            sizeId: selected.sizeId,
-        })
-            .then((sent) => {
-            if (sent && activity?._id)
-                return (0, activity_service_1.markActivityEmailSent)(String(activity._id));
-        })
-            .catch((error) => console.error("WISHLIST ADDED EMAIL ERROR:", error));
         return { wishlist: await populateWishlistById(wishlist._id), alreadyExists: false };
     }
     const existing = wishlist.items.find(sameVariant);
@@ -138,7 +148,7 @@ const addProductToWishlist = async (userId, productId, variant = {}) => {
         updatedAt: now,
     });
     await wishlist.save();
-    const activity = await (0, activity_service_1.trackUserActivity)({
+    await (0, activity_service_1.trackUserActivity)({
         userId,
         type: "wishlist_add",
         productId,
@@ -146,19 +156,9 @@ const addProductToWishlist = async (userId, productId, variant = {}) => {
             colorId: selected.colorId,
             sizeId: selected.sizeId,
             addedAt: now,
+            productSnapshot: buildTrackingProductSnapshot(product, selected.colorId, selected.sizeId),
         },
     });
-    void (0, commerce_email_service_1.sendWishlistAddedEmail)({
-        userId,
-        productId,
-        colorId: selected.colorId,
-        sizeId: selected.sizeId,
-    })
-        .then((sent) => {
-        if (sent && activity?._id)
-            return (0, activity_service_1.markActivityEmailSent)(String(activity._id));
-    })
-        .catch((error) => console.error("WISHLIST ADDED EMAIL ERROR:", error));
     return { wishlist: await populateWishlistById(wishlist._id), alreadyExists: false };
 };
 exports.addProductToWishlist = addProductToWishlist;
