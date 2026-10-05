@@ -58,6 +58,78 @@ function productName(snapshot: any): string {
   return stringValue(defaultColor?.nameProduct) || "Product";
 }
 
+function snapshotPreviewImage(snapshot: any): string {
+  const directCandidates = [
+    snapshot?.avatar?.url,
+    snapshot?.profileImage?.url,
+    snapshot?.photo?.url,
+    snapshot?.photo,
+    snapshot?.image?.url,
+    snapshot?.image,
+    snapshot?.imageUrl,
+    snapshot?.thumbnail?.url,
+    snapshot?.thumbnail,
+    snapshot?.coverImage?.url,
+    snapshot?.featuredImage?.url,
+    snapshot?.desktopImage?.url,
+    snapshot?.mobileImage?.url,
+  ];
+
+  for (const candidate of directCandidates) {
+    const url = stringValue(candidate);
+    if (/^https?:\/\//i.test(url)) return url;
+  }
+
+  const imageArrays = [
+    snapshot?.mainImages,
+    snapshot?.images,
+    ...(Array.isArray(snapshot?.colors)
+      ? snapshot.colors.map((color: any) => color?.images)
+      : []),
+  ];
+
+  for (const list of imageArrays) {
+    if (!Array.isArray(list)) continue;
+    const preferred = list.find((item: any) => item?.isDefault && item?.url) || list.find((item: any) => item?.url);
+    const url = stringValue(preferred?.url || preferred);
+    if (/^https?:\/\//i.test(url)) return url;
+  }
+
+  return "";
+}
+
+function snapshotDetails(type: TrashEntityType, snapshot: any) {
+  const details: Array<{ label: string; value: string }> = [];
+  const add = (label: string, value: unknown) => {
+    const normalized = stringValue(value);
+    if (normalized) details.push({ label, value: normalized });
+  };
+
+  add("Slug", snapshot?.slug);
+  add("Gender", snapshot?.gender);
+  add("Code", snapshot?.code);
+
+  if (typeof snapshot?.isActive === "boolean") {
+    details.push({ label: "Status", value: snapshot.isActive ? "Active" : "Inactive" });
+  }
+
+  if (type === "product") {
+    const colors = Array.isArray(snapshot?.colors) ? snapshot.colors : [];
+    details.push({ label: "Colors", value: String(colors.length) });
+    const stock = colors.reduce(
+      (total: number, color: any) =>
+        total +
+        (Array.isArray(color?.sizes)
+          ? color.sizes.reduce((sum: number, size: any) => sum + Math.max(0, Number(size?.stock || 0)), 0)
+          : 0),
+      0
+    );
+    details.push({ label: "Stock", value: String(stock) });
+  }
+
+  return details.slice(0, 4);
+}
+
 export function recordNameFor(type: TrashEntityType, snapshot: any): string {
   switch (type) {
     case "product":
@@ -192,7 +264,7 @@ export async function listTrash(input: {
 
   const [rows, total, typeCounts] = await Promise.all([
     AdminTrash.find(filter)
-      .populate("deletedBy", "name email")
+      .populate("deletedBy", "name email avatar")
       .sort({ deletedAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit)
@@ -211,6 +283,8 @@ export async function listTrash(input: {
     deletedAt: item.deletedAt,
     permanentDeleteAt: item.expiresAt,
     remainingDays: Math.max(0, Math.ceil((new Date(item.expiresAt).getTime() - now) / DAY_MS)),
+    imageUrl: snapshotPreviewImage(item.snapshot),
+    details: snapshotDetails(item.entityType as TrashEntityType, item.snapshot),
     deletedBy: item.deletedBy || null,
   }));
 

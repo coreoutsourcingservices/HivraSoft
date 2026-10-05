@@ -24,7 +24,14 @@ type TrashItem = {
   deletedAt: string;
   permanentDeleteAt: string;
   remainingDays: number;
-  deletedBy?: { _id?: string; name?: string; email?: string } | null;
+  imageUrl?: string;
+  details?: Array<{ label: string; value: string }>;
+  deletedBy?: {
+    _id?: string;
+    name?: string;
+    email?: string;
+    avatar?: { url?: string; publicId?: string } | null;
+  } | null;
 };
 
 type TrashResponse = {
@@ -352,10 +359,51 @@ export default function AdminTrashPage() {
                 <tbody className="divide-y divide-black/[0.05]">
                   {items.map((item) => (
                     <tr key={item._id} className="text-[11px] hover:bg-[#FFFDFC]">
-                      <td className="max-w-[300px] px-5 py-4"><p className="truncate font-semibold text-[#211A18]">{item.name}</p><p className="mt-1 truncate text-[9px] text-black/35">{item.entityId}</p></td>
+                      <td className="max-w-[360px] px-5 py-4">
+                        <div className="flex min-w-0 items-center gap-3">
+                          {item.imageUrl ? (
+                            <img
+                              src={item.imageUrl}
+                              alt={item.name}
+                              className="h-12 w-12 shrink-0 rounded-xl border border-black/[0.07] bg-[#F5F1EE] object-cover"
+                            />
+                          ) : (
+                            <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-[#F5F1EE] text-[8px] font-semibold uppercase text-black/25">
+                              {item.typeLabel.slice(0, 2)}
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <p className="truncate font-semibold text-[#211A18]">{item.name}</p>
+                            <p className="mt-1 truncate text-[9px] text-black/35">{item.entityId}</p>
+                            {item.details?.length ? (
+                              <div className="mt-2 flex max-w-[270px] flex-wrap gap-1">
+                                {item.details.map((detail) => (
+                                  <span key={`${item._id}-${detail.label}`} className="rounded-md bg-[#FAF8F6] px-2 py-1 text-[8px] text-black/45">
+                                    <b className="font-semibold text-black/55">{detail.label}:</b> {detail.value}
+                                  </span>
+                                ))}
+                              </div>
+                            ) : null}
+                          </div>
+                        </div>
+                      </td>
                       <td className="px-4 py-4"><span className="rounded-full bg-[#F4F0ED] px-2.5 py-1 text-[9px] font-semibold text-black/50">{item.typeLabel}</span></td>
                       <td className="px-4 py-4 text-black/50">{formatDate(item.deletedAt)}</td>
-                      <td className="px-4 py-4 text-black/50">{item.deletedBy?.name || item.deletedBy?.email || "System/Admin"}</td>
+                      <td className="px-4 py-4 text-black/50">
+                        <div className="flex min-w-[130px] items-center gap-2">
+                          {item.deletedBy?.avatar?.url ? (
+                            <img src={item.deletedBy.avatar.url} alt={item.deletedBy?.name || "Admin"} className="h-8 w-8 rounded-full border border-black/[0.07] object-cover" />
+                          ) : (
+                            <div className="grid h-8 w-8 rounded-full bg-[#8C1839]/10 place-items-center text-[10px] font-bold text-[#8C1839]">
+                              {(item.deletedBy?.name || item.deletedBy?.email || "A").slice(0, 1).toUpperCase()}
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <p className="truncate font-medium text-[#211A18]">{item.deletedBy?.name || "System/Admin"}</p>
+                            {item.deletedBy?.email ? <p className="mt-0.5 truncate text-[8px] text-black/30">{item.deletedBy.email}</p> : null}
+                          </div>
+                        </div>
+                      </td>
                       <td className="px-4 py-4 text-black/50">{formatDate(item.permanentDeleteAt)}</td>
                       <td className="px-4 py-4"><span className={`rounded-full px-2.5 py-1 text-[9px] font-bold ${remainingClass(item.remainingDays)}`}>{item.remainingDays} day{item.remainingDays === 1 ? "" : "s"}</span></td>
                       <td className="px-5 py-4">
@@ -374,13 +422,38 @@ export default function AdminTrashPage() {
               {items.map((item) => (
                 <article key={item._id} className="p-4">
                   <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0"><p className="truncate text-[12px] font-semibold">{item.name}</p><p className="mt-1 text-[9px] text-black/40">{item.typeLabel}</p></div>
+                    <div className="flex min-w-0 items-center gap-3">
+                      {item.imageUrl ? (
+                        <img src={item.imageUrl} alt={item.name} className="h-14 w-14 shrink-0 rounded-xl border border-black/[0.07] bg-[#F5F1EE] object-cover" />
+                      ) : (
+                        <div className="grid h-14 w-14 shrink-0 place-items-center rounded-xl bg-[#F5F1EE] text-[8px] font-semibold uppercase text-black/25">{item.typeLabel.slice(0, 2)}</div>
+                      )}
+                      <div className="min-w-0">
+                        <p className="truncate text-[12px] font-semibold">{item.name}</p>
+                        <p className="mt-1 text-[9px] text-black/40">{item.typeLabel}</p>
+                        {item.details?.length ? (
+                          <div className="mt-2 flex flex-wrap gap-1">
+                            {item.details.map((detail) => <span key={`${item._id}-mobile-${detail.label}`} className="rounded-md bg-[#F5F1EE] px-1.5 py-1 text-[8px] text-black/45">{detail.label}: {detail.value}</span>)}
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
                     <span className={`shrink-0 rounded-full px-2.5 py-1 text-[9px] font-bold ${remainingClass(item.remainingDays)}`}>{item.remainingDays}d</span>
                   </div>
                   <div className="mt-4 grid grid-cols-2 gap-3 rounded-2xl bg-[#FAF8F6] p-3 text-[9px] text-black/45">
                     <div><span className="block text-black/30">Deleted</span><span className="mt-1 block">{formatDate(item.deletedAt)}</span></div>
                     <div><span className="block text-black/30">Permanent delete</span><span className="mt-1 block">{formatDate(item.permanentDeleteAt)}</span></div>
-                    <div className="col-span-2"><span className="block text-black/30">Deleted by</span><span className="mt-1 block">{item.deletedBy?.name || item.deletedBy?.email || "System/Admin"}</span></div>
+                    <div className="col-span-2">
+                      <span className="block text-black/30">Deleted by</span>
+                      <div className="mt-2 flex items-center gap-2">
+                        {item.deletedBy?.avatar?.url ? (
+                          <img src={item.deletedBy.avatar.url} alt={item.deletedBy?.name || "Admin"} className="h-8 w-8 rounded-full object-cover" />
+                        ) : (
+                          <div className="grid h-8 w-8 place-items-center rounded-full bg-[#8C1839]/10 text-[10px] font-bold text-[#8C1839]">{(item.deletedBy?.name || item.deletedBy?.email || "A").slice(0, 1).toUpperCase()}</div>
+                        )}
+                        <div><span className="block font-medium text-[#211A18]">{item.deletedBy?.name || "System/Admin"}</span>{item.deletedBy?.email ? <span className="mt-0.5 block text-[8px] text-black/30">{item.deletedBy.email}</span> : null}</div>
+                      </div>
+                    </div>
                   </div>
                   {item.remainingDays <= 3 && <div className="mt-3 flex items-center gap-2 rounded-xl bg-red-50 px-3 py-2 text-[9px] font-semibold text-red-700"><AlertTriangle size={12} />Permanent deletion is very close.</div>}
                   <div className="mt-4 grid grid-cols-2 gap-2">
