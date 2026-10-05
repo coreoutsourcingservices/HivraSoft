@@ -68,6 +68,8 @@ export type ProductColorInput = {
 
   tags?: string[];
 
+  focusKeyword?: string;
+
   seoTitle?: string;
 
   seoDescription?: string;
@@ -686,6 +688,11 @@ const normalizeColors = (
               color.tags
             ),
 
+          focusKeyword:
+            color.focusKeyword
+              ?.trim() ||
+            "",
+
           seoTitle:
             color.seoTitle
               ?.trim() ||
@@ -1098,6 +1105,84 @@ const getListingImages = (
   return listingImages;
 };
 
+const stripHtmlForSeo = (value: unknown): string => {
+  return String(value || "")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/\s+/g, " ")
+    .trim();
+};
+
+const includesSeoKeyword = (
+  value: unknown,
+  keyword: string
+): boolean => {
+  if (!keyword) {
+    return false;
+  }
+
+  return String(value || "")
+    .toLowerCase()
+    .includes(keyword.toLowerCase());
+};
+
+const calculateSeoScore = (
+  color: any
+): number => {
+  const keyword = String(
+    color?.focusKeyword || ""
+  ).trim();
+
+  if (!keyword) {
+    return 0;
+  }
+
+  const title = String(
+    color?.seoTitle || color?.nameProduct || ""
+  );
+  const metaDescription = String(
+    color?.seoDescription || ""
+  );
+  const slug = String(
+    color?.slugProduct || ""
+  ).replace(/-/g, " ");
+  const content = stripHtmlForSeo(
+    `${color?.shortDescription || ""} ${color?.description || ""}`
+  );
+  const words = content
+    .split(/\s+/)
+    .filter(Boolean);
+  const firstTenPercent = words
+    .slice(0, Math.max(1, Math.ceil(words.length * 0.1)))
+    .join(" ");
+
+  let score = 10; // focus keyword entered
+
+  if (includesSeoKeyword(title, keyword)) {
+    score += 20;
+  }
+  if (includesSeoKeyword(metaDescription, keyword)) {
+    score += 20;
+  }
+  if (includesSeoKeyword(slug, keyword)) {
+    score += 15;
+  }
+  if (includesSeoKeyword(content, keyword)) {
+    score += 15;
+  }
+  if (includesSeoKeyword(firstTenPercent, keyword)) {
+    score += 10;
+  }
+  if (words.length >= 300) {
+    score += 10;
+  }
+
+  return Math.max(0, Math.min(100, score));
+};
+
 const formatProductResponse = (
   input: any,
   limitImages: boolean
@@ -1121,11 +1206,26 @@ const formatProductResponse = (
               const {
                 description:
                   _description,
+                focusKeyword:
+                  internalFocusKeyword,
                 ...colorWithoutDescription
               } = color;
 
               return {
                 ...colorWithoutDescription,
+
+                ...(limitImages
+                  ? {}
+                  : {
+                      focusKeyword:
+                        internalFocusKeyword ||
+                        "",
+
+                      seoScore:
+                        calculateSeoScore(
+                          color
+                        ),
+                    }),
 
                 images:
                   limitImages

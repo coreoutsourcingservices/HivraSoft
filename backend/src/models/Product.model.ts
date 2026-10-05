@@ -68,6 +68,8 @@ export interface IProductColor {
 
   tags: string[];
 
+  focusKeyword?: string;
+
   seoTitle?: string;
 
   seoDescription?: string;
@@ -443,6 +445,23 @@ const productColorSchema =
         type: [String],
 
         default: [],
+      },
+
+      /* =====================================================
+         FOCUS KEYWORD
+      ===================================================== */
+
+      focusKeyword: {
+        type: String,
+
+        default: "",
+
+        trim: true,
+
+        maxlength: [
+          180,
+          "Focus keyword cannot exceed 180 characters.",
+        ],
       },
 
       /* =====================================================

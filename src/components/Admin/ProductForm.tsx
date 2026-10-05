@@ -91,6 +91,8 @@ type ColorValue = {
 
   tags: string;
 
+  focusKeyword: string;
+
   seoTitle: string;
   seoDescription: string;
 
@@ -125,6 +127,117 @@ function slugify(
       /^-+|-+$/g,
       ""
     );
+}
+
+function stripHtmlForSeo(
+  value: string
+) {
+  return String(value || "")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function hasKeyword(
+  value: string,
+  keyword: string
+) {
+  const cleanKeyword = keyword
+    .trim()
+    .toLowerCase();
+
+  return Boolean(
+    cleanKeyword &&
+      String(value || "")
+        .toLowerCase()
+        .includes(cleanKeyword)
+  );
+}
+
+function buildSeoAnalysis(
+  color: Pick<
+    ColorValue,
+    | "focusKeyword"
+    | "seoTitle"
+    | "seoDescription"
+    | "slugProduct"
+    | "shortDescription"
+    | "description"
+  >
+) {
+  const keyword = color.focusKeyword.trim();
+  const content = stripHtmlForSeo(
+    `${color.shortDescription} ${color.description}`
+  );
+  const words = content
+    .split(/\s+/)
+    .filter(Boolean);
+  const firstTenPercent = words
+    .slice(
+      0,
+      Math.max(
+        1,
+        Math.ceil(words.length * 0.1)
+      )
+    )
+    .join(" ");
+
+  const checks = [
+    {
+      label: "Focus Keyword is set.",
+      pass: Boolean(keyword),
+      points: 10,
+    },
+    {
+      label: "Focus Keyword is used in the SEO Title.",
+      pass: hasKeyword(color.seoTitle, keyword),
+      points: 20,
+    },
+    {
+      label: "Focus Keyword is used in the SEO Meta Description.",
+      pass: hasKeyword(color.seoDescription, keyword),
+      points: 20,
+    },
+    {
+      label: "Focus Keyword is used in the URL.",
+      pass: hasKeyword(
+        color.slugProduct.replace(/-/g, " "),
+        keyword
+      ),
+      points: 15,
+    },
+    {
+      label: "Focus Keyword appears in the product content.",
+      pass: hasKeyword(content, keyword),
+      points: 15,
+    },
+    {
+      label: "Focus Keyword appears in the first 10% of content.",
+      pass: hasKeyword(firstTenPercent, keyword),
+      points: 10,
+    },
+    {
+      label: `${words.length} content words. 300+ is recommended.`,
+      pass: words.length >= 300,
+      points: 10,
+    },
+  ];
+
+  const score = checks.reduce(
+    (total, check) =>
+      total + (check.pass ? check.points : 0),
+    0
+  );
+
+  return {
+    score,
+    checks,
+    wordCount: words.length,
+  };
 }
 
 function imageNameFromFile(
@@ -180,6 +293,8 @@ function emptyColor(
     description: "",
 
     tags: "",
+
+    focusKeyword: "",
 
     seoTitle: "",
     seoDescription: "",
@@ -672,6 +787,10 @@ export default function ProductForm({
                             ", "
                           )
                         : "",
+
+                    focusKeyword:
+                      color?.focusKeyword ||
+                      "",
 
                     seoTitle:
                       color?.seoTitle ||
@@ -2284,6 +2403,9 @@ export default function ProductForm({
                       Boolean
                     ),
 
+                focusKeyword:
+                  color.focusKeyword.trim(),
+
                 seoTitle:
                   color.seoTitle.trim(),
 
@@ -3658,70 +3780,79 @@ export default function ProductForm({
 
                     <SubHeading
                       title="Search & SEO"
-                      description="Metadata used for search engines and social/product snippets."
+                      description="Rank-Math-style basic SEO checks for each product/color. The score is shown in the product listing."
                     />
 
                     <div className="mt-4 grid gap-4 md:grid-cols-2">
+                      <Field
+                        label="Focus Keyword"
+                        hint={`${color.focusKeyword.length}/180 · Example: side support full coverage bra`}
+                      >
+                        <input
+                          className={inputClass}
+                          maxLength={180}
+                          value={color.focusKeyword}
+                          placeholder="Side Support Full Coverage Bra"
+                          onChange={(event) =>
+                            updateColor(
+                              colorIndex,
+                              {
+                                focusKeyword:
+                                  event.target.value,
+                              }
+                            )
+                          }
+                        />
+                      </Field>
+
                       <Field
                         label="SEO Title"
                         hint={`${color.seoTitle.length}/200`}
                       >
                         <input
-                          className={
-                            inputClass
-                          }
-                          maxLength={
-                            200
-                          }
-                          value={
-                            color.seoTitle
-                          }
+                          className={inputClass}
+                          maxLength={200}
+                          value={color.seoTitle}
                           placeholder="Black Bikini Panty For Women"
-                          onChange={(
-                            event
-                          ) =>
+                          onChange={(event) =>
                             updateColor(
                               colorIndex,
                               {
                                 seoTitle:
-                                  event
-                                    .target
-                                    .value,
+                                  event.target.value,
                               }
                             )
                           }
                         />
                       </Field>
 
-                      <Field
-                        label="SEO Description"
-                        hint={`${color.seoDescription.length}/1000`}
-                      >
-                        <textarea
-                          className={`${inputClass} min-h-24 resize-y py-3`}
-                          maxLength={
-                            1000
-                          }
-                          value={
-                            color.seoDescription
-                          }
-                          placeholder="Search-friendly description..."
-                          onChange={(
-                            event
-                          ) =>
-                            updateColor(
-                              colorIndex,
-                              {
-                                seoDescription:
-                                  event
-                                    .target
-                                    .value,
-                              }
-                            )
-                          }
-                        />
-                      </Field>
+                      <div className="md:col-span-2">
+                        <Field
+                          label="SEO Description"
+                          hint={`${color.seoDescription.length}/1000`}
+                        >
+                          <textarea
+                            className={`${inputClass} min-h-24 resize-y py-3`}
+                            maxLength={1000}
+                            value={color.seoDescription}
+                            placeholder="Search-friendly description..."
+                            onChange={(event) =>
+                              updateColor(
+                                colorIndex,
+                                {
+                                  seoDescription:
+                                    event.target.value,
+                                }
+                              )
+                            }
+                          />
+                        </Field>
+                      </div>
                     </div>
+
+                    <SeoAnalysisPanel
+                      color={color}
+                    />
 
                     {/* IMAGE STUDIO */}
 
@@ -4675,6 +4806,73 @@ function SubHeading({
 function Divider() {
   return (
     <div className="my-7 h-px bg-black/[0.06]" />
+  );
+}
+
+function SeoAnalysisPanel({
+  color,
+}: {
+  color: ColorValue;
+}) {
+  const analysis =
+    buildSeoAnalysis(color);
+
+  const scoreClass =
+    analysis.score >= 80
+      ? "bg-emerald-100 text-emerald-700 border-emerald-200"
+      : analysis.score >= 60
+        ? "bg-amber-100 text-amber-700 border-amber-200"
+        : "bg-red-100 text-red-700 border-red-200";
+
+  return (
+    <div className="mt-4 overflow-hidden rounded-2xl border border-black/[0.08] bg-white">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-black/[0.06] px-4 py-3">
+        <div>
+          <p className="text-sm font-bold text-[#241B18]">
+            Basic SEO
+          </p>
+          <p className="mt-0.5 text-[11px] text-black/40">
+            Live checks based on the Focus Keyword.
+          </p>
+        </div>
+
+        <span
+          className={`rounded-full border px-3 py-1.5 text-xs font-black ${scoreClass}`}
+        >
+          {analysis.score} / 100
+        </span>
+      </div>
+
+      <div className="space-y-2 px-4 py-4">
+        {analysis.checks.map(
+          (check) => (
+            <div
+              key={check.label}
+              className="flex items-start gap-2 text-xs"
+            >
+              <span
+                className={`mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full text-[10px] font-black text-white ${
+                  check.pass
+                    ? "bg-emerald-500"
+                    : "bg-red-400"
+                }`}
+              >
+                {check.pass ? "✓" : "×"}
+              </span>
+              <span
+                className={
+                  check.pass
+                    ? "text-black/65"
+                    : "text-red-600"
+                }
+              >
+                {check.label}
+              </span>
+            </div>
+          )
+        )}
+      </div>
+    </div>
   );
 }
 
