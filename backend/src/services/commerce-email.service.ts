@@ -180,6 +180,59 @@ async function customerAndProduct(userId: string, productId: string, colorId?: s
   return { user, product: productSnapshot(product, colorId, sizeId) };
 }
 
+export async function sendCartAddedEmail(input: {
+  userId: string;
+  productId: string;
+  colorId?: string | null;
+  sizeId?: string | null;
+  quantity: number;
+  cartTotal?: number;
+}) {
+  const data = await customerAndProduct(input.userId, input.productId, input.colorId, input.sizeId);
+  if (!data) return false;
+  const quantity = Math.max(1, Number(input.quantity || 1));
+  const body = `
+    <p style="margin:0 0 14px;font-size:15px;">Hi <strong>${escapeHtml((data.user as any).name || "Customer")}</strong>,</p>
+    <p style="margin:0;color:#5f5550;font-size:14px;line-height:1.6;">You added this product to your cart.</p>
+    ${imageBlock(data.product.image, data.product.name)}
+    <div style="font-size:17px;font-weight:700;">${escapeHtml(data.product.name)}</div>
+    <div style="margin-top:8px;font-size:13px;color:#5f5550;">Quantity: <strong>${quantity}</strong></div>
+    <div style="margin-top:5px;font-size:13px;color:#5f5550;">Price: <strong>${money(data.product.price)}</strong></div>
+    ${Number.isFinite(Number(input.cartTotal)) ? `<div style="margin-top:5px;font-size:13px;color:#5f5550;">Cart Total: <strong>${money(input.cartTotal)}</strong></div>` : ""}
+    ${cta("View Cart", `${frontendUrl()}/account/card`)}
+  `;
+  await sendEmail({
+    to: String((data.user as any).email),
+    subject: "Product added to your cart",
+    html: baseTemplate({ title: "Cart Update", preheader: `${data.product.name} was added to your cart.`, body }),
+  });
+  return true;
+}
+
+export async function sendWishlistAddedEmail(input: {
+  userId: string;
+  productId: string;
+  colorId?: string | null;
+  sizeId?: string | null;
+}) {
+  const data = await customerAndProduct(input.userId, input.productId, input.colorId, input.sizeId);
+  if (!data) return false;
+  const body = `
+    <p style="margin:0 0 14px;font-size:15px;">Hi <strong>${escapeHtml((data.user as any).name || "Customer")}</strong>,</p>
+    <p style="margin:0;color:#5f5550;font-size:14px;line-height:1.6;">You added this product to your wishlist.</p>
+    ${imageBlock(data.product.image, data.product.name)}
+    <div style="font-size:17px;font-weight:700;">${escapeHtml(data.product.name)}</div>
+    <div style="margin-top:8px;font-size:13px;color:#5f5550;">Price: <strong>${money(data.product.price)}</strong></div>
+    ${cta("View Wishlist", `${frontendUrl()}/account/wishlist`)}
+  `;
+  await sendEmail({
+    to: String((data.user as any).email),
+    subject: "Product added to your wishlist",
+    html: baseTemplate({ title: "Wishlist Update", preheader: `${data.product.name} was saved to your wishlist.`, body }),
+  });
+  return true;
+}
+
 export async function sendCartReminderEmail(input: {
   userId: string;
   productId: string;

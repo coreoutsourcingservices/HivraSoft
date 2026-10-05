@@ -3,946 +3,567 @@
 import Link from "next/link";
 
 import {
-  useEffect,
   useMemo,
-  useRef,
   useState,
 } from "react";
 
-import {
-  gsap,
-} from "gsap";
+import CategoryBannerSlider from "@/src/components/Storefront/CategoryBannerSlider";
 
-import {
-  ScrollTrigger,
-} from "gsap/ScrollTrigger";
+import StorefrontProductCard from "@/src/components/Storefront/StorefrontProductCard";
 
-import {
-  menMenu,
-  type MenBanner,
-  type MenProduct,
-} from "@/src/data/men";
+import type {
+  StorefrontCategoryNode,
+} from "@/src/services/categories";
 
-/* =========================================================
-   PROPS
-========================================================= */
+import type {
+  CatalogBanner,
+  CatalogProduct,
+} from "@/types/catalog";
 
-type MenCatalogProps = {
-  products: MenProduct[];
+type Props = {
+  products: CatalogProduct[];
 
-  banners: MenBanner[];
+  banners: CatalogBanner[];
 
   title: string;
+
   description: string;
 
-  category?: string;
-  subcategory?: string;
+  categoryRoot:
+    StorefrontCategoryNode;
+
+  categoryPath:
+    string[];
 };
 
+type SortValue =
+  | "featured"
+  | "newest"
+  | "price-low"
+  | "price-high";
+
 /* =========================================================
-   BANNER
+   URL
 ========================================================= */
 
-function MenBannerSlider({
-  banners,
-}: {
-  banners: MenBanner[];
-}) {
-  const [
-    active,
-    setActive,
-  ] =
-    useState(0);
+function categoryHref(
+  slugs: string[]
+) {
+  return slugs.length ===
+    0
+    ? "/men"
+    : `/men/${slugs
+        .map(
+          encodeURIComponent
+        )
+        .join("/")}`;
+}
 
-  const validBanners =
-    useMemo(
-      () =>
-        banners.filter(
-          (banner) =>
-            Boolean(
-              banner?.image
-            )
-        ),
-      [
-        banners,
-      ]
-    );
+function sortNodes(
+  nodes: StorefrontCategoryNode[]
+) {
+  return [
+    ...nodes,
+  ].sort(
+    (
+      a,
+      b
+    ) => {
+      if (
+        a.sortOrder !==
+        b.sortOrder
+      ) {
+        return (
+          a.sortOrder -
+          b.sortOrder
+        );
+      }
 
-  useEffect(() => {
-    setActive(0);
+      return a.name.localeCompare(
+        b.name
+      );
+    }
+  );
+}
 
-    if (
-      validBanners.length <=
-      1
-    ) {
-      return;
+function selectedNodesFromPath(
+  root: StorefrontCategoryNode,
+  path: string[]
+) {
+  const result:
+    StorefrontCategoryNode[] =
+    [];
+
+  let children =
+    root.children;
+
+  for (
+    const slug of path
+  ) {
+    const found =
+      children.find(
+        (child) =>
+          child.slug ===
+          slug
+      );
+
+    if (!found) {
+      break;
     }
 
-    const timer =
-      window.setInterval(
-        () => {
-          setActive(
-            (current) =>
-              (current + 1) %
-              validBanners.length
-          );
-        },
-        4000
-      );
+    result.push(
+      found
+    );
 
-    return () =>
-      window.clearInterval(
-        timer
-      );
-  }, [
-    validBanners.length,
-  ]);
-
-  if (
-    validBanners.length ===
-    0
-  ) {
-    return null;
+    children =
+      found.children;
   }
 
-  return (
-    <section
-      className="
-        relative
-        w-full
-        overflow-hidden
-        bg-[#EFE6DC]
-      "
-      style={{
-        aspectRatio:
-          "1600 / 558",
-      }}
-    >
-      {validBanners.map(
-        (
-          banner,
-          index
-        ) => (
-          <Link
-            key={`${banner.image}-${index}`}
-            href={
-              banner.redirect ||
-              banner.href ||
-              "#"
-            }
-            className={`
-              absolute
-              inset-0
-              block
-              h-full
-              w-full
-
-              transition-all
-              duration-700
-
-              ${
-                active === index
-                  ? "translate-x-0 opacity-100"
-                  : index <
-                      active
-                    ? "-translate-x-full opacity-0"
-                    : "translate-x-full opacity-0"
-              }
-            `}
-          >
-            <img
-              src={
-                banner.image
-              }
-              alt={
-                banner.alt ||
-                banner.title ||
-                "Men Banner"
-              }
-              className="
-                h-full
-                w-full
-                object-cover
-                object-center
-              "
-            />
-          </Link>
-        )
-      )}
-
-      {validBanners.length >
-        1 && (
-        <>
-          <button
-            type="button"
-            onClick={() =>
-              setActive(
-                (
-                  current
-                ) =>
-                  current ===
-                  0
-                    ? validBanners.length -
-                      1
-                    : current -
-                      1
-              )
-            }
-            className="
-              absolute
-              left-4
-              top-1/2
-              z-20
-
-              flex
-              h-10
-              w-10
-              -translate-y-1/2
-              items-center
-              justify-center
-
-              rounded-full
-              bg-white/90
-
-              text-[22px]
-
-              shadow
-            "
-          >
-            ‹
-          </button>
-
-          <button
-            type="button"
-            onClick={() =>
-              setActive(
-                (
-                  current
-                ) =>
-                  (current +
-                    1) %
-                  validBanners.length
-              )
-            }
-            className="
-              absolute
-              right-4
-              top-1/2
-              z-20
-
-              flex
-              h-10
-              w-10
-              -translate-y-1/2
-              items-center
-              justify-center
-
-              rounded-full
-              bg-white/90
-
-              text-[22px]
-
-              shadow
-            "
-          >
-            ›
-          </button>
-        </>
-      )}
-    </section>
-  );
+  return result;
 }
 
 /* =========================================================
    CATEGORY NAVIGATION
 ========================================================= */
 
-function MenNavigation({
-  category,
-  subcategory,
+function CategoryNavigation({
+  root,
+  path,
 }: {
-  category?: string;
-  subcategory?: string;
+  root:
+    StorefrontCategoryNode;
+
+  path: string[];
 }) {
-  const activeParent =
+  const selectedNodes =
     useMemo(
       () =>
-        menMenu.find(
-          (item) =>
-            item.slug ===
-            category
+        selectedNodesFromPath(
+          root,
+          path
         ),
       [
-        category,
+        root,
+        path,
+      ]
+    );
+
+  const rootChildren =
+    useMemo(
+      () =>
+        sortNodes(
+          root.children
+        ),
+      [
+        root.children,
       ]
     );
 
   return (
-    <div
+    <section
       className="
-        w-full
-        overflow-hidden
+        mx-auto
+        mt-12
+
+        w-[calc(100%-64px)]
 
         rounded-[20px]
 
         border
-        border-[#211A18]/10
+        border-[#DDD2C5]
 
-        bg-[#EFE5DB]
+        bg-[#F0E6DA]
 
-        px-4
+        px-6
         py-5
-
-        md:px-6
       "
     >
-      {/* MAIN */}
-
       <div
         className="
-          w-full
-          overflow-x-auto
-        "
-      >
-        <div
-          className="
-            mx-auto
+          flex
+          flex-wrap
+          items-center
+          justify-center
+          gap-3
 
-            flex
-            min-w-max
-            items-center
-            justify-center
-            gap-3
-          "
-        >
-          <Link
-            href="/men"
-            className={`
-              shrink-0
+          border-b
+          border-[#DDD2C5]
 
-              rounded-full
-
-              px-6
-              py-3
-
-              text-[9px]
-              font-semibold
-              uppercase
-              tracking-[0.13em]
-
-              transition-all
-
-              ${
-                !category
-                  ? "bg-[#A91543] text-white"
-                  : "bg-white text-[#211A18] hover:bg-[#A91543] hover:text-white"
-              }
-            `}
-          >
-            All Men
-          </Link>
-
-          {menMenu.map(
-            (item) => (
-              <Link
-                key={
-                  item.slug
-                }
-                href={
-                  item.href
-                }
-                className={`
-                  shrink-0
-
-                  rounded-full
-
-                  px-6
-                  py-3
-
-                  text-[9px]
-                  font-semibold
-                  uppercase
-                  tracking-[0.13em]
-
-                  transition-all
-
-                  ${
-                    category ===
-                    item.slug
-                      ? "bg-[#A91543] text-white"
-                      : "bg-white text-[#211A18] hover:bg-[#A91543] hover:text-white"
-                  }
-                `}
-              >
-                {
-                  item.name
-                }
-              </Link>
-            )
-          )}
-        </div>
-      </div>
-
-      {/* CHILDREN */}
-
-      {activeParent &&
-        activeParent.children
-          .length >
-          0 && (
-        <div
-          className="
-            mt-5
-            overflow-x-auto
-
-            border-t
-            border-[#211A18]/10
-
-            pt-4
-          "
-        >
-          <div
-            className="
-              mx-auto
-
-              flex
-              min-w-max
-              items-center
-              justify-center
-              gap-8
-            "
-          >
-            <Link
-              href={
-                activeParent.href
-              }
-              className={`
-                border-b-2
-                pb-2
-
-                text-[8px]
-                font-semibold
-                uppercase
-                tracking-[0.12em]
-
-                ${
-                  !subcategory
-                    ? "border-[#A91543] text-[#A91543]"
-                    : "border-transparent text-[#6F5A4C]"
-                }
-              `}
-            >
-              All{" "}
-              {
-                activeParent.name
-              }
-            </Link>
-
-            {activeParent.children.map(
-              (child) => (
-                <Link
-                  key={
-                    child.slug
-                  }
-                  href={
-                    child.href
-                  }
-                  className={`
-                    border-b-2
-                    pb-2
-
-                    text-[8px]
-                    font-semibold
-                    uppercase
-                    tracking-[0.12em]
-
-                    ${
-                      subcategory ===
-                      child.slug
-                        ? "border-[#A91543] text-[#A91543]"
-                        : "border-transparent text-[#6F5A4C] hover:text-[#A91543]"
-                    }
-                  `}
-                >
-                  {
-                    child.name
-                  }
-                </Link>
-              )
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* =========================================================
-   PRODUCT CARD
-========================================================= */
-
-function ProductCard({
-  product,
-}: {
-  product: MenProduct;
-}) {
-  const productUrl =
-    `/product/${product.slug}`;
-
-  const discount =
-    product.actualPrice >
-      product.discountedPrice &&
-    product.actualPrice >
-      0
-      ? Math.round(
-          ((product.actualPrice -
-            product.discountedPrice) /
-            product.actualPrice) *
-            100
-        )
-      : 0;
-
-  return (
-    <article
-      data-product-card
-      className="
-        group
-        min-w-0
-      "
-    >
-      <Link
-        href={
-          productUrl
-        }
-        className="
-          relative
-          block
-
-          aspect-[4/5]
-
-          overflow-hidden
-
-          rounded-[14px]
-
-          bg-[#F2ECE7]
-        "
-      >
-        {product.image1 ? (
-          <>
-            <img
-              src={
-                product.image1
-              }
-              alt={
-                product.name
-              }
-              className="
-                absolute
-                inset-0
-
-                h-full
-                w-full
-
-                object-cover
-                object-center
-
-                transition-all
-                duration-500
-
-                group-hover:scale-[1.02]
-                group-hover:opacity-0
-              "
-            />
-
-            <img
-              src={
-                product.image2 ||
-                product.image1
-              }
-              alt={`${product.name} alternate`}
-              className="
-                absolute
-                inset-0
-
-                h-full
-                w-full
-
-                scale-[1.02]
-
-                object-cover
-                object-center
-
-                opacity-0
-
-                transition-all
-                duration-500
-
-                group-hover:scale-100
-                group-hover:opacity-100
-              "
-            />
-          </>
-        ) : (
-          <div
-            className="
-              flex
-              h-full
-              items-center
-              justify-center
-
-              text-[10px]
-              text-black/30
-            "
-          >
-            No Image
-          </div>
-        )}
-
-        {discount >
-          0 && (
-          <span
-            className="
-              absolute
-              left-3
-              top-3
-              z-20
-
-              rounded-full
-
-              bg-[#A91543]
-
-              px-3
-              py-1.5
-
-              text-[8px]
-              font-semibold
-              text-white
-            "
-          >
-            {discount}% OFF
-          </span>
-        )}
-
-        <span
-          className="
-            absolute
-            right-3
-            top-3
-            z-20
-
-            flex
-            h-9
-            w-9
-            items-center
-            justify-center
-
-            rounded-full
-
-            bg-white/90
-
-            text-[18px]
-            text-[#A91543]
-
-            shadow-sm
-          "
-        >
-          ♡
-        </span>
-      </Link>
-
-      <div
-        className="
-          px-1
-          pt-4
+          pb-5
         "
       >
         <Link
-          href={
-            productUrl
-          }
-          className="
-            block
-            truncate
+          href="/men"
+          className={`
+            rounded-full
 
-            text-[12px]
-            font-medium
-            text-[#211A18]
+            px-6
+            py-3
 
-            hover:text-[#A91543]
-          "
+            text-[11px]
+            font-semibold
+
+            tracking-[0.12em]
+
+            ${
+              path.length ===
+              0
+                ? "bg-[#B31345] text-white"
+                : "bg-white text-[#211A18]"
+            }
+          `}
         >
-          {
-            product.name
-          }
+          ALL MEN
         </Link>
 
-        <div
-          className="
-            mt-2
+        {rootChildren.map(
+          (node) => (
+            <Link
+              key={
+                node.id
+              }
+              href={categoryHref(
+                [
+                  node.slug,
+                ]
+              )}
+              className={`
+                rounded-full
 
-            flex
-            flex-wrap
-            items-center
-            gap-2
-          "
-        >
-          <span
-            className="
-              text-[13px]
-              font-semibold
-              text-[#211A18]
-            "
-          >
-            ₹
-            {Number(
-              product.discountedPrice
-            ).toLocaleString(
-              "en-IN"
-            )}
-          </span>
+                px-6
+                py-3
 
-          {product.actualPrice >
-            product.discountedPrice && (
-            <span
+                text-[11px]
+                font-semibold
+                uppercase
+
+                tracking-[0.12em]
+
+                ${
+                  path[0] ===
+                  node.slug
+                    ? "bg-[#B31345] text-white"
+                    : "bg-white text-[#211A18]"
+                }
+              `}
+            >
+              {
+                node.name
+              }
+            </Link>
+          )
+        )}
+      </div>
+
+      {selectedNodes.map(
+        (
+          node,
+          index
+        ) => {
+          const children =
+            sortNodes(
+              node.children
+            );
+
+          if (
+            children.length ===
+            0
+          ) {
+            return null;
+          }
+
+          const base =
+            path.slice(
+              0,
+              index + 1
+            );
+
+          const activeChild =
+            path[
+              index +
+                1
+            ];
+
+          return (
+            <div
+              key={
+                node.id
+              }
               className="
-                text-[10px]
-                text-black/35
-                line-through
+                flex
+                flex-wrap
+                items-center
+                justify-center
+
+                gap-x-8
+                gap-y-3
+
+                border-b
+                border-[#DDD2C5]
+
+                py-5
+
+                last:border-b-0
               "
             >
-              ₹
-              {Number(
-                product.actualPrice
-              ).toLocaleString(
-                "en-IN"
+              <Link
+                href={categoryHref(
+                  base
+                )}
+                className={`
+                  border-b-2
+
+                  px-1
+                  pb-2
+
+                  text-[10px]
+                  font-semibold
+                  uppercase
+
+                  ${
+                    !activeChild
+                      ? "border-[#B31345] text-[#B31345]"
+                      : "border-transparent"
+                  }
+                `}
+              >
+                ALL{" "}
+                {
+                  node.name
+                }
+              </Link>
+
+              {children.map(
+                (
+                  child
+                ) => (
+                  <Link
+                    key={
+                      child.id
+                    }
+                    href={categoryHref(
+                      [
+                        ...base,
+
+                        child.slug,
+                      ]
+                    )}
+                    className={`
+                      border-b-2
+
+                      px-1
+                      pb-2
+
+                      text-[10px]
+                      font-semibold
+                      uppercase
+
+                      ${
+                        activeChild ===
+                        child.slug
+                          ? "border-[#B31345] text-[#B31345]"
+                          : "border-transparent"
+                      }
+                    `}
+                  >
+                    {
+                      child.name
+                    }
+                  </Link>
+                )
               )}
-            </span>
-          )}
-        </div>
-      </div>
-    </article>
+            </div>
+          );
+        }
+      )}
+    </section>
   );
 }
 
 /* =========================================================
-   CATALOG
+   MAIN
 ========================================================= */
 
 export default function MenCatalog({
   products,
   banners,
-  category,
-  subcategory,
-}: MenCatalogProps) {
-  const rootRef =
-    useRef<HTMLElement>(
-      null
-    );
-
+  title,
+  description,
+  categoryRoot,
+  categoryPath,
+}: Props) {
   const [
     sort,
     setSort,
   ] =
-    useState(
+    useState<SortValue>(
       "featured"
     );
 
-  /* =======================================================
-     SORT
-  ======================================================= */
-
   const sortedProducts =
     useMemo(() => {
-      const result = [
+      const list = [
         ...products,
       ];
 
-      if (
-        sort ===
-        "low-high"
-      ) {
-        return result.sort(
-          (
-            a,
-            b
-          ) =>
-            a.discountedPrice -
-            b.discountedPrice
-        );
-      }
+      switch (sort) {
+        case "price-low":
+          return list.sort(
+            (
+              a,
+              b
+            ) =>
+              a.showPrice -
+              b.showPrice
+          );
 
-      if (
-        sort ===
-        "high-low"
-      ) {
-        return result.sort(
-          (
-            a,
-            b
-          ) =>
-            b.discountedPrice -
-            a.discountedPrice
-        );
-      }
+        case "price-high":
+          return list.sort(
+            (
+              a,
+              b
+            ) =>
+              b.showPrice -
+              a.showPrice
+          );
 
-      return result.sort(
-        (
-          a,
-          b
-        ) =>
-          Number(
-            b.isFeatured
-          ) -
-          Number(
-            a.isFeatured
-          )
-      );
+        case "newest":
+          return list.sort(
+            (
+              a,
+              b
+            ) =>
+              Number(
+                b.isNewLaunch
+              ) -
+              Number(
+                a.isNewLaunch
+              )
+          );
+
+        default:
+          return list.sort(
+            (
+              a,
+              b
+            ) =>
+              Number(
+                b.isFeatured
+              ) -
+              Number(
+                a.isFeatured
+              )
+          );
+      }
     }, [
       products,
       sort,
     ]);
 
-  /* =======================================================
-     ANIMATION
-  ======================================================= */
-
-  useEffect(() => {
-    gsap.registerPlugin(
-      ScrollTrigger
-    );
-
-    const root =
-      rootRef.current;
-
-    if (!root) {
-      return;
-    }
-
-    const context =
-      gsap.context(
-        () => {
-          ScrollTrigger.batch(
-            "[data-product-card]",
-            {
-              start:
-                "top 92%",
-
-              once: true,
-
-              onEnter:
-                (
-                  cards
-                ) => {
-                  gsap.fromTo(
-                    cards,
-                    {
-                      y: 24,
-                      opacity: 0,
-                    },
-                    {
-                      y: 0,
-                      opacity: 1,
-
-                      duration:
-                        0.55,
-
-                      stagger:
-                        0.05,
-
-                      ease:
-                        "power3.out",
-                    }
-                  );
-                },
-            }
-          );
-        },
-        root
-      );
-
-    return () =>
-      context.revert();
-  }, [
-    sortedProducts,
-  ]);
-
   return (
     <main
-      ref={
-        rootRef
-      }
       className="
         min-h-screen
 
-        bg-[#F8F5F2]
+        bg-[#FAF8F6]
 
         text-[#211A18]
       "
     >
-      <MenBannerSlider
+      <CategoryBannerSlider
         banners={
           banners
         }
       />
 
+      <CategoryNavigation
+        root={
+          categoryRoot
+        }
+        path={
+          categoryPath
+        }
+      />
+
       <section
         className="
-          px-4
-          py-12
-
-          md:px-8
+          px-8
+          pb-20
+          pt-10
         "
       >
         <div
           className="
             mx-auto
-            max-w-[1450px]
+
+            max-w-[1500px]
           "
         >
-          {/* NAVIGATION */}
-
-          <MenNavigation
-            category={
-              category
-            }
-            subcategory={
-              subcategory
-            }
-          />
-
-          {/* TOOLBAR */}
-
           <div
             className="
               mb-8
-              mt-9
 
               flex
-              items-center
-              justify-between
+              flex-col
+              gap-5
 
               border-b
-              border-[#211A18]/10
+              border-black/10
 
               pb-5
+
+              md:flex-row
+              md:items-end
+              md:justify-between
             "
           >
-            <p
-              className="
-                text-[9px]
-                font-semibold
-                uppercase
-                tracking-[0.18em]
-                text-[#8C6A52]
-              "
-            >
-              {
-                sortedProducts.length
-              }{" "}
-              {sortedProducts.length ===
-              1
-                ? "Product"
-                : "Products"}
-            </p>
+            <div>
+              <p
+                className="
+                  text-[10px]
+                  font-semibold
+                  uppercase
+
+                  tracking-[0.22em]
+
+                  text-[#B31345]
+                "
+              >
+                {
+                  products.length
+                } PRODUCTS
+              </p>
+
+              <h1
+                className="
+                  mt-2
+
+                  text-3xl
+                  font-semibold
+                "
+              >
+                {
+                  title
+                }
+              </h1>
+
+              <p
+                className="
+                  mt-2
+
+                  max-w-2xl
+
+                  text-sm
+                  leading-6
+
+                  text-black/55
+                "
+              >
+                {
+                  description
+                }
+              </p>
+            </div>
 
             <select
               value={
@@ -953,73 +574,65 @@ export default function MenCatalog({
               ) =>
                 setSort(
                   event.target
-                    .value
+                    .value as SortValue
                 )
               }
               className="
-                min-w-[160px]
+                h-10
+                min-w-[165px]
 
-                rounded-[8px]
+                rounded-lg
 
                 border
-                border-[#211A18]/15
+                border-black/15
 
                 bg-white
 
                 px-4
-                py-3
 
-                text-[9px]
-                font-medium
-                uppercase
-                tracking-[0.1em]
-
-                outline-none
+                text-[11px]
               "
             >
               <option value="featured">
                 Featured
               </option>
 
-              <option value="low-high">
+              <option value="newest">
+                New Launch
+              </option>
+
+              <option value="price-low">
                 Price Low to High
               </option>
 
-              <option value="high-low">
+              <option value="price-high">
                 Price High to Low
               </option>
             </select>
           </div>
-
-          {/* PRODUCTS */}
 
           {sortedProducts.length >
           0 ? (
             <div
               className="
                 grid
+                grid-cols-1
 
-                grid-cols-2
+                gap-x-6
+                gap-y-10
 
-                gap-x-4
-                gap-y-9
-
-                md:grid-cols-3
-                md:gap-x-6
-
-                lg:grid-cols-4
+                sm:grid-cols-2
+                lg:grid-cols-3
+                xl:grid-cols-4
               "
             >
               {sortedProducts.map(
                 (
-                  product,
-                  index
+                  product
                 ) => (
-                  <ProductCard
+                  <StorefrontProductCard
                     key={
-                      product.id ||
-                      product.slug ||
-                      index
+                      product.variantKey
                     }
                     product={
                       product
@@ -1031,81 +644,19 @@ export default function MenCatalog({
           ) : (
             <div
               className="
-                flex
-                min-h-[330px]
-                items-center
-                justify-center
-
-                rounded-[18px]
+                rounded-2xl
 
                 border
-                border-[#211A18]/8
+                border-black/10
 
                 bg-white
+
+                py-16
 
                 text-center
               "
             >
-              <div>
-                <p
-                  className="
-                    text-[8px]
-                    uppercase
-                    tracking-[0.3em]
-                    text-[#9C765D]
-                  "
-                >
-                  Hivra Soft
-                </p>
-
-                <h2
-                  className="
-                    mt-4
-
-                    text-[25px]
-                    font-medium
-                  "
-                >
-                  No products found.
-                </h2>
-
-                <p
-                  className="
-                    mt-2
-
-                    text-[10px]
-                    text-[#211A18]/45
-                  "
-                >
-                  Is category me abhi
-                  koi active product
-                  available nahi hai.
-                </p>
-
-                <Link
-                  href="/men"
-                  className="
-                    mt-6
-
-                    inline-flex
-
-                    rounded-full
-
-                    bg-[#211A18]
-
-                    px-7
-                    py-3
-
-                    text-[8px]
-                    font-semibold
-                    uppercase
-                    tracking-[0.14em]
-                    text-white
-                  "
-                >
-                  View All Men
-                </Link>
-              </div>
+              No products found.
             </div>
           )}
         </div>

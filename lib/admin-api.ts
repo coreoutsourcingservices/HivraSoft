@@ -279,6 +279,9 @@ export type CommerceTrackingRow = {
   updatedAt: string;
   status: CommerceTrackingStatus;
   email: {
+    addedSent: boolean;
+    addedSentAt?: string | null;
+    reminder20MinSent: boolean;
     reminder24HourSent: boolean;
     reminder48HourSent: boolean;
   };
