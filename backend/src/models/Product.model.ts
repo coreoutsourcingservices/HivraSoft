@@ -15,6 +15,8 @@ export interface IProductImage {
   url: string;
   publicId: string;
   isDefault: boolean;
+  name?: string;
+  alt?: string;
 }
 
 /* =========================================================
@@ -143,6 +145,26 @@ const productImageSchema =
       isDefault: {
         type: Boolean,
         default: false,
+      },
+
+      name: {
+        type: String,
+        default: "",
+        trim: true,
+        maxlength: [
+          200,
+          "Image name cannot exceed 200 characters.",
+        ],
+      },
+
+      alt: {
+        type: String,
+        default: "",
+        trim: true,
+        maxlength: [
+          500,
+          "Image ALT text cannot exceed 500 characters.",
+        ],
       },
     },
     {

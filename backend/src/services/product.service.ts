@@ -36,6 +36,8 @@ export type ProductImageInput = {
   url: string;
   publicId: string;
   isDefault?: boolean;
+  name?: string;
+  alt?: string;
 };
 
 export type ProductSizeInput = {
@@ -99,6 +101,9 @@ export type UpdateProductInput =
 export type ProductUploadFile = {
   buffer: Buffer;
   originalname: string;
+  name?: string;
+  alt?: string;
+  isDefault?: boolean;
 };
 
 /* =========================================================
@@ -371,6 +376,12 @@ const normalizeImages = (
           isDefault:
             image.isDefault ??
             index === 0,
+
+          name:
+            String(image.name || "").trim(),
+
+          alt:
+            String(image.alt || "").trim(),
         };
       }
     );
@@ -1129,26 +1140,110 @@ const includesSeoKeyword = (
     .includes(keyword.toLowerCase());
 };
 
+const escapeSeoRegExp = (
+  value: string
+): string => {
+  return value.replace(
+    /[.*+?^${}()|[\]\\]/g,
+    "\\$&"
+  );
+};
+
+const countSeoKeywordOccurrences = (
+  value: unknown,
+  keyword: string
+): number => {
+  const cleanKeyword = String(keyword || "")
+    .trim()
+    .toLowerCase();
+
+  if (!cleanKeyword) {
+    return 0;
+  }
+
+  const normalized = stripHtmlForSeo(
+    String(value || "")
+  ).toLowerCase();
+  const pattern = escapeSeoRegExp(cleanKeyword)
+    .replace(/\s+/g, "\\s+");
+
+  try {
+    return (
+      normalized.match(
+        new RegExp(pattern, "g")
+      ) || []
+    ).length;
+  } catch {
+    return 0;
+  }
+};
+
+const getSeoSubheadingText = (
+  html: unknown
+): string => {
+  const value = String(html || "");
+  const headings: string[] = [];
+  const headingRegex =
+    /<h[1-6]\b[^>]*>([\s\S]*?)<\/h[1-6]>/gi;
+
+  let match: RegExpExecArray | null;
+
+  while (
+    (match = headingRegex.exec(value))
+  ) {
+    headings.push(
+      stripHtmlForSeo(match[1] || "")
+    );
+  }
+
+  return headings.join(" ");
+};
+
+const getSeoLinks = (
+  html: unknown
+): Array<{ href: string; rel: string }> => {
+  const value = String(html || "");
+  const links: Array<{ href: string; rel: string }> = [];
+  const anchorRegex =
+    /<a\b([^>]*)href=["']([^"']+)["']([^>]*)>/gi;
+
+  let match: RegExpExecArray | null;
+
+  while (
+    (match = anchorRegex.exec(value))
+  ) {
+    const attributes = `${match[1] || ""} ${match[3] || ""}`;
+    const relMatch = attributes.match(
+      /\brel=["']([^"']*)["']/i
+    );
+
+    links.push({
+      href: String(match[2] || "").trim(),
+      rel: String(relMatch?.[1] || "").toLowerCase(),
+    });
+  }
+
+  return links;
+};
+
 const calculateSeoScore = (
-  color: any
+  color: any,
+  siblingColors: any[] = [],
+  colorIndex = -1
 ): number => {
   const keyword = String(
     color?.focusKeyword || ""
   ).trim();
-
-  if (!keyword) {
-    return 0;
-  }
-
+  const normalizedKeyword = keyword.toLowerCase();
   const title = String(
     color?.seoTitle || color?.nameProduct || ""
-  );
+  ).trim();
   const metaDescription = String(
-    color?.seoDescription || ""
-  );
+    color?.seoDescription || color?.shortDescription || ""
+  ).trim();
   const slug = String(
     color?.slugProduct || ""
-  ).replace(/-/g, " ");
+  ).trim();
   const content = stripHtmlForSeo(
     `${color?.shortDescription || ""} ${color?.description || ""}`
   );
@@ -1159,26 +1254,106 @@ const calculateSeoScore = (
     .slice(0, Math.max(1, Math.ceil(words.length * 0.1)))
     .join(" ");
 
-  let score = 10; // focus keyword entered
+  const occurrences = countSeoKeywordOccurrences(
+    content,
+    keyword
+  );
+  const keywordWordCount = Math.max(
+    1,
+    keyword.split(/\s+/).filter(Boolean).length
+  );
+  const density = words.length
+    ? (occurrences * keywordWordCount * 100) / words.length
+    : 0;
 
-  if (includesSeoKeyword(title, keyword)) {
-    score += 20;
-  }
-  if (includesSeoKeyword(metaDescription, keyword)) {
-    score += 20;
-  }
-  if (includesSeoKeyword(slug, keyword)) {
-    score += 15;
-  }
-  if (includesSeoKeyword(content, keyword)) {
-    score += 15;
-  }
-  if (includesSeoKeyword(firstTenPercent, keyword)) {
-    score += 10;
-  }
-  if (words.length >= 300) {
-    score += 10;
-  }
+  const subheadingText = getSeoSubheadingText(
+    color?.description
+  );
+  const imageAltHasKeyword = Array.isArray(color?.images)
+    ? color.images.some((image: any) =>
+        includesSeoKeyword(image?.alt, keyword)
+      )
+    : false;
+
+  const links = getSeoLinks(color?.description);
+  const externalLinks = links.filter((link) =>
+    /^https?:\/\//i.test(link.href)
+  );
+  const internalLinks = links.filter((link) =>
+    /^(\/|\.\/|\.\.\/)/.test(link.href)
+  );
+  const hasDoFollowExternal = externalLinks.some(
+    (link) =>
+      !link.rel.split(/\s+/).includes("nofollow")
+  );
+
+  const otherKeywordUsed = Boolean(keyword) && siblingColors.some(
+    (item: any, index: number) =>
+      index !== colorIndex &&
+      String(item?.focusKeyword || "")
+        .trim()
+        .toLowerCase() === normalizedKeyword
+  );
+
+  const normalizedTitle = title.toLowerCase();
+  const sentimentWords = [
+    "best",
+    "amazing",
+    "excellent",
+    "perfect",
+    "premium",
+    "comfortable",
+    "comfort",
+    "soft",
+    "luxury",
+    "love",
+    "easy",
+    "worst",
+    "avoid",
+    "bad",
+  ];
+  const powerWords = [
+    "best",
+    "ultimate",
+    "exclusive",
+    "premium",
+    "proven",
+    "powerful",
+    "amazing",
+    "essential",
+    "complete",
+    "perfect",
+    "effortless",
+    "instant",
+    "new",
+    "top",
+  ];
+
+  const checks = [
+    [includesSeoKeyword(title, keyword), 10],
+    [includesSeoKeyword(metaDescription, keyword), 10],
+    [includesSeoKeyword(slug.replace(/-/g, " "), keyword), 8],
+    [includesSeoKeyword(firstTenPercent, keyword), 8],
+    [includesSeoKeyword(content, keyword), 8],
+    [words.length >= 900, 6],
+    [includesSeoKeyword(subheadingText, keyword), 5],
+    [imageAltHasKeyword, 4],
+    [Boolean(keyword) && density >= 0.5 && density <= 2.5, 5],
+    [`/product/${slug}`.length > 0 && `/product/${slug}`.length <= 75, 3],
+    [externalLinks.length > 0, 4],
+    [hasDoFollowExternal, 3],
+    [internalLinks.length > 0, 3],
+    [Boolean(keyword) && !otherKeywordUsed, 3],
+    [Boolean(normalizedKeyword) && normalizedTitle.startsWith(normalizedKeyword), 7],
+    [sentimentWords.some((word) => normalizedTitle.includes(word)), 5],
+    [powerWords.some((word) => normalizedTitle.includes(word)), 4],
+    [/\d/.test(title), 4],
+  ] as Array<[boolean, number]>;
+
+  const score = checks.reduce(
+    (total, [pass, points]) => total + (pass ? points : 0),
+    0
+  );
 
   return Math.max(0, Math.min(100, score));
 };
@@ -1201,7 +1376,8 @@ const formatProductResponse = (
       )
         ? product.colors.map(
             (
-              color: any
+              color: any,
+              colorIndex: number
             ) => {
               const {
                 description:
@@ -1223,7 +1399,9 @@ const formatProductResponse = (
 
                       seoScore:
                         calculateSeoScore(
-                          color
+                          color,
+                          product.colors,
+                          colorIndex
                         ),
                     }),
 
@@ -1827,6 +2005,7 @@ export const uploadProductColorImages =
           files[index];
 
         const imageName =
+          String(file.name || "").trim() ||
           imageNameFromFile(
             file.originalname
           );
@@ -1873,10 +2052,17 @@ export const uploadProductColorImages =
            * to first uploaded image default.
            */
           isDefault:
-            color.images
+            file.isDefault ??
+            (color.images
               .length ===
               0 &&
-            index === 0,
+            index === 0),
+
+          name:
+            String(file.name || imageName).trim(),
+
+          alt:
+            String(file.alt || "").trim(),
         });
       }
 

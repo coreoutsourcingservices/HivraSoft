@@ -158,18 +158,128 @@ function hasKeyword(
   );
 }
 
+function escapeRegExp(
+  value: string
+) {
+  return value.replace(
+    /[.*+?^${}()|[\]\\]/g,
+    "\\$&"
+  );
+}
+
+function countKeywordOccurrences(
+  value: string,
+  keyword: string
+) {
+  const cleanKeyword = keyword
+    .trim()
+    .toLowerCase();
+
+  if (!cleanKeyword) {
+    return 0;
+  }
+
+  const normalized = stripHtmlForSeo(value)
+    .toLowerCase();
+
+  const pattern = escapeRegExp(cleanKeyword)
+    .replace(/\s+/g, "\\s+");
+
+  try {
+    return (
+      normalized.match(
+        new RegExp(pattern, "g")
+      ) || []
+    ).length;
+  } catch {
+    return 0;
+  }
+}
+
+function getSeoLinks(
+  html: string
+) {
+  const links: Array<{
+    href: string;
+    rel: string;
+  }> = [];
+
+  const anchorRegex =
+    /<a\b([^>]*)href=["']([^"']+)["']([^>]*)>/gi;
+
+  let match:
+    | RegExpExecArray
+    | null;
+
+  while (
+    (match = anchorRegex.exec(html || ""))
+  ) {
+    const attributes = `${match[1] || ""} ${match[3] || ""}`;
+    const relMatch = attributes.match(
+      /\brel=["']([^"']*)["']/i
+    );
+
+    links.push({
+      href: String(match[2] || "").trim(),
+      rel: String(relMatch?.[1] || "").toLowerCase(),
+    });
+  }
+
+  return links;
+}
+
+function getSubheadingText(
+  html: string
+) {
+  const headings: string[] = [];
+  const headingRegex =
+    /<h[1-6]\b[^>]*>([\s\S]*?)<\/h[1-6]>/gi;
+
+  let match:
+    | RegExpExecArray
+    | null;
+
+  while (
+    (match = headingRegex.exec(html || ""))
+  ) {
+    headings.push(
+      stripHtmlForSeo(match[1] || "")
+    );
+  }
+
+  return headings.join(" ");
+}
+
+type SeoCheck = {
+  label: string;
+  pass: boolean;
+  points: number;
+  guidance: string;
+};
+
 function buildSeoAnalysis(
   color: Pick<
     ColorValue,
+    | "nameProduct"
     | "focusKeyword"
     | "seoTitle"
     | "seoDescription"
     | "slugProduct"
     | "shortDescription"
     | "description"
-  >
+    | "images"
+    | "pendingImages"
+  >,
+  siblingColors: Array<Pick<ColorValue, "focusKeyword">> = [],
+  colorIndex = -1
 ) {
   const keyword = color.focusKeyword.trim();
+  const effectiveTitle =
+    color.seoTitle.trim() ||
+    color.nameProduct.trim();
+  const effectiveDescription =
+    color.seoDescription.trim() ||
+    stripHtmlForSeo(color.shortDescription);
   const content = stripHtmlForSeo(
     `${color.shortDescription} ${color.description}`
   );
@@ -186,56 +296,287 @@ function buildSeoAnalysis(
     )
     .join(" ");
 
-  const checks = [
+  const keywordOccurrences =
+    countKeywordOccurrences(
+      content,
+      keyword
+    );
+  const keywordWordCount = Math.max(
+    1,
+    keyword.split(/\s+/).filter(Boolean).length
+  );
+  const keywordDensity = words.length
+    ? (keywordOccurrences * keywordWordCount * 100) /
+      words.length
+    : 0;
+
+  const subheadingText =
+    getSubheadingText(color.description);
+  const allImages = [
+    ...(Array.isArray(color.images)
+      ? color.images
+      : []),
+    ...(Array.isArray(color.pendingImages)
+      ? color.pendingImages
+      : []),
+  ];
+  const imageAltHasKeyword =
+    allImages.some((image) =>
+      hasKeyword(
+        String(image?.alt || ""),
+        keyword
+      )
+    );
+
+  const links = getSeoLinks(
+    color.description
+  );
+  const externalLinks = links.filter(
+    (link) => /^https?:\/\//i.test(link.href)
+  );
+  const internalLinks = links.filter(
+    (link) =>
+      /^(\/|\.\/|\.\.\/)/.test(link.href)
+  );
+  const hasDoFollowExternal =
+    externalLinks.some(
+      (link) =>
+        !link.rel
+          .split(/\s+/)
+          .includes("nofollow")
+    );
+
+  const urlValue = `/product/${color.slugProduct.trim()}`;
+  const normalizedTitle =
+    effectiveTitle.toLowerCase();
+  const normalizedKeyword =
+    keyword.toLowerCase();
+
+  const sentimentWords = [
+    "best",
+    "amazing",
+    "excellent",
+    "perfect",
+    "premium",
+    "comfortable",
+    "comfort",
+    "soft",
+    "luxury",
+    "love",
+    "easy",
+    "worst",
+    "avoid",
+    "bad",
+  ];
+  const powerWords = [
+    "best",
+    "ultimate",
+    "exclusive",
+    "premium",
+    "proven",
+    "powerful",
+    "amazing",
+    "essential",
+    "complete",
+    "perfect",
+    "effortless",
+    "instant",
+    "new",
+    "top",
+  ];
+
+  const otherKeywordUsed =
+    Boolean(keyword) &&
+    siblingColors.some(
+      (item, index) =>
+        index !== colorIndex &&
+        item.focusKeyword
+          .trim()
+          .toLowerCase() ===
+          normalizedKeyword
+    );
+
+  const basic: SeoCheck[] = [
     {
-      label: "Focus Keyword is set.",
-      pass: Boolean(keyword),
+      label: "Hurray! You're using Focus Keyword in the SEO Title.",
+      pass: hasKeyword(effectiveTitle, keyword),
       points: 10,
+      guidance:
+        "SEO Title me exact Focus Keyword add karo. Best result ke liye keyword ko title ke beginning ke paas rakho.",
     },
     {
-      label: "Focus Keyword is used in the SEO Title.",
-      pass: hasKeyword(color.seoTitle, keyword),
-      points: 20,
+      label: "Focus Keyword used inside SEO Meta Description.",
+      pass: hasKeyword(effectiveDescription, keyword),
+      points: 10,
+      guidance:
+        "SEO Description me Focus Keyword naturally ek baar add karo. Description ko readable aur product-specific rakho.",
     },
     {
-      label: "Focus Keyword is used in the SEO Meta Description.",
-      pass: hasKeyword(color.seoDescription, keyword),
-      points: 20,
-    },
-    {
-      label: "Focus Keyword is used in the URL.",
+      label: "Focus Keyword used in the URL.",
       pass: hasKeyword(
         color.slugProduct.replace(/-/g, " "),
         keyword
       ),
-      points: 15,
+      points: 8,
+      guidance:
+        "Product Slug me Focus Keyword use karo, words ko hyphen se separate rakho. Example: side-support-full-coverage-bra.",
     },
     {
-      label: "Focus Keyword appears in the product content.",
-      pass: hasKeyword(content, keyword),
-      points: 15,
-    },
-    {
-      label: "Focus Keyword appears in the first 10% of content.",
+      label: "Focus Keyword appears in the first 10% of the content.",
       pass: hasKeyword(firstTenPercent, keyword),
-      points: 10,
+      points: 8,
+      guidance:
+        "Description ke starting paragraph me Focus Keyword naturally use karo, preferably first 10% content ke andar.",
     },
     {
-      label: `${words.length} content words. 300+ is recommended.`,
-      pass: words.length >= 300,
-      points: 10,
+      label: "Focus Keyword found in the content.",
+      pass: hasKeyword(content, keyword),
+      points: 8,
+      guidance:
+        "Full product Description ya Short Description me Focus Keyword add karo.",
+    },
+    {
+      label:
+        words.length >= 900
+          ? `Content is ${words.length} words long. Good job!`
+          : `Content is ${words.length} words long. Aim for at least 900 words.`,
+      pass: words.length >= 900,
+      points: 6,
+      guidance:
+        "Product Description ko useful details ke saath kam se kam 900 words tak expand karo: fabric, fit, benefits, care, use cases, sizing aur FAQs add kar sakte ho.",
     },
   ];
 
-  const score = checks.reduce(
-    (total, check) =>
-      total + (check.pass ? check.points : 0),
-    0
+  const additional: SeoCheck[] = [
+    {
+      label: "Focus Keyword found in the subheading(s).",
+      pass: hasKeyword(subheadingText, keyword),
+      points: 5,
+      guidance:
+        "Description me H2/H3 subheading add karo aur kam se kam ek subheading me Focus Keyword use karo.",
+    },
+    {
+      label: "Focus Keyword found in image alt attribute(s).",
+      pass: imageAltHasKeyword,
+      points: 4,
+      guidance:
+        "Image Studio me kam se kam ek product image ke ALT text me Focus Keyword naturally add karo.",
+    },
+    {
+      label: `Keyword Density is ${keywordDensity.toFixed(2)}, the Focus Keyword and combination appears ${keywordOccurrences} time${keywordOccurrences === 1 ? "" : "s"}.`,
+      pass:
+        Boolean(keyword) &&
+        keywordDensity >= 0.5 &&
+        keywordDensity <= 2.5,
+      points: 5,
+      guidance:
+        "Focus Keyword ko natural tarike se use karo. Target density lagbhag 0.5% se 2.5% rakho; keyword stuffing mat karo.",
+    },
+    {
+      label:
+        urlValue.length > 0 &&
+        urlValue.length <= 75
+          ? `URL is ${urlValue.length} characters long. Kudos!`
+          : `URL is ${urlValue.length} characters long. Keep it within 75 characters.`,
+      pass:
+        urlValue.length > 0 &&
+        urlValue.length <= 75,
+      points: 3,
+      guidance:
+        "Product Slug chhota aur clear rakho. Total product URL ko 75 characters ke andar rakhne ki koshish karo.",
+    },
+    {
+      label: "Great! You are linking to external resources.",
+      pass: externalLinks.length > 0,
+      points: 4,
+      guidance:
+        "Description me zarurat ke hisab se ek useful external reference link add karo, jaise fabric/care information ka trusted source.",
+    },
+    {
+      label: "At least one external link with DoFollow found in your content.",
+      pass: hasDoFollowExternal,
+      points: 3,
+      guidance:
+        "Kam se kam ek relevant external link par rel=\"nofollow\" mat lagao. Sirf trusted resource ko DoFollow rakho.",
+    },
+    {
+      label: "You are linking to other resources on your website which is great.",
+      pass: internalLinks.length > 0,
+      points: 3,
+      guidance:
+        "Description me apni website ke kisi relevant category, collection, blog ya product ka internal link add karo.",
+    },
+    {
+      label: otherKeywordUsed
+        ? "This Focus Keyword is already used on another color in this product."
+        : "You haven't used this Focus Keyword on another color in this product.",
+      pass: Boolean(keyword) && !otherKeywordUsed,
+      points: 3,
+      guidance:
+        "Har color/product ke liye unique Focus Keyword rakho taaki variants ek hi keyword ke liye compete na karein.",
+    },
+  ];
+
+  const titleReadability: SeoCheck[] = [
+    {
+      label: "Focus Keyword used at the beginning of SEO title.",
+      pass:
+        Boolean(normalizedKeyword) &&
+        normalizedTitle.startsWith(normalizedKeyword),
+      points: 7,
+      guidance:
+        "SEO Title ko Focus Keyword se start karo ya keyword ko bilkul beginning ke paas lao.",
+    },
+    {
+      label: "Your title has a positive or a negative sentiment.",
+      pass: sentimentWords.some((word) =>
+        normalizedTitle.includes(word)
+      ),
+      points: 5,
+      guidance:
+        "Title me natural sentiment word add karo, jaise Best, Premium, Comfortable, Perfect ya Amazing — sirf jab product par fit baithe.",
+    },
+    {
+      label: "Your title contains at least 1 power word.",
+      pass: powerWords.some((word) =>
+        normalizedTitle.includes(word)
+      ),
+      points: 4,
+      guidance:
+        "SEO Title me ek relevant power word add karo, jaise Premium, Ultimate, Essential, Exclusive ya Best.",
+    },
+    {
+      label: "You are using a number in your SEO title.",
+      pass: /\d/.test(effectiveTitle),
+      points: 4,
+      guidance:
+        "Agar naturally fit ho to SEO Title me number add karo, jaise 3-Pack, 5 Benefits ya 2026. Zabardasti number mat add karo.",
+    },
+  ];
+
+  const allChecks = [
+    ...basic,
+    ...additional,
+    ...titleReadability,
+  ];
+
+  const score = Math.max(
+    0,
+    Math.min(
+      100,
+      allChecks.reduce(
+        (total, check) =>
+          total + (check.pass ? check.points : 0),
+        0
+      )
+    )
   );
 
   return {
     score,
-    checks,
+    basic,
+    additional,
+    titleReadability,
     wordCount: words.length,
   };
 }
@@ -3852,6 +4193,8 @@ export default function ProductForm({
 
                     <SeoAnalysisPanel
                       color={color}
+                      siblingColors={visibleColors}
+                      colorIndex={colorIndex}
                     />
 
                     {/* IMAGE STUDIO */}
@@ -4811,11 +5154,22 @@ function Divider() {
 
 function SeoAnalysisPanel({
   color,
+  siblingColors,
+  colorIndex,
 }: {
   color: ColorValue;
+  siblingColors: ColorValue[];
+  colorIndex: number;
 }) {
+  const [showGuidance, setShowGuidance] =
+    useState(false);
+
   const analysis =
-    buildSeoAnalysis(color);
+    buildSeoAnalysis(
+      color,
+      siblingColors,
+      colorIndex
+    );
 
   const scoreClass =
     analysis.score >= 80
@@ -4829,27 +5183,104 @@ function SeoAnalysisPanel({
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-black/[0.06] px-4 py-3">
         <div>
           <p className="text-sm font-bold text-[#241B18]">
-            Basic SEO
+            SEO Analysis
           </p>
           <p className="mt-0.5 text-[11px] text-black/40">
-            Live checks based on the Focus Keyword.
+            Live Rank-Math-style checks. Green score starts at 80/100.
           </p>
         </div>
 
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() =>
+              setShowGuidance((current) => !current)
+            }
+            className="rounded-full border border-[#8C1839]/20 bg-[#FFF7F8] px-3 py-1.5 text-[10px] font-bold text-[#8C1839] transition hover:bg-[#8C1839] hover:text-white"
+          >
+            {showGuidance
+              ? "Hide hints"
+              : "How to make it green"}
+          </button>
+
+          <span
+            className={`rounded-full border px-3 py-1.5 text-xs font-black ${scoreClass}`}
+          >
+            {analysis.score} / 100
+          </span>
+        </div>
+      </div>
+
+      <SeoCheckSection
+        title="Basic SEO"
+        checks={analysis.basic}
+        showGuidance={showGuidance}
+      />
+
+      <SeoCheckSection
+        title="Additional"
+        checks={analysis.additional}
+        showGuidance={showGuidance}
+      />
+
+      <SeoCheckSection
+        title="Title Readability"
+        checks={analysis.titleReadability}
+        showGuidance={showGuidance}
+        last
+      />
+    </div>
+  );
+}
+
+function SeoCheckSection({
+  title,
+  checks,
+  showGuidance,
+  last = false,
+}: {
+  title: string;
+  checks: SeoCheck[];
+  showGuidance: boolean;
+  last?: boolean;
+}) {
+  const failed = checks.filter(
+    (check) => !check.pass
+  ).length;
+
+  return (
+    <div
+      className={
+        last
+          ? ""
+          : "border-b border-black/[0.06]"
+      }
+    >
+      <div className="flex flex-wrap items-center gap-2 px-4 pt-4">
+        <p className="text-xs font-bold text-[#241B18]">
+          {title}
+        </p>
+
         <span
-          className={`rounded-full border px-3 py-1.5 text-xs font-black ${scoreClass}`}
+          className={`rounded-full px-2.5 py-1 text-[9px] font-bold ${
+            failed === 0
+              ? "bg-emerald-100 text-emerald-700"
+              : "bg-red-100 text-red-600"
+          }`}
         >
-          {analysis.score} / 100
+          {failed === 0
+            ? "✓ All Good"
+            : `× ${failed} Error${failed === 1 ? "" : "s"}`}
         </span>
       </div>
 
-      <div className="space-y-2 px-4 py-4">
-        {analysis.checks.map(
-          (check) => (
-            <div
-              key={check.label}
-              className="flex items-start gap-2 text-xs"
-            >
+      <div className="space-y-2.5 px-4 py-4">
+        {checks.map((check) => (
+          <div
+            key={check.label}
+            className="rounded-xl"
+          >
+            <div className="flex items-start gap-2 text-xs">
               <span
                 className={`mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full text-[10px] font-black text-white ${
                   check.pass
@@ -4859,6 +5290,7 @@ function SeoAnalysisPanel({
               >
                 {check.pass ? "✓" : "×"}
               </span>
+
               <span
                 className={
                   check.pass
@@ -4869,8 +5301,15 @@ function SeoAnalysisPanel({
                 {check.label}
               </span>
             </div>
-          )
-        )}
+
+            {showGuidance && !check.pass ? (
+              <div className="ml-6 mt-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[10px] leading-4 text-amber-800">
+                <strong>Fix:</strong>{" "}
+                {check.guidance}
+              </div>
+            ) : null}
+          </div>
+        ))}
       </div>
     </div>
   );
