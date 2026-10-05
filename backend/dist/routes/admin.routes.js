@@ -126,6 +126,9 @@ router.get("/users/:userId/notifications", authenticateAdmin, admin_controller_1
 router.get("/users/:userId/reviews", authenticateAdmin, review_controller_1.getAdminUserReviews);
 router.get("/orders", authenticateAdmin, admin_controller_1.getAdminOrders);
 router.get("/orders/invoices", authenticateAdmin, admin_controller_1.downloadSelectedAdminInvoices);
+router.get("/orders/export", authenticateAdmin, admin_controller_1.exportAdminOrdersCsv);
+router.post("/orders/bulk-status", authenticateAdmin, admin_controller_1.updateAdminOrdersBulkStatus);
+router.post("/orders/bulk-delete", authenticateAdmin, admin_controller_1.deleteAdminOrdersBulk);
 router.get("/orders/:id/invoice", authenticateAdmin, admin_controller_1.downloadAdminOrderInvoice);
 router.get("/orders/:id", authenticateAdmin, admin_controller_1.getAdminOrderById);
 router.patch("/orders/:id/status", authenticateAdmin, admin_controller_1.updateAdminOrderStatus);

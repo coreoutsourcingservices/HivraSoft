@@ -11,6 +11,9 @@ import {
   getAdminOrderById,
   downloadAdminOrderInvoice,
   downloadSelectedAdminInvoices,
+  updateAdminOrdersBulkStatus,
+  exportAdminOrdersCsv,
+  deleteAdminOrdersBulk,
   getAdminSystemStatus,
   getAdminUserSettings,
   updateAdminUserSettings,
@@ -238,6 +241,9 @@ router.get("/users/:userId/reviews", authenticateAdmin, getAdminUserReviews);
 
 router.get("/orders", authenticateAdmin, getAdminOrders);
 router.get("/orders/invoices", authenticateAdmin, downloadSelectedAdminInvoices);
+router.get("/orders/export", authenticateAdmin, exportAdminOrdersCsv);
+router.post("/orders/bulk-status", authenticateAdmin, updateAdminOrdersBulkStatus);
+router.post("/orders/bulk-delete", authenticateAdmin, deleteAdminOrdersBulk);
 router.get("/orders/:id/invoice", authenticateAdmin, downloadAdminOrderInvoice);
 router.get("/orders/:id", authenticateAdmin, getAdminOrderById);
 router.patch("/orders/:id/status", authenticateAdmin, updateAdminOrderStatus);

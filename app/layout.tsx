@@ -8,6 +8,8 @@ import {
   StorefrontCommerceProvider,
 } from "@/src/components/Storefront/StorefrontCommerceProvider";
 
+import TrafficSourceCapture from "@/src/components/Storefront/TrafficSourceCapture";
+
 export const metadata: Metadata =
   {
     title: "HivraSoft",
@@ -33,6 +35,7 @@ export default function RootLayout({
         "
       >
         <StorefrontCommerceProvider>
+          <TrafficSourceCapture />
           {children}
         </StorefrontCommerceProvider>
       </body>

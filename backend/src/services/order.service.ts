@@ -37,6 +37,35 @@ function clean(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function normalizeOrderOrigin(value: any) {
+  const raw = value && typeof value === "object" ? value : {};
+  const normalizedSource = clean(raw.source).toLowerCase();
+  const sourceAliases: Record<string, string> = {
+    ig: "instagram",
+    "instagram.com": "instagram",
+    fb: "facebook",
+    meta: "facebook",
+    "facebook.com": "facebook",
+    googleads: "google",
+    google_ads: "google",
+    "google-ads": "google",
+    yt: "youtube",
+    wa: "whatsapp",
+  };
+  const source = (sourceAliases[normalizedSource] || normalizedSource || "direct").slice(0, 80);
+  const captured = clean(raw.capturedAt);
+  const capturedDate = captured ? new Date(captured) : new Date();
+
+  return {
+    source,
+    medium: clean(raw.medium).toLowerCase().slice(0, 80),
+    campaign: clean(raw.campaign).slice(0, 160),
+    referrer: clean(raw.referrer).slice(0, 1000),
+    landingPage: clean(raw.landingPage).slice(0, 1000),
+    capturedAt: Number.isNaN(capturedDate.getTime()) ? new Date() : capturedDate,
+  };
+}
+
 function normalizeAddress(value: any) {
   if (!value || typeof value !== "object") throw new Error("Shipping address is required.");
   const snapshot = {
@@ -154,6 +183,7 @@ async function buildOrderSnapshot(userId: string, payload: any, paymentMethod: "
     },
     items,
     shippingAddress,
+    origin: normalizeOrderOrigin(payload?.origin),
     subtotal,
     offerDiscount,
     offerDiscountDetails: (cart as any).discountSummary?.offers || {},

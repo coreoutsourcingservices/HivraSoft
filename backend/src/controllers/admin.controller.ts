@@ -135,7 +135,7 @@ export async function getAdminDashboard(_req: Request, res: Response) {
         { $group: { _id: null, revenue: { $sum: "$total" } } },
       ]),
       Order.find({}).sort({ createdAt: -1 }).limit(4).populate("user", "name email").lean(),
-      Product.find({ isActive: { $ne: false } }).select("colors isActive createdAt").lean(),
+      Product.find({ isActive: { $ne: false } }).select("colors isColor isActive createdAt").lean(),
     ]);
 
     const growth = (current: number, previous: number) => {
@@ -192,15 +192,16 @@ export async function getAdminDashboard(_req: Request, res: Response) {
     const rawStatusMap = new Map(rawStatuses.map((row: any) => [String(row._id || ""), Number(row.count || 0)]));
     const statusCount = (names: string[]) => names.reduce((sum, name) => sum + Number(rawStatusMap.get(name) || 0), 0);
     const orderStatus = {
-      pending: statusCount(["pending", "pending_payment", "confirmed"]),
-      processing: statusCount(["processing", "shipped", "out_for_delivery"]),
-      completed: statusCount(["delivered"]),
+      pending: statusCount(["pending", "pending_payment", "confirmed", "processing", "shipped", "out_for_delivery"]),
+      completed: statusCount(["completed", "delivered"]),
       cancelled: statusCount(["cancelled", "canceled", "returned", "refunded"]),
     };
 
     const recentOrders = recentOrdersRaw.map((order: any) => {
       const customerData = order.customer && typeof order.customer === "object" ? order.customer : {};
       const userData = order.user && typeof order.user === "object" ? order.user : {};
+      const items = Array.isArray(order.items) ? order.items : [];
+      const firstItem = items[0] && typeof items[0] === "object" ? items[0] : {};
       return {
         id: String(order._id),
         orderNumber: String(order.orderNumber || ""),
@@ -208,27 +209,36 @@ export async function getAdminDashboard(_req: Request, res: Response) {
         amount: Number(order.total || 0),
         status: String(order.status || "pending"),
         date: order.createdAt,
+        imageUrl: String(firstItem.image || firstItem.imageUrl || firstItem.productImage || firstItem.photo || ""),
+        itemCount: items.length,
       };
     });
 
     const lowStockProducts = productRows
-      .map((product: any) => {
+      .flatMap((product: any) => {
         const colors = Array.isArray(product.colors) ? product.colors : [];
-        const defaultColor = colors.find((color: any) => color?.isDefault) || colors[0] || null;
-        const sizes = colors.flatMap((color: any) => (Array.isArray(color?.sizes) ? color.sizes : []));
-        const stock = sizes.reduce((sum: number, size: any) => sum + Math.max(0, Number(size?.stock || 0)), 0);
-        const images = Array.isArray(defaultColor?.images) ? defaultColor.images : [];
-        const image = images.find((item: any) => item?.isDefault) || images[0] || null;
-        return {
-          id: String(product._id),
-          name: String(defaultColor?.nameProduct || "Product"),
-          stock,
-          imageUrl: String(image?.url || ""),
-        };
+
+        return colors.flatMap((color: any) => {
+          const sizes = Array.isArray(color?.sizes) ? color.sizes : [];
+          const images = Array.isArray(color?.images) ? color.images : [];
+          const image = images.find((item: any) => item?.isDefault) || images[0] || null;
+
+          return sizes
+            .filter((size: any) => size?.isActive !== false)
+            .map((size: any) => ({
+              id: `${String(product._id)}:${String(color?._id || "default")}:${String(size?._id || size?.size || "size")}`,
+              productId: String(product._id),
+              name: String(color?.nameProduct || "Product"),
+              color: product?.isColor === false ? "Default" : String(color?.nameColor || "Default"),
+              size: String(size?.size || "—"),
+              stock: Math.max(0, Number(size?.stock || 0)),
+              imageUrl: String(image?.url || ""),
+            }));
+        });
       })
-      .filter((product) => product.stock <= 5)
-      .sort((a, b) => a.stock - b.stock)
-      .slice(0, 4);
+      .filter((variant: any) => variant.stock < 10)
+      .sort((a: any, b: any) => a.stock - b.stock || a.name.localeCompare(b.name))
+      .slice(0, 8);
 
     return res.status(200).json({
       success: true,
@@ -811,7 +821,15 @@ export async function getAdminOrders(req: Request, res: Response) {
     const dateTo = String(req.query.dateTo || "").trim();
 
     const filter: Record<string, any> = {};
-    if (status) filter.status = status;
+    if (status === "pending") {
+      filter.status = { $in: ["pending", "pending_payment", "confirmed", "processing", "shipped", "out_for_delivery"] };
+    } else if (status === "completed") {
+      filter.status = { $in: ["completed", "delivered"] };
+    } else if (status === "cancelled") {
+      filter.status = { $in: ["cancelled", "canceled", "returned", "refunded"] };
+    } else if (status) {
+      filter.status = status;
+    }
     if (paymentStatus) filter.paymentStatus = paymentStatus;
     if (paymentMethod) filter.paymentMethod = paymentMethod;
 
@@ -920,48 +938,90 @@ export async function downloadSelectedAdminInvoices(req: Request, res: Response)
   }
 }
 
-/** PATCH /api/admin/orders/:id/status */
-export async function updateAdminOrderStatus(req: Request, res: Response) {
-  try {
-    const requested = String(req.body?.status || "").trim().toLowerCase();
-    const allowedStatuses = ["pending_payment", "confirmed", "processing", "shipped", "out_for_delivery", "delivered", "cancelled", "returned", "refunded"];
-    if (!allowedStatuses.includes(requested)) return res.status(400).json({ success: false, message: "Invalid order status." });
+const ADMIN_SIMPLE_STATUS_MAP: Record<string, string> = {
+  pending: "confirmed",
+  completed: "delivered",
+  cancelled: "cancelled",
+};
 
-    const orderId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-    if (!orderId || !Types.ObjectId.isValid(orderId)) return res.status(400).json({ success: false, message: "Invalid order id." });
-    const order = await Order.findById(orderId);
-    if (!order) return res.status(404).json({ success: false, message: "Order not found." });
+const ADMIN_ORDER_STATUSES = [
+  "pending",
+  "pending_payment",
+  "confirmed",
+  "processing",
+  "shipped",
+  "out_for_delivery",
+  "completed",
+  "delivered",
+  "cancelled",
+  "canceled",
+  "returned",
+  "refunded",
+];
 
-    const current = String(order.status || "");
-    if (!isAdminTransitionAllowed(current, requested)) {
-      return res.status(409).json({ success: false, message: `Cannot change order from ${current} to ${requested}.` });
-    }
-    if (current === "pending_payment" && requested === "confirmed" && order.paymentMethod === "razorpay" && order.paymentStatus !== "paid") {
-      return res.status(409).json({ success: false, message: "Razorpay order cannot be confirmed until payment is verified." });
-    }
+function adminStatusLabel(status: unknown) {
+  const value = String(status || "").trim().toLowerCase();
+  if (["completed", "delivered"].includes(value)) return "Completed";
+  if (["cancelled", "canceled", "returned", "refunded"].includes(value)) return "Cancelled";
+  return "Pending";
+}
 
-    if (requested === "cancelled" && order.inventoryCommitted) {
-      await restoreOrderInventoryIfNeeded(order.toObject());
-      order.inventoryCommitted = false;
-      order.fulfillmentState = "cancelled";
-      order.cancelledAt = new Date();
-      order.cancellationReason = String(req.body?.message || "Cancelled by admin").trim();
-    }
+function normalizeAdminStatus(status: unknown) {
+  const raw = String(status || "").trim().toLowerCase();
+  if (!ADMIN_ORDER_STATUSES.includes(raw)) throw new Error("Invalid order status.");
+  return ADMIN_SIMPLE_STATUS_MAP[raw] || raw;
+}
 
-    if (current !== requested) {
-      order.status = requested as any;
-      order.statusHistory.push({
-        status: requested,
-        message: String(req.body?.message || `Status changed to ${requested.replaceAll("_", " ")}.`).trim(),
-        at: new Date(),
-        by: req.user?._id || null,
-      } as any);
-      if (requested === "refunded") order.paymentStatus = "refunded";
-      await order.save();
-    }
+async function applyAdminOrderStatus(order: any, requestedInput: unknown, adminId?: unknown, message?: unknown) {
+  const requestedRaw = String(requestedInput || "").trim().toLowerCase();
+  const requested = normalizeAdminStatus(requestedRaw);
+  const current = String(order.status || "").trim().toLowerCase();
+  const isSimpleRequest = Object.prototype.hasOwnProperty.call(ADMIN_SIMPLE_STATUS_MAP, requestedRaw);
 
-    if (order.user && current !== requested) {
-      await createOrderStatusNotification(order.toObject(), requested, req.user?._id || null).catch(() => undefined);
+  // The admin UI intentionally groups all in-progress states as Pending.
+  // Applying the same visible status should therefore be a no-op.
+  if (isSimpleRequest && adminStatusLabel(current).toLowerCase() === requestedRaw) {
+    return order;
+  }
+
+  if (["cancelled", "canceled"].includes(current) && requested !== "cancelled") {
+    throw new Error("Cancelled order cannot be reopened because its inventory has already been restored.");
+  }
+
+  if (!isSimpleRequest && !isAdminTransitionAllowed(current, requested)) {
+    throw new Error(`Cannot change order from ${current} to ${requested}.`);
+  }
+
+  if (
+    current === "pending_payment" &&
+    requested === "confirmed" &&
+    order.paymentMethod === "razorpay" &&
+    order.paymentStatus !== "paid"
+  ) {
+    throw new Error("Razorpay order cannot be confirmed until payment is verified.");
+  }
+
+  if (requested === "cancelled" && order.inventoryCommitted) {
+    await restoreOrderInventoryIfNeeded(order.toObject());
+    order.inventoryCommitted = false;
+    order.fulfillmentState = "cancelled";
+    order.cancelledAt = new Date();
+    order.cancellationReason = String(message || "Cancelled by admin").trim();
+  }
+
+  if (current !== requested) {
+    order.status = requested as any;
+    order.statusHistory.push({
+      status: requested,
+      message: String(message || `Status changed to ${adminStatusLabel(requested)}.`).trim(),
+      at: new Date(),
+      by: adminId || null,
+    } as any);
+
+    await order.save();
+
+    if (order.user) {
+      await createOrderStatusNotification(order.toObject(), requested, adminId as any).catch(() => undefined);
       if (["delivered", "cancelled"].includes(requested)) {
         await trackUserActivity({
           userId: String(order.user),
@@ -971,11 +1031,158 @@ export async function updateAdminOrderStatus(req: Request, res: Response) {
         }).catch(() => undefined);
       }
     }
+  }
+
+  return order;
+}
+
+/** PATCH /api/admin/orders/:id/status - manual Pending / Completed / Cancelled status. */
+export async function updateAdminOrderStatus(req: Request, res: Response) {
+  try {
+    const orderId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    if (!orderId || !Types.ObjectId.isValid(orderId)) {
+      return res.status(400).json({ success: false, message: "Invalid order id." });
+    }
+
+    const order = await Order.findById(orderId);
+    if (!order) return res.status(404).json({ success: false, message: "Order not found." });
+
+    await applyAdminOrderStatus(order, req.body?.status, req.user?._id || null, req.body?.message);
 
     const populated = await Order.findById(order._id).populate("user", "name email phone").lean();
     return res.status(200).json({ success: true, order: populated });
   } catch (error) {
     return res.status(400).json({ success: false, message: error instanceof Error ? error.message : "Unable to update order." });
+  }
+}
+
+/** POST /api/admin/orders/bulk-status - update selected orders. */
+export async function updateAdminOrdersBulkStatus(req: Request, res: Response) {
+  try {
+    const ids = Array.isArray(req.body?.ids)
+      ? req.body.ids.map((id: unknown) => String(id || "").trim()).filter((id: string) => Types.ObjectId.isValid(id))
+      : [];
+
+    if (!ids.length) return res.status(400).json({ success: false, message: "Select at least one order." });
+    if (ids.length > 100) return res.status(400).json({ success: false, message: "You can update up to 100 orders at a time." });
+
+    // Validate status before touching any order.
+    normalizeAdminStatus(req.body?.status);
+
+    const orders = await Order.find({ _id: { $in: ids } });
+    const failed: Array<{ id: string; message: string }> = [];
+    let updated = 0;
+
+    for (const order of orders) {
+      try {
+        const before = String(order.status || "");
+        await applyAdminOrderStatus(order, req.body?.status, req.user?._id || null, req.body?.message);
+        if (String(order.status || "") !== before) updated += 1;
+      } catch (error) {
+        failed.push({ id: String(order._id), message: error instanceof Error ? error.message : "Unable to update order." });
+      }
+    }
+
+    return res.status(failed.length ? 207 : 200).json({
+      success: failed.length === 0,
+      updated,
+      failed,
+      message: failed.length ? `${updated} order(s) updated, ${failed.length} failed.` : `${updated} order(s) updated.`,
+    });
+  } catch (error) {
+    return res.status(400).json({ success: false, message: error instanceof Error ? error.message : "Unable to update selected orders." });
+  }
+}
+
+function csvCell(value: unknown) {
+  let text = String(value ?? "");
+  // Avoid spreadsheet formula execution when a CSV is opened in Excel/Sheets.
+  if (/^[=+@-]/.test(text)) text = `'${text}`;
+  return `"${text.replace(/"/g, '""')}"`;
+}
+
+/** GET /api/admin/orders/export?ids=id1,id2 - export selected orders as CSV. */
+export async function exportAdminOrdersCsv(req: Request, res: Response) {
+  try {
+    const ids = String(req.query.ids || "")
+      .split(",")
+      .map((id) => id.trim())
+      .filter((id) => Types.ObjectId.isValid(id));
+
+    if (!ids.length) return res.status(400).json({ success: false, message: "Select at least one valid order." });
+    if (ids.length > 500) return res.status(400).json({ success: false, message: "You can export up to 500 orders at a time." });
+
+    const orders = await Order.find({ _id: { $in: ids } })
+      .sort({ createdAt: -1 })
+      .populate("user", "name email phone")
+      .lean();
+
+    const rows = [
+      [
+        "Order",
+        "Customer",
+        "Email",
+        "Phone",
+        "Order Status",
+        "Payment Method",
+        "Source",
+        "Medium",
+        "Campaign",
+        "Total",
+        "Date",
+      ],
+      ...orders.map((order: any) => {
+        const user = order.user && typeof order.user === "object" ? order.user : {};
+        const customer = order.customer && typeof order.customer === "object" ? order.customer : {};
+        const origin = order.origin && typeof order.origin === "object" ? order.origin : {};
+        return [
+          order.orderNumber || String(order._id),
+          user.name || customer.name || customer.fullName || "Customer",
+          user.email || customer.email || "",
+          user.phone || customer.phone || "",
+          adminStatusLabel(order.status),
+          String(order.paymentMethod || "").toUpperCase(),
+          String(origin.source || ""),
+          String(origin.medium || ""),
+          String(origin.campaign || ""),
+          Number(order.total || 0).toFixed(2),
+          order.createdAt ? new Date(order.createdAt).toISOString() : "",
+        ];
+      }),
+    ];
+
+    const csv = `\uFEFF${rows.map((row) => row.map(csvCell).join(",")).join("\r\n")}`;
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", 'attachment; filename="orders-export.csv"');
+    return res.status(200).send(csv);
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error instanceof Error ? error.message : "Unable to export orders." });
+  }
+}
+
+/** POST /api/admin/orders/bulk-delete - permanently delete selected orders. */
+export async function deleteAdminOrdersBulk(req: Request, res: Response) {
+  try {
+    const ids = Array.isArray(req.body?.ids)
+      ? req.body.ids.map((id: unknown) => String(id || "").trim()).filter((id: string) => Types.ObjectId.isValid(id))
+      : [];
+
+    if (!ids.length) return res.status(400).json({ success: false, message: "Select at least one order." });
+    if (ids.length > 100) return res.status(400).json({ success: false, message: "You can delete up to 100 orders at a time." });
+
+    const orders = await Order.find({ _id: { $in: ids } });
+    for (const order of orders) {
+      const status = String(order.status || "").toLowerCase();
+      const isFinished = ["delivered", "completed", "returned", "refunded", "cancelled", "canceled"].includes(status);
+      if (order.inventoryCommitted && !isFinished) {
+        await restoreOrderInventoryIfNeeded(order.toObject());
+      }
+    }
+
+    const result = await Order.deleteMany({ _id: { $in: ids } });
+    return res.status(200).json({ success: true, deleted: Number(result.deletedCount || 0) });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error instanceof Error ? error.message : "Unable to delete selected orders." });
   }
 }
 

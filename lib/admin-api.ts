@@ -24,7 +24,6 @@ export type AdminDashboardData = {
   }>;
   orderStatus: {
     pending: number;
-    processing: number;
     completed: number;
     cancelled: number;
   };
@@ -35,10 +34,15 @@ export type AdminDashboardData = {
     amount: number;
     status: string;
     date: string;
+    imageUrl: string;
+    itemCount: number;
   }>;
   lowStockProducts: Array<{
     id: string;
+    productId: string;
     name: string;
+    color: string;
+    size: string;
     stock: number;
     imageUrl: string;
   }>;
@@ -152,6 +156,24 @@ export async function setAdminOrderStatus(id: string, status: string, message?: 
   );
 }
 
+export async function setAdminOrdersStatus(ids: string[], status: string, message?: string) {
+  return apiFetch<{
+    success: boolean;
+    updated: number;
+    failed: Array<{ id: string; message: string }>;
+  }>("/api/admin/orders/bulk-status", {
+    method: "POST",
+    body: { ids, status, message },
+  });
+}
+
+export async function deleteAdminOrders(ids: string[]) {
+  return apiFetch<{ success: boolean; deleted: number }>("/api/admin/orders/bulk-delete", {
+    method: "POST",
+    body: { ids },
+  });
+}
+
 async function downloadFile(url: string, filename: string) {
   const response = await fetch(url, { credentials: "include", cache: "no-store" });
   if (!response.ok) {
@@ -179,6 +201,11 @@ export async function downloadAdminInvoice(id: string, orderNumber = "invoice") 
 export async function downloadSelectedAdminInvoices(ids: string[]) {
   const params = new URLSearchParams({ ids: ids.join(",") });
   return downloadFile(`${API_URL}/api/admin/orders/invoices?${params.toString()}`, "selected-invoices.pdf");
+}
+
+export async function downloadAdminOrdersCsv(ids: string[]) {
+  const params = new URLSearchParams({ ids: ids.join(",") });
+  return downloadFile(`${API_URL}/api/admin/orders/export?${params.toString()}`, "orders-export.csv");
 }
 
 export async function getAdminCoupons() {

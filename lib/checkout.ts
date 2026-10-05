@@ -1,6 +1,7 @@
 import {
   apiFetch,
 } from "@/lib/api";
+import { getTrafficSourceForOrder } from "@/lib/traffic-source";
 
 /* =========================================================
    COMMON TYPES
@@ -2386,6 +2387,9 @@ export async function createCodOrder(
             shippingAddressPayload(
               address
             ),
+
+          origin:
+            getTrafficSourceForOrder(),
         },
       }
     );
@@ -2422,6 +2426,9 @@ export async function createRazorpayOrder(
             shippingAddressPayload(
               address
             ),
+
+          origin:
+            getTrafficSourceForOrder(),
         },
       }
     );

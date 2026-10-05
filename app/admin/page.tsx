@@ -56,7 +56,6 @@ const EMPTY: AdminDashboardData = {
   salesOverview: [],
   orderStatus: {
     pending: 0,
-    processing: 0,
     completed: 0,
     cancelled: 0,
   },
@@ -154,7 +153,6 @@ export default function AdminDashboardPage() {
 
   const orderTotal =
     data.orderStatus.pending +
-    data.orderStatus.processing +
     data.orderStatus.completed +
     data.orderStatus.cancelled;
 
@@ -452,13 +450,6 @@ export default function AdminDashboardPage() {
               />
 
               <StatusLegend
-                label="Processing"
-                value={data.orderStatus.processing}
-                total={orderTotal}
-                color="#2c8df0"
-              />
-
-              <StatusLegend
                 label="Completed"
                 value={data.orderStatus.completed}
                 total={orderTotal}
@@ -531,7 +522,7 @@ export default function AdminDashboardPage() {
             <table
               style={{
                 width: "100%",
-                minWidth: 620,
+                minWidth: 720,
                 borderCollapse: "collapse",
                 textAlign: "left",
               }}
@@ -544,6 +535,10 @@ export default function AdminDashboardPage() {
                 <tr>
                   <th style={tableHeadingStyle}>
                     #
+                  </th>
+
+                  <th style={tableHeadingStyle}>
+                    Product
                   </th>
 
                   <th style={tableHeadingStyle}>
@@ -578,7 +573,7 @@ export default function AdminDashboardPage() {
                 0 ? (
                   <tr>
                     <td
-                      colSpan={6}
+                      colSpan={7}
                       style={{
                         padding: "40px 20px",
                         textAlign: "center",
@@ -604,6 +599,60 @@ export default function AdminDashboardPage() {
                           #
                           {order.orderNumber ||
                             order.id.slice(-4)}
+                        </td>
+
+                        <td style={tableCellStyle}>
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 8,
+                            }}
+                          >
+                            {order.imageUrl ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={order.imageUrl}
+                                alt="Product"
+                                style={{
+                                  width: 44,
+                                  height: 44,
+                                  borderRadius: 9,
+                                  border: `1px solid ${BORDER}`,
+                                  objectFit: "cover",
+                                  background: "#f7f3f1",
+                                }}
+                              />
+                            ) : (
+                              <div
+                                style={{
+                                  width: 44,
+                                  height: 44,
+                                  borderRadius: 9,
+                                  border: `1px solid ${BORDER}`,
+                                  background: "#f7f3f1",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  fontSize: 8,
+                                  color: MUTED,
+                                }}
+                              >
+                                No Image
+                              </div>
+                            )}
+                            {order.itemCount > 1 ? (
+                              <span
+                                style={{
+                                  fontSize: 9,
+                                  fontWeight: 700,
+                                  color: BRAND,
+                                }}
+                              >
+                                +{order.itemCount - 1}
+                              </span>
+                            ) : null}
+                          </div>
                         </td>
 
                         <td
@@ -691,8 +740,8 @@ export default function AdminDashboardPage() {
           <div style={{ padding: 20 }}>
             <PanelHeader
               icon={<AlertTriangle size={21} />}
-              title="Low Stock Products"
-              subtitle="Products with low inventory"
+              title="Low Stock Variants"
+              subtitle="Color/size variants with fewer than 10 units"
               action={
                 <Link
                   href="/admin/products"
@@ -720,7 +769,7 @@ export default function AdminDashboardPage() {
             <table
               style={{
                 width: "100%",
-                minWidth: 430,
+                minWidth: 650,
                 borderCollapse: "collapse",
                 textAlign: "left",
               }}
@@ -731,26 +780,12 @@ export default function AdminDashboardPage() {
                 }}
               >
                 <tr>
-                  <th style={tableHeadingStyle}>
-                    #
-                  </th>
-
-                  <th style={tableHeadingStyle}>
-                    Product
-                  </th>
-
-                  <th style={tableHeadingStyle}>
-                    Stock
-                  </th>
-
-                  <th
-                    style={{
-                      ...tableHeadingStyle,
-                      textAlign: "center",
-                    }}
-                  >
-                    Action
-                  </th>
+                  <th style={tableHeadingStyle}>#</th>
+                  <th style={tableHeadingStyle}>Product</th>
+                  <th style={tableHeadingStyle}>Color</th>
+                  <th style={tableHeadingStyle}>Size</th>
+                  <th style={tableHeadingStyle}>Stock</th>
+                  <th style={{ ...tableHeadingStyle, textAlign: "center" }}>Action</th>
                 </tr>
               </thead>
 
@@ -759,7 +794,7 @@ export default function AdminDashboardPage() {
                   .length === 0 ? (
                   <tr>
                     <td
-                      colSpan={4}
+                      colSpan={6}
                       style={{
                         padding: "40px 20px",
                         textAlign: "center",
@@ -846,11 +881,19 @@ export default function AdminDashboardPage() {
                         </td>
 
                         <td style={tableCellStyle}>
-                          <StockBadge
-                            stock={
-                              product.stock
-                            }
-                          />
+                          <span style={{ fontSize: 11, fontWeight: 600, color: "#515967" }}>
+                            {product.color}
+                          </span>
+                        </td>
+
+                        <td style={tableCellStyle}>
+                          <span style={{ fontSize: 11, fontWeight: 700, color: "#303640" }}>
+                            {product.size}
+                          </span>
+                        </td>
+
+                        <td style={tableCellStyle}>
+                          <StockBadge stock={product.stock} />
                         </td>
 
                         <td
@@ -860,7 +903,7 @@ export default function AdminDashboardPage() {
                           }}
                         >
                           <Link
-                            href={`/admin/products/${product.id}/edit`}
+                            href={`/admin/products/${product.productId}/edit`}
                             aria-label="View product"
                             style={{
                               display:
@@ -1512,13 +1555,8 @@ function OrderDonut({
   const pending =
     (status.pending / safeTotal) * 100;
 
-  const processing =
-    pending +
-    (status.processing / safeTotal) *
-      100;
-
   const completed =
-    processing +
+    pending +
     (status.completed / safeTotal) *
       100;
 
@@ -1527,8 +1565,7 @@ function OrderDonut({
       ? "conic-gradient(#e7e9ed 0 100%)"
       : `conic-gradient(
           #ffad32 0 ${pending}%,
-          #2c8df0 ${pending}% ${processing}%,
-          #38b879 ${processing}% ${completed}%,
+          #38b879 ${pending}% ${completed}%,
           #d91432 ${completed}% 100%
         )`;
 
@@ -1635,43 +1672,13 @@ function OrderStatusBadge({
 }: {
   status: string;
 }) {
-  const normalized =
-    status.toLowerCase();
+  const normalized = status.toLowerCase();
+  const completed = ["delivered", "completed"].includes(normalized);
+  const cancelled = ["cancelled", "canceled", "returned", "refunded"].includes(normalized);
 
-  let background = "#fef3c7";
-  let color = "#b45309";
-
-  if (
-    [
-      "processing",
-      "shipped",
-      "out_for_delivery",
-    ].includes(normalized)
-  ) {
-    background = "#dbeafe";
-    color = "#1d4ed8";
-  }
-
-  if (
-    ["delivered", "completed"].includes(
-      normalized,
-    )
-  ) {
-    background = "#d1fae5";
-    color = "#047857";
-  }
-
-  if (
-    [
-      "cancelled",
-      "canceled",
-      "returned",
-      "refunded",
-    ].includes(normalized)
-  ) {
-    background = "#fee2e2";
-    color = "#b91c1c";
-  }
+  const background = completed ? "#d1fae5" : cancelled ? "#fee2e2" : "#fef3c7";
+  const color = completed ? "#047857" : cancelled ? "#b91c1c" : "#b45309";
+  const label = completed ? "Completed" : cancelled ? "Cancelled" : "Pending";
 
   return (
     <span
@@ -1683,10 +1690,9 @@ function OrderStatusBadge({
         color,
         fontSize: 10,
         fontWeight: 600,
-        textTransform: "capitalize",
       }}
     >
-      {normalized.replaceAll("_", " ")}
+      {label}
     </span>
   );
 }
@@ -1702,7 +1708,7 @@ function StockBadge({
   if (stock <= 2) {
     background = "#fee2e2";
     color = "#dc2626";
-  } else if (stock <= 4) {
+  } else if (stock < 10) {
     background = "#fef3c7";
     color = "#b45309";
   }

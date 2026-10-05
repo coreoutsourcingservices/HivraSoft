@@ -34,6 +34,14 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
+const orderOriginSchema = new mongoose_1.Schema({
+    source: { type: String, trim: true, lowercase: true, default: "direct", maxlength: 80 },
+    medium: { type: String, trim: true, lowercase: true, default: "", maxlength: 80 },
+    campaign: { type: String, trim: true, default: "", maxlength: 160 },
+    referrer: { type: String, trim: true, default: "", maxlength: 1000 },
+    landingPage: { type: String, trim: true, default: "", maxlength: 1000 },
+    capturedAt: { type: Date, default: null },
+}, { _id: false });
 const statusHistorySchema = new mongoose_1.Schema({
     status: { type: String, required: true, trim: true },
     message: { type: String, trim: true, default: "" },
@@ -99,6 +107,7 @@ const orderSchema = new mongoose_1.Schema({
             paidAt: null,
         }),
     },
+    origin: { type: orderOriginSchema, default: () => ({ source: "direct" }) },
     shippingAddress: { type: mongoose_1.Schema.Types.Mixed, required: true },
     statusHistory: { type: [statusHistorySchema], default: [] },
     inventoryCommitted: { type: Boolean, default: false, index: true },
@@ -115,6 +124,7 @@ orderSchema.index({ user: 1, createdAt: -1 });
 orderSchema.index({ "payment.razorpayOrderId": 1 }, { sparse: true });
 orderSchema.index({ "customer.email": 1, createdAt: -1 });
 orderSchema.index({ "customer.phone": 1, createdAt: -1 });
+orderSchema.index({ "origin.source": 1, createdAt: -1 });
 const Order = mongoose_1.default.models.Order || mongoose_1.default.model("Order", orderSchema);
 exports.default = Order;
 //# sourceMappingURL=Order.model.js.map

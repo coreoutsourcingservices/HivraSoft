@@ -15,6 +15,15 @@ export type OrderStatus =
 
 export type PaymentStatus = "pending" | "paid" | "failed" | "refunded";
 
+export type OrderOrigin = {
+  source: string;
+  medium?: string;
+  campaign?: string;
+  referrer?: string;
+  landingPage?: string;
+  capturedAt?: Date | null;
+};
+
 export interface IOrder extends Document {
   orderNumber: string;
   invoiceNumber?: string;
@@ -41,6 +50,7 @@ export interface IOrder extends Document {
   paymentStatus: PaymentStatus;
   paymentMethod: string;
   payment: Record<string, unknown>;
+  origin?: OrderOrigin;
   shippingAddress: Record<string, unknown>;
   statusHistory: any[];
   inventoryCommitted: boolean;
@@ -50,6 +60,18 @@ export interface IOrder extends Document {
   createdAt: Date;
   updatedAt: Date;
 }
+
+const orderOriginSchema = new Schema(
+  {
+    source: { type: String, trim: true, lowercase: true, default: "direct", maxlength: 80 },
+    medium: { type: String, trim: true, lowercase: true, default: "", maxlength: 80 },
+    campaign: { type: String, trim: true, default: "", maxlength: 160 },
+    referrer: { type: String, trim: true, default: "", maxlength: 1000 },
+    landingPage: { type: String, trim: true, default: "", maxlength: 1000 },
+    capturedAt: { type: Date, default: null },
+  },
+  { _id: false }
+);
 
 const statusHistorySchema = new Schema(
   {
@@ -121,6 +143,7 @@ const orderSchema = new Schema<IOrder>(
         paidAt: null,
       }),
     },
+    origin: { type: orderOriginSchema, default: () => ({ source: "direct" }) },
     shippingAddress: { type: Schema.Types.Mixed, required: true },
     statusHistory: { type: [statusHistorySchema] as any, default: [] },
     inventoryCommitted: { type: Boolean, default: false, index: true },
@@ -140,6 +163,7 @@ orderSchema.index({ user: 1, createdAt: -1 });
 orderSchema.index({ "payment.razorpayOrderId": 1 }, { sparse: true });
 orderSchema.index({ "customer.email": 1, createdAt: -1 });
 orderSchema.index({ "customer.phone": 1, createdAt: -1 });
+orderSchema.index({ "origin.source": 1, createdAt: -1 });
 
 const Order: Model<IOrder> =
   (mongoose.models.Order as Model<IOrder>) || mongoose.model<IOrder>("Order", orderSchema);
