@@ -285,7 +285,7 @@ const getAccountInfo = async (req, res) => {
            GET CURRENT USER
         ===================================================== */
         const user = await User_model_1.default.findById(req.user._id)
-            .select("name email phone gender avatar createdAt")
+            .select("name email phone gender birthday anniversary avatar createdAt")
             .lean();
         /* =====================================================
            USER NOT FOUND
@@ -308,6 +308,8 @@ const getAccountInfo = async (req, res) => {
                 email: user.email,
                 phone: user.phone,
                 gender: user.gender || "other",
+                birthday: user.birthday || null,
+                anniversary: user.anniversary || null,
                 avatar: {
                     url: user.avatar?.url ||
                         "",
@@ -344,9 +346,9 @@ const updateAccountInfo = async (req, res) => {
         if (!req.user?._id) {
             return res.status(401).json({ success: false, message: "Authentication required." });
         }
-        const { name, phone, gender } = req.body || {};
-        if (name === undefined && phone === undefined && gender === undefined) {
-            return res.status(400).json({ success: false, message: "Name, phone or gender is required." });
+        const { name, phone, gender, birthday, anniversary } = req.body || {};
+        if (name === undefined && phone === undefined && gender === undefined && birthday === undefined && anniversary === undefined) {
+            return res.status(400).json({ success: false, message: "Name, phone, gender, birthday or anniversary is required." });
         }
         const updateData = {};
         if (name !== undefined) {
@@ -365,8 +367,21 @@ const updateAccountInfo = async (req, res) => {
                 return res.status(400).json({ success: false, message: "Gender must be male, female or other." });
             updateData.gender = normalized;
         }
+        for (const [field, value] of [["birthday", birthday], ["anniversary", anniversary]]) {
+            if (value !== undefined) {
+                if (value === null || String(value).trim() === "") {
+                    updateData[field] = null;
+                }
+                else {
+                    const parsed = new Date(String(value));
+                    if (Number.isNaN(parsed.getTime()))
+                        return res.status(400).json({ success: false, message: `Invalid ${field} date.` });
+                    updateData[field] = parsed;
+                }
+            }
+        }
         const user = await User_model_1.default.findByIdAndUpdate(req.user._id, { $set: updateData }, { new: true, runValidators: true })
-            .select("name email phone gender role avatar createdAt updatedAt")
+            .select("name email phone gender birthday anniversary role avatar createdAt updatedAt")
             .lean();
         if (!user)
             return res.status(404).json({ success: false, message: "User not found." });

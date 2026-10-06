@@ -61,6 +61,16 @@ const userSchema = new mongoose_1.Schema({
         default: "other",
         index: true,
     },
+    birthday: {
+        type: Date,
+        default: null,
+        index: true,
+    },
+    anniversary: {
+        type: Date,
+        default: null,
+        index: true,
+    },
     role: {
         type: String,
         enum: [
