@@ -4,6 +4,7 @@ import Blog, { type BlogStatus } from "../models/Blog.model";
 import BlogCategory from "../models/BlogCategory.model";
 import BlogTag from "../models/BlogTag.model";
 import { createSlug } from "../utils/slug";
+import { legacyBlogSlugExists, listLegacyBlogs } from "./legacy-blog.service";
 
 function text(value: unknown) {
   return typeof value === "string" ? value.trim() : String(value ?? "").trim();
@@ -236,7 +237,7 @@ export async function createBlog(input: any, authorId: string) {
   if (!Types.ObjectId.isValid(authorId)) throw new Error("Invalid blog author.");
   const slug = safeSlug(input?.slug, title);
   if (!slug) throw new Error("Blog slug is required.");
-  if (await Blog.exists({ slug })) throw new Error("A blog with this slug already exists.");
+  if (await Blog.exists({ slug }) || legacyBlogSlugExists(slug)) throw new Error("A blog with this slug already exists.");
 
   const categoryId = text(input?.category);
   const tagIds = await validateTaxonomy(categoryId, Array.isArray(input?.tags) ? input.tags.map(text) : []);
@@ -274,7 +275,7 @@ export async function updateBlog(id: string, input: any, changedBy: string) {
 
   const title = text(input?.title || blog.title);
   const nextSlug = safeSlug(input?.slug || blog.slug, title);
-  if (nextSlug !== blog.slug && await Blog.exists({ slug: nextSlug, _id: { $ne: blog._id } })) throw new Error("A blog with this slug already exists.");
+  if (nextSlug !== blog.slug && (await Blog.exists({ slug: nextSlug, _id: { $ne: blog._id } }) || legacyBlogSlugExists(nextSlug))) throw new Error("A blog with this slug already exists.");
 
   const categoryId = input?.category === null ? "" : text(input?.category ?? blog.category);
   const tagIds = await validateTaxonomy(categoryId, Array.isArray(input?.tags) ? input.tags.map(text) : blog.tags.map(String));
@@ -321,7 +322,7 @@ export async function duplicateBlog(id: string, authorId: string) {
   if (!source) throw new Error("Blog not found.");
   let slug = `${source.slug}-copy`;
   let i = 2;
-  while (await Blog.exists({ slug })) slug = `${source.slug}-copy-${i++}`;
+  while (await Blog.exists({ slug }) || legacyBlogSlugExists(slug)) slug = `${source.slug}-copy-${i++}`;
   const { _id, createdAt, updatedAt, revisions, views, likes, ...rest } = source as any;
   return Blog.create({ ...rest, slug, title: `${source.title} Copy`, author: new Types.ObjectId(authorId), status: "DRAFT", publishedAt: null, scheduledAt: null, views: 0, likes: [], revisions: [] });
 }
@@ -340,6 +341,7 @@ export async function listPublicBlogs(input: any = {}) {
   const page = Math.max(1, Number(input.page || 1) || 1);
   const limit = Math.max(1, Math.min(50, Number(input.limit || 12) || 12));
   const match: any = publicBlogMatch();
+
   if (text(input.search)) {
     const rx = new RegExp(text(input.search).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
     const [matchingCategories, matchingTags] = await Promise.all([
@@ -351,40 +353,70 @@ export async function listPublicBlogs(input: any = {}) {
     if (matchingTags.length) searchOr.push({ tags: { $in: matchingTags.map((item: any) => item._id) } });
     match.$and = [{ $or: searchOr }];
   }
+
   if (input.isFeatured === true || input.isFeatured === "true") match.isFeatured = true;
 
   if (text(input.categorySlug)) {
     const category = await BlogCategory.findOne({ slug: text(input.categorySlug), isActive: true }).select("_id").lean();
-    if (!category) return { blogs: [], pagination: { page, limit, total: 0, totalPages: 1 } };
-    match.category = category._id;
-  }
-  if (text(input.tagSlug)) {
-    const tag = await BlogTag.findOne({ slug: text(input.tagSlug) }).select("_id").lean();
-    if (!tag) return { blogs: [], pagination: { page, limit, total: 0, totalPages: 1 } };
-    match.tags = tag._id;
+    match.category = category?._id || { $in: [] };
   }
 
-  const sort = text(input.sort).toLowerCase();
-  const sortSpec: any = sort === "oldest"
-    ? { publishedAt: 1, createdAt: 1 }
-    : sort === "most-viewed"
-      ? { views: -1, publishedAt: -1 }
-      : sort === "featured"
-        ? { isFeatured: -1, publishedAt: -1, createdAt: -1 }
-        : { publishedAt: -1, createdAt: -1 };
-  const total = await Blog.countDocuments(match);
-  const blogs = await Blog.find(match)
+  if (text(input.tagSlug)) {
+    const tag = await BlogTag.findOne({ slug: text(input.tagSlug) }).select("_id").lean();
+    match.tags = tag?._id || { $in: [] };
+  }
+
+  const databaseBlogs = await Blog.find(match)
     .select("title slug excerpt featuredImage category tags author status publishedAt scheduledAt readingTime views likes isFeatured createdAt updatedAt seo")
     .populate("category", "name slug")
     .populate("tags", "name slug")
     .populate("author", "name avatar")
-    .sort(sortSpec)
-    .skip((page - 1) * limit)
-    .limit(limit)
     .lean();
-  const publicBlogs = blogs.map((blog: any) => {
+
+  const normalizedDatabaseBlogs = databaseBlogs.map((blog: any) => {
     const { likes = [], ...rest } = blog;
     return { ...rest, likeCount: Array.isArray(likes) ? likes.length : 0 };
   });
-  return { blogs: publicBlogs, pagination: { page, limit, total, totalPages: Math.max(1, Math.ceil(total / limit)) } };
+
+  const fileBlogs = listLegacyBlogs(input).map((blog: any) => {
+    const { content, blocks, customCss, revisions, ...summary } = blog;
+    return summary;
+  });
+
+  // A database blog wins if a slug ever appears in both places. The API never
+  // exposes which storage layer supplied a blog, so the storefront sees one
+  // normal, unified blog collection.
+  const bySlug = new Map<string, any>();
+  for (const blog of fileBlogs) bySlug.set(String(blog.slug || "").toLowerCase(), blog);
+  for (const blog of normalizedDatabaseBlogs) bySlug.set(String(blog.slug || "").toLowerCase(), blog);
+  const blogs = [...bySlug.values()];
+
+  const sort = text(input.sort).toLowerCase();
+  const dateValue = (blog: any) => new Date(blog.publishedAt || blog.createdAt || 0).getTime() || 0;
+  blogs.sort((a: any, b: any) => {
+    if (sort === "oldest") return dateValue(a) - dateValue(b);
+    if (sort === "most-viewed") {
+      const viewDiff = Number(b.views || 0) - Number(a.views || 0);
+      return viewDiff || dateValue(b) - dateValue(a);
+    }
+    if (sort === "featured") {
+      const featuredDiff = Number(Boolean(b.isFeatured)) - Number(Boolean(a.isFeatured));
+      return featuredDiff || dateValue(b) - dateValue(a);
+    }
+    return dateValue(b) - dateValue(a);
+  });
+
+  const total = blogs.length;
+  const start = (page - 1) * limit;
+  const paginatedBlogs = blogs.slice(start, start + limit);
+
+  return {
+    blogs: paginatedBlogs,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.max(1, Math.ceil(total / limit)),
+    },
+  };
 }

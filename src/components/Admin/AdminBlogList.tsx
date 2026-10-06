@@ -79,12 +79,11 @@ export default function AdminBlogList() {
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-[#A51D45]">Content Management</p>
-            <h1 className="mt-2 text-3xl font-semibold text-[#211A18]">New Blogs (Database)</h1>
-            <p className="mt-2 text-sm text-[#211A18]/50">Blogs created here are saved in MongoDB and appear under the website's New Blogs tab.</p>
+            <h1 className="mt-2 text-3xl font-semibold text-[#211A18]">Blogs</h1>
+            <p className="mt-2 text-sm text-[#211A18]/50">Create, edit, publish and manage website blogs from one place.</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Link href="/blog?source=new" target="_blank" className="inline-flex h-11 items-center justify-center rounded-xl border border-[#211A18]/10 bg-white px-4 text-[10px] font-semibold text-[#211A18]">View New Blogs</Link>
-            <Link href="/blog?source=old" target="_blank" className="inline-flex h-11 items-center justify-center rounded-xl border border-[#211A18]/10 bg-white px-4 text-[10px] font-semibold text-[#211A18]">View Old Blogs</Link>
+            <Link href="/blog" target="_blank" className="inline-flex h-11 items-center justify-center rounded-xl border border-[#211A18]/10 bg-white px-4 text-[10px] font-semibold text-[#211A18]">View Blogs</Link>
             <Link href="/admin/blog/add" className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#A51D45] px-5 text-[11px] font-semibold text-white">
               <Plus size={16}/> Add New Blog
             </Link>

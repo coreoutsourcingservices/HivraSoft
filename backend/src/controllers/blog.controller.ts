@@ -12,6 +12,7 @@ import {
 } from "../services/blog.service";
 import { createSlug } from "../utils/slug";
 import { softDeleteEntity } from "../services/admin-trash.service";
+import { getLegacyBlogBySlug, getLegacyCategories, getLegacyRelatedBlogs, getLegacyTags } from "../services/legacy-blog.service";
 
 function text(value: unknown) {
   return typeof value === "string" ? value.trim() : String(value ?? "").trim();
@@ -276,7 +277,16 @@ export async function getPublicBlogBySlug(req: Request, res: Response) {
       .populate("tags", "name slug")
       .populate("author", "name avatar")
       .lean();
-    if (!blog) return res.status(404).json({ success: false, message: "Blog not found." });
+
+    if (!blog) {
+      const fileBlog = getLegacyBlogBySlug(slug);
+      if (!fileBlog) return res.status(404).json({ success: false, message: "Blog not found." });
+      return res.json({
+        success: true,
+        blog: fileBlog,
+        related: getLegacyRelatedBlogs(slug, 4),
+      });
+    }
 
     const clientKey = `${String(blog._id)}:${String(req.ip || req.headers["x-forwarded-for"] || "unknown")}`;
     const now = Date.now();
@@ -317,7 +327,6 @@ export async function getPublicBlogBySlug(req: Request, res: Response) {
   }
 }
 
-
 export async function likePublicBlog(req: Request, res: Response) {
   try {
     const userId = String(req.user?._id || "");
@@ -344,11 +353,25 @@ export async function likePublicBlog(req: Request, res: Response) {
 }
 
 export async function listPublicBlogCategories(_req: Request, res: Response) {
-  const categories = await BlogCategory.find({ isActive: true }).sort({ name: 1 }).lean();
+  const databaseCategories = await BlogCategory.find({ isActive: true }).sort({ name: 1 }).lean();
+  const bySlug = new Map<string, any>();
+  for (const category of getLegacyCategories()) bySlug.set(String(category.slug || "").toLowerCase(), category);
+  for (const category of databaseCategories) {
+    const value = { _id: String((category as any)._id), name: String((category as any).name || ""), slug: String((category as any).slug || "") };
+    bySlug.set(value.slug.toLowerCase(), value);
+  }
+  const categories = [...bySlug.values()].sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
   return res.json({ success: true, categories });
 }
 
 export async function listPublicBlogTags(_req: Request, res: Response) {
-  const tags = await BlogTag.find({}).sort({ name: 1 }).lean();
+  const databaseTags = await BlogTag.find({}).sort({ name: 1 }).lean();
+  const bySlug = new Map<string, any>();
+  for (const tag of getLegacyTags()) bySlug.set(String(tag.slug || "").toLowerCase(), tag);
+  for (const tag of databaseTags) {
+    const value = { _id: String((tag as any)._id), name: String((tag as any).name || ""), slug: String((tag as any).slug || "") };
+    bySlug.set(value.slug.toLowerCase(), value);
+  }
+  const tags = [...bySlug.values()].sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
   return res.json({ success: true, tags });
 }

@@ -5,14 +5,12 @@ import Footer from "@/src/components/Footer/Footer";
 import BlogShare from "@/src/components/Blog/BlogShare";
 import BlogCard from "@/src/components/Blog/BlogCard";
 import { fetchBlogServer } from "@/lib/blog-server";
-import { getOldBlogBySlug, getOldRelatedBlogs } from "@/lib/old-blog";
 import type { BlogRecord, BlogTaxonomy } from "@/lib/blog";
 
 export const dynamic = "force-dynamic";
 
 type BlogDetailPageProps = {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ source?: string | string[] }>;
 };
 
 function taxonomyName(value: BlogTaxonomy | string | null | undefined) {
@@ -31,28 +29,13 @@ function niceDate(value?: string | null) {
     : date.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
 }
 
-export default async function BlogDetailPage({ params, searchParams }: BlogDetailPageProps) {
-  const [{ slug }, query] = await Promise.all([params, searchParams]);
-  const requestedSource = Array.isArray(query.source) ? query.source[0] : query.source;
-  const source: "new" | "old" = requestedSource === "old" ? "old" : "new";
+export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
+  const { slug } = await params;
+  const result = await fetchBlogServer(slug);
+  if (!result?.blog) notFound();
 
-  let blog: BlogRecord | null = null;
-  let related: BlogRecord[] = [];
-
-  if (source === "old") {
-    const old = getOldBlogBySlug(slug);
-    if (!old) notFound();
-    blog = old.blog;
-    related = getOldRelatedBlogs(slug, 3);
-  } else {
-    const result = await fetchBlogServer(slug);
-    if (!result?.blog) notFound();
-    blog = result.blog;
-    related = result.related || [];
-  }
-
-  const sourceLabel = source === "old" ? "Old Blog · JSON Archive" : "New Blog · Database";
-  const sourceHref = `/blog?source=${source}`;
+  const blog = result.blog;
+  const related = result.related || [];
 
   return (
     <>
@@ -61,9 +44,8 @@ export default async function BlogDetailPage({ params, searchParams }: BlogDetai
         <article>
           <header className="border-b border-[#211A18]/8 px-4 py-10 sm:px-6 sm:py-14">
             <div className="mx-auto max-w-[1050px]">
-              <Link href={sourceHref} className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#A51D45]">← Back to {source === "old" ? "Old" : "New"} Blogs</Link>
+              <Link href="/blog" className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#A51D45]">← Back to Blogs</Link>
               <div className="mt-6 flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.1em] text-[#211A18]/45">
-                <span className="rounded-full bg-white px-3 py-1.5 text-[#8C1839] shadow-sm">{sourceLabel}</span>
                 <span>{taxonomyName(blog.category)}</span>
                 <span>•</span>
                 <span>{niceDate(blog.publishedAt || blog.scheduledAt)}</span>
@@ -100,12 +82,12 @@ export default async function BlogDetailPage({ params, searchParams }: BlogDetai
               <div className="mb-6 flex items-end justify-between gap-4">
                 <div>
                   <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-[#A51D45]">Continue Reading</p>
-                  <h2 className="mt-2 text-3xl font-semibold">Related {source === "old" ? "Old" : "New"} Blogs</h2>
+                  <h2 className="mt-2 text-3xl font-semibold">Related Blogs</h2>
                 </div>
-                <Link href={sourceHref} className="text-[10px] font-semibold text-[#8C1839]">View all →</Link>
+                <Link href="/blog" className="text-[10px] font-semibold text-[#8C1839]">View all →</Link>
               </div>
               <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-                {related.slice(0, 3).map((item) => <BlogCard key={`${source}-${item._id}`} blog={item} source={source} />)}
+                {related.slice(0, 3).map((item) => <BlogCard key={item._id} blog={item} />)}
               </div>
             </div>
           </section>
