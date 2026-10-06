@@ -481,13 +481,18 @@ const stripHtmlForSeo = (value) => {
         .replace(/\s+/g, " ")
         .trim();
 };
-const includesSeoKeyword = (value, keyword) => {
-    if (!keyword) {
-        return false;
-    }
-    return String(value || "")
+const normalizeSeoComparable = (value) => {
+    return stripHtmlForSeo(value)
         .toLowerCase()
-        .includes(keyword.toLowerCase());
+        .replace(/[’'`]/g, "")
+        .replace(/[^\p{L}\p{N}]+/gu, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+};
+const includesSeoKeyword = (value, keyword) => {
+    const cleanKeyword = normalizeSeoComparable(keyword);
+    const cleanValue = normalizeSeoComparable(value);
+    return Boolean(cleanKeyword && cleanValue.includes(cleanKeyword));
 };
 const escapeSeoRegExp = (value) => {
     return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -534,6 +539,41 @@ const getSeoLinks = (html) => {
     }
     return links;
 };
+const isInternalSeoLink = (href) => {
+    const value = String(href || "").trim();
+    if (!value)
+        return false;
+    if (/^(\/|\.\/|\.\.\/)/.test(value))
+        return true;
+    if (!/^https?:\/\//i.test(value))
+        return false;
+    try {
+        const host = new URL(value).hostname.toLowerCase();
+        const configuredHosts = [
+            process.env.FRONTEND_URL,
+            process.env.SITE_URL,
+            process.env.WEBSITE_URL,
+        ]
+            .filter(Boolean)
+            .map((item) => {
+            try {
+                return new URL(String(item)).hostname.toLowerCase();
+            }
+            catch {
+                return "";
+            }
+        })
+            .filter(Boolean);
+        return (configuredHosts.includes(host) ||
+            host === "hivrasoft.com" ||
+            host === "www.hivrasoft.com" ||
+            host === "hivrasoft.zyvora.com" ||
+            host.endsWith(".hivrasoft.com"));
+    }
+    catch {
+        return false;
+    }
+};
 const calculateSeoScore = (color, siblingColors = [], colorIndex = -1) => {
     const keyword = String(color?.focusKeyword || "").trim();
     const normalizedKeyword = keyword.toLowerCase();
@@ -548,39 +588,22 @@ const calculateSeoScore = (color, siblingColors = [], colorIndex = -1) => {
         .slice(0, Math.max(1, Math.ceil(words.length * 0.1)))
         .join(" ");
     const occurrences = countSeoKeywordOccurrences(content, keyword);
-    const keywordWordCount = Math.max(1, keyword.split(/\s+/).filter(Boolean).length);
     const density = words.length
-        ? (occurrences * keywordWordCount * 100) / words.length
+        ? (occurrences * 100) / words.length
         : 0;
     const subheadingText = getSeoSubheadingText(color?.description);
     const imageAltHasKeyword = Array.isArray(color?.images)
         ? color.images.some((image) => includesSeoKeyword(image?.alt, keyword))
         : false;
     const links = getSeoLinks(color?.description);
-    const externalLinks = links.filter((link) => /^https?:\/\//i.test(link.href));
-    const internalLinks = links.filter((link) => /^(\/|\.\/|\.\.\/)/.test(link.href));
+    const internalLinks = links.filter((link) => isInternalSeoLink(link.href));
+    const externalLinks = links.filter((link) => /^https?:\/\//i.test(link.href) && !isInternalSeoLink(link.href));
     const hasDoFollowExternal = externalLinks.some((link) => !link.rel.split(/\s+/).includes("nofollow"));
     const otherKeywordUsed = Boolean(keyword) && siblingColors.some((item, index) => index !== colorIndex &&
         String(item?.focusKeyword || "")
             .trim()
             .toLowerCase() === normalizedKeyword);
     const normalizedTitle = title.toLowerCase();
-    const sentimentWords = [
-        "best",
-        "amazing",
-        "excellent",
-        "perfect",
-        "premium",
-        "comfortable",
-        "comfort",
-        "soft",
-        "luxury",
-        "love",
-        "easy",
-        "worst",
-        "avoid",
-        "bad",
-    ];
     const powerWords = [
         "best",
         "ultimate",
@@ -607,14 +630,17 @@ const calculateSeoScore = (color, siblingColors = [], colorIndex = -1) => {
         [includesSeoKeyword(subheadingText, keyword), 5],
         [imageAltHasKeyword, 4],
         [Boolean(keyword) && density >= 0.5 && density <= 2.5, 5],
-        [`/product/${slug}`.length > 0 && `/product/${slug}`.length <= 75, 3],
+        [`/product/${slug}`.length > 0 && `/product/${slug}`.length <= 70, 3],
         [externalLinks.length > 0, 4],
         [hasDoFollowExternal, 3],
         [internalLinks.length > 0, 3],
         [Boolean(keyword) && !otherKeywordUsed, 3],
         [Boolean(normalizedKeyword) && normalizedTitle.startsWith(normalizedKeyword), 7],
-        [sentimentWords.some((word) => normalizedTitle.includes(word)), 5],
-        [powerWords.some((word) => normalizedTitle.includes(word)), 4],
+        [
+            powerWords.some((word) => normalizedTitle.includes(word)) ||
+                (Boolean(keyword) && includesSeoKeyword(title, keyword)),
+            9,
+        ],
         [/\d/.test(title), 4],
     ];
     const score = checks.reduce((total, [pass, points]) => total + (pass ? points : 0), 0);

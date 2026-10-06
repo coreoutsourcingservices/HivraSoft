@@ -26,6 +26,15 @@ router.post("/login", (0, express_rate_limit_1.rateLimit)({
     legacyHeaders: false,
     message: { message: "Too many login attempts. Try again in 15 minutes." },
 }), admin_controller_1.adminLogin);
+router.post("/forgot-password/send-otp", (0, express_rate_limit_1.rateLimit)({
+    windowMs: 10 * 60 * 1000,
+    limit: 5,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { success: false, message: "Too many OTP requests. Try again later." },
+}), admin_controller_1.adminForgotPasswordSendOtp);
+router.post("/forgot-password/verify-otp", admin_controller_1.adminForgotPasswordVerifyOtp);
+router.post("/forgot-password/reset", admin_controller_1.adminForgotPasswordReset);
 const authenticateAdmin = async (req, res, next) => {
     try {
         const authorization = String(req.headers.authorization || "");
@@ -73,6 +82,7 @@ router.get("/me", authenticateAdmin, (req, res) => {
         },
     });
 });
+router.post("/change-password", authenticateAdmin, admin_controller_1.changeAdminPassword);
 router.get("/dashboard", authenticateAdmin, admin_controller_1.getAdminDashboard);
 router.get("/global-search", authenticateAdmin, admin_tools_controller_1.globalAdminSearch);
 router.get("/trash", authenticateAdmin, admin_tools_controller_1.getAdminTrash);

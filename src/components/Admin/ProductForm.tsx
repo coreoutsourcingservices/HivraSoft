@@ -5173,6 +5173,41 @@ function SeoAnalysisPanel({
       colorIndex
     );
 
+  const focusKeyword = color.focusKeyword.trim();
+  const focusKeywordCoverage = siblingColors.map(
+    (item, index) => {
+      const searchableText = [
+        item.nameProduct,
+        item.slugProduct.replace(/-/g, " "),
+        item.seoTitle,
+        item.seoDescription,
+        item.shortDescription,
+        stripHtmlForSeo(item.description),
+        ...(Array.isArray(item.images)
+          ? item.images.map((image) => image?.alt || "")
+          : []),
+        ...(Array.isArray(item.pendingImages)
+          ? item.pendingImages.map((image) => image?.alt || "")
+          : []),
+      ].join(" ");
+
+      return {
+        index,
+        name:
+          item.nameColor.trim() ||
+          (siblingColors.length === 1
+            ? "Product"
+            : `Color ${index + 1}`),
+        pass:
+          Boolean(focusKeyword) &&
+          hasKeyword(searchableText, focusKeyword),
+      };
+    }
+  );
+  const productFocusKeywordPass =
+    Boolean(focusKeyword) &&
+    focusKeywordCoverage.some((item) => item.pass);
+
   const scoreClass =
     analysis.score >= 80
       ? "bg-emerald-100 text-emerald-700 border-emerald-200"
@@ -5211,6 +5246,50 @@ function SeoAnalysisPanel({
             {analysis.score} / 100
           </span>
         </div>
+      </div>
+
+      <div className="border-b border-black/[0.06] bg-[#FCFAF8] px-4 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <p className="text-xs font-bold text-[#241B18]">
+              Focus Keyword · Product & Color Check
+            </p>
+            <p className="mt-1 text-[10px] leading-4 text-black/40">
+              Current Focus Keyword ko poore product aur har color variant ke SEO/content data me alag check kiya ja raha hai.
+            </p>
+          </div>
+          <span
+            className={`rounded-full px-2.5 py-1 text-[9px] font-bold ${
+              productFocusKeywordPass
+                ? "bg-emerald-100 text-emerald-700"
+                : "bg-red-100 text-red-600"
+            }`}
+          >
+            Product Overall {productFocusKeywordPass ? "✓" : "×"}
+          </span>
+        </div>
+
+        <div className="mt-3 flex flex-wrap gap-2">
+          {focusKeywordCoverage.map((item) => (
+            <span
+              key={`focus-keyword-color-${item.index}`}
+              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[10px] font-bold ${
+                item.pass
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                  : "border-red-200 bg-red-50 text-red-600"
+              }`}
+            >
+              <span>{item.pass ? "✓" : "×"}</span>
+              <span>{item.name}</span>
+            </span>
+          ))}
+        </div>
+
+        {!focusKeyword ? (
+          <p className="mt-2 text-[10px] font-semibold text-red-500">
+            Focus Keyword enter karo; uske baad har color ka check yahan live dikhega.
+          </p>
+        ) : null}
       </div>
 
       <SeoCheckSection

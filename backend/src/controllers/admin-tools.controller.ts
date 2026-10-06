@@ -154,16 +154,44 @@ export async function globalAdminSearch(req: Request, res: Response) {
         .lean(),
     ]);
 
-    const mappedProducts = products.map((item: any) => {
+    const mappedProducts = products.flatMap((item: any) => {
       const colors = Array.isArray(item.colors) ? item.colors : [];
-      const color = colors.find((entry: any) => entry?.isDefault) || colors[0] || {};
-      return {
-        _id: String(item._id),
-        name: color.nameProduct || "Product",
-        subtitle: [color.nameColor, color.slugProduct].filter(Boolean).join(" · "),
+
+      // Global admin search must show the color variant that actually
+      // matched the query instead of always falling back to the default
+      // color. When the product name/slug matches multiple colors, every
+      // matching color is returned as its own search result.
+      const matchingColors = colors.filter((color: any) => {
+        const values = [
+          color?.nameProduct,
+          color?.slugProduct,
+          color?.nameColor,
+          ...(Array.isArray(color?.tags) ? color.tags : []),
+        ];
+
+        return values.some((value) => rx.test(String(value || "")));
+      });
+
+      const colorsToShow = matchingColors.length
+        ? matchingColors
+        : colors.length
+          ? colors
+          : [{}];
+
+      return colorsToShow.map((color: any, colorIndex: number) => ({
+        _id: `${String(item._id)}:${String(
+          color?._id || color?.slugColor || colorIndex
+        )}`,
+        name: color?.nameProduct || "Product",
+        subtitle: [
+          color?.nameColor ? `Color: ${color.nameColor}` : "",
+          color?.slugProduct,
+        ]
+          .filter(Boolean)
+          .join(" · "),
         type: "product",
         adminUrl: `/admin/products/${item._id}/edit`,
-      };
+      }));
     });
 
     const data = {

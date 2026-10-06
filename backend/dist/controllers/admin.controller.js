@@ -36,6 +36,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.changeAdminPassword = changeAdminPassword;
+exports.adminForgotPasswordSendOtp = adminForgotPasswordSendOtp;
+exports.adminForgotPasswordVerifyOtp = adminForgotPasswordVerifyOtp;
+exports.adminForgotPasswordReset = adminForgotPasswordReset;
 exports.adminLogin = adminLogin;
 exports.getAdminDashboard = getAdminDashboard;
 exports.getAdminCustomers = getAdminCustomers;
@@ -70,6 +74,7 @@ exports.getAdminUserWishlist = getAdminUserWishlist;
 exports.getAdminUserOrders = getAdminUserOrders;
 exports.getAdminUserNotifications = getAdminUserNotifications;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const node_crypto_1 = __importDefault(require("node:crypto"));
 const mongoose_1 = __importStar(require("mongoose"));
 const User_model_1 = __importDefault(require("../models/User.model"));
 const Product_model_1 = __importDefault(require("../models/Product.model"));
@@ -84,13 +89,228 @@ const account_model_1 = __importDefault(require("../models/user/account.model"))
 const password_1 = require("../utils/password");
 const activity_service_1 = require("../services/activity.service");
 const Notification_model_1 = __importDefault(require("../models/Notification.model"));
+const Otp_model_1 = __importDefault(require("../models/Otp.model"));
 const customer_admin_service_1 = require("../services/customer-admin.service");
 const cart_service_1 = require("../services/cart.service");
 const wishlist_service_1 = require("../services/wishlist.service");
 const invoice_service_1 = require("../services/invoice.service");
 const order_service_1 = require("../services/order.service");
 const cloudinary_service_1 = require("../services/cloudinary.service");
+const mail_service_1 = require("../services/mail.service");
 const dummyHash = (0, password_1.hashPassword)("invalid-admin-login");
+const ADMIN_PASSWORD_RESET_EMAIL = (process.env.ADMIN_PASSWORD_RESET_EMAIL || "hivrasoft@gmail.com").trim().toLowerCase();
+const ADMIN_RESET_OTP_MINUTES = Math.max(1, Number(process.env.OTP_EXPIRES_MINUTES || 5));
+const ADMIN_RESET_MAX_ATTEMPTS = 5;
+function adminResetOtpHash(email, otp) {
+    const secret = process.env.OTP_HASH_SECRET || process.env.JWT_SECRET;
+    if (!secret)
+        throw new Error("OTP/JWT secret missing");
+    return node_crypto_1.default
+        .createHmac("sha256", secret)
+        .update(`${email}:admin_password_reset:${otp}`)
+        .digest("hex");
+}
+async function getPrimaryAdminForPasswordReset() {
+    const byUsername = await User_model_1.default.findOne({
+        username: "admin",
+        role: { $in: ["admin", "super_admin"] },
+        isActive: true,
+    }).select("_id username role isActive");
+    if (byUsername)
+        return byUsername;
+    return User_model_1.default.findOne({
+        role: { $in: ["admin", "super_admin"] },
+        isActive: true,
+    })
+        .sort({ createdAt: 1 })
+        .select("_id username role isActive");
+}
+function validateNewAdminPassword(newPassword, confirmPassword) {
+    if (typeof newPassword !== "string" || typeof confirmPassword !== "string") {
+        throw new Error("New password and confirm password are required.");
+    }
+    if (newPassword.length < 8 || newPassword.length > 128) {
+        throw new Error("New password must be between 8 and 128 characters.");
+    }
+    if (newPassword !== confirmPassword) {
+        throw new Error("New password and confirm password do not match.");
+    }
+    return newPassword;
+}
+/**
+ * POST /api/admin/change-password
+ * Authenticated admin password change using old password.
+ */
+async function changeAdminPassword(req, res) {
+    try {
+        const { oldPassword, newPassword, confirmPassword } = req.body || {};
+        if (typeof oldPassword !== "string" || !oldPassword) {
+            return res.status(400).json({ success: false, message: "Old password is required." });
+        }
+        const cleanNewPassword = validateNewAdminPassword(newPassword, confirmPassword);
+        const user = await User_model_1.default.findById(req.user._id).select("+passwordHash role isActive");
+        if (!user || !user.isActive || !["admin", "super_admin"].includes(user.role)) {
+            return res.status(404).json({ success: false, message: "Admin user not found." });
+        }
+        const oldValid = await (0, password_1.verifyPassword)(oldPassword, user.passwordHash || (await dummyHash));
+        if (!oldValid) {
+            return res.status(400).json({ success: false, message: "Old password is incorrect." });
+        }
+        user.passwordHash = await (0, password_1.hashPassword)(cleanNewPassword);
+        await user.save();
+        return res.status(200).json({
+            success: true,
+            message: "Password changed successfully.",
+        });
+    }
+    catch (error) {
+        return res.status(400).json({
+            success: false,
+            message: error instanceof Error ? error.message : "Unable to change password.",
+        });
+    }
+}
+/**
+ * POST /api/admin/forgot-password/send-otp
+ * Sends OTP only to the fixed admin recovery mailbox.
+ */
+async function adminForgotPasswordSendOtp(_req, res) {
+    try {
+        const admin = await getPrimaryAdminForPasswordReset();
+        if (!admin) {
+            return res.status(404).json({ success: false, message: "Admin account not found." });
+        }
+        const existing = await Otp_model_1.default.findOne({
+            email: ADMIN_PASSWORD_RESET_EMAIL,
+            purpose: "admin_password_reset",
+        }).lean();
+        if (existing?.updatedAt) {
+            const elapsed = Date.now() - new Date(existing.updatedAt).getTime();
+            if (elapsed < 60_000) {
+                return res.status(429).json({
+                    success: false,
+                    message: `Please wait ${Math.ceil((60_000 - elapsed) / 1000)} seconds before requesting another OTP.`,
+                });
+            }
+        }
+        const otp = node_crypto_1.default.randomInt(100000, 1000000).toString();
+        const expiresAt = new Date(Date.now() + ADMIN_RESET_OTP_MINUTES * 60_000);
+        await Otp_model_1.default.findOneAndUpdate({
+            email: ADMIN_PASSWORD_RESET_EMAIL,
+            purpose: "admin_password_reset",
+        }, {
+            email: ADMIN_PASSWORD_RESET_EMAIL,
+            otpHash: adminResetOtpHash(ADMIN_PASSWORD_RESET_EMAIL, otp),
+            purpose: "admin_password_reset",
+            userId: admin._id,
+            attempts: 0,
+            expiresAt,
+        }, { upsert: true, new: true, setDefaultsOnInsert: true });
+        await (0, mail_service_1.sendOtpEmail)(ADMIN_PASSWORD_RESET_EMAIL, otp);
+        return res.status(200).json({
+            success: true,
+            message: `OTP sent to ${ADMIN_PASSWORD_RESET_EMAIL}.`,
+            email: ADMIN_PASSWORD_RESET_EMAIL,
+            expiresInMinutes: ADMIN_RESET_OTP_MINUTES,
+        });
+    }
+    catch (error) {
+        return res.status(400).json({
+            success: false,
+            message: error instanceof Error ? error.message : "Unable to send reset OTP.",
+        });
+    }
+}
+/**
+ * POST /api/admin/forgot-password/verify-otp
+ * Verifies OTP and returns a short-lived reset token.
+ */
+async function adminForgotPasswordVerifyOtp(req, res) {
+    try {
+        const otp = String(req.body?.otp || "").trim();
+        if (!/^\d{6}$/.test(otp)) {
+            return res.status(400).json({ success: false, message: "Enter the 6 digit OTP." });
+        }
+        const record = await Otp_model_1.default.findOne({
+            email: ADMIN_PASSWORD_RESET_EMAIL,
+            purpose: "admin_password_reset",
+        });
+        if (!record || record.expiresAt.getTime() < Date.now()) {
+            if (record)
+                await record.deleteOne();
+            return res.status(400).json({ success: false, message: "OTP expired. Please request a new OTP." });
+        }
+        if (record.attempts >= ADMIN_RESET_MAX_ATTEMPTS) {
+            await record.deleteOne();
+            return res.status(400).json({ success: false, message: "Too many incorrect OTP attempts. Request a new OTP." });
+        }
+        const receivedHash = adminResetOtpHash(ADMIN_PASSWORD_RESET_EMAIL, otp);
+        const expected = Buffer.from(record.otpHash, "hex");
+        const received = Buffer.from(receivedHash, "hex");
+        const matches = expected.length === received.length &&
+            node_crypto_1.default.timingSafeEqual(expected, received);
+        if (!matches) {
+            record.attempts += 1;
+            await record.save();
+            return res.status(400).json({ success: false, message: "Incorrect OTP." });
+        }
+        if (!process.env.JWT_SECRET)
+            throw new Error("JWT secret missing");
+        const userId = String(record.userId || "");
+        if (!userId)
+            throw new Error("Reset request is invalid.");
+        const resetToken = jsonwebtoken_1.default.sign({ id: userId, purpose: "admin_password_reset" }, process.env.JWT_SECRET, { expiresIn: "10m" });
+        await record.deleteOne();
+        return res.status(200).json({
+            success: true,
+            message: "OTP verified.",
+            resetToken,
+        });
+    }
+    catch (error) {
+        return res.status(400).json({
+            success: false,
+            message: error instanceof Error ? error.message : "Unable to verify OTP.",
+        });
+    }
+}
+/**
+ * POST /api/admin/forgot-password/reset
+ * Resets admin password after verified OTP.
+ */
+async function adminForgotPasswordReset(req, res) {
+    try {
+        const resetToken = String(req.body?.resetToken || "");
+        const cleanNewPassword = validateNewAdminPassword(req.body?.newPassword, req.body?.confirmPassword);
+        if (!resetToken) {
+            return res.status(400).json({ success: false, message: "Password reset session is missing." });
+        }
+        if (!process.env.JWT_SECRET)
+            throw new Error("JWT secret missing");
+        const decoded = jsonwebtoken_1.default.verify(resetToken, process.env.JWT_SECRET);
+        if (!decoded?.id || decoded.purpose !== "admin_password_reset") {
+            return res.status(400).json({ success: false, message: "Password reset session is invalid." });
+        }
+        const user = await User_model_1.default.findById(decoded.id).select("+passwordHash role isActive");
+        if (!user || !user.isActive || !["admin", "super_admin"].includes(user.role)) {
+            return res.status(404).json({ success: false, message: "Admin account not found." });
+        }
+        user.passwordHash = await (0, password_1.hashPassword)(cleanNewPassword);
+        await user.save();
+        return res.status(200).json({
+            success: true,
+            message: "Password reset successfully. You can sign in with the new password.",
+        });
+    }
+    catch (error) {
+        const message = error instanceof Error && error.name === "TokenExpiredError"
+            ? "Password reset session expired. Please request a new OTP."
+            : error instanceof Error
+                ? error.message
+                : "Unable to reset password.";
+        return res.status(400).json({ success: false, message });
+    }
+}
 async function adminLogin(req, res) {
     const { username, password } = req.body || {};
     if (typeof username !== "string" ||
