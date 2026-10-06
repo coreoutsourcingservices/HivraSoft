@@ -7,7 +7,8 @@ import mongoose, {
 export type OtpPurpose =
   | "register"
   | "login"
-  | "email_change";
+  | "email_change"
+  | "admin_password_reset";
 
 export interface IOtp extends Document {
   email: string;
@@ -36,7 +37,7 @@ const otpSchema = new Schema<IOtp>(
 
     purpose: {
       type: String,
-      enum: ["register", "login", "email_change"],
+      enum: ["register", "login", "email_change", "admin_password_reset"],
       required: true,
     },
 

@@ -246,6 +246,57 @@ const defaultProductImage = (color: any) => {
   return images.find((image: any) => image?.isDefault) || images[0] || null;
 };
 
+const orderHomepageCategories = (categories: any[]) => {
+  const rows = categories.map((category: any) => ({
+    _id: String(category._id),
+    name: String(category.name || "Category"),
+    slug: String(category.slug || ""),
+    level: Number(category.level || 0),
+    parent: category.parent ? String(category.parent) : null,
+    sortOrder: Number(category.sortOrder || 0),
+  }));
+
+  const ids = new Set(rows.map((row) => row._id));
+  const children = new Map<string | null, typeof rows>();
+
+  for (const row of rows) {
+    const parentKey = row.parent && ids.has(row.parent) ? row.parent : null;
+    const bucket = children.get(parentKey) || [];
+    bucket.push(row);
+    children.set(parentKey, bucket);
+  }
+
+  for (const bucket of children.values()) {
+    bucket.sort((a, b) =>
+      a.sortOrder - b.sortOrder || a.name.localeCompare(b.name)
+    );
+  }
+
+  const ordered: Array<{
+    _id: string;
+    name: string;
+    slug: string;
+    level: number;
+    parent: string | null;
+  }> = [];
+
+  const walk = (parent: string | null, depth: number) => {
+    for (const row of children.get(parent) || []) {
+      ordered.push({
+        _id: row._id,
+        name: row.name,
+        slug: row.slug,
+        level: depth,
+        parent: row.parent,
+      });
+      walk(row._id, depth + 1);
+    }
+  };
+
+  walk(null, 0);
+  return ordered;
+};
+
 export async function getHomepageAdminOptions(_req: Request, res: Response) {
   try {
     const [products, categories] = await Promise.all([
@@ -307,13 +358,7 @@ export async function getHomepageAdminOptions(_req: Request, res: Response) {
     return res.json({
       success: true,
       products: formattedProducts,
-      categories: categories.map((category: any) => ({
-        _id: String(category._id),
-        name: String(category.name || "Category"),
-        slug: String(category.slug || ""),
-        level: Number(category.level || 0),
-        parent: category.parent ? String(category.parent) : null,
-      })),
+      categories: orderHomepageCategories(categories),
     });
   } catch (error) {
     return res.status(500).json({

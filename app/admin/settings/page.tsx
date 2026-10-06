@@ -3,6 +3,9 @@
 import {
   Bell,
   Camera,
+  Eye,
+  EyeOff,
+  KeyRound,
   ChevronRight,
   Heart,
   LoaderCircle,
@@ -28,12 +31,14 @@ import {
 import {
   getAdminUserSettings,
   updateAdminUserSettings,
+  changeAdminPassword,
   type AdminUserSettings,
 } from "@/lib/admin-api";
 
 type Tab =
   | "profile"
   | "personal"
+  | "password"
   | "activity";
 
 type Gender =
@@ -318,7 +323,7 @@ export default function AdminSettingsPage() {
           }}
         >
           Manage your profile, personal
-          information and account
+          information, password and account
           activity.
         </p>
       </section>
@@ -364,6 +369,17 @@ export default function AdminSettingsPage() {
               <UsersRound size={17} />
             }
             label="Personal Information"
+          />
+
+          <SettingsTab
+            active={
+              tab === "password"
+            }
+            onClick={() =>
+              setTab("password")
+            }
+            icon={<KeyRound size={17} />}
+            label="Change Password"
           />
 
           <SettingsTab
@@ -454,6 +470,10 @@ export default function AdminSettingsPage() {
             <PersonalTab
               settings={settings}
             />
+          )}
+
+          {tab === "password" && (
+            <PasswordTab />
           )}
 
           {tab === "activity" && (
@@ -954,6 +974,148 @@ function ActivityTab({
           description="Saved products"
         />
       </div>
+    </section>
+  );
+}
+
+function PasswordTab() {
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showOld, setShowOld] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordSuccess, setPasswordSuccess] = useState("");
+
+  async function submitPassword(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setPasswordError("");
+    setPasswordSuccess("");
+
+    if (newPassword !== confirmPassword) {
+      setPasswordError("New password and confirm password do not match.");
+      return;
+    }
+
+    try {
+      setSavingPassword(true);
+      const result = await changeAdminPassword({
+        oldPassword,
+        newPassword,
+        confirmPassword,
+      });
+      setOldPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setPasswordSuccess(result.message || "Password changed successfully.");
+    } catch (err) {
+      setPasswordError(
+        err instanceof Error ? err.message : "Unable to change password.",
+      );
+    } finally {
+      setSavingPassword(false);
+    }
+  }
+
+  const passwordField = (
+    label: string,
+    value: string,
+    setValue: (value: string) => void,
+    visible: boolean,
+    setVisible: (value: boolean) => void,
+    autoComplete: string,
+  ) => (
+    <div>
+      <label style={{ display: "block", marginBottom: 7, color: TEXT, fontSize: 11, fontWeight: 700 }}>
+        {label}
+      </label>
+      <div style={{ position: "relative" }}>
+        <input
+          type={visible ? "text" : "password"}
+          value={value}
+          onChange={(event) => setValue(event.target.value)}
+          autoComplete={autoComplete}
+          required
+          minLength={label === "Old Password" ? undefined : 8}
+          maxLength={128}
+          style={{ ...inputStyle, paddingRight: 46 }}
+          placeholder={label}
+        />
+        <button
+          type="button"
+          onClick={() => setVisible(!visible)}
+          aria-label={visible ? `Hide ${label}` : `Show ${label}`}
+          style={{
+            position: "absolute",
+            top: 0,
+            right: 0,
+            width: 44,
+            height: 44,
+            border: "none",
+            background: "transparent",
+            color: MUTED,
+            display: "grid",
+            placeItems: "center",
+            cursor: "pointer",
+          }}
+        >
+          {visible ? <EyeOff size={17} /> : <Eye size={17} />}
+        </button>
+      </div>
+    </div>
+  );
+
+  return (
+    <section style={{ ...cardStyle, marginTop: 18, padding: 22, maxWidth: 720 }}>
+      <SectionTitle
+        title="Change Password"
+        description="Enter your old password, then create and confirm a new password."
+      />
+
+      <form onSubmit={submitPassword} style={{ marginTop: 20, display: "grid", gap: 16 }}>
+        {passwordField("Old Password", oldPassword, setOldPassword, showOld, setShowOld, "current-password")}
+        {passwordField("New Password", newPassword, setNewPassword, showNew, setShowNew, "new-password")}
+        {passwordField("Confirm Password", confirmPassword, setConfirmPassword, showConfirm, setShowConfirm, "new-password")}
+
+        {passwordError && (
+          <div style={{ padding: "11px 13px", borderRadius: 9, border: "1px solid #fecaca", background: "#fef2f2", color: "#b91c1c", fontSize: 12 }}>
+            {passwordError}
+          </div>
+        )}
+
+        {passwordSuccess && (
+          <div style={{ padding: "11px 13px", borderRadius: 9, border: "1px solid #a7f3d0", background: "#ecfdf5", color: "#047857", fontSize: 12 }}>
+            {passwordSuccess}
+          </div>
+        )}
+
+        <div>
+          <button
+            type="submit"
+            disabled={savingPassword}
+            style={{
+              minHeight: 43,
+              padding: "0 18px",
+              border: "none",
+              borderRadius: 9,
+              background: BRAND,
+              color: "white",
+              fontSize: 11,
+              fontWeight: 700,
+              cursor: savingPassword ? "default" : "pointer",
+              opacity: savingPassword ? 0.65 : 1,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+            }}
+          >
+            {savingPassword ? <LoaderCircle size={16} className="animate-spin" /> : <KeyRound size={16} />}
+            {savingPassword ? "Changing..." : "Change Password"}
+          </button>
+        </div>
+      </form>
     </section>
   );
 }

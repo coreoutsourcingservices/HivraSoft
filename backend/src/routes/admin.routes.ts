@@ -3,6 +3,10 @@ import { rateLimit } from "express-rate-limit";
 
 import {
   adminLogin,
+  changeAdminPassword,
+  adminForgotPasswordSendOtp,
+  adminForgotPasswordVerifyOtp,
+  adminForgotPasswordReset,
   getAdminCustomers,
   getAdminCustomerDetails,
   getAdminCustomerActivity,
@@ -131,6 +135,21 @@ router.post(
   adminLogin
 );
 
+router.post(
+  "/forgot-password/send-otp",
+  rateLimit({
+    windowMs: 10 * 60 * 1000,
+    limit: 5,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { success: false, message: "Too many OTP requests. Try again later." },
+  }),
+  adminForgotPasswordSendOtp
+);
+
+router.post("/forgot-password/verify-otp", adminForgotPasswordVerifyOtp);
+router.post("/forgot-password/reset", adminForgotPasswordReset);
+
 const authenticateAdmin = async (
   req: Request,
   res: Response,
@@ -186,6 +205,7 @@ router.get("/me", authenticateAdmin, (req: Request, res: Response) => {
   });
 });
 
+router.post("/change-password", authenticateAdmin, changeAdminPassword);
 router.get("/dashboard", authenticateAdmin, getAdminDashboard);
 router.get("/global-search", authenticateAdmin, globalAdminSearch);
 router.get("/trash", authenticateAdmin, getAdminTrash);

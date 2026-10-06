@@ -142,19 +142,25 @@ function stripHtmlForSeo(
     .trim();
 }
 
+function normalizeSeoComparable(value: string) {
+  return stripHtmlForSeo(value)
+    .toLowerCase()
+    .replace(/[’'`]/g, "")
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function hasKeyword(
   value: string,
   keyword: string
 ) {
-  const cleanKeyword = keyword
-    .trim()
-    .toLowerCase();
+  const cleanKeyword = normalizeSeoComparable(keyword);
+  const cleanValue = normalizeSeoComparable(value);
 
   return Boolean(
     cleanKeyword &&
-      String(value || "")
-        .toLowerCase()
-        .includes(cleanKeyword)
+    cleanValue.includes(cleanKeyword)
   );
 }
 
@@ -226,6 +232,31 @@ function getSeoLinks(
   }
 
   return links;
+}
+
+function isInternalSeoLink(href: string) {
+  const value = String(href || "").trim();
+  if (!value) return false;
+  if (/^(\/|\.\/|\.\.\/)/.test(value)) return true;
+  if (!/^https?:\/\//i.test(value)) return false;
+
+  try {
+    const host = new URL(value).hostname.toLowerCase();
+    const currentHost =
+      typeof window !== "undefined"
+        ? window.location.hostname.toLowerCase()
+        : "";
+
+    return (
+      host === currentHost ||
+      host === "hivrasoft.com" ||
+      host === "www.hivrasoft.com" ||
+      host === "hivrasoft.zyvora.com" ||
+      host.endsWith(".hivrasoft.com")
+    );
+  } catch {
+    return false;
+  }
 }
 
 function getSubheadingText(
@@ -301,13 +332,8 @@ function buildSeoAnalysis(
       content,
       keyword
     );
-  const keywordWordCount = Math.max(
-    1,
-    keyword.split(/\s+/).filter(Boolean).length
-  );
   const keywordDensity = words.length
-    ? (keywordOccurrences * keywordWordCount * 100) /
-      words.length
+    ? (keywordOccurrences * 100) / words.length
     : 0;
 
   const subheadingText =
@@ -331,12 +357,13 @@ function buildSeoAnalysis(
   const links = getSeoLinks(
     color.description
   );
-  const externalLinks = links.filter(
-    (link) => /^https?:\/\//i.test(link.href)
+  const internalLinks = links.filter((link) =>
+    isInternalSeoLink(link.href)
   );
-  const internalLinks = links.filter(
+  const externalLinks = links.filter(
     (link) =>
-      /^(\/|\.\/|\.\.\/)/.test(link.href)
+      /^https?:\/\//i.test(link.href) &&
+      !isInternalSeoLink(link.href)
   );
   const hasDoFollowExternal =
     externalLinks.some(
@@ -352,22 +379,6 @@ function buildSeoAnalysis(
   const normalizedKeyword =
     keyword.toLowerCase();
 
-  const sentimentWords = [
-    "best",
-    "amazing",
-    "excellent",
-    "perfect",
-    "premium",
-    "comfortable",
-    "comfort",
-    "soft",
-    "luxury",
-    "love",
-    "easy",
-    "worst",
-    "avoid",
-    "bad",
-  ];
   const powerWords = [
     "best",
     "ultimate",
@@ -475,15 +486,15 @@ function buildSeoAnalysis(
     {
       label:
         urlValue.length > 0 &&
-        urlValue.length <= 75
+        urlValue.length <= 70
           ? `URL is ${urlValue.length} characters long. Kudos!`
-          : `URL is ${urlValue.length} characters long. Keep it within 75 characters.`,
+          : `URL is ${urlValue.length} characters long. Keep it within 70 characters.`,
       pass:
         urlValue.length > 0 &&
-        urlValue.length <= 75,
+        urlValue.length <= 70,
       points: 3,
       guidance:
-        "Product Slug chhota aur clear rakho. Total product URL ko 75 characters ke andar rakhne ki koshish karo.",
+        "Product Slug chhota aur clear rakho. Total product URL ko 70 characters ke andar rakhne ki koshish karo.",
     },
     {
       label: "Great! You are linking to external resources.",
@@ -528,22 +539,15 @@ function buildSeoAnalysis(
         "SEO Title ko Focus Keyword se start karo ya keyword ko bilkul beginning ke paas lao.",
     },
     {
-      label: "Your title has a positive or a negative sentiment.",
-      pass: sentimentWords.some((word) =>
-        normalizedTitle.includes(word)
-      ),
-      points: 5,
+      label: powerWords.some((word) => normalizedTitle.includes(word))
+        ? "Your title contains at least 1 power word."
+        : "Your title is clear and product-focused; a power word is optional.",
+      pass:
+        powerWords.some((word) => normalizedTitle.includes(word)) ||
+        (Boolean(keyword) && hasKeyword(effectiveTitle, keyword)),
+      points: 9,
       guidance:
-        "Title me natural sentiment word add karo, jaise Best, Premium, Comfortable, Perfect ya Amazing — sirf jab product par fit baithe.",
-    },
-    {
-      label: "Your title contains at least 1 power word.",
-      pass: powerWords.some((word) =>
-        normalizedTitle.includes(word)
-      ),
-      points: 4,
-      guidance:
-        "SEO Title me ek relevant power word add karo, jaise Premium, Ultimate, Essential, Exclusive ya Best.",
+        "Power word optional hai. Agar naturally fit ho to Premium, Ultimate, Essential, Exclusive ya Best use kar sakte ho; exact product Focus Keyword title me hona enough hai.",
     },
     {
       label: "You are using a number in your SEO title.",
@@ -3319,9 +3323,7 @@ export default function ProductForm({
                                 }}
                               >
                                 <span className="block truncate text-sm font-semibold text-[#2A211E]">
-                                  {
-                                    category.name
-                                  }
+                                  {`${"— ".repeat(Math.min(level, 6))}${category.name}`}
                                 </span>
 
                                 <span className="mt-0.5 block truncate text-[10px] text-black/35">

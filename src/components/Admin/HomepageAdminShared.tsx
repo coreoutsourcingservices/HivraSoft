@@ -257,7 +257,7 @@ export function CategorySelect({
         disabled={disabled}
         className="mt-3 h-12 w-full rounded-[14px] border border-[#211A18]/10 bg-[#FAF8F6] px-4 text-[12px] outline-none disabled:opacity-50"
       >
-        <option value="">Select category</option>
+        <option value="">No category</option>
         {categories.map((category) => (
           <option key={category._id} value={category._id}>
             {`${"— ".repeat(Math.min(category.level, 4))}${category.name}`}

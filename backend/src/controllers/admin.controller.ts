@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import jwt from "jsonwebtoken";
+import crypto from "node:crypto";
 import mongoose, { Types } from "mongoose";
 
 import User from "../models/User.model";
@@ -15,14 +16,283 @@ import Account from "../models/user/account.model";
 import { hashPassword, verifyPassword } from "../utils/password";
 import { getUserActivities, trackUserActivity } from "../services/activity.service";
 import Notification from "../models/Notification.model";
+import Otp from "../models/Otp.model";
 import { listAdminCustomers } from "../services/customer-admin.service";
 import { addItemToCart, clearUserCart, removeCartItem, updateCartItem, getUserCart } from "../services/cart.service";
 import { addProductToWishlist, clearUserWishlist, removeProductFromWishlist, getUserWishlist } from "../services/wishlist.service";
 import { buildInvoicePdf, buildInvoicesPdf } from "../services/invoice.service";
 import { createOrderStatusNotification, isAdminTransitionAllowed, restoreOrderInventoryIfNeeded } from "../services/order.service";
 import { deleteCloudinaryImage, uploadImageBuffer } from "../services/cloudinary.service";
+import { sendOtpEmail } from "../services/mail.service";
 
 const dummyHash = hashPassword("invalid-admin-login");
+
+const ADMIN_PASSWORD_RESET_EMAIL = (
+  process.env.ADMIN_PASSWORD_RESET_EMAIL || "hivrasoft@gmail.com"
+).trim().toLowerCase();
+
+const ADMIN_RESET_OTP_MINUTES = Math.max(
+  1,
+  Number(process.env.OTP_EXPIRES_MINUTES || 5)
+);
+
+const ADMIN_RESET_MAX_ATTEMPTS = 5;
+
+function adminResetOtpHash(email: string, otp: string) {
+  const secret = process.env.OTP_HASH_SECRET || process.env.JWT_SECRET;
+  if (!secret) throw new Error("OTP/JWT secret missing");
+  return crypto
+    .createHmac("sha256", secret)
+    .update(`${email}:admin_password_reset:${otp}`)
+    .digest("hex");
+}
+
+async function getPrimaryAdminForPasswordReset() {
+  const byUsername = await User.findOne({
+    username: "admin",
+    role: { $in: ["admin", "super_admin"] },
+    isActive: true,
+  }).select("_id username role isActive");
+
+  if (byUsername) return byUsername;
+
+  return User.findOne({
+    role: { $in: ["admin", "super_admin"] },
+    isActive: true,
+  })
+    .sort({ createdAt: 1 })
+    .select("_id username role isActive");
+}
+
+function validateNewAdminPassword(
+  newPassword: unknown,
+  confirmPassword: unknown
+): string {
+  if (typeof newPassword !== "string" || typeof confirmPassword !== "string") {
+    throw new Error("New password and confirm password are required.");
+  }
+  if (newPassword.length < 8 || newPassword.length > 128) {
+    throw new Error("New password must be between 8 and 128 characters.");
+  }
+  if (newPassword !== confirmPassword) {
+    throw new Error("New password and confirm password do not match.");
+  }
+  return newPassword;
+}
+
+/**
+ * POST /api/admin/change-password
+ * Authenticated admin password change using old password.
+ */
+export async function changeAdminPassword(req: Request, res: Response) {
+  try {
+    const { oldPassword, newPassword, confirmPassword } = req.body || {};
+    if (typeof oldPassword !== "string" || !oldPassword) {
+      return res.status(400).json({ success: false, message: "Old password is required." });
+    }
+
+    const cleanNewPassword = validateNewAdminPassword(newPassword, confirmPassword);
+    const user = await User.findById(req.user!._id).select("+passwordHash role isActive");
+
+    if (!user || !user.isActive || !["admin", "super_admin"].includes(user.role)) {
+      return res.status(404).json({ success: false, message: "Admin user not found." });
+    }
+
+    const oldValid = await verifyPassword(oldPassword, user.passwordHash || (await dummyHash));
+    if (!oldValid) {
+      return res.status(400).json({ success: false, message: "Old password is incorrect." });
+    }
+
+    user.passwordHash = await hashPassword(cleanNewPassword);
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Password changed successfully.",
+    });
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      message: error instanceof Error ? error.message : "Unable to change password.",
+    });
+  }
+}
+
+/**
+ * POST /api/admin/forgot-password/send-otp
+ * Sends OTP only to the fixed admin recovery mailbox.
+ */
+export async function adminForgotPasswordSendOtp(_req: Request, res: Response) {
+  try {
+    const admin = await getPrimaryAdminForPasswordReset();
+    if (!admin) {
+      return res.status(404).json({ success: false, message: "Admin account not found." });
+    }
+
+    const existing = await Otp.findOne({
+      email: ADMIN_PASSWORD_RESET_EMAIL,
+      purpose: "admin_password_reset",
+    }).lean();
+
+    if (existing?.updatedAt) {
+      const elapsed = Date.now() - new Date(existing.updatedAt).getTime();
+      if (elapsed < 60_000) {
+        return res.status(429).json({
+          success: false,
+          message: `Please wait ${Math.ceil((60_000 - elapsed) / 1000)} seconds before requesting another OTP.`,
+        });
+      }
+    }
+
+    const otp = crypto.randomInt(100000, 1000000).toString();
+    const expiresAt = new Date(Date.now() + ADMIN_RESET_OTP_MINUTES * 60_000);
+
+    await Otp.findOneAndUpdate(
+      {
+        email: ADMIN_PASSWORD_RESET_EMAIL,
+        purpose: "admin_password_reset",
+      },
+      {
+        email: ADMIN_PASSWORD_RESET_EMAIL,
+        otpHash: adminResetOtpHash(ADMIN_PASSWORD_RESET_EMAIL, otp),
+        purpose: "admin_password_reset",
+        userId: admin._id,
+        attempts: 0,
+        expiresAt,
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    await sendOtpEmail(ADMIN_PASSWORD_RESET_EMAIL, otp);
+
+    return res.status(200).json({
+      success: true,
+      message: `OTP sent to ${ADMIN_PASSWORD_RESET_EMAIL}.`,
+      email: ADMIN_PASSWORD_RESET_EMAIL,
+      expiresInMinutes: ADMIN_RESET_OTP_MINUTES,
+    });
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      message: error instanceof Error ? error.message : "Unable to send reset OTP.",
+    });
+  }
+}
+
+/**
+ * POST /api/admin/forgot-password/verify-otp
+ * Verifies OTP and returns a short-lived reset token.
+ */
+export async function adminForgotPasswordVerifyOtp(req: Request, res: Response) {
+  try {
+    const otp = String(req.body?.otp || "").trim();
+    if (!/^\d{6}$/.test(otp)) {
+      return res.status(400).json({ success: false, message: "Enter the 6 digit OTP." });
+    }
+
+    const record = await Otp.findOne({
+      email: ADMIN_PASSWORD_RESET_EMAIL,
+      purpose: "admin_password_reset",
+    });
+
+    if (!record || record.expiresAt.getTime() < Date.now()) {
+      if (record) await record.deleteOne();
+      return res.status(400).json({ success: false, message: "OTP expired. Please request a new OTP." });
+    }
+
+    if (record.attempts >= ADMIN_RESET_MAX_ATTEMPTS) {
+      await record.deleteOne();
+      return res.status(400).json({ success: false, message: "Too many incorrect OTP attempts. Request a new OTP." });
+    }
+
+    const receivedHash = adminResetOtpHash(ADMIN_PASSWORD_RESET_EMAIL, otp);
+    const expected = Buffer.from(record.otpHash, "hex");
+    const received = Buffer.from(receivedHash, "hex");
+    const matches =
+      expected.length === received.length &&
+      crypto.timingSafeEqual(expected, received);
+
+    if (!matches) {
+      record.attempts += 1;
+      await record.save();
+      return res.status(400).json({ success: false, message: "Incorrect OTP." });
+    }
+
+    if (!process.env.JWT_SECRET) throw new Error("JWT secret missing");
+    const userId = String(record.userId || "");
+    if (!userId) throw new Error("Reset request is invalid.");
+
+    const resetToken = jwt.sign(
+      { id: userId, purpose: "admin_password_reset" },
+      process.env.JWT_SECRET,
+      { expiresIn: "10m" }
+    );
+
+    await record.deleteOne();
+
+    return res.status(200).json({
+      success: true,
+      message: "OTP verified.",
+      resetToken,
+    });
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      message: error instanceof Error ? error.message : "Unable to verify OTP.",
+    });
+  }
+}
+
+/**
+ * POST /api/admin/forgot-password/reset
+ * Resets admin password after verified OTP.
+ */
+export async function adminForgotPasswordReset(req: Request, res: Response) {
+  try {
+    const resetToken = String(req.body?.resetToken || "");
+    const cleanNewPassword = validateNewAdminPassword(
+      req.body?.newPassword,
+      req.body?.confirmPassword
+    );
+
+    if (!resetToken) {
+      return res.status(400).json({ success: false, message: "Password reset session is missing." });
+    }
+    if (!process.env.JWT_SECRET) throw new Error("JWT secret missing");
+
+    const decoded = jwt.verify(resetToken, process.env.JWT_SECRET) as {
+      id?: string;
+      purpose?: string;
+    };
+
+    if (!decoded?.id || decoded.purpose !== "admin_password_reset") {
+      return res.status(400).json({ success: false, message: "Password reset session is invalid." });
+    }
+
+    const user = await User.findById(decoded.id).select("+passwordHash role isActive");
+    if (!user || !user.isActive || !["admin", "super_admin"].includes(user.role)) {
+      return res.status(404).json({ success: false, message: "Admin account not found." });
+    }
+
+    user.passwordHash = await hashPassword(cleanNewPassword);
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Password reset successfully. You can sign in with the new password.",
+    });
+  } catch (error) {
+    const message =
+      error instanceof Error && error.name === "TokenExpiredError"
+        ? "Password reset session expired. Please request a new OTP."
+        : error instanceof Error
+          ? error.message
+          : "Unable to reset password.";
+
+    return res.status(400).json({ success: false, message });
+  }
+}
+
 
 export async function adminLogin(req: Request, res: Response) {
   const { username, password } = req.body || {};

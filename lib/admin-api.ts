@@ -274,6 +274,18 @@ export async function updateAdminUserSettings(input: {
 }
 
 
+
+export async function changeAdminPassword(input: {
+  oldPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}) {
+  return apiFetch<{ success: boolean; message: string }>(
+    "/api/admin/change-password",
+    { method: "POST", body: input }
+  );
+}
+
 export type CommerceTrackingStatus = "IN_CART" | "IN_WISHLIST" | "REMOVED" | "PURCHASED";
 
 export type CommerceTrackingRow = {
