@@ -16,6 +16,8 @@ export interface IUser extends Document {
   email: string;
   phone: string;
   gender: "male" | "female" | "other";
+  birthday?: Date | null;
+  anniversary?: Date | null;
 
   role: UserRole;
 
@@ -62,6 +64,18 @@ const userSchema = new Schema<IUser>(
       type: String,
       enum: ["male", "female", "other"],
       default: "other",
+      index: true,
+    },
+
+    birthday: {
+      type: Date,
+      default: null,
+      index: true,
+    },
+
+    anniversary: {
+      type: Date,
+      default: null,
       index: true,
     },
 

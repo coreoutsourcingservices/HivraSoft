@@ -586,6 +586,8 @@ export async function createAdminCustomer(req: Request, res: Response) {
     const accountStatus = (["active", "inactive", "blocked"].includes(requestedStatus) ? requestedStatus : "active") as "active" | "inactive" | "blocked";
     const customer: any = await User.create({
       name, email, phone, role: "customer", emailVerified: Boolean(req.body?.emailVerified),
+      birthday: req.body?.birthday ? new Date(req.body.birthday) : null,
+      anniversary: req.body?.anniversary ? new Date(req.body.anniversary) : null,
       isActive: accountStatus === "active", accountStatus, lastActiveAt: req.body?.lastActiveAt || null,
     });
     await Account.updateOne(
@@ -615,10 +617,21 @@ export async function updateAdminCustomer(req: Request, res: Response) {
       if (!["male", "female", "other"].includes(gender)) return res.status(400).json({ success: false, message: "Gender must be male, female or other." });
       update.gender = gender;
     }
+    for (const field of ["birthday", "anniversary"] as const) {
+      if (req.body?.[field] !== undefined) {
+        const raw = String(req.body[field] || "").trim();
+        if (!raw) update[field] = null;
+        else {
+          const parsed = new Date(raw);
+          if (Number.isNaN(parsed.getTime())) return res.status(400).json({ success: false, message: `Invalid ${field} date.` });
+          update[field] = parsed;
+        }
+      }
+    }
     if (req.body?.emailVerified !== undefined) update.emailVerified = Boolean(req.body.emailVerified);
     if (Object.values(update).some((value) => value === "")) return res.status(400).json({ success: false, message: "Updated fields cannot be empty." });
     const customer = await User.findOneAndUpdate({ _id: id, role: "customer" }, { $set: update }, { new: true, runValidators: true })
-      .select("name email phone gender emailVerified isActive accountStatus lastActiveAt createdAt updatedAt");
+      .select("name email phone gender birthday anniversary emailVerified isActive accountStatus lastActiveAt createdAt updatedAt");
     if (!customer) return res.status(404).json({ success: false, message: "Customer not found." });
     return res.json({ success: true, message: "Customer updated.", data: customer });
   } catch (error: any) {
@@ -729,7 +742,7 @@ export async function getAdminCustomerDetails(req: Request, res: Response) {
     const userObjectId = new Types.ObjectId(customerId);
 
     const customer = await User.findOne({ _id: userObjectId, role: "customer" })
-      .select("name username email phone gender role emailVerified isActive accountStatus lastActiveAt avatar createdAt updatedAt")
+      .select("name username email phone gender birthday anniversary role emailVerified isActive accountStatus lastActiveAt avatar createdAt updatedAt")
       .lean();
 
     if (!customer) {
@@ -1084,7 +1097,7 @@ export async function updateAdminCustomerStatus(req: Request, res: Response) {
       { _id: id, role: "customer" },
       { $set: { isActive, accountStatus: rawStatus } },
       { new: true }
-    ).select("name email phone gender emailVerified isActive accountStatus lastActiveAt createdAt updatedAt");
+    ).select("name email phone gender birthday anniversary emailVerified isActive accountStatus lastActiveAt createdAt updatedAt");
 
     if (!customer) return res.status(404).json({ success: false, message: "Customer not found." });
 

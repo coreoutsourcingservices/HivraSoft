@@ -114,6 +114,25 @@ import {
 
 
 import {
+  listSendYourBraAdmin,
+  getSendYourBraAdmin,
+  listResellerRegistrationsAdmin,
+  getResellerRegistrationAdmin,
+} from "../controllers/lead-form.controller";
+
+import {
+  listNotificationSchedules,
+  getNotificationSchedule,
+  createNotificationSchedule,
+  updateNotificationSchedule,
+  updateNotificationScheduleStatus,
+  deleteNotificationSchedule,
+  listNotificationScheduleHistory,
+  previewNotificationScheduleAudience,
+  runNotificationScheduleNow,
+} from "../controllers/notification-schedule.controller";
+
+import {
   globalAdminSearch,
   getAdminTrash,
   restoreAdminTrash,
@@ -207,6 +226,22 @@ router.get("/me", authenticateAdmin, (req: Request, res: Response) => {
 
 router.post("/change-password", authenticateAdmin, changeAdminPassword);
 router.get("/dashboard", authenticateAdmin, getAdminDashboard);
+router.get("/send-your-bra", authenticateAdmin, listSendYourBraAdmin);
+router.get("/send-your-bra/:id", authenticateAdmin, getSendYourBraAdmin);
+router.get("/reseller-registration", authenticateAdmin, listResellerRegistrationsAdmin);
+router.get("/reseller-registration/:id", authenticateAdmin, getResellerRegistrationAdmin);
+
+router.get("/notification-schedules", authenticateAdmin, listNotificationSchedules);
+router.post("/notification-schedules", authenticateAdmin, createNotificationSchedule);
+router.post("/notification-schedules/preview", authenticateAdmin, previewNotificationScheduleAudience);
+router.get("/notification-schedules/:id", authenticateAdmin, getNotificationSchedule);
+router.put("/notification-schedules/:id", authenticateAdmin, updateNotificationSchedule);
+router.patch("/notification-schedules/:id", authenticateAdmin, updateNotificationSchedule);
+router.patch("/notification-schedules/:id/status", authenticateAdmin, updateNotificationScheduleStatus);
+router.post("/notification-schedules/:id/run", authenticateAdmin, runNotificationScheduleNow);
+router.get("/notification-schedules/:id/history", authenticateAdmin, listNotificationScheduleHistory);
+router.delete("/notification-schedules/:id", authenticateAdmin, deleteNotificationSchedule);
+
 router.get("/global-search", authenticateAdmin, globalAdminSearch);
 router.get("/trash", authenticateAdmin, getAdminTrash);
 router.post("/trash/:type/:id/restore", authenticateAdmin, restoreAdminTrash);

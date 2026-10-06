@@ -69,7 +69,7 @@ export async function getUserSettings(req: Request, res: Response) {
 
     const [user, ratings, wishlist, notifications] = await Promise.all([
       User.findById(userId)
-        .select("name email phone gender avatar emailVerified createdAt updatedAt")
+        .select("name email phone gender birthday anniversary avatar emailVerified createdAt updatedAt")
         .lean(),
       Review.countDocuments({ userId: objectId }),
       Wishlist.findOne({ user: objectId }).select("items").lean(),
@@ -105,6 +105,8 @@ export async function getUserSettings(req: Request, res: Response) {
           email: user.email,
           emailVerified: Boolean(user.emailVerified),
           mobile: user.phone,
+          birthday: (user as any).birthday || null,
+          anniversary: (user as any).anniversary || null,
         },
         activity: {
           ratings,
@@ -175,6 +177,18 @@ export async function updateUserProfile(req: Request, res: Response) {
       update.phone = phone;
     }
 
+    for (const field of ["birthday", "anniversary"] as const) {
+      if (req.body?.[field] !== undefined) {
+        const raw = String(req.body[field] || "").trim();
+        if (!raw) update[field] = null;
+        else {
+          const parsed = new Date(raw);
+          if (Number.isNaN(parsed.getTime())) return res.status(400).json({ success: false, message: `Invalid ${field} date.` });
+          update[field] = parsed;
+        }
+      }
+    }
+
     // Do not allow email bypass without OTP verification.
     if (req.body?.email !== undefined) {
       return res.status(400).json({
@@ -198,7 +212,7 @@ export async function updateUserProfile(req: Request, res: Response) {
     if (Object.keys(update).length === 0) {
       return res.status(400).json({
         success: false,
-        message: "Name, gender, mobile number or profile image is required.",
+        message: "Name, gender, mobile number, birthday, anniversary or profile image is required.",
       });
     }
 
@@ -207,7 +221,7 @@ export async function updateUserProfile(req: Request, res: Response) {
       { $set: update },
       { new: true, runValidators: true }
     )
-      .select("name email phone gender avatar emailVerified createdAt updatedAt")
+      .select("name email phone gender birthday anniversary avatar emailVerified createdAt updatedAt")
       .lean();
 
     if (!updated) {
@@ -240,6 +254,8 @@ export async function updateUserProfile(req: Request, res: Response) {
         email: updated.email,
         emailVerified: Boolean(updated.emailVerified),
         mobile: updated.phone,
+        birthday: (updated as any).birthday || null,
+        anniversary: (updated as any).anniversary || null,
       },
     });
   } catch (error) {

@@ -469,7 +469,7 @@ export const getAccountInfo = async (
         req.user._id
       )
         .select(
-          "name email phone gender avatar createdAt"
+          "name email phone gender birthday anniversary avatar createdAt"
         )
         .lean();
 
@@ -509,6 +509,9 @@ export const getAccountInfo = async (
 
         gender:
           (user as any).gender || "other",
+
+        birthday: (user as any).birthday || null,
+        anniversary: (user as any).anniversary || null,
 
         avatar: {
           url:
@@ -561,12 +564,12 @@ export const updateAccountInfo = async (
       return res.status(401).json({ success: false, message: "Authentication required." });
     }
 
-    const { name, phone, gender } = req.body || {};
-    if (name === undefined && phone === undefined && gender === undefined) {
-      return res.status(400).json({ success: false, message: "Name, phone or gender is required." });
+    const { name, phone, gender, birthday, anniversary } = req.body || {};
+    if (name === undefined && phone === undefined && gender === undefined && birthday === undefined && anniversary === undefined) {
+      return res.status(400).json({ success: false, message: "Name, phone, gender, birthday or anniversary is required." });
     }
 
-    const updateData: { name?: string; phone?: string; gender?: "male" | "female" | "other" } = {};
+    const updateData: { name?: string; phone?: string; gender?: "male" | "female" | "other"; birthday?: Date | null; anniversary?: Date | null } = {};
     if (name !== undefined) {
       if (typeof name !== "string" || name.trim().length < 2) return res.status(400).json({ success: false, message: "Name must be at least 2 characters." });
       updateData.name = name.trim();
@@ -580,9 +583,20 @@ export const updateAccountInfo = async (
       if (!["male", "female", "other"].includes(normalized)) return res.status(400).json({ success: false, message: "Gender must be male, female or other." });
       updateData.gender = normalized as "male" | "female" | "other";
     }
+    for (const [field, value] of [["birthday", birthday], ["anniversary", anniversary]] as const) {
+      if (value !== undefined) {
+        if (value === null || String(value).trim() === "") {
+          updateData[field] = null;
+        } else {
+          const parsed = new Date(String(value));
+          if (Number.isNaN(parsed.getTime())) return res.status(400).json({ success: false, message: `Invalid ${field} date.` });
+          updateData[field] = parsed;
+        }
+      }
+    }
 
     const user = await User.findByIdAndUpdate(req.user._id, { $set: updateData }, { new: true, runValidators: true })
-      .select("name email phone gender role avatar createdAt updatedAt")
+      .select("name email phone gender birthday anniversary role avatar createdAt updatedAt")
       .lean();
     if (!user) return res.status(404).json({ success: false, message: "User not found." });
 

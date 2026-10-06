@@ -46,6 +46,7 @@ export default function AdminSidebar() {
   const userRoute =
     pathname.startsWith("/admin/customers") ||
     pathname.startsWith("/admin/notifications") ||
+    pathname.startsWith("/admin/notification-schedules") ||
     pathname.startsWith("/admin/reviews");
   const blogRoute = pathname.startsWith("/admin/blog");
   const offerRoute = pathname.startsWith("/admin/offers");
@@ -155,6 +156,15 @@ export default function AdminSidebar() {
             Wishlist
           </MenuLink>
 
+
+          <MenuLink href="/admin/send-your-bra" active={pathname.startsWith("/admin/send-your-bra")} icon={<Heart size={17} />}>
+            Send Your Bra
+          </MenuLink>
+
+          <MenuLink href="/admin/reseller-registration" active={pathname.startsWith("/admin/reseller-registration")} icon={<UsersRound size={17} />}>
+            Reseller Registrations
+          </MenuLink>
+
           <DropdownMenu
             label="Blog"
             active={blogRoute}
@@ -184,10 +194,17 @@ export default function AdminSidebar() {
             </SubMenuLink>
             <SubMenuLink
               href="/admin/notifications"
-              active={pathname.startsWith("/admin/notifications")}
+              active={pathname === "/admin/notifications"}
               icon={<Bell size={13} />}
             >
               Notifications
+            </SubMenuLink>
+            <SubMenuLink
+              href="/admin/notification-schedules"
+              active={pathname.startsWith("/admin/notification-schedules")}
+              icon={<Bell size={13} />}
+            >
+              Auto Schedules
             </SubMenuLink>
           </DropdownMenu>
 

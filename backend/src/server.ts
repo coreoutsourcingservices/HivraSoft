@@ -5,6 +5,7 @@ import app from "./app";
 import connectDatabase from "./config/database";
 import { startReminderScheduler } from "./services/reminder.service";
 import { startTrashCleanupScheduler } from "./services/admin-trash.service";
+import { startNotificationScheduleWorker } from "./services/notification-schedule.service";
 import {
   ensureProductColorIds,
   removeLegacyProductSlugIndex,
@@ -44,6 +45,7 @@ const startServer = async () => {
 
     startReminderScheduler();
     startTrashCleanupScheduler();
+    startNotificationScheduleWorker();
 
     ready = true;
       console.log(
