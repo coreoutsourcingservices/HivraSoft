@@ -267,7 +267,7 @@ export default function BlogEditor({ blogId }: { blogId?: string }) {
         <div>
           <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-[#8C1839]">Blog Document Editor</p>
           <h2 className="mt-1 text-xl font-semibold text-[#211A18]">{blogId ? "Edit Blog" : "Add New Blog"}</h2>
-          <p className="mt-1 text-[10px] text-[#211A18]/45">One Word-style document editor with headings, formatting, images, links, tables and HTML source.</p>
+          <p className="mt-1 text-[10px] text-[#211A18]/45">One Word-style document editor. Saving or publishing writes this blog to MongoDB and the website shows it under New Blogs.</p>
           <div className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-[8px] font-semibold ${dirty ? "bg-amber-50 text-amber-700" : "bg-emerald-50 text-emerald-700"}`}>{dirty ? "Unsaved Changes" : "Saved"}</div>
         </div>
         <div className="flex flex-wrap gap-2">

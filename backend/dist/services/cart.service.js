@@ -43,6 +43,7 @@ const Product_model_1 = __importDefault(require("../models/Product.model"));
 const DiscountCode_model_1 = __importDefault(require("../models/DiscountCode.model"));
 const discount_service_1 = require("./discount.service");
 const activity_service_1 = require("./activity.service");
+const commerce_email_service_1 = require("./commerce-email.service");
 const tax_service_1 = require("./tax.service");
 /* =========================================================
    HELPERS
@@ -304,7 +305,7 @@ const addItemToCart = async (userId, data) => {
         });
     }
     await cart.save();
-    await (0, activity_service_1.trackUserActivity)({
+    const activity = await (0, activity_service_1.trackUserActivity)({
         userId,
         type: "cart_add",
         productId: data.productId,
@@ -326,7 +327,22 @@ const addItemToCart = async (userId, data) => {
             },
         },
     });
-    return buildCartResponse(cart);
+    const response = await buildCartResponse(cart);
+    void (0, commerce_email_service_1.sendCartAddedEmail)({
+        userId,
+        productId: data.productId,
+        colorId: data.colorId,
+        sizeId: data.sizeId,
+        quantity: nextQuantity,
+        cartTotal: Number(response.total || 0),
+    })
+        .then((sent) => {
+        if (sent && activity?._id) {
+            return (0, activity_service_1.markActivityEmailSent)(String(activity._id));
+        }
+    })
+        .catch((error) => console.error("CART ADDED EMAIL ERROR:", error));
+    return response;
 };
 exports.addItemToCart = addItemToCart;
 /* =========================================================

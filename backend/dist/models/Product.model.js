@@ -59,6 +59,24 @@ const productImageSchema = new mongoose_1.Schema({
         type: Boolean,
         default: false,
     },
+    name: {
+        type: String,
+        default: "",
+        trim: true,
+        maxlength: [
+            200,
+            "Image name cannot exceed 200 characters.",
+        ],
+    },
+    alt: {
+        type: String,
+        default: "",
+        trim: true,
+        maxlength: [
+            500,
+            "Image ALT text cannot exceed 500 characters.",
+        ],
+    },
 }, {
     /*
      * Image ke andar MongoDB _id nahi banega.
@@ -288,6 +306,18 @@ const productColorSchema = new mongoose_1.Schema({
     tags: {
         type: [String],
         default: [],
+    },
+    /* =====================================================
+       FOCUS KEYWORD
+    ===================================================== */
+    focusKeyword: {
+        type: String,
+        default: "",
+        trim: true,
+        maxlength: [
+            180,
+            "Focus keyword cannot exceed 180 characters.",
+        ],
     },
     /* =====================================================
        SEO TITLE

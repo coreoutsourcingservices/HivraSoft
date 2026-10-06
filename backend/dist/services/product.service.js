@@ -128,6 +128,8 @@ const normalizeImages = (images) => {
             publicId,
             isDefault: image.isDefault ??
                 index === 0,
+            name: String(image.name || "").trim(),
+            alt: String(image.alt || "").trim(),
         };
     });
     /*
@@ -262,6 +264,9 @@ const normalizeColors = (colors) => {
                 "",
             description: (0, productHtml_1.sanitizeProductDescriptionHtml)(color.description),
             tags: normalizeTags(color.tags),
+            focusKeyword: color.focusKeyword
+                ?.trim() ||
+                "",
             seoTitle: color.seoTitle
                 ?.trim() ||
                 "",
@@ -466,15 +471,171 @@ const getListingImages = (images) => {
     }
     return listingImages;
 };
+const stripHtmlForSeo = (value) => {
+    return String(value || "")
+        .replace(/<[^>]*>/g, " ")
+        .replace(/&nbsp;/gi, " ")
+        .replace(/&amp;/gi, "&")
+        .replace(/&quot;/gi, '"')
+        .replace(/&#39;/gi, "'")
+        .replace(/\s+/g, " ")
+        .trim();
+};
+const includesSeoKeyword = (value, keyword) => {
+    if (!keyword) {
+        return false;
+    }
+    return String(value || "")
+        .toLowerCase()
+        .includes(keyword.toLowerCase());
+};
+const escapeSeoRegExp = (value) => {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+};
+const countSeoKeywordOccurrences = (value, keyword) => {
+    const cleanKeyword = String(keyword || "")
+        .trim()
+        .toLowerCase();
+    if (!cleanKeyword) {
+        return 0;
+    }
+    const normalized = stripHtmlForSeo(String(value || "")).toLowerCase();
+    const pattern = escapeSeoRegExp(cleanKeyword)
+        .replace(/\s+/g, "\\s+");
+    try {
+        return (normalized.match(new RegExp(pattern, "g")) || []).length;
+    }
+    catch {
+        return 0;
+    }
+};
+const getSeoSubheadingText = (html) => {
+    const value = String(html || "");
+    const headings = [];
+    const headingRegex = /<h[1-6]\b[^>]*>([\s\S]*?)<\/h[1-6]>/gi;
+    let match;
+    while ((match = headingRegex.exec(value))) {
+        headings.push(stripHtmlForSeo(match[1] || ""));
+    }
+    return headings.join(" ");
+};
+const getSeoLinks = (html) => {
+    const value = String(html || "");
+    const links = [];
+    const anchorRegex = /<a\b([^>]*)href=["']([^"']+)["']([^>]*)>/gi;
+    let match;
+    while ((match = anchorRegex.exec(value))) {
+        const attributes = `${match[1] || ""} ${match[3] || ""}`;
+        const relMatch = attributes.match(/\brel=["']([^"']*)["']/i);
+        links.push({
+            href: String(match[2] || "").trim(),
+            rel: String(relMatch?.[1] || "").toLowerCase(),
+        });
+    }
+    return links;
+};
+const calculateSeoScore = (color, siblingColors = [], colorIndex = -1) => {
+    const keyword = String(color?.focusKeyword || "").trim();
+    const normalizedKeyword = keyword.toLowerCase();
+    const title = String(color?.seoTitle || color?.nameProduct || "").trim();
+    const metaDescription = String(color?.seoDescription || color?.shortDescription || "").trim();
+    const slug = String(color?.slugProduct || "").trim();
+    const content = stripHtmlForSeo(`${color?.shortDescription || ""} ${color?.description || ""}`);
+    const words = content
+        .split(/\s+/)
+        .filter(Boolean);
+    const firstTenPercent = words
+        .slice(0, Math.max(1, Math.ceil(words.length * 0.1)))
+        .join(" ");
+    const occurrences = countSeoKeywordOccurrences(content, keyword);
+    const keywordWordCount = Math.max(1, keyword.split(/\s+/).filter(Boolean).length);
+    const density = words.length
+        ? (occurrences * keywordWordCount * 100) / words.length
+        : 0;
+    const subheadingText = getSeoSubheadingText(color?.description);
+    const imageAltHasKeyword = Array.isArray(color?.images)
+        ? color.images.some((image) => includesSeoKeyword(image?.alt, keyword))
+        : false;
+    const links = getSeoLinks(color?.description);
+    const externalLinks = links.filter((link) => /^https?:\/\//i.test(link.href));
+    const internalLinks = links.filter((link) => /^(\/|\.\/|\.\.\/)/.test(link.href));
+    const hasDoFollowExternal = externalLinks.some((link) => !link.rel.split(/\s+/).includes("nofollow"));
+    const otherKeywordUsed = Boolean(keyword) && siblingColors.some((item, index) => index !== colorIndex &&
+        String(item?.focusKeyword || "")
+            .trim()
+            .toLowerCase() === normalizedKeyword);
+    const normalizedTitle = title.toLowerCase();
+    const sentimentWords = [
+        "best",
+        "amazing",
+        "excellent",
+        "perfect",
+        "premium",
+        "comfortable",
+        "comfort",
+        "soft",
+        "luxury",
+        "love",
+        "easy",
+        "worst",
+        "avoid",
+        "bad",
+    ];
+    const powerWords = [
+        "best",
+        "ultimate",
+        "exclusive",
+        "premium",
+        "proven",
+        "powerful",
+        "amazing",
+        "essential",
+        "complete",
+        "perfect",
+        "effortless",
+        "instant",
+        "new",
+        "top",
+    ];
+    const checks = [
+        [includesSeoKeyword(title, keyword), 10],
+        [includesSeoKeyword(metaDescription, keyword), 10],
+        [includesSeoKeyword(slug.replace(/-/g, " "), keyword), 8],
+        [includesSeoKeyword(firstTenPercent, keyword), 8],
+        [includesSeoKeyword(content, keyword), 8],
+        [words.length >= 900, 6],
+        [includesSeoKeyword(subheadingText, keyword), 5],
+        [imageAltHasKeyword, 4],
+        [Boolean(keyword) && density >= 0.5 && density <= 2.5, 5],
+        [`/product/${slug}`.length > 0 && `/product/${slug}`.length <= 75, 3],
+        [externalLinks.length > 0, 4],
+        [hasDoFollowExternal, 3],
+        [internalLinks.length > 0, 3],
+        [Boolean(keyword) && !otherKeywordUsed, 3],
+        [Boolean(normalizedKeyword) && normalizedTitle.startsWith(normalizedKeyword), 7],
+        [sentimentWords.some((word) => normalizedTitle.includes(word)), 5],
+        [powerWords.some((word) => normalizedTitle.includes(word)), 4],
+        [/\d/.test(title), 4],
+    ];
+    const score = checks.reduce((total, [pass, points]) => total + (pass ? points : 0), 0);
+    return Math.max(0, Math.min(100, score));
+};
 const formatProductResponse = (input, limitImages) => {
     const product = toPlainProductObject(input);
     return {
         ...product,
         colors: Array.isArray(product?.colors)
-            ? product.colors.map((color) => {
-                const { description: _description, ...colorWithoutDescription } = color;
+            ? product.colors.map((color, colorIndex) => {
+                const { description: _description, focusKeyword: internalFocusKeyword, ...colorWithoutDescription } = color;
                 return {
                     ...colorWithoutDescription,
+                    ...(limitImages
+                        ? {}
+                        : {
+                            focusKeyword: internalFocusKeyword ||
+                                "",
+                            seoScore: calculateSeoScore(color, product.colors, colorIndex),
+                        }),
                     images: limitImages
                         ? getListingImages(color.images)
                         : color.images,
@@ -766,7 +927,8 @@ const uploadProductColorImages = async (productId, colorSlug, files) => {
         for (let index = 0; index <
             files.length; index++) {
             const file = files[index];
-            const imageName = imageNameFromFile(file.originalname);
+            const imageName = String(file.name || "").trim() ||
+                imageNameFromFile(file.originalname);
             /*
              * Example:
              * front-image-01
@@ -785,10 +947,13 @@ const uploadProductColorImages = async (productId, colorSlug, files) => {
                  * Agar color me pehle koi image nahi,
                  * to first uploaded image default.
                  */
-                isDefault: color.images
-                    .length ===
-                    0 &&
-                    index === 0,
+                isDefault: file.isDefault ??
+                    (color.images
+                        .length ===
+                        0 &&
+                        index === 0),
+                name: String(file.name || imageName).trim(),
+                alt: String(file.alt || "").trim(),
             });
         }
         /*

@@ -520,6 +520,7 @@ async function getAdminCustomerDetails(req, res) {
         const productIds = Array.from(new Set([
             ...((cart?.items || []).map((item) => String(item.product || ""))),
             ...((wishlist?.items || []).map((item) => String(item.product || ""))),
+            ...orders.flatMap((order) => (Array.isArray(order?.items) ? order.items : []).map((item) => String(item?.product?._id || item?.product || item?.productId || ""))),
         ].filter((id) => mongoose_1.Types.ObjectId.isValid(id))));
         const products = productIds.length
             ? await Product_model_1.default.find({ _id: { $in: productIds.map((id) => new mongoose_1.Types.ObjectId(id)) } })
@@ -644,7 +645,24 @@ async function getAdminCustomerDetails(req, res) {
             taxPercentage: Number(order.taxPercentage || 0),
             taxDetails: order.taxDetails || {},
             total: Number(order.total ?? order.grandTotal ?? order.totalAmount ?? 0),
-            items: Array.isArray(order.items) ? order.items : [],
+            items: (Array.isArray(order.items) ? order.items : []).map((item) => {
+                const productId = String(item?.product?._id || item?.product || item?.productId || "");
+                const fallback = productView(productMap.get(productId), item?.colorId, item?.sizeId);
+                const image = String(item?.image ||
+                    item?.imageUrl ||
+                    item?.productImage ||
+                    fallback?.image?.url ||
+                    "");
+                return {
+                    ...item,
+                    productId,
+                    name: String(item?.name || item?.productName || fallback?.name || "Product"),
+                    colorName: String(item?.colorName || fallback?.colorName || ""),
+                    sizeName: String(item?.sizeName || item?.size || fallback?.size || ""),
+                    image,
+                    imageUrl: image,
+                };
+            }),
             shippingAddress: order.shippingAddress || null,
             createdAt: order.createdAt,
             updatedAt: order.updatedAt,
@@ -799,6 +817,61 @@ async function updateAdminCustomerStatus(req, res) {
         });
     }
 }
+function adminOrderItemProductId(item) {
+    const value = item?.product?._id || item?.product || item?.productId || "";
+    const id = String(value);
+    return mongoose_1.Types.ObjectId.isValid(id) ? id : "";
+}
+function adminOrderProductSnapshot(product, item) {
+    if (!product)
+        return null;
+    const colors = Array.isArray(product?.colors) ? product.colors : [];
+    const colorId = String(item?.colorId || "");
+    const color = colors.find((entry) => String(entry?._id || "") === colorId) ||
+        colors.find((entry) => entry?.isDefault === true) ||
+        colors[0] ||
+        null;
+    const images = Array.isArray(color?.images) ? color.images : [];
+    const mainImages = Array.isArray(product?.mainImages) ? product.mainImages : [];
+    const image = images.find((entry) => entry?.isDefault === true && entry?.url) ||
+        images.find((entry) => entry?.url) ||
+        mainImages.find((entry) => entry?.isDefault === true && entry?.url) ||
+        mainImages.find((entry) => entry?.url) ||
+        null;
+    return {
+        name: String(color?.nameProduct || product?.name || "Product"),
+        image: String(image?.url || ""),
+    };
+}
+async function hydrateAdminOrderProductImages(orders) {
+    const ids = Array.from(new Set(orders
+        .flatMap((order) => (Array.isArray(order?.items) ? order.items : []))
+        .map(adminOrderItemProductId)
+        .filter(Boolean)));
+    if (!ids.length)
+        return orders;
+    const products = await Product_model_1.default.find({ _id: { $in: ids.map((id) => new mongoose_1.Types.ObjectId(id)) } })
+        .select("colors mainImages")
+        .lean();
+    const productMap = new Map(products.map((product) => [String(product._id), product]));
+    return orders.map((order) => ({
+        ...order,
+        items: (Array.isArray(order?.items) ? order.items : []).map((item) => {
+            const currentImage = String(item?.image || item?.imageUrl || item?.productImage || item?.photo || "");
+            if (currentImage)
+                return item;
+            const fallback = adminOrderProductSnapshot(productMap.get(adminOrderItemProductId(item)), item);
+            if (!fallback?.image)
+                return item;
+            return {
+                ...item,
+                name: String(item?.name || item?.productName || fallback.name),
+                image: fallback.image,
+                imageUrl: fallback.image,
+            };
+        }),
+    }));
+}
 /** GET /api/admin/orders - paginated order management list. */
 async function getAdminOrders(req, res) {
     try {
@@ -864,10 +937,11 @@ async function getAdminOrders(req, res) {
                 .populate("user", "name email phone")
                 .lean(),
         ]);
+        const hydratedOrders = await hydrateAdminOrderProductImages(orders);
         return res.status(200).json({
             success: true,
-            count: orders.length,
-            orders,
+            count: hydratedOrders.length,
+            orders: hydratedOrders,
             pagination: {
                 page,
                 limit,
@@ -889,7 +963,8 @@ async function getAdminOrderById(req, res) {
         const order = await Order_model_1.default.findById(orderId).populate("user", "name email phone").lean();
         if (!order)
             return res.status(404).json({ success: false, message: "Order not found." });
-        return res.json({ success: true, order });
+        const [hydratedOrder] = await hydrateAdminOrderProductImages([order]);
+        return res.json({ success: true, order: hydratedOrder });
     }
     catch (error) {
         return res.status(500).json({ success: false, message: error instanceof Error ? error.message : "Unable to load order." });

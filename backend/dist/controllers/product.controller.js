@@ -356,9 +356,34 @@ const uploadProductColorImagesController = async (req, res) => {
                 message: "At least one image is required.",
             });
         }
-        const result = await (0, product_service_1.uploadProductColorImages)(id, colorSlug, files.map((file) => ({
+        let imageMeta = [];
+        if (typeof req.body?.imageMeta ===
+            "string") {
+            try {
+                const parsed = JSON.parse(req.body.imageMeta);
+                if (Array.isArray(parsed)) {
+                    imageMeta = parsed;
+                }
+            }
+            catch {
+                imageMeta = [];
+            }
+        }
+        const result = await (0, product_service_1.uploadProductColorImages)(id, colorSlug, files.map((file, index) => ({
             buffer: file.buffer,
             originalname: file.originalname,
+            name: typeof imageMeta[index]?.name ===
+                "string"
+                ? imageMeta[index].name
+                : "",
+            alt: typeof imageMeta[index]?.alt ===
+                "string"
+                ? imageMeta[index].alt
+                : "",
+            isDefault: typeof imageMeta[index]?.isDefault ===
+                "boolean"
+                ? imageMeta[index].isDefault
+                : undefined,
         })));
         return res
             .status(201)
