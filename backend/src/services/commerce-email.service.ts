@@ -1,5 +1,5 @@
 import { Types } from "mongoose";
-import path from "node:path";
+import { BRAND_LOGO_PATH } from "./brand-logo";
 import Product from "../models/Product.model";
 import User from "../models/User.model";
 import Notification from "../models/Notification.model";
@@ -10,10 +10,10 @@ const YOUTUBE_URL = "https://www.youtube.com/@HivraSoft";
 const INSTAGRAM_URL = "https://www.instagram.com/hivrasoft/";
 const FACEBOOK_URL = "https://www.facebook.com/hivrasoft/";
 const BRAND_LOGO_CID = "hivra-soft-logo";
-const BRAND_LOGO_PATH = path.resolve(__dirname, "../../public/hivra-soft-logo.jpg");
 
 const brandLogoAttachment = () => [{
-  filename: "hivra-soft-logo.jpg",
+  filename: "hivra-soft-logo.png",
+  contentType: "image/png",
   path: BRAND_LOGO_PATH,
   cid: BRAND_LOGO_CID,
 }];

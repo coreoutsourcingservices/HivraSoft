@@ -164,8 +164,6 @@ export default function AdminSidebar() {
           >
             <SubMenuLink href="/admin/blog" active={pathname === "/admin/blog"}>All Blogs</SubMenuLink>
             <SubMenuLink href="/admin/blog/add" active={pathname === "/admin/blog/add"} plus>Add New Blog</SubMenuLink>
-            <SubMenuLink href="/admin/blog/categories" active={pathname === "/admin/blog/categories"}>Categories</SubMenuLink>
-            <SubMenuLink href="/admin/blog/tags" active={pathname === "/admin/blog/tags"}>Tags</SubMenuLink>
           </DropdownMenu>
 
           <DropdownMenu

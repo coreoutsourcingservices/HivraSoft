@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import { Types } from "mongoose";
 import Blog from "../models/Blog.model";
 import BlogCategory from "../models/BlogCategory.model";
+import Category from "../models/Category.model";
 import BlogTag from "../models/BlogTag.model";
 import {
   createBlog,
@@ -353,7 +354,10 @@ export async function likePublicBlog(req: Request, res: Response) {
 }
 
 export async function listPublicBlogCategories(_req: Request, res: Response) {
-  const databaseCategories = await BlogCategory.find({ isActive: true }).sort({ name: 1 }).lean();
+  const usedCategoryIds = (await Blog.distinct("category", publicBlogMatch())).filter(Boolean);
+  const databaseCategories = usedCategoryIds.length
+    ? await Category.find({ _id: { $in: usedCategoryIds }, isActive: true }).select("name slug").sort({ name: 1 }).lean()
+    : [];
   const bySlug = new Map<string, any>();
   for (const category of getLegacyCategories()) bySlug.set(String(category.slug || "").toLowerCase(), category);
   for (const category of databaseCategories) {

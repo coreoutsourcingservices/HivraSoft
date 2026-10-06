@@ -1,7 +1,7 @@
 import sanitizeHtml from "sanitize-html";
 import { Types } from "mongoose";
 import Blog, { type BlogStatus } from "../models/Blog.model";
-import BlogCategory from "../models/BlogCategory.model";
+import Category from "../models/Category.model";
 import BlogTag from "../models/BlogTag.model";
 import { createSlug } from "../utils/slug";
 import { legacyBlogSlugExists, listLegacyBlogs } from "./legacy-blog.service";
@@ -220,15 +220,61 @@ function normalizeStatus(value: unknown): BlogStatus {
   return (["DRAFT", "PUBLISHED", "SCHEDULED", "PRIVATE"].includes(status) ? status : "DRAFT") as BlogStatus;
 }
 
-async function validateTaxonomy(categoryId: string, tagIds: string[]) {
-  if (categoryId && !Types.ObjectId.isValid(categoryId)) throw new Error("Invalid blog category.");
-  const validTags = tagIds.filter((id) => Types.ObjectId.isValid(id));
-  if (categoryId && !(await BlogCategory.exists({ _id: categoryId }))) throw new Error("Blog category not found.");
-  if (validTags.length) {
-    const count = await BlogTag.countDocuments({ _id: { $in: validTags } });
-    if (count !== validTags.length) throw new Error("One or more blog tags were not found.");
+async function validateProductCategory(categoryId: string) {
+  if (!categoryId) return;
+  if (!Types.ObjectId.isValid(categoryId)) throw new Error("Invalid product category.");
+  if (!(await Category.exists({ _id: categoryId }))) throw new Error("Product category not found.");
+}
+
+async function resolveBlogTags(values: unknown[]) {
+  const rawValues = values
+    .flatMap((value) => text(value).split(","))
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+  const seenNames = new Set<string>();
+  const uniqueValues = rawValues.filter((value) => {
+    const key = value.toLowerCase();
+    if (seenNames.has(key)) return false;
+    seenNames.add(key);
+    return true;
+  });
+  const ids: Types.ObjectId[] = [];
+
+  for (const value of uniqueValues) {
+    if (Types.ObjectId.isValid(value)) {
+      const existingById = await BlogTag.findById(value).select("_id").lean();
+      if (existingById?._id) {
+        ids.push(new Types.ObjectId(String(existingById._id)));
+        continue;
+      }
+    }
+
+    const name = value.trim();
+    const slug = createSlug(name);
+    if (!name || !slug) continue;
+
+    let tag = await BlogTag.findOne({ slug }).select("_id").lean();
+    if (!tag) {
+      try {
+        const created = await BlogTag.create({ name, slug });
+        tag = { _id: created._id } as any;
+      } catch (error: any) {
+        if (error?.code !== 11000) throw error;
+        tag = await BlogTag.findOne({ slug }).select("_id").lean();
+      }
+    }
+
+    if (tag?._id) ids.push(new Types.ObjectId(String(tag._id)));
   }
-  return validTags;
+
+  const seenIds = new Set<string>();
+  return ids.filter((id) => {
+    const key = String(id);
+    if (seenIds.has(key)) return false;
+    seenIds.add(key);
+    return true;
+  });
 }
 
 export async function createBlog(input: any, authorId: string) {
@@ -240,7 +286,8 @@ export async function createBlog(input: any, authorId: string) {
   if (await Blog.exists({ slug }) || legacyBlogSlugExists(slug)) throw new Error("A blog with this slug already exists.");
 
   const categoryId = text(input?.category);
-  const tagIds = await validateTaxonomy(categoryId, Array.isArray(input?.tags) ? input.tags.map(text) : []);
+  await validateProductCategory(categoryId);
+  const tagIds = await resolveBlogTags(Array.isArray(input?.tags) ? input.tags : []);
   const blocks = Array.isArray(input?.blocks) ? input.blocks : [];
   const rendered = blocks.length ? renderBlogBlocks(blocks) : sanitizeBlogHtml(input?.content);
   const status = normalizeStatus(input?.status);
@@ -278,7 +325,8 @@ export async function updateBlog(id: string, input: any, changedBy: string) {
   if (nextSlug !== blog.slug && (await Blog.exists({ slug: nextSlug, _id: { $ne: blog._id } }) || legacyBlogSlugExists(nextSlug))) throw new Error("A blog with this slug already exists.");
 
   const categoryId = input?.category === null ? "" : text(input?.category ?? blog.category);
-  const tagIds = await validateTaxonomy(categoryId, Array.isArray(input?.tags) ? input.tags.map(text) : blog.tags.map(String));
+  await validateProductCategory(categoryId);
+  const tagIds = await resolveBlogTags(Array.isArray(input?.tags) ? input.tags : blog.tags.map(String));
   const blocks = Array.isArray(input?.blocks) ? input.blocks : blog.blocks;
   const rendered = blocks.length ? renderBlogBlocks(blocks) : sanitizeBlogHtml(input?.content ?? blog.content);
   const status = normalizeStatus(input?.status ?? blog.status);
@@ -345,7 +393,7 @@ export async function listPublicBlogs(input: any = {}) {
   if (text(input.search)) {
     const rx = new RegExp(text(input.search).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
     const [matchingCategories, matchingTags] = await Promise.all([
-      BlogCategory.find({ $or: [{ name: rx }, { slug: rx }], isActive: true }).select("_id").lean(),
+      Category.find({ $or: [{ name: rx }, { slug: rx }], isActive: true }).select("_id").lean(),
       BlogTag.find({ $or: [{ name: rx }, { slug: rx }] }).select("_id").lean(),
     ]);
     const searchOr: any[] = [{ title: rx }, { excerpt: rx }, { content: rx }];
@@ -357,7 +405,7 @@ export async function listPublicBlogs(input: any = {}) {
   if (input.isFeatured === true || input.isFeatured === "true") match.isFeatured = true;
 
   if (text(input.categorySlug)) {
-    const category = await BlogCategory.findOne({ slug: text(input.categorySlug), isActive: true }).select("_id").lean();
+    const category = await Category.findOne({ slug: text(input.categorySlug), isActive: true }).select("_id").lean();
     match.category = category?._id || { $in: [] };
   }
 

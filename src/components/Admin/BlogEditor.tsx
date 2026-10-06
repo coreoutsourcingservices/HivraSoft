@@ -2,13 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Save } from "lucide-react";
+import { Loader2, Save, X } from "lucide-react";
 import WordBlogEditor from "@/src/components/Admin/WordBlogEditor";
 import {
   createAdminBlog,
   getAdminBlog,
-  getBlogCategories,
-  getBlogTags,
   updateAdminBlog,
   uploadBlogImage,
   type BlogImage,
@@ -30,6 +28,28 @@ function slugify(value: string) {
 
 function taxId(value: BlogTaxonomy | string | null | undefined) {
   return typeof value === "string" ? value : value?._id || "";
+}
+
+type ProductCategoryOption = {
+  id: string;
+  name: string;
+  slug: string;
+  level: number;
+};
+
+function flattenProductCategories(nodes: any[], depth = 0): ProductCategoryOption[] {
+  return (Array.isArray(nodes) ? nodes : []).flatMap((node: any) => {
+    const id = String(node?._id || node?.id || "").trim();
+    const name = String(node?.name || "").trim();
+    const slug = String(node?.slug || "").trim();
+    const level = Number.isFinite(Number(node?.level)) ? Number(node.level) : depth;
+    const current = id && name ? [{ id, name, slug, level }] : [];
+    return [...current, ...flattenProductCategories(node?.children || [], depth + 1)];
+  });
+}
+
+function tagName(value: BlogTaxonomy | string | null | undefined) {
+  return typeof value === "string" ? value : value?.name || "";
 }
 
 function formatDateInput(value?: string | null) {
@@ -69,8 +89,8 @@ export default function BlogEditor({ blogId }: { blogId?: string }) {
   const [featuredImage, setFeaturedImage] = useState<BlogImage>(emptyImage);
   const [category, setCategory] = useState("");
   const [tags, setTags] = useState<string[]>([]);
-  const [categories, setCategories] = useState<BlogTaxonomy[]>([]);
-  const [tagOptions, setTagOptions] = useState<BlogTaxonomy[]>([]);
+  const [tagInput, setTagInput] = useState("");
+  const [categories, setCategories] = useState<ProductCategoryOption[]>([]);
   const [status, setStatus] = useState<"DRAFT" | "PUBLISHED" | "SCHEDULED" | "PRIVATE">("DRAFT");
   const [scheduledAt, setScheduledAt] = useState("");
   const [isFeatured, setIsFeatured] = useState(false);
@@ -98,9 +118,17 @@ export default function BlogEditor({ blogId }: { blogId?: string }) {
   const markDirty = useCallback(() => setDirty(true), []);
 
   useEffect(() => {
-    void Promise.all([getBlogCategories(), getBlogTags()])
-      .then(([cats, tgs]) => { setCategories(cats); setTagOptions(tgs); })
-      .catch(() => undefined);
+    const apiUrl = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000").replace(/\/+$/, "");
+    void fetch(`${apiUrl}/api/categories/tree`, { credentials: "include", cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Unable to load product categories.");
+        return response.json();
+      })
+      .then((data) => {
+        const tree = Array.isArray(data) ? data : Array.isArray(data?.categories) ? data.categories : Array.isArray(data?.data) ? data.data : [];
+        setCategories(flattenProductCategories(tree));
+      })
+      .catch(() => setCategories([]));
   }, []);
 
   useEffect(() => {
@@ -138,7 +166,7 @@ export default function BlogEditor({ blogId }: { blogId?: string }) {
         setContent(blog.content || "");
         setFeaturedImage(blog.featuredImage || emptyImage);
         setCategory(taxId(blog.category));
-        setTags((blog.tags || []).map(taxId).filter(Boolean));
+        setTags((blog.tags || []).map(tagName).map((value) => value.trim()).filter(Boolean));
         setStatus(blog.status || "DRAFT");
         setScheduledAt(formatDateInput(blog.scheduledAt));
         setIsFeatured(Boolean(blog.isFeatured));
@@ -191,6 +219,29 @@ export default function BlogEditor({ blogId }: { blogId?: string }) {
     customCss,
     seo,
   }), [category, content, customCss, excerpt, featuredImage, isFeatured, scheduledAt, seo, slug, status, tags, title]);
+
+  function addTags(rawValue: string) {
+    const incoming = rawValue
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean);
+
+    if (!incoming.length) return;
+
+    setTags((current) => {
+      const byName = new Map(current.map((value) => [value.toLowerCase(), value]));
+      incoming.forEach((value) => {
+        if (!byName.has(value.toLowerCase())) byName.set(value.toLowerCase(), value);
+      });
+      return [...byName.values()];
+    });
+    markDirty();
+  }
+
+  function removeTag(tag: string) {
+    setTags((current) => current.filter((value) => value.toLowerCase() !== tag.toLowerCase()));
+    markDirty();
+  }
 
   async function save(statusOverride?: typeof status) {
     const nextStatus = statusOverride || status;
@@ -281,7 +332,7 @@ export default function BlogEditor({ blogId }: { blogId?: string }) {
       {message && <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs text-emerald-700">{message}</div>}
 
       {showPreview ? (
-        <BlogPreview title={title} excerpt={excerpt} featuredImage={featuredImage} content={content} customCss={customCss} />
+        <BlogPreview title={title} excerpt={excerpt} featuredImage={featuredImage} content={content} />
       ) : (
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
           <div className="space-y-5">
@@ -316,8 +367,57 @@ export default function BlogEditor({ blogId }: { blogId?: string }) {
             </Panel>
 
             <Panel title="Category & Tags">
-              <label className="block"><FieldLabel>Category</FieldLabel><select value={category} onChange={(event) => { setCategory(event.target.value); markDirty(); }} className="field"><option value="">No category</option>{categories.map((item) => <option key={item._id} value={item._id}>{item.name}</option>)}</select></label>
-              <div className="mt-3"><FieldLabel>Tags</FieldLabel><div className="max-h-36 space-y-2 overflow-auto rounded-xl border border-[#211A18]/10 p-3">{tagOptions.length ? tagOptions.map((tag) => <label key={tag._id} className="flex items-center gap-2 text-[10px]"><input type="checkbox" checked={tags.includes(tag._id)} onChange={(event) => { setTags((current) => event.target.checked ? [...current, tag._id] : current.filter((id) => id !== tag._id)); markDirty(); }} className="accent-[#8C1839]" />{tag.name}</label>) : <span className="text-[9px] text-[#211A18]/35">Create tags from Blog → Tags.</span>}</div></div>
+              <label className="block">
+                <FieldLabel>Product Category</FieldLabel>
+                <select value={category} onChange={(event) => { setCategory(event.target.value); markDirty(); }} className="field">
+                  <option value="">No category</option>
+                  {categories.map((item) => <option key={item.id} value={item.id}>{`${"— ".repeat(Math.max(0, item.level))}${item.name}`}</option>)}
+                </select>
+              </label>
+
+              <div className="mt-3">
+                <FieldLabel>Tags</FieldLabel>
+                <div className="rounded-xl border border-[#211A18]/10 bg-white p-2.5 focus-within:border-[#8C1839]/35">
+                  {tags.length > 0 && (
+                    <div className="mb-2 flex flex-wrap gap-2">
+                      {tags.map((tag) => (
+                        <span key={tag.toLowerCase()} className="inline-flex items-center gap-1.5 rounded-full bg-[#F7EEF1] px-2.5 py-1 text-[9px] font-semibold text-[#8C1839]">
+                          {tag}
+                          <button type="button" onClick={() => removeTag(tag)} aria-label={`Remove ${tag}`} className="flex h-4 w-4 items-center justify-center rounded-full hover:bg-[#8C1839]/10">
+                            <X size={11} />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <input
+                    value={tagInput}
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      if (value.includes(",")) {
+                        const parts = value.split(",");
+                        addTags(parts.slice(0, -1).join(","));
+                        setTagInput(parts[parts.length - 1] || "");
+                      } else {
+                        setTagInput(value);
+                      }
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        addTags(tagInput);
+                        setTagInput("");
+                      } else if (event.key === "Backspace" && !tagInput && tags.length) {
+                        removeTag(tags[tags.length - 1]);
+                      }
+                    }}
+                    onBlur={() => { if (tagInput.trim()) { addTags(tagInput); setTagInput(""); } }}
+                    placeholder="Tag likho, comma (,) se add hoga"
+                    className="h-8 w-full bg-transparent px-1 text-[10px] outline-none placeholder:text-[#211A18]/30"
+                  />
+                </div>
+                <p className="mt-1.5 text-[8px] text-[#211A18]/35">Comma ya Enter dabao. Tag hatane ke liye × par click karo.</p>
+              </div>
             </Panel>
 
             <Panel title="SEO">
@@ -325,10 +425,6 @@ export default function BlogEditor({ blogId }: { blogId?: string }) {
               <div className="mt-4 space-y-2">{seoChecks.map((check) => <div key={check.label} className="flex items-start justify-between gap-3 rounded-lg bg-[#FAF8F6] px-3 py-2 text-[9px]"><div><div>{check.label}</div>{check.note && <div className="mt-1 text-[#211A18]/40">{check.note}</div>}</div><span className={`shrink-0 font-semibold ${check.ok ? "text-emerald-600" : "text-amber-600"}`}>{check.ok ? "Good" : "Needs Improvement"}</span></div>)}</div>
             </Panel>
 
-            <Panel title="Advanced CSS">
-              <textarea value={customCss} onChange={(event) => { setCustomCss(event.target.value); markDirty(); }} rows={6} placeholder=".blog-content .my-class { ... }" className="w-full rounded-xl border border-[#211A18]/10 p-3 font-mono text-[10px] outline-none" />
-              <p className="mt-2 text-[9px] leading-4 text-[#211A18]/40">Existing blog CSS support is preserved. JavaScript is not accepted.</p>
-            </Panel>
           </aside>
         </div>
       )}
@@ -341,8 +437,8 @@ function SeoFields({ seo, setSeo, title, featuredImage }: { seo: any; setSeo: (v
   return <div className="space-y-3"><label><FieldLabel>SEO Title ({String(seo.metaTitle || title).length}/60)</FieldLabel><input value={seo.metaTitle || ""} onChange={(event) => patch("metaTitle", event.target.value)} placeholder={title || "SEO title"} className="field" /></label><label><FieldLabel>Meta Description ({String(seo.metaDescription || "").length}/160)</FieldLabel><textarea value={seo.metaDescription || ""} onChange={(event) => patch("metaDescription", event.target.value)} rows={4} className="textarea" /></label><label><FieldLabel>Focus Keyword</FieldLabel><input value={seo.focusKeyword || ""} onChange={(event) => patch("focusKeyword", event.target.value)} className="field" /></label><label><FieldLabel>Keywords (comma separated)</FieldLabel><input value={(seo.keywords || []).join(", ")} onChange={(event) => patch("keywords", event.target.value.split(",").map((value) => value.trim()).filter(Boolean))} className="field" /></label><label><FieldLabel>Canonical URL</FieldLabel><input value={seo.canonicalUrl || ""} onChange={(event) => patch("canonicalUrl", event.target.value)} className="field" /></label><div className="flex gap-4 text-[9px] font-semibold"><label className="flex items-center gap-2"><input type="checkbox" checked={seo.robots?.index !== false} onChange={(event) => patch("robots", { ...(seo.robots || {}), index: event.target.checked })} className="accent-[#8C1839]" />Index</label><label className="flex items-center gap-2"><input type="checkbox" checked={seo.robots?.follow !== false} onChange={(event) => patch("robots", { ...(seo.robots || {}), follow: event.target.checked })} className="accent-[#8C1839]" />Follow</label></div><details className="rounded-xl bg-[#FAF8F6] p-3"><summary className="cursor-pointer text-[9px] font-semibold">Open Graph / Twitter</summary><div className="mt-3 space-y-2"><input value={seo.openGraph?.title || ""} onChange={(event) => patch("openGraph", { ...(seo.openGraph || {}), title: event.target.value })} placeholder="OG Title" className="field" /><textarea value={seo.openGraph?.description || ""} onChange={(event) => patch("openGraph", { ...(seo.openGraph || {}), description: event.target.value })} placeholder="OG Description" className="textarea" rows={2} /><input value={seo.openGraph?.image || featuredImage.url || ""} onChange={(event) => patch("openGraph", { ...(seo.openGraph || {}), image: event.target.value })} placeholder="OG Image URL" className="field" /><input value={seo.twitter?.title || ""} onChange={(event) => patch("twitter", { ...(seo.twitter || {}), title: event.target.value })} placeholder="Twitter Title" className="field" /><textarea value={seo.twitter?.description || ""} onChange={(event) => patch("twitter", { ...(seo.twitter || {}), description: event.target.value })} placeholder="Twitter Description" className="textarea" rows={2} /></div></details></div>;
 }
 
-function BlogPreview({ title, excerpt, featuredImage, content, customCss }: { title: string; excerpt: string; featuredImage: BlogImage; content: string; customCss: string }) {
-  return <article className="blog-content mx-auto max-w-[1000px] rounded-[24px] border border-[#211A18]/10 bg-white p-6 md:p-10">{customCss && <style>{customCss}</style>}<header><h1 className="text-3xl font-semibold leading-tight md:text-5xl">{title || "Untitled Blog"}</h1>{excerpt && <p className="mt-4 text-base leading-7 text-[#211A18]/60">{excerpt}</p>}</header>{featuredImage.url && <img src={featuredImage.url} alt={featuredImage.alt || title} className="mt-8 w-full rounded-2xl" />}<div className="mt-8 text-[17px] leading-8 [&_h2]:mt-9 [&_h2]:text-3xl [&_h2]:font-bold [&_h3]:mt-7 [&_h3]:text-2xl [&_h3]:font-bold [&_img]:my-6 [&_img]:max-w-full [&_ol]:list-decimal [&_ol]:pl-7 [&_p]:my-4 [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:p-2 [&_th]:border [&_th]:p-2 [&_ul]:list-disc [&_ul]:pl-7" dangerouslySetInnerHTML={{ __html: content }} /></article>;
+function BlogPreview({ title, excerpt, featuredImage, content }: { title: string; excerpt: string; featuredImage: BlogImage; content: string }) {
+  return <article className="blog-content mx-auto max-w-[1000px] rounded-[24px] border border-[#211A18]/10 bg-white p-6 md:p-10"><header><h1 className="text-3xl font-semibold leading-tight md:text-5xl">{title || "Untitled Blog"}</h1>{excerpt && <p className="mt-4 text-base leading-7 text-[#211A18]/60">{excerpt}</p>}</header>{featuredImage.url && <img src={featuredImage.url} alt={featuredImage.alt || title} className="mt-8 w-full rounded-2xl" />}<div className="mt-8 text-[17px] leading-8 [&_h2]:mt-9 [&_h2]:text-3xl [&_h2]:font-bold [&_h3]:mt-7 [&_h3]:text-2xl [&_h3]:font-bold [&_img]:my-6 [&_img]:max-w-full [&_ol]:list-decimal [&_ol]:pl-7 [&_p]:my-4 [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:p-2 [&_th]:border [&_th]:p-2 [&_ul]:list-disc [&_ul]:pl-7" dangerouslySetInnerHTML={{ __html: content }} /></article>;
 }
 
 function Panel({ title, children }: { title: string; children: ReactNode }) {

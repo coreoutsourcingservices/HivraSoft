@@ -96,7 +96,7 @@ const blogSchema = new Schema<IBlog>(
     content: { type: String, default: "" },
     blocks: { type: [{ type: Schema.Types.Mixed }], default: [] },
     featuredImage: { type: featuredImageSchema, default: () => ({}) },
-    category: { type: Schema.Types.ObjectId, ref: "BlogCategory", default: null, index: true },
+    category: { type: Schema.Types.ObjectId, ref: "Category", default: null, index: true },
     tags: { type: [{ type: Schema.Types.ObjectId, ref: "BlogTag" }], default: [] },
     author: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
     seo: { type: seoSchema, default: () => ({}) },

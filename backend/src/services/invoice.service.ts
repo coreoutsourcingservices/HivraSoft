@@ -1,13 +1,10 @@
-import fs from "node:fs";
-import path from "node:path";
+import { loadPdfLogo, type PdfLogo } from "./brand-logo";
 
 type InvoiceOrder = Record<string, any>;
 
 const PAGE_W = 595.28;
 const PAGE_H = 841.89;
 const MARGIN = 34;
-const LOGO_WIDTH_PX = 480;
-const LOGO_HEIGHT_PX = 193;
 
 function ascii(value: unknown) {
   return String(value ?? "")
@@ -135,35 +132,12 @@ function splitIdentifier(value: unknown, maxLength = 20) {
   return [raw.slice(0, maxLength), raw.slice(maxLength)];
 }
 
-function logoCandidates() {
-  return [
-    path.resolve(process.cwd(), "public", "hivra-soft-logo.jpg"),
-    path.resolve(process.cwd(), "backend", "public", "hivra-soft-logo.jpg"),
-    path.resolve(__dirname, "../../public/hivra-soft-logo.jpg"),
-    path.resolve(__dirname, "../../../public/hivra-soft-logo.jpg"),
-  ];
-}
-
-function loadLogoJpeg() {
-  for (const candidate of logoCandidates()) {
-    try {
-      if (fs.existsSync(candidate)) {
-        return fs.readFileSync(candidate);
-      }
-    } catch {
-      // Try the next candidate. Invoice generation should still work without logo.
-    }
-  }
-
-  return null;
-}
-
 function buildInvoicePage(
   order: InvoiceOrder,
   items: any[],
   pageIndex: number,
   pageCount: number,
-  hasLogo: boolean
+  logo: PdfLogo
 ) {
   let out = "";
   const customer = orderCustomer(order);
@@ -173,11 +147,9 @@ function buildInvoicePage(
   out += "0 G 0 g\n";
   out += `1 w ${MARGIN} ${MARGIN} ${(PAGE_W - MARGIN * 2).toFixed(2)} ${(PAGE_H - MARGIN * 2).toFixed(2)} re S\n`;
 
-  if (hasLogo) {
-    out += imageCmd(MARGIN + 16, 746, 145, 58);
-  } else {
-    out += textCmd(MARGIN + 16, 785, companyName, 16, true);
-  }
+  const logoWidth = Math.min(145, 58 * logo.width / logo.height);
+  const logoHeight = logoWidth * logo.height / logo.width;
+  out += imageCmd(MARGIN + 16, 804 - logoHeight, logoWidth, logoHeight);
 
   out += textCmd(360, 792, companyName, 13, true);
   company.slice(0, 4).forEach((line, index) => {
@@ -418,7 +390,7 @@ function buildInvoicePage(
   return out;
 }
 
-function makePdf(pageStreams: string[], logo: Buffer | null) {
+function makePdf(pageStreams: string[], logo: PdfLogo) {
   const objects: Buffer[] = [];
 
   const push = (content: string | Buffer) => {
@@ -438,13 +410,17 @@ function makePdf(pageStreams: string[], logo: Buffer | null) {
   let logoId: number | null = null;
 
   if (logo) {
+    const maskId = push(Buffer.concat([
+      Buffer.from(`<< /Type /XObject /Subtype /Image /Width ${logo.width} /Height ${logo.height} /ColorSpace /DeviceGray /BitsPerComponent 8 /Filter /FlateDecode /Length ${logo.alpha.length} >>\nstream\n`, "latin1"),
+      logo.alpha, Buffer.from("\nendstream", "latin1"),
+    ]));
     logoId = push(
       Buffer.concat([
         Buffer.from(
-          `<< /Type /XObject /Subtype /Image /Width ${LOGO_WIDTH_PX} /Height ${LOGO_HEIGHT_PX} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${logo.length} >>\nstream\n`,
+          `<< /Type /XObject /Subtype /Image /Width ${logo.width} /Height ${logo.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /FlateDecode /SMask ${maskId} 0 R /Length ${logo.rgb.length} >>\nstream\n`,
           "latin1"
         ),
-        logo,
+        logo.rgb,
         Buffer.from("\nendstream", "latin1"),
       ])
     );
@@ -525,7 +501,7 @@ export function buildInvoicePdf(order: InvoiceOrder) {
 
 export function buildInvoicesPdf(orders: InvoiceOrder[]) {
   const streams: string[] = [];
-  const logo = loadLogoJpeg();
+  const logo = loadPdfLogo();
 
   for (const order of orders) {
     const items = Array.isArray(order.items) ? order.items : [];
@@ -537,7 +513,7 @@ export function buildInvoicesPdf(orders: InvoiceOrder[]) {
 
     chunks.forEach((itemChunk, index) => {
       streams.push(
-        buildInvoicePage(order, itemChunk, index, chunks.length, Boolean(logo))
+        buildInvoicePage(order, itemChunk, index, chunks.length, logo)
       );
     });
   }
