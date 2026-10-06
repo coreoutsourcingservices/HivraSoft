@@ -17,6 +17,7 @@ import {
 import {
   sanitizeProductDescriptionHtml,
 } from "../utils/productHtml";
+import { calculateSeoScore } from "../utils/productSeoAnalyzer";
 
 import {
   uploadImageBuffer,
@@ -1116,272 +1117,6 @@ const getListingImages = (
   return listingImages;
 };
 
-const stripHtmlForSeo = (value: unknown): string => {
-  return String(value || "")
-    .replace(/<[^>]*>/g, " ")
-    .replace(/&nbsp;/gi, " ")
-    .replace(/&amp;/gi, "&")
-    .replace(/&quot;/gi, '"')
-    .replace(/&#39;/gi, "'")
-    .replace(/\s+/g, " ")
-    .trim();
-};
-
-const normalizeSeoComparable = (value: unknown): string => {
-  return stripHtmlForSeo(value)
-    .toLowerCase()
-    .replace(/[’'`]/g, "")
-    .replace(/[^\p{L}\p{N}]+/gu, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-};
-
-const includesSeoKeyword = (
-  value: unknown,
-  keyword: string
-): boolean => {
-  const cleanKeyword = normalizeSeoComparable(keyword);
-  const cleanValue = normalizeSeoComparable(value);
-
-  return Boolean(cleanKeyword && cleanValue.includes(cleanKeyword));
-};
-
-const escapeSeoRegExp = (
-  value: string
-): string => {
-  return value.replace(
-    /[.*+?^${}()|[\]\\]/g,
-    "\\$&"
-  );
-};
-
-const countSeoKeywordOccurrences = (
-  value: unknown,
-  keyword: string
-): number => {
-  const cleanKeyword = String(keyword || "")
-    .trim()
-    .toLowerCase();
-
-  if (!cleanKeyword) {
-    return 0;
-  }
-
-  const normalized = stripHtmlForSeo(
-    String(value || "")
-  ).toLowerCase();
-  const pattern = escapeSeoRegExp(cleanKeyword)
-    .replace(/\s+/g, "\\s+");
-
-  try {
-    return (
-      normalized.match(
-        new RegExp(pattern, "g")
-      ) || []
-    ).length;
-  } catch {
-    return 0;
-  }
-};
-
-const getSeoSubheadingText = (
-  html: unknown
-): string => {
-  const value = String(html || "");
-  const headings: string[] = [];
-  const headingRegex =
-    /<h[1-6]\b[^>]*>([\s\S]*?)<\/h[1-6]>/gi;
-
-  let match: RegExpExecArray | null;
-
-  while (
-    (match = headingRegex.exec(value))
-  ) {
-    headings.push(
-      stripHtmlForSeo(match[1] || "")
-    );
-  }
-
-  return headings.join(" ");
-};
-
-const getSeoLinks = (
-  html: unknown
-): Array<{ href: string; rel: string }> => {
-  const value = String(html || "");
-  const links: Array<{ href: string; rel: string }> = [];
-  const anchorRegex =
-    /<a\b([^>]*)href=["']([^"']+)["']([^>]*)>/gi;
-
-  let match: RegExpExecArray | null;
-
-  while (
-    (match = anchorRegex.exec(value))
-  ) {
-    const attributes = `${match[1] || ""} ${match[3] || ""}`;
-    const relMatch = attributes.match(
-      /\brel=["']([^"']*)["']/i
-    );
-
-    links.push({
-      href: String(match[2] || "").trim(),
-      rel: String(relMatch?.[1] || "").toLowerCase(),
-    });
-  }
-
-  return links;
-};
-
-const isInternalSeoLink = (href: string): boolean => {
-  const value = String(href || "").trim();
-  if (!value) return false;
-  if (/^(\/|\.\/|\.\.\/)/.test(value)) return true;
-  if (!/^https?:\/\//i.test(value)) return false;
-
-  try {
-    const host = new URL(value).hostname.toLowerCase();
-    const configuredHosts = [
-      process.env.FRONTEND_URL,
-      process.env.SITE_URL,
-      process.env.WEBSITE_URL,
-    ]
-      .filter(Boolean)
-      .map((item) => {
-        try {
-          return new URL(String(item)).hostname.toLowerCase();
-        } catch {
-          return "";
-        }
-      })
-      .filter(Boolean);
-
-    return (
-      configuredHosts.includes(host) ||
-      host === "hivrasoft.com" ||
-      host === "www.hivrasoft.com" ||
-      host === "hivrasoft.zyvora.com" ||
-      host.endsWith(".hivrasoft.com")
-    );
-  } catch {
-    return false;
-  }
-};
-
-const calculateSeoScore = (
-  color: any,
-  siblingColors: any[] = [],
-  colorIndex = -1
-): number => {
-  const keyword = String(
-    color?.focusKeyword || ""
-  ).trim();
-  const normalizedKeyword = keyword.toLowerCase();
-  const title = String(
-    color?.seoTitle || color?.nameProduct || ""
-  ).trim();
-  const metaDescription = String(
-    color?.seoDescription || color?.shortDescription || ""
-  ).trim();
-  const slug = String(
-    color?.slugProduct || ""
-  ).trim();
-  const content = stripHtmlForSeo(
-    `${color?.shortDescription || ""} ${color?.description || ""}`
-  );
-  const words = content
-    .split(/\s+/)
-    .filter(Boolean);
-  const firstTenPercent = words
-    .slice(0, Math.max(1, Math.ceil(words.length * 0.1)))
-    .join(" ");
-
-  const occurrences = countSeoKeywordOccurrences(
-    content,
-    keyword
-  );
-  const density = words.length
-    ? (occurrences * 100) / words.length
-    : 0;
-
-  const subheadingText = getSeoSubheadingText(
-    color?.description
-  );
-  const imageAltHasKeyword = Array.isArray(color?.images)
-    ? color.images.some((image: any) =>
-        includesSeoKeyword(image?.alt, keyword)
-      )
-    : false;
-
-  const links = getSeoLinks(color?.description);
-  const internalLinks = links.filter((link) =>
-    isInternalSeoLink(link.href)
-  );
-  const externalLinks = links.filter((link) =>
-    /^https?:\/\//i.test(link.href) && !isInternalSeoLink(link.href)
-  );
-  const hasDoFollowExternal = externalLinks.some(
-    (link) =>
-      !link.rel.split(/\s+/).includes("nofollow")
-  );
-
-  const otherKeywordUsed = Boolean(keyword) && siblingColors.some(
-    (item: any, index: number) =>
-      index !== colorIndex &&
-      String(item?.focusKeyword || "")
-        .trim()
-        .toLowerCase() === normalizedKeyword
-  );
-
-  const normalizedTitle = title.toLowerCase();
-  const powerWords = [
-    "best",
-    "ultimate",
-    "exclusive",
-    "premium",
-    "proven",
-    "powerful",
-    "amazing",
-    "essential",
-    "complete",
-    "perfect",
-    "effortless",
-    "instant",
-    "new",
-    "top",
-  ];
-
-  const checks = [
-    [includesSeoKeyword(title, keyword), 10],
-    [includesSeoKeyword(metaDescription, keyword), 10],
-    [includesSeoKeyword(slug.replace(/-/g, " "), keyword), 8],
-    [includesSeoKeyword(firstTenPercent, keyword), 8],
-    [includesSeoKeyword(content, keyword), 8],
-    [words.length >= 900, 6],
-    [includesSeoKeyword(subheadingText, keyword), 5],
-    [imageAltHasKeyword, 4],
-    [Boolean(keyword) && density >= 0.5 && density <= 2.5, 5],
-    [`/product/${slug}`.length > 0 && `/product/${slug}`.length <= 70, 3],
-    [externalLinks.length > 0, 4],
-    [hasDoFollowExternal, 3],
-    [internalLinks.length > 0, 3],
-    [Boolean(keyword) && !otherKeywordUsed, 3],
-    [Boolean(normalizedKeyword) && normalizedTitle.startsWith(normalizedKeyword), 7],
-    [
-      powerWords.some((word) => normalizedTitle.includes(word)) ||
-        (Boolean(keyword) && includesSeoKeyword(title, keyword)),
-      9,
-    ],
-    [/\d/.test(title), 4],
-  ] as Array<[boolean, number]>;
-
-  const score = checks.reduce(
-    (total, [pass, points]) => total + (pass ? points : 0),
-    0
-  );
-
-  return Math.max(0, Math.min(100, score));
-};
-
 const formatProductResponse = (
   input: any,
   limitImages: boolean
@@ -1400,8 +1135,7 @@ const formatProductResponse = (
       )
         ? product.colors.map(
             (
-              color: any,
-              colorIndex: number
+              color: any
             ) => {
               const {
                 description:
@@ -1422,11 +1156,7 @@ const formatProductResponse = (
                         "",
 
                       seoScore:
-                        calculateSeoScore(
-                          color,
-                          product.colors,
-                          colorIndex
-                        ),
+                        calculateSeoScore(color),
                     }),
 
                 images:

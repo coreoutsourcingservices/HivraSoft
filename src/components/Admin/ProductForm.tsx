@@ -9,6 +9,12 @@ import {
   type ReactNode,
 } from "react";
 import { useRouter } from "next/navigation";
+import {
+  analyzeProductSeo,
+  hasKeyword,
+  stripHtml,
+  type SeoCheck,
+} from "@/src/utils/seoAnalyzer";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
@@ -127,462 +133,6 @@ function slugify(
       /^-+|-+$/g,
       ""
     );
-}
-
-function stripHtmlForSeo(
-  value: string
-) {
-  return String(value || "")
-    .replace(/<[^>]*>/g, " ")
-    .replace(/&nbsp;/gi, " ")
-    .replace(/&amp;/gi, "&")
-    .replace(/&quot;/gi, '"')
-    .replace(/&#39;/gi, "'")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function normalizeSeoComparable(value: string) {
-  return stripHtmlForSeo(value)
-    .toLowerCase()
-    .replace(/[’'`]/g, "")
-    .replace(/[^\p{L}\p{N}]+/gu, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function hasKeyword(
-  value: string,
-  keyword: string
-) {
-  const cleanKeyword = normalizeSeoComparable(keyword);
-  const cleanValue = normalizeSeoComparable(value);
-
-  return Boolean(
-    cleanKeyword &&
-    cleanValue.includes(cleanKeyword)
-  );
-}
-
-function escapeRegExp(
-  value: string
-) {
-  return value.replace(
-    /[.*+?^${}()|[\]\\]/g,
-    "\\$&"
-  );
-}
-
-function countKeywordOccurrences(
-  value: string,
-  keyword: string
-) {
-  const cleanKeyword = keyword
-    .trim()
-    .toLowerCase();
-
-  if (!cleanKeyword) {
-    return 0;
-  }
-
-  const normalized = stripHtmlForSeo(value)
-    .toLowerCase();
-
-  const pattern = escapeRegExp(cleanKeyword)
-    .replace(/\s+/g, "\\s+");
-
-  try {
-    return (
-      normalized.match(
-        new RegExp(pattern, "g")
-      ) || []
-    ).length;
-  } catch {
-    return 0;
-  }
-}
-
-function getSeoLinks(
-  html: string
-) {
-  const links: Array<{
-    href: string;
-    rel: string;
-  }> = [];
-
-  const anchorRegex =
-    /<a\b([^>]*)href=["']([^"']+)["']([^>]*)>/gi;
-
-  let match:
-    | RegExpExecArray
-    | null;
-
-  while (
-    (match = anchorRegex.exec(html || ""))
-  ) {
-    const attributes = `${match[1] || ""} ${match[3] || ""}`;
-    const relMatch = attributes.match(
-      /\brel=["']([^"']*)["']/i
-    );
-
-    links.push({
-      href: String(match[2] || "").trim(),
-      rel: String(relMatch?.[1] || "").toLowerCase(),
-    });
-  }
-
-  return links;
-}
-
-function isInternalSeoLink(href: string) {
-  const value = String(href || "").trim();
-  if (!value) return false;
-  if (/^(\/|\.\/|\.\.\/)/.test(value)) return true;
-  if (!/^https?:\/\//i.test(value)) return false;
-
-  try {
-    const host = new URL(value).hostname.toLowerCase();
-    const currentHost =
-      typeof window !== "undefined"
-        ? window.location.hostname.toLowerCase()
-        : "";
-
-    return (
-      host === currentHost ||
-      host === "hivrasoft.com" ||
-      host === "www.hivrasoft.com" ||
-      host === "hivrasoft.zyvora.com" ||
-      host.endsWith(".hivrasoft.com")
-    );
-  } catch {
-    return false;
-  }
-}
-
-function getSubheadingText(
-  html: string
-) {
-  const headings: string[] = [];
-  const headingRegex =
-    /<h[1-6]\b[^>]*>([\s\S]*?)<\/h[1-6]>/gi;
-
-  let match:
-    | RegExpExecArray
-    | null;
-
-  while (
-    (match = headingRegex.exec(html || ""))
-  ) {
-    headings.push(
-      stripHtmlForSeo(match[1] || "")
-    );
-  }
-
-  return headings.join(" ");
-}
-
-type SeoCheck = {
-  label: string;
-  pass: boolean;
-  points: number;
-  guidance: string;
-};
-
-function buildSeoAnalysis(
-  color: Pick<
-    ColorValue,
-    | "nameProduct"
-    | "focusKeyword"
-    | "seoTitle"
-    | "seoDescription"
-    | "slugProduct"
-    | "shortDescription"
-    | "description"
-    | "images"
-    | "pendingImages"
-  >,
-  siblingColors: Array<Pick<ColorValue, "focusKeyword">> = [],
-  colorIndex = -1
-) {
-  const keyword = color.focusKeyword.trim();
-  const effectiveTitle =
-    color.seoTitle.trim() ||
-    color.nameProduct.trim();
-  const effectiveDescription =
-    color.seoDescription.trim() ||
-    stripHtmlForSeo(color.shortDescription);
-  const content = stripHtmlForSeo(
-    `${color.shortDescription} ${color.description}`
-  );
-  const words = content
-    .split(/\s+/)
-    .filter(Boolean);
-  const firstTenPercent = words
-    .slice(
-      0,
-      Math.max(
-        1,
-        Math.ceil(words.length * 0.1)
-      )
-    )
-    .join(" ");
-
-  const keywordOccurrences =
-    countKeywordOccurrences(
-      content,
-      keyword
-    );
-  const keywordDensity = words.length
-    ? (keywordOccurrences * 100) / words.length
-    : 0;
-
-  const subheadingText =
-    getSubheadingText(color.description);
-  const allImages = [
-    ...(Array.isArray(color.images)
-      ? color.images
-      : []),
-    ...(Array.isArray(color.pendingImages)
-      ? color.pendingImages
-      : []),
-  ];
-  const imageAltHasKeyword =
-    allImages.some((image) =>
-      hasKeyword(
-        String(image?.alt || ""),
-        keyword
-      )
-    );
-
-  const links = getSeoLinks(
-    color.description
-  );
-  const internalLinks = links.filter((link) =>
-    isInternalSeoLink(link.href)
-  );
-  const externalLinks = links.filter(
-    (link) =>
-      /^https?:\/\//i.test(link.href) &&
-      !isInternalSeoLink(link.href)
-  );
-  const hasDoFollowExternal =
-    externalLinks.some(
-      (link) =>
-        !link.rel
-          .split(/\s+/)
-          .includes("nofollow")
-    );
-
-  const urlValue = `/product/${color.slugProduct.trim()}`;
-  const normalizedTitle =
-    effectiveTitle.toLowerCase();
-  const normalizedKeyword =
-    keyword.toLowerCase();
-
-  const powerWords = [
-    "best",
-    "ultimate",
-    "exclusive",
-    "premium",
-    "proven",
-    "powerful",
-    "amazing",
-    "essential",
-    "complete",
-    "perfect",
-    "effortless",
-    "instant",
-    "new",
-    "top",
-  ];
-
-  const otherKeywordUsed =
-    Boolean(keyword) &&
-    siblingColors.some(
-      (item, index) =>
-        index !== colorIndex &&
-        item.focusKeyword
-          .trim()
-          .toLowerCase() ===
-          normalizedKeyword
-    );
-
-  const basic: SeoCheck[] = [
-    {
-      label: "Hurray! You're using Focus Keyword in the SEO Title.",
-      pass: hasKeyword(effectiveTitle, keyword),
-      points: 10,
-      guidance:
-        "SEO Title me exact Focus Keyword add karo. Best result ke liye keyword ko title ke beginning ke paas rakho.",
-    },
-    {
-      label: "Focus Keyword used inside SEO Meta Description.",
-      pass: hasKeyword(effectiveDescription, keyword),
-      points: 10,
-      guidance:
-        "SEO Description me Focus Keyword naturally ek baar add karo. Description ko readable aur product-specific rakho.",
-    },
-    {
-      label: "Focus Keyword used in the URL.",
-      pass: hasKeyword(
-        color.slugProduct.replace(/-/g, " "),
-        keyword
-      ),
-      points: 8,
-      guidance:
-        "Product Slug me Focus Keyword use karo, words ko hyphen se separate rakho. Example: side-support-full-coverage-bra.",
-    },
-    {
-      label: "Focus Keyword appears in the first 10% of the content.",
-      pass: hasKeyword(firstTenPercent, keyword),
-      points: 8,
-      guidance:
-        "Description ke starting paragraph me Focus Keyword naturally use karo, preferably first 10% content ke andar.",
-    },
-    {
-      label: "Focus Keyword found in the content.",
-      pass: hasKeyword(content, keyword),
-      points: 8,
-      guidance:
-        "Full product Description ya Short Description me Focus Keyword add karo.",
-    },
-    {
-      label:
-        words.length >= 900
-          ? `Content is ${words.length} words long. Good job!`
-          : `Content is ${words.length} words long. Aim for at least 900 words.`,
-      pass: words.length >= 900,
-      points: 6,
-      guidance:
-        "Product Description ko useful details ke saath kam se kam 900 words tak expand karo: fabric, fit, benefits, care, use cases, sizing aur FAQs add kar sakte ho.",
-    },
-  ];
-
-  const additional: SeoCheck[] = [
-    {
-      label: "Focus Keyword found in the subheading(s).",
-      pass: hasKeyword(subheadingText, keyword),
-      points: 5,
-      guidance:
-        "Description me H2/H3 subheading add karo aur kam se kam ek subheading me Focus Keyword use karo.",
-    },
-    {
-      label: "Focus Keyword found in image alt attribute(s).",
-      pass: imageAltHasKeyword,
-      points: 4,
-      guidance:
-        "Image Studio me kam se kam ek product image ke ALT text me Focus Keyword naturally add karo.",
-    },
-    {
-      label: `Keyword Density is ${keywordDensity.toFixed(2)}, the Focus Keyword and combination appears ${keywordOccurrences} time${keywordOccurrences === 1 ? "" : "s"}.`,
-      pass:
-        Boolean(keyword) &&
-        keywordDensity >= 0.5 &&
-        keywordDensity <= 2.5,
-      points: 5,
-      guidance:
-        "Focus Keyword ko natural tarike se use karo. Target density lagbhag 0.5% se 2.5% rakho; keyword stuffing mat karo.",
-    },
-    {
-      label:
-        urlValue.length > 0 &&
-        urlValue.length <= 70
-          ? `URL is ${urlValue.length} characters long. Kudos!`
-          : `URL is ${urlValue.length} characters long. Keep it within 70 characters.`,
-      pass:
-        urlValue.length > 0 &&
-        urlValue.length <= 70,
-      points: 3,
-      guidance:
-        "Product Slug chhota aur clear rakho. Total product URL ko 70 characters ke andar rakhne ki koshish karo.",
-    },
-    {
-      label: "Great! You are linking to external resources.",
-      pass: externalLinks.length > 0,
-      points: 4,
-      guidance:
-        "Description me zarurat ke hisab se ek useful external reference link add karo, jaise fabric/care information ka trusted source.",
-    },
-    {
-      label: "At least one external link with DoFollow found in your content.",
-      pass: hasDoFollowExternal,
-      points: 3,
-      guidance:
-        "Kam se kam ek relevant external link par rel=\"nofollow\" mat lagao. Sirf trusted resource ko DoFollow rakho.",
-    },
-    {
-      label: "You are linking to other resources on your website which is great.",
-      pass: internalLinks.length > 0,
-      points: 3,
-      guidance:
-        "Description me apni website ke kisi relevant category, collection, blog ya product ka internal link add karo.",
-    },
-    {
-      label: otherKeywordUsed
-        ? "This Focus Keyword is already used on another color in this product."
-        : "You haven't used this Focus Keyword on another color in this product.",
-      pass: Boolean(keyword) && !otherKeywordUsed,
-      points: 3,
-      guidance:
-        "Har color/product ke liye unique Focus Keyword rakho taaki variants ek hi keyword ke liye compete na karein.",
-    },
-  ];
-
-  const titleReadability: SeoCheck[] = [
-    {
-      label: "Focus Keyword used at the beginning of SEO title.",
-      pass:
-        Boolean(normalizedKeyword) &&
-        normalizedTitle.startsWith(normalizedKeyword),
-      points: 7,
-      guidance:
-        "SEO Title ko Focus Keyword se start karo ya keyword ko bilkul beginning ke paas lao.",
-    },
-    {
-      label: powerWords.some((word) => normalizedTitle.includes(word))
-        ? "Your title contains at least 1 power word."
-        : "Your title is clear and product-focused; a power word is optional.",
-      pass:
-        powerWords.some((word) => normalizedTitle.includes(word)) ||
-        (Boolean(keyword) && hasKeyword(effectiveTitle, keyword)),
-      points: 9,
-      guidance:
-        "Power word optional hai. Agar naturally fit ho to Premium, Ultimate, Essential, Exclusive ya Best use kar sakte ho; exact product Focus Keyword title me hona enough hai.",
-    },
-    {
-      label: "You are using a number in your SEO title.",
-      pass: /\d/.test(effectiveTitle),
-      points: 4,
-      guidance:
-        "Agar naturally fit ho to SEO Title me number add karo, jaise 3-Pack, 5 Benefits ya 2026. Zabardasti number mat add karo.",
-    },
-  ];
-
-  const allChecks = [
-    ...basic,
-    ...additional,
-    ...titleReadability,
-  ];
-
-  const score = Math.max(
-    0,
-    Math.min(
-      100,
-      allChecks.reduce(
-        (total, check) =>
-          total + (check.pass ? check.points : 0),
-        0
-      )
-    )
-  );
-
-  return {
-    score,
-    basic,
-    additional,
-    titleReadability,
-    wordCount: words.length,
-  };
 }
 
 function imageNameFromFile(
@@ -4196,7 +3746,6 @@ export default function ProductForm({
                     <SeoAnalysisPanel
                       color={color}
                       siblingColors={visibleColors}
-                      colorIndex={colorIndex}
                     />
 
                     {/* IMAGE STUDIO */}
@@ -5157,21 +4706,26 @@ function Divider() {
 function SeoAnalysisPanel({
   color,
   siblingColors,
-  colorIndex,
 }: {
   color: ColorValue;
   siblingColors: ColorValue[];
-  colorIndex: number;
 }) {
   const [showGuidance, setShowGuidance] =
     useState(false);
 
   const analysis =
-    buildSeoAnalysis(
-      color,
-      siblingColors,
-      colorIndex
-    );
+    analyzeProductSeo({
+      focusKeyword: color.focusKeyword,
+      seoTitle: color.seoTitle,
+      seoDescription: color.seoDescription,
+      slug: color.slugProduct,
+      shortDescription: color.shortDescription,
+      description: color.description,
+      images: [
+        ...color.images,
+        ...color.pendingImages,
+      ],
+    });
 
   const focusKeyword = color.focusKeyword.trim();
   const focusKeywordCoverage = siblingColors.map(
@@ -5182,7 +4736,7 @@ function SeoAnalysisPanel({
         item.seoTitle,
         item.seoDescription,
         item.shortDescription,
-        stripHtmlForSeo(item.description),
+        stripHtml(item.description),
         ...(Array.isArray(item.images)
           ? item.images.map((image) => image?.alt || "")
           : []),
