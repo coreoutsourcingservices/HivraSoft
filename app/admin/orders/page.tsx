@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Download, Eye, Loader2, Search, Trash2 } from "lucide-react";
+import { BarChart3, Download, Eye, Loader2, Search, Trash2 } from "lucide-react";
 import {
   deleteAdminOrders,
   downloadAdminInvoice,
@@ -278,8 +278,13 @@ export default function AdminOrdersPage() {
             </p>
           </div>
 
-          <div className="rounded-xl border border-[#211A18]/10 bg-[#FAF8F6] px-4 py-2 text-[10px] font-semibold text-[#211A18]/60">
-            Selected: <span className="text-[#8C1839]">{selected.length}</span>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link href="/admin/orders/reports" className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#8C1839] px-4 text-[10px] font-semibold uppercase tracking-wide text-white transition hover:bg-[#71132e]">
+              <BarChart3 size={14} /> Reports
+            </Link>
+            <div className="rounded-xl border border-[#211A18]/10 bg-[#FAF8F6] px-4 py-2 text-[10px] font-semibold text-[#211A18]/60">
+              Selected: <span className="text-[#8C1839]">{selected.length}</span>
+            </div>
           </div>
         </div>
 

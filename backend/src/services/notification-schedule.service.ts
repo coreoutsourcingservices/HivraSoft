@@ -2,8 +2,10 @@ import { Types } from "mongoose";
 import NotificationSchedule from "../models/NotificationSchedule.model";
 import NotificationScheduleHistory from "../models/NotificationScheduleHistory.model";
 import Notification from "../models/Notification.model";
+import NotificationDelivery from "../models/NotificationDelivery.model";
 import User from "../models/User.model";
 import { matchingCustomerIds } from "./customer-admin.service";
+import { sendEmail } from "./mail.service";
 
 const MINUTE_MS = 60_000;
 const INDIA_OFFSET = "+05:30";
@@ -26,18 +28,20 @@ export function nextOccurrence(current: Date, recurrence: "daily" | "monthly" | 
   return next;
 }
 
-function indiaMonthDay(date: Date) {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: "Asia/Kolkata",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(date);
-  const month = Number(parts.find((part) => part.type === "month")?.value || 0);
-  const day = Number(parts.find((part) => part.type === "day")?.value || 0);
-  return { month, day };
+function indiaParts(date: Date) {
+  const parts = new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(date);
+  return {
+    year: Number(parts.find((part) => part.type === "year")?.value || 0),
+    month: Number(parts.find((part) => part.type === "month")?.value || 0),
+    day: Number(parts.find((part) => part.type === "day")?.value || 0),
+  };
 }
 
-async function baseRecipients(schedule: any) {
+function targetDate(runAt: Date, daysBefore: number) {
+  return new Date(runAt.getTime() + Math.max(0, daysBefore) * 86_400_000);
+}
+
+async function baseRecipientIds(schedule: any) {
   if (schedule.audience === "all") {
     return (await User.find({ role: "customer", isActive: true, accountStatus: "active" }).select("_id").lean()).map((user: any) => String(user._id));
   }
@@ -48,73 +52,115 @@ async function baseRecipients(schedule: any) {
   return matchingCustomerIds({ ...(schedule.filters || {}), accountStatus: "active" });
 }
 
-export async function resolveScheduleRecipients(schedule: any, runAt: Date) {
-  let ids = await baseRecipients(schedule);
-  if (!ids.length || schedule.eventType === "none") return ids;
+export async function resolveScheduleRecipients(schedule: any, runAt: Date, daysBefore = 0) {
+  const ids = await baseRecipientIds(schedule);
+  if (!ids.length) return [] as any[];
+  if (schedule.eventType === "none") {
+    return User.find({ _id: { $in: ids.map((id: string) => new Types.ObjectId(id)) }, role: "customer", isActive: true }).select("name email birthday anniversary").lean();
+  }
 
-  const { month, day } = indiaMonthDay(runAt);
+  const target = targetDate(runAt, daysBefore);
+  const { month, day } = indiaParts(target);
   const field = schedule.eventType === "birthday" ? "birthday" : "anniversary";
-  const rows = await User.aggregate([
+  return User.aggregate([
     { $match: { _id: { $in: ids.map((id: string) => new Types.ObjectId(id)) }, role: "customer", isActive: true, [field]: { $ne: null } } },
-    { $match: { $expr: { $and: [ { $eq: [{ $month: `$${field}` }, month] }, { $eq: [{ $dayOfMonth: `$${field}` }, day] } ] } } },
-    { $project: { _id: 1 } },
+    { $match: { $expr: { $and: [{ $eq: [{ $month: `$${field}` }, month] }, { $eq: [{ $dayOfMonth: `$${field}` }, day] }] } } },
+    { $project: { _id: 1, name: 1, email: 1, birthday: 1, anniversary: 1 } },
   ]);
-  ids = rows.map((row: any) => String(row._id));
-  return ids;
+}
+
+function uniqueTimings(schedule: any) {
+  if (schedule.eventType === "none") return [0];
+  const raw: unknown[] = Array.isArray(schedule.daysBefore) ? schedule.daysBefore : [0];
+  const values = Array.from(new Set(raw.map((v: unknown) => Number(v)).filter((v: number) => Number.isInteger(v) && v >= 0 && v <= 3)));
+  return values.length ? values.sort((a, b) => b - a) : [0];
+}
+
+function deliveryKey(scheduleId: string, userId: string, channel: "email" | "website", eventYear: number, daysBefore: number) {
+  return `schedule:${scheduleId}:user:${userId}:${channel}:year:${eventYear}:before:${daysBefore}`;
+}
+
+async function unsentUsers(schedule: any, users: any[], channel: "email" | "website", eventYear: number, daysBefore: number) {
+  if (!users.length) return [];
+  const keys = users.map((user) => deliveryKey(String(schedule._id), String(user._id), channel, eventYear, daysBefore));
+  const existing = await NotificationDelivery.find({ dedupeKey: { $in: keys } }).select("dedupeKey").lean();
+  const seen = new Set(existing.map((row: any) => String(row.dedupeKey)));
+  return users.filter((user) => !seen.has(deliveryKey(String(schedule._id), String(user._id), channel, eventYear, daysBefore)));
 }
 
 export async function executeNotificationSchedule(scheduleId: string, runAt = new Date()) {
   const schedule = await NotificationSchedule.findById(scheduleId).lean();
-  if (!schedule || !schedule.isActive) return { status: "skipped" as const, recipientCount: 0 };
+  if (!schedule || !schedule.isActive) return { status: "skipped" as const, recipientCount: 0, emailSent: 0, websiteSent: 0, failed: 0 };
 
   try {
-    const userIds = await resolveScheduleRecipients(schedule, runAt);
-    if (!userIds.length) {
-      await NotificationScheduleHistory.create({
-        schedule: schedule._id,
-        scheduleName: schedule.name,
-        ranAt: runAt,
-        recipientCount: 0,
-        status: "skipped",
-        note: schedule.eventType === "none" ? "No active users matched the audience." : `No users matched ${schedule.eventType} for this date.`,
-      });
-      return { status: "skipped" as const, recipientCount: 0 };
+    const timings = uniqueTimings(schedule);
+    const recipientIds = new Set<string>();
+    let emailSent = 0;
+    let websiteSent = 0;
+    let failed = 0;
+    const notificationIds: string[] = [];
+
+    for (const daysBefore of timings) {
+      const users = await resolveScheduleRecipients(schedule, runAt, daysBefore);
+      if (!users.length) continue;
+      const target = targetDate(runAt, daysBefore);
+      const eventYear = indiaParts(target).year;
+
+      if (schedule.deliveryWebsite) {
+        const websiteUsers = await unsentUsers(schedule, users, "website", eventYear, daysBefore);
+        if (websiteUsers.length) {
+          const day = indiaParts(runAt);
+          const masterKey = `schedule:${scheduleId}:website:${day.year}-${day.month}-${day.day}:before:${daysBefore}`;
+          const notification = await Notification.findOneAndUpdate(
+            { dedupeKey: masterKey },
+            { $setOnInsert: {
+              title: schedule.title, subject: schedule.subject || schedule.title, message: schedule.message, type: schedule.type,
+              audience: "selected", userIds: websiteUsers.map((user: any) => user._id), filters: schedule.filters || {}, recipientCount: websiteUsers.length,
+              link: schedule.link || "", isActive: true, deliveryEmail: false, deliveryWebsite: true, createdBy: schedule.createdBy || null,
+              source: "system", dedupeKey: masterKey, metadata: { scheduleId: String(schedule._id), scheduleName: schedule.name, eventType: schedule.eventType, daysBefore, eventYear },
+            } },
+            { upsert: true, new: true }
+          );
+          notificationIds.push(String(notification._id));
+          const docs = websiteUsers.map((user: any) => ({ notification: notification._id, schedule: schedule._id, user: user._id, channel: "website", status: "sent", scheduledFor: runAt, processedAt: new Date(), sentAt: new Date(), failureReason: "", dedupeKey: deliveryKey(scheduleId, String(user._id), "website", eventYear, daysBefore), eventType: schedule.eventType, eventYear, daysBefore, metadata: { scheduleName: schedule.name } }));
+          try { const inserted = await NotificationDelivery.insertMany(docs, { ordered: false }); websiteSent += inserted.length; inserted.forEach((row: any) => recipientIds.add(String(row.user))); }
+          catch (error: any) { const inserted = error?.insertedDocs || []; websiteSent += inserted.length; inserted.forEach((row: any) => recipientIds.add(String(row.user))); }
+        }
+      }
+
+      if (schedule.deliveryEmail) {
+        const emailUsers = await unsentUsers(schedule, users, "email", eventYear, daysBefore);
+        for (const user of emailUsers as any[]) {
+          const userId = String(user._id);
+          let delivery: any;
+          try {
+            delivery = await NotificationDelivery.create({ schedule: schedule._id, user: user._id, channel: "email", status: "pending", scheduledFor: runAt, dedupeKey: deliveryKey(scheduleId, userId, "email", eventYear, daysBefore), eventType: schedule.eventType, eventYear, daysBefore, metadata: { scheduleName: schedule.name, subject: schedule.subject || schedule.title } });
+          } catch (error: any) {
+            if (error?.code === 11000) continue;
+            throw error;
+          }
+          try {
+            if (!String(user.email || "").trim()) throw new Error("Customer email is missing.");
+            await sendEmail({ to: String(user.email), subject: schedule.subject || schedule.title, html: schedule.message });
+            await NotificationDelivery.findByIdAndUpdate(delivery._id, { $set: { status: "sent", processedAt: new Date(), sentAt: new Date(), failureReason: "" } });
+            emailSent += 1; recipientIds.add(userId);
+          } catch (error) {
+            failed += 1;
+            await NotificationDelivery.findByIdAndUpdate(delivery._id, { $set: { status: "failed", processedAt: new Date(), failureReason: error instanceof Error ? error.message : "Email delivery failed." } });
+          }
+        }
+      }
     }
 
-    const notification = await Notification.create({
-      title: schedule.title,
-      message: schedule.message,
-      type: schedule.type,
-      audience: "selected",
-      userIds: userIds.map((id) => new Types.ObjectId(id)),
-      filters: schedule.filters || {},
-      recipientCount: userIds.length,
-      link: schedule.link || "",
-      isActive: true,
-      createdBy: schedule.createdBy || null,
-      source: "system",
-      metadata: { scheduleId: String(schedule._id), scheduleName: schedule.name, eventType: schedule.eventType, recurrence: schedule.recurrence },
-    });
-
-    await NotificationScheduleHistory.create({
-      schedule: schedule._id,
-      scheduleName: schedule.name,
-      ranAt: runAt,
-      recipientCount: userIds.length,
-      status: "success",
-      note: `Notification created for ${userIds.length} user${userIds.length === 1 ? "" : "s"}.`,
-      notification: notification._id,
-    });
-    return { status: "success" as const, recipientCount: userIds.length, notificationId: String(notification._id) };
+    const delivered = emailSent + websiteSent;
+    const status = delivered > 0 ? "success" : "skipped";
+    const note = delivered > 0
+      ? `Website: ${websiteSent}, Email: ${emailSent}, Failed: ${failed}. Unique recipients: ${recipientIds.size}.`
+      : `No new ${schedule.eventType === "none" ? "audience" : schedule.eventType} deliveries were due (or they were already processed).`;
+    await NotificationScheduleHistory.create({ schedule: schedule._id, scheduleName: schedule.name, ranAt: runAt, recipientCount: recipientIds.size, status, note, notification: notificationIds[0] ? new Types.ObjectId(notificationIds[0]) : null });
+    return { status: status as "success" | "skipped", recipientCount: recipientIds.size, emailSent, websiteSent, failed, notificationIds };
   } catch (error) {
-    await NotificationScheduleHistory.create({
-      schedule: schedule._id,
-      scheduleName: schedule.name,
-      ranAt: runAt,
-      recipientCount: 0,
-      status: "failed",
-      note: error instanceof Error ? error.message : "Schedule execution failed.",
-    }).catch(() => undefined);
+    await NotificationScheduleHistory.create({ schedule: schedule._id, scheduleName: schedule.name, ranAt: runAt, recipientCount: 0, status: "failed", note: error instanceof Error ? error.message : "Schedule execution failed." }).catch(() => undefined);
     throw error;
   }
 }
@@ -125,21 +171,13 @@ export async function runDueNotificationSchedules() {
   let processed = 0;
 
   for (const row of due as any[]) {
-    let nextRunAt = nextOccurrence(new Date(row.nextRunAt), row.recurrence);
-    while (nextRunAt.getTime() <= now.getTime()) {
-      nextRunAt = nextOccurrence(nextRunAt, row.recurrence);
-    }
-    const claimed = await NotificationSchedule.findOneAndUpdate(
-      { _id: row._id, isActive: true, nextRunAt: row.nextRunAt },
-      { $set: { nextRunAt, lastRunAt: now }, $inc: { runCount: 1 } },
-      { new: true }
-    );
+    const recurrence = row.eventType && row.eventType !== "none" ? "daily" : row.recurrence;
+    let nextRunAt = nextOccurrence(new Date(row.nextRunAt), recurrence);
+    while (nextRunAt.getTime() <= now.getTime()) nextRunAt = nextOccurrence(nextRunAt, recurrence);
+    const claimed = await NotificationSchedule.findOneAndUpdate({ _id: row._id, isActive: true, nextRunAt: row.nextRunAt }, { $set: { nextRunAt, lastRunAt: now }, $inc: { runCount: 1 } }, { new: true });
     if (!claimed) continue;
-    try {
-      await executeNotificationSchedule(String(row._id), now);
-    } catch (error) {
-      console.error("NOTIFICATION SCHEDULE RUN ERROR:", error);
-    }
+    try { await executeNotificationSchedule(String(row._id), now); }
+    catch (error) { console.error("NOTIFICATION SCHEDULE RUN ERROR:", error); }
     processed += 1;
   }
   return processed;
@@ -149,12 +187,8 @@ let timer: NodeJS.Timeout | null = null;
 export function startNotificationScheduleWorker() {
   if (process.env.NOTIFICATION_SCHEDULES_ENABLED === "false" || timer) return;
   const run = async () => {
-    try {
-      const processed = await runDueNotificationSchedules();
-      if (processed > 0) console.log(`🔔 Notification scheduler processed ${processed} schedule(s).`);
-    } catch (error) {
-      console.error("NOTIFICATION SCHEDULER ERROR:", error);
-    }
+    try { const processed = await runDueNotificationSchedules(); if (processed > 0) console.log(`🔔 Notification scheduler processed ${processed} schedule(s).`); }
+    catch (error) { console.error("NOTIFICATION SCHEDULER ERROR:", error); }
   };
   void run();
   timer = setInterval(() => void run(), MINUTE_MS);

@@ -42,6 +42,7 @@ import {
   getAdminCartTracking,
   getAdminWishlistTracking,
 } from "../controllers/tracking.controller";
+import { getAdminOrderReport, exportAdminOrderReport } from "../controllers/order-report.controller";
 
 import {
   listAdminBlogs,
@@ -73,6 +74,7 @@ import {
   sendAdminNotificationToOne,
   sendAdminNotificationBulk,
   broadcastAdminNotification,
+  listAdminNotificationDeliveries,
 } from "../controllers/notification.controller";
 
 import {
@@ -130,6 +132,7 @@ import {
   listNotificationScheduleHistory,
   previewNotificationScheduleAudience,
   runNotificationScheduleNow,
+  getNotificationScheduleCalendar,
 } from "../controllers/notification-schedule.controller";
 
 import {
@@ -231,6 +234,8 @@ router.get("/send-your-bra/:id", authenticateAdmin, getSendYourBraAdmin);
 router.get("/reseller-registration", authenticateAdmin, listResellerRegistrationsAdmin);
 router.get("/reseller-registration/:id", authenticateAdmin, getResellerRegistrationAdmin);
 
+router.get("/notification-deliveries", authenticateAdmin, listAdminNotificationDeliveries);
+router.get("/notification-schedules/calendar", authenticateAdmin, getNotificationScheduleCalendar);
 router.get("/notification-schedules", authenticateAdmin, listNotificationSchedules);
 router.post("/notification-schedules", authenticateAdmin, createNotificationSchedule);
 router.post("/notification-schedules/preview", authenticateAdmin, previewNotificationScheduleAudience);
@@ -294,6 +299,8 @@ router.get("/users/:userId/activity", authenticateAdmin, getAdminCustomerActivit
 router.get("/users/:userId/notifications", authenticateAdmin, getAdminUserNotifications);
 router.get("/users/:userId/reviews", authenticateAdmin, getAdminUserReviews);
 
+router.get("/orders/reports", authenticateAdmin, getAdminOrderReport);
+router.get("/orders/reports/export", authenticateAdmin, exportAdminOrderReport);
 router.get("/orders", authenticateAdmin, getAdminOrders);
 router.get("/orders/invoices", authenticateAdmin, downloadSelectedAdminInvoices);
 router.get("/orders/export", authenticateAdmin, exportAdminOrdersCsv);

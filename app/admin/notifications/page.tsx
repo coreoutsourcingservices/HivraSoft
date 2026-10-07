@@ -3,14 +3,16 @@
 import { confirmAdminAction } from "@/src/components/Admin/AdminConfirmProvider";
 
 import { useEffect, useMemo, useState } from "react";
-import { Bell, Filter, Send, Trash2, Users } from "lucide-react";
+import { Bell, Filter, Globe2, Mail, Send, Trash2, Users } from "lucide-react";
+import WordBlogEditor from "@/src/components/Admin/WordBlogEditor";
+import { uploadBlogImage } from "@/lib/blog";
 
 const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000").replace(/\/$/, "");
 
 type Audience = "all" | "filtered" | "selected";
 type Customer = { _id: string; name: string; email: string; phone: string };
 type AdminNotification = {
-  _id: string; title: string; message: string; type: string; audience: Audience;
+  _id: string; title: string; subject?: string; message: string; type: string; audience: Audience; deliveryEmail?: boolean; deliveryWebsite?: boolean;
   recipientCount?: number; userIds?: Customer[]; filters?: Record<string, unknown>;
   link?: string; createdAt: string;
 };
@@ -31,7 +33,11 @@ async function readJson(response: Response) { try { return await response.json()
 
 export default function AdminNotificationsPage() {
   const [title, setTitle] = useState("");
+  const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
+  const [messageMode, setMessageMode] = useState<"visual" | "html">("visual");
+  const [deliveryEmail, setDeliveryEmail] = useState(false);
+  const [deliveryWebsite, setDeliveryWebsite] = useState(true);
   const [type, setType] = useState("general");
   const [link, setLink] = useState("");
   const [audience, setAudience] = useState<Audience>("all");
@@ -117,15 +123,16 @@ export default function AdminNotificationsPage() {
       setSaving(true); setError(""); setSuccess("");
       if (!title.trim()) throw new Error("Notification title is required.");
       if (!message.trim()) throw new Error("Notification message is required.");
+      if (!deliveryEmail && !deliveryWebsite) throw new Error("Select Email or Website delivery.");
       if (audience !== "all" && matchedCount === 0) throw new Error("No customers match this audience.");
       const response = await fetch(`${API_URL}/api/admin/notifications`, {
         method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: title.trim(), message: message.trim(), type, link: link.trim(), audienceType: audience, filters: audience === "filtered" ? filters : {}, userIds: audience === "selected" && presetUser ? [presetUser._id] : [], isActive: true }),
+        body: JSON.stringify({ title: title.trim(), subject: (subject || title).trim(), message: message.trim(), deliveryEmail, deliveryWebsite, type, link: link.trim(), audienceType: audience, filters: audience === "filtered" ? filters : {}, userIds: audience === "selected" && presetUser ? [presetUser._id] : [], isActive: true }),
       });
       const data = await readJson(response);
       if (!response.ok) throw new Error(data?.message || "Unable to send notification.");
       setSuccess(data?.message || "Notification sent.");
-      setTitle(""); setMessage(""); setLink(""); setType("general");
+      setTitle(""); setSubject(""); setMessage(""); setLink(""); setType("general"); setDeliveryEmail(false); setDeliveryWebsite(true);
       await reloadHistory();
     } catch (sendError) { setError(sendError instanceof Error ? sendError.message : "Unable to send notification."); }
     finally { setSaving(false); }
@@ -158,13 +165,15 @@ export default function AdminNotificationsPage() {
 
     {(error || success) && <div className={`mt-5 rounded-2xl border px-4 py-3 text-[12px] ${error ? "border-red-200 bg-red-50 text-red-700" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}>{error || success}</div>}
 
-    <div className="mt-6 grid gap-5 xl:grid-cols-[470px_1fr]">
+    <div className="mt-6 grid gap-5 xl:grid-cols-[minmax(0,1.15fr)_minmax(390px,.85fr)]">
       <section className="h-fit rounded-[24px] border border-[#211A18]/10 bg-white p-5 md:p-6">
         <div className="flex items-center gap-3 border-b border-[#211A18]/8 pb-5"><div className="grid h-11 w-11 place-items-center rounded-2xl bg-[#F8E8ED] text-[#8C1839]"><Send size={18}/></div><div><h2 className="text-[17px] font-semibold">Send Notification</h2><p className="mt-1 text-[10px] text-[#211A18]/40">Audience is resolved on the backend.</p></div></div>
         <div className="mt-5 space-y-4">
           <Field label="Audience"><div className="grid grid-cols-2 gap-2"><AudienceButton active={audience === "all"} label="All Users" onClick={() => setAudience("all")}/><AudienceButton active={audience === "filtered"} label="Filtered Users" onClick={() => setAudience("filtered")}/></div>{presetUser && <button type="button" onClick={() => setAudience("selected")} className={`mt-2 h-11 w-full rounded-xl border text-[10px] font-semibold ${audience === "selected" ? "border-[#8C1839]/25 bg-[#FFF3F7] text-[#8C1839]" : "border-[#211A18]/10"}`}>Only {presetUser.name}</button>}</Field>
-          <Field label="Title"><input value={title} maxLength={160} onChange={(e) => setTitle(e.target.value)} placeholder="Complete your order" className={inputClass}/></Field>
-          <Field label="Message (safe HTML + inline CSS)"><textarea value={message} maxLength={2000} onChange={(e) => setMessage(e.target.value)} placeholder={`<div style="padding:16px"><strong>Complete your order</strong><p>Your cart is waiting.</p></div>`} className={`${inputClass} min-h-36 resize-y py-3 font-mono`}/><div className="mt-2 rounded-xl border border-[#211A18]/10 bg-white p-3"><p className="mb-2 text-[8px] font-semibold uppercase text-[#211A18]/35">HTML Preview</p><iframe title="Notification HTML preview" sandbox="" srcDoc={message} className="min-h-24 w-full rounded-lg border-0 bg-white" /></div></Field>
+          <Field label="Title"><input value={title} maxLength={160} onChange={(e) => { setTitle(e.target.value); if (!subject) setSubject(e.target.value); }} placeholder="Complete your order" className={inputClass}/></Field>
+          <Field label="Email Subject"><input value={subject} maxLength={200} onChange={(e) => setSubject(e.target.value)} placeholder="Complete your order" className={inputClass}/></Field>
+          <Field label="Delivery Channels"><div className="grid grid-cols-2 gap-2"><button type="button" onClick={()=>setDeliveryEmail(v=>!v)} className={`flex h-12 items-center justify-center gap-2 rounded-xl border text-[10px] font-semibold ${deliveryEmail?"border-[#8C1839]/30 bg-[#FFF3F7] text-[#8C1839]":"border-[#211A18]/10"}`}><Mail size={14}/> Send to Email · {deliveryEmail?"ON":"OFF"}</button><button type="button" onClick={()=>setDeliveryWebsite(v=>!v)} className={`flex h-12 items-center justify-center gap-2 rounded-xl border text-[10px] font-semibold ${deliveryWebsite?"border-[#8C1839]/30 bg-[#FFF3F7] text-[#8C1839]":"border-[#211A18]/10"}`}><Globe2 size={14}/> Send to Website · {deliveryWebsite?"ON":"OFF"}</button></div></Field>
+          <Field label="Message"><div className="mb-3 flex gap-2"><button type="button" onClick={()=>setMessageMode("visual")} className={`h-9 rounded-lg px-3 text-[9px] font-semibold ${messageMode==="visual"?"bg-[#8C1839] text-white":"bg-[#FAF8F6]"}`}>Visual Editor</button><button type="button" onClick={()=>setMessageMode("html")} className={`h-9 rounded-lg px-3 text-[9px] font-semibold ${messageMode==="html"?"bg-[#8C1839] text-white":"bg-[#FAF8F6]"}`}>HTML</button></div>{messageMode==="visual"?<WordBlogEditor value={message} onChange={setMessage} onImageUpload={uploadBlogImage}/>:<textarea value={message} onChange={(e)=>setMessage(e.target.value)} spellCheck={false} className={`${inputClass} min-h-[420px] resize-y bg-[#171717] py-4 font-mono text-[#F5F5F5]`}/>}<div className="mt-3 rounded-xl border border-[#211A18]/10 bg-white p-3"><p className="mb-2 text-[8px] font-semibold uppercase text-[#211A18]/35">Final Preview</p><iframe title="Notification HTML preview" sandbox="" srcDoc={message} className="min-h-40 w-full rounded-lg border-0 bg-white" /></div></Field>
           <div className="grid gap-3 sm:grid-cols-2"><Field label="Type"><select value={type} onChange={(e) => setType(e.target.value)} className={inputClass}><option value="general">General</option><option value="promotion">Promotion</option><option value="order">Order</option><option value="account">Account</option><option value="system">System</option></select></Field><Field label="Optional Link"><input value={link} onChange={(e) => setLink(e.target.value)} placeholder="/account/card" className={inputClass}/></Field></div>
           <div className="rounded-2xl bg-[#FAF8F6] px-4 py-3"><p className="text-[9px] uppercase tracking-[0.08em] text-[#211A18]/40">Preview</p><p className="mt-1 text-[14px] font-semibold text-[#211A18]">{previewing ? "Matching users..." : `${matchedCount} user${matchedCount === 1 ? "" : "s"} matched`}</p></div>
           <button type="button" disabled={saving || previewing || matchedCount === 0} onClick={() => void sendNotification()} className="h-14 w-full rounded-[14px] bg-[#A51D45] text-[11px] font-semibold uppercase tracking-[0.09em] text-white disabled:opacity-40">{saving ? "Sending..." : audience === "all" ? "Send To All Users" : `Send To ${matchedCount} Matched Users`}</button>
@@ -209,7 +218,7 @@ export default function AdminNotificationsPage() {
 
     <section className="mt-6 rounded-[24px] border border-[#211A18]/10 bg-white p-5 md:p-6">
       <div className="flex items-center justify-between border-b border-[#211A18]/8 pb-5"><div><h2 className="text-[17px] font-semibold">Notification History</h2><p className="mt-1 text-[10px] text-[#211A18]/40">Saved admin notifications and recipient counts.</p></div><Bell size={18} className="text-[#8C1839]"/></div>
-      {loading ? <div className="py-12 text-center text-[12px] text-[#211A18]/40">Loading...</div> : notifications.length === 0 ? <div className="py-12 text-center text-[12px] text-[#211A18]/40">No notifications sent yet.</div> : <div className="mt-4 space-y-3">{notifications.map((item) => <div key={item._id} className="flex flex-col gap-4 rounded-[18px] border border-[#211A18]/8 bg-[#FAF8F6] p-4 md:flex-row md:items-center md:justify-between"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h3 className="text-[12px] font-semibold">{item.title}</h3><Badge text={item.type}/><Badge text={item.audience === "all" ? "All Users" : item.audience === "filtered" ? `Filtered · ${item.recipientCount || item.userIds?.length || 0}` : `Selected · ${item.recipientCount || item.userIds?.length || 0}`}/></div><p className="mt-1.5 max-w-3xl text-[10px] leading-4 text-[#211A18]/55">{item.message}</p><p className="mt-2 text-[9px] text-[#211A18]/30">{new Date(item.createdAt).toLocaleString("en-IN")}</p></div><button type="button" disabled={busyId === item._id} onClick={() => void deleteNotification(item._id)} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-red-100 bg-red-50 px-3 text-[9px] font-semibold text-red-600 disabled:opacity-40"><Trash2 size={13}/> Delete</button></div>)}</div>}
+      {loading ? <div className="py-12 text-center text-[12px] text-[#211A18]/40">Loading...</div> : notifications.length === 0 ? <div className="py-12 text-center text-[12px] text-[#211A18]/40">No notifications sent yet.</div> : <div className="mt-4 space-y-3">{notifications.map((item) => <div key={item._id} className="flex flex-col gap-4 rounded-[18px] border border-[#211A18]/8 bg-[#FAF8F6] p-4 md:flex-row md:items-center md:justify-between"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h3 className="text-[12px] font-semibold">{item.title}</h3><Badge text={item.type}/>{item.deliveryEmail&&<Badge text="Email"/>}{item.deliveryWebsite&&<Badge text="Website"/>}<Badge text={item.audience === "all" ? "All Users" : item.audience === "filtered" ? `Filtered · ${item.recipientCount || item.userIds?.length || 0}` : `Selected · ${item.recipientCount || item.userIds?.length || 0}`}/></div><p className="mt-1.5 max-w-3xl text-[10px] leading-4 text-[#211A18]/55">{item.message}</p><p className="mt-2 text-[9px] text-[#211A18]/30">{new Date(item.createdAt).toLocaleString("en-IN")}</p></div><button type="button" disabled={busyId === item._id} onClick={() => void deleteNotification(item._id)} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-red-100 bg-red-50 px-3 text-[9px] font-semibold text-red-600 disabled:opacity-40"><Trash2 size={13}/> Delete</button></div>)}</div>}
     </section>
   </div>;
 }

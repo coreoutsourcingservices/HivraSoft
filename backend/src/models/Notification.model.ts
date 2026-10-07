@@ -16,6 +16,9 @@ export type NotificationSource = "admin" | "system";
 export interface INotification extends Document {
   title: string;
   message: string;
+  subject: string;
+  deliveryEmail: boolean;
+  deliveryWebsite: boolean;
   type: NotificationType;
   audience: NotificationAudience;
   userIds: Types.ObjectId[];
@@ -48,8 +51,11 @@ const notificationSchema = new Schema<INotification>(
       type: String,
       required: true,
       trim: true,
-      maxlength: 2000,
+      maxlength: 50000,
     },
+    subject: { type: String, trim: true, default: "", maxlength: 200 },
+    deliveryEmail: { type: Boolean, default: false, index: true },
+    deliveryWebsite: { type: Boolean, default: true, index: true },
     type: {
       type: String,
       enum: [

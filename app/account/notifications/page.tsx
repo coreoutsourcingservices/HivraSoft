@@ -7,6 +7,7 @@ import {
 } from "react";
 
 import Link from "next/link";
+import DOMPurify from "isomorphic-dompurify";
 
 import {
   Bell,
@@ -902,7 +903,7 @@ export default function AccountNotificationsPage() {
 
                             {/* MESSAGE */}
 
-                            <p
+                            <div
                               className="
                                 mt-2
                                 w-full
@@ -914,12 +915,16 @@ export default function AccountNotificationsPage() {
                                 text-[#211A18]/60
 
                                 [overflow-wrap:anywhere]
+                                [&_a]:font-semibold
+                                [&_a]:text-[#8C1839]
+                                [&_a]:underline
+                                [&_img]:my-3
+                                [&_img]:max-w-full
+                                [&_img]:rounded-xl
+                                [&_p]:mb-2
                               "
-                            >
-                              {
-                                item.message
-                              }
-                            </p>
+                              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(item.message || "") }}
+                            />
 
                             {/* META */}
 
