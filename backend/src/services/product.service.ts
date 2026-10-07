@@ -21,7 +21,6 @@ import { calculateSeoScore } from "../utils/productSeoAnalyzer";
 
 import {
   uploadImageBuffer,
-  deleteCloudinaryImage,
   deleteCloudinaryImages,
   deleteCloudinaryFolderIfEmpty,
   getCloudinaryFolderFromPublicId,
@@ -678,9 +677,10 @@ const normalizeColors = (
               ?.trim() ||
             "",
 
+          // Color products are allowed to have no default color.
+          // A default is created only when admin explicitly sends true.
           isDefault:
-            color.isDefault ??
-            colorIndex === 0,
+            color.isDefault === true,
 
           ...pricing,
 
@@ -724,34 +724,19 @@ const normalizeColors = (
     );
 
   /*
-   * Sirf ek color default.
+   * At most one color can be default.
+   * If admin did not choose any default, keep all colors non-default.
    */
 
-  if (
-    normalized.length >
-    0
-  ) {
-    const selectedDefault =
-      normalized.findIndex(
-        (color) =>
-          color.isDefault
-      );
-
-    const defaultIndex =
-      selectedDefault >= 0
-        ? selectedDefault
-        : 0;
-
-    normalized.forEach(
-      (
-        color,
-        index
-      ) => {
-        color.isDefault =
-          index ===
-          defaultIndex;
-      }
+  if (normalized.length > 0) {
+    const selectedDefault = normalized.findIndex(
+      (color) => color.isDefault === true
     );
+
+    normalized.forEach((color, index) => {
+      color.isDefault =
+        selectedDefault >= 0 && index === selectedDefault;
+    });
   }
 
   return normalized;
@@ -1995,18 +1980,11 @@ export const deleteProductColorImage =
 
     await product.save();
 
-    await deleteCloudinaryImage(
-      publicId
-    );
-
-    const folder =
-      getCloudinaryFolderFromPublicId(
-        publicId
-      );
-
-    await deleteCloudinaryFolderIfEmpty(
-      folder
-    );
+    /*
+     * Media Library images are reusable across products. Removing an image
+     * from a product now only detaches it from this product. The actual
+     * Cloudinary asset remains available in Admin Gallery.
+     */
 
     return product;
   };

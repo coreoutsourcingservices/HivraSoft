@@ -16,11 +16,24 @@ import {
 
 import {
   uploadImageController,
+  listImagesController,
+  updateImageDetailsController,
   deleteImageController,
 } from "../controllers/upload.controller";
 
 const router =
   Router();
+
+/* =========================================================
+   MEDIA LIBRARY
+========================================================= */
+
+router.get(
+  "/images",
+  authenticate,
+  requireAdmin,
+  listImagesController
+);
 
 /* =========================================================
    UPLOAD
@@ -32,6 +45,13 @@ router.post(
   requireAdmin,
   upload.single("image"),
   uploadImageController
+);
+
+router.patch(
+  "/image",
+  authenticate,
+  requireAdmin,
+  updateImageDetailsController
 );
 
 /* =========================================================

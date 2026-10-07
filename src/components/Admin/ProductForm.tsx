@@ -15,6 +15,9 @@ import {
   stripHtml,
   type SeoCheck,
 } from "@/src/utils/seoAnalyzer";
+import MediaLibraryPicker, {
+  type MediaLibraryImage,
+} from "@/src/components/Admin/MediaLibraryPicker";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
@@ -174,9 +177,11 @@ function emptyColor(
     slugColor: "",
     colorSlugManuallyEdited: false,
 
-    hex: "#000000",
-    isDefault:
-      index === 0,
+    // New colors start without a pre-selected HEX value.
+    // Admin explicitly chooses/types the color.
+    hex: "",
+    // No color variant is selected as default automatically.
+    isDefault: false,
 
     originalPrice: 0,
     showPrice: 0,
@@ -405,6 +410,11 @@ export default function ProductForm({
     uploadMessage,
     setUploadMessage,
   ] = useState("");
+
+  const [
+    galleryColorIndex,
+    setGalleryColorIndex,
+  ] = useState<number | null>(null);
 
   const colorsRef =
     useRef(colors);
@@ -640,11 +650,10 @@ export default function ProductForm({
 
                     hex:
                       color?.hex ||
-                      "#000000",
+                      "",
 
                     isDefault:
-                      color?.isDefault ??
-                      index === 0,
+                      color?.isDefault === true,
 
                     originalPrice:
                       Number(color?.originalPrice ?? 0),
@@ -1175,23 +1184,8 @@ export default function ProductForm({
               index
           );
 
-        if (
-          next.length >
-            0 &&
-          !next.some(
-            (
-              color
-            ) =>
-              color.isDefault
-          )
-        ) {
-          next[0] = {
-            ...next[0],
-            isDefault:
-              true,
-          };
-        }
-
+        // Default color is optional. Removing the current default does not
+        // automatically promote another color.
         return next;
       }
     );
@@ -1200,23 +1194,16 @@ export default function ProductForm({
   const makeDefaultColor = (
     index: number
   ) => {
-    setColors(
-      (
-        current
-      ) =>
-        current.map(
-          (
-            color,
-            i
-          ) => ({
-            ...color,
+    setColors((current) => {
+      const isAlreadyDefault = current[index]?.isDefault === true;
 
-            isDefault:
-              i ===
-              index,
-          })
-        )
-    );
+      return current.map((color, i) => ({
+        ...color,
+        // Clicking the current default again clears it.
+        // A default color is optional for color products.
+        isDefault: isAlreadyDefault ? false : i === index,
+      }));
+    });
   };
 
   const setSamePriceForAllSizes = (
@@ -1399,55 +1386,179 @@ export default function ProductForm({
      PENDING IMAGE HELPERS
   ======================================================= */
 
-  const addPendingImages = (
+  const addPendingImages = async (
     colorIndex: number,
-    fileList:
-      FileList | null
+    fileList: FileList | null
   ) => {
-    if (
-      !fileList
-    ) {
+    if (!fileList?.length) {
       return;
     }
 
-    const files =
-      Array.from(
-        fileList
-      );
+    const files = Array.from(fileList);
+    const targetColor = colors[colorIndex];
 
-    if (
-      files.length ===
-      0
-    ) {
-      return;
-    }
+    try {
+      setError("");
+      setSuccess("");
+      setUploadMessage(`Uploading ${files.length} image${files.length === 1 ? "" : "s"}...`);
 
-    const color =
-      colors[
-        colorIndex
-      ];
+      const uploadedImages: ImageValue[] = [];
 
-    const existingCount =
-      color.images.length +
-      color
-        .pendingImages
-        .length;
+      for (const [fileIndex, file] of files.entries()) {
+        setUploadMessage(`Uploading ${fileIndex + 1} of ${files.length}: ${file.name}`);
 
-    const newImages =
-      createPendingImages(
-        files,
-        color.nameProduct,
-        existingCount > 0
-      );
+        const formData = new FormData();
+        const baseName = imageNameFromFile(file.name) || "product-image";
 
-    updateColor(
-      colorIndex,
-      {
-        pendingImages: [
-          ...color.pendingImages,
-          ...newImages,
-        ],
+        formData.append("image", file);
+        formData.append("folder", "media-library/products");
+        formData.append(
+          "imageName",
+          `${baseName}-${Date.now()}-${fileIndex + 1}`
+        );
+
+        const response = await fetch(
+          `${API_URL}/api/uploads/image`,
+          {
+            method: "POST",
+            credentials: "include",
+            body: formData,
+          }
+        );
+
+        const data = await readJson(response);
+
+        if (!response.ok) {
+          throw new Error(
+            data?.message || `Unable to upload ${file.name}.`
+          );
+        }
+
+        const uploaded = data?.image;
+        if (!uploaded?.url || !uploaded?.publicId) {
+          throw new Error(`Upload response is missing image data for ${file.name}.`);
+        }
+
+        const name = String(uploaded.name || baseName).trim();
+        const productName = targetColor?.nameProduct?.trim() || name;
+
+        uploadedImages.push({
+          url: String(uploaded.url),
+          publicId: String(uploaded.publicId),
+          isDefault: false,
+          name,
+          alt: `${productName} - ${name}`.replace(/\s+/g, " ").trim(),
+        });
       }
+
+      setColors((current) =>
+        current.map((color, index) => {
+          if (index !== colorIndex) return color;
+
+          const existingIds = new Set(color.images.map((image) => image.publicId));
+          const fresh = uploadedImages.filter((image) => !existingIds.has(image.publicId));
+          const shouldSetDefault = color.images.length === 0 && fresh.length > 0;
+
+          return {
+            ...color,
+            images: [
+              ...color.images,
+              ...fresh.map((image, imageIndex) => ({
+                ...image,
+                isDefault: shouldSetDefault && imageIndex === 0,
+              })),
+            ],
+          };
+        })
+      );
+
+      setSuccess(
+        `${uploadedImages.length} image${uploadedImages.length === 1 ? "" : "s"} uploaded. Product save karne se pehle bhi Gallery me available hain.`
+      );
+    } catch (uploadError) {
+      setError(
+        uploadError instanceof Error
+          ? uploadError.message
+          : "Unable to upload images."
+      );
+    } finally {
+      setUploadMessage("");
+    }
+  };
+
+  const addGalleryImages = (
+    selectedImages: MediaLibraryImage[]
+  ) => {
+    if (galleryColorIndex === null || selectedImages.length === 0) {
+      return;
+    }
+
+    setColors((current) =>
+      current.map((color, index) => {
+        if (index !== galleryColorIndex) return color;
+
+        const existingIds = new Set(color.images.map((image) => image.publicId));
+        const fresh = selectedImages
+          .filter((image) => !existingIds.has(image.publicId))
+          .map((image) => {
+            const name = image.name?.trim() || imageNameFromPublicId(image.publicId);
+            return {
+              url: image.url,
+              publicId: image.publicId,
+              isDefault: false,
+              name,
+              alt:
+                image.alt?.trim() ||
+                `${color.nameProduct.trim() || name} - ${name}`
+                  .replace(/\s+/g, " ")
+                  .trim(),
+            } satisfies ImageValue;
+          });
+
+        const shouldSetDefault = color.images.length === 0 && fresh.length > 0;
+
+        return {
+          ...color,
+          images: [
+            ...color.images,
+            ...fresh.map((image, imageIndex) => ({
+              ...image,
+              isDefault: shouldSetDefault && imageIndex === 0,
+            })),
+          ],
+        };
+      })
+    );
+  };
+
+  const moveExistingImageToPosition = (
+    colorIndex: number,
+    publicId: string,
+    requestedPosition: number
+  ) => {
+    setColors((current) =>
+      current.map((color, index) => {
+        if (index !== colorIndex || color.images.length < 2) return color;
+
+        const currentIndex = color.images.findIndex((image) => image.publicId === publicId);
+        if (currentIndex < 0) return color;
+
+        const targetIndex = Math.max(
+          0,
+          Math.min(
+            color.images.length - 1,
+            Math.trunc(Number(requestedPosition) || 1) - 1
+          )
+        );
+
+        if (targetIndex === currentIndex) return color;
+
+        const nextImages = [...color.images];
+        const [moved] = nextImages.splice(currentIndex, 1);
+        nextImages.splice(targetIndex, 0, moved);
+
+        return { ...color, images: nextImages };
+      })
     );
   };
 
@@ -1688,340 +1799,52 @@ export default function ProductForm({
      DELETE EXISTING IMAGE
   ======================================================= */
 
-  const deleteExistingImage =
-    async (
-      colorIndex: number,
-      image:
-        ImageValue
-    ) => {
-      const color =
-        colors[
-          colorIndex
-        ];
+  const deleteExistingImage = (
+    colorIndex: number,
+    image: ImageValue
+  ) => {
+    const color = colors[colorIndex];
+    const nextImages = color.images.filter(
+      (item) => item.publicId !== image.publicId
+    );
 
-      if (
-        !isEdit ||
-        !productId
-      ) {
-        updateColor(
-          colorIndex,
-          {
-            images:
-              color.images.filter(
-                (
-                  item
-                ) =>
-                  item.publicId !==
-                  image.publicId
-              ),
-          }
-        );
+    if (image.isDefault && nextImages.length > 0) {
+      nextImages[0] = {
+        ...nextImages[0],
+        isDefault: true,
+      };
+    }
 
-        return;
-      }
+    updateColor(colorIndex, {
+      images: nextImages,
+    });
 
-      try {
-        setError("");
-
-        const response =
-          await fetch(
-            `${API_URL}/api/products/${productId}/colors/${encodeURIComponent(
-              color.slugColor
-            )}/images`,
-            {
-              method:
-                "DELETE",
-
-              credentials:
-                "include",
-
-              headers: {
-                "Content-Type":
-                  "application/json",
-              },
-
-              body:
-                JSON.stringify(
-                  {
-                    publicId:
-                      image.publicId,
-                  }
-                ),
-            }
-          );
-
-        const data =
-          await readJson(
-            response
-          );
-
-        if (
-          !response.ok
-        ) {
-          throw new Error(
-            data?.message ||
-              "Unable to delete image."
-          );
-        }
-
-        updateColor(
-          colorIndex,
-          {
-            images:
-              color.images.filter(
-                (
-                  item
-                ) =>
-                  item.publicId !==
-                  image.publicId
-              ),
-          }
-        );
-
-        setSuccess(
-          "Image deleted successfully."
-        );
-      } catch (
-        deleteError
-      ) {
-        setError(
-          deleteError instanceof
-            Error
-            ? deleteError.message
-            : "Unable to delete image."
-        );
-      }
-    };
+    setSuccess(
+      "Image product se remove ki gayi hai. Update Product par change save hoga; original photo Gallery me rahegi."
+    );
+  };
 
   /* =======================================================
      DEFAULT EXISTING IMAGE
   ======================================================= */
 
-  const setDefaultImage =
-    async (
-      colorIndex: number,
-      image:
-        ImageValue
-    ) => {
-      const color =
-        colors[
-          colorIndex
-        ];
+  const setDefaultImage = (
+    colorIndex: number,
+    image: ImageValue
+  ) => {
+    const color = colors[colorIndex];
 
-      updateColor(
-        colorIndex,
-        {
-          images:
-            color.images.map(
-              (
-                item
-              ) => ({
-                ...item,
-
-                isDefault:
-                  item.publicId ===
-                  image.publicId,
-              })
-            ),
-
-          pendingImages:
-            color.pendingImages.map(
-              (
-                item
-              ) => ({
-                ...item,
-
-                isDefault:
-                  false,
-              })
-            ),
-        }
-      );
-
-      if (
-        !isEdit ||
-        !productId
-      ) {
-        return;
-      }
-
-      try {
-        const response =
-          await fetch(
-            `${API_URL}/api/products/${productId}/colors/${encodeURIComponent(
-              color.slugColor
-            )}/images/default`,
-            {
-              method:
-                "PATCH",
-
-              credentials:
-                "include",
-
-              headers: {
-                "Content-Type":
-                  "application/json",
-              },
-
-              body:
-                JSON.stringify(
-                  {
-                    publicId:
-                      image.publicId,
-                  }
-                ),
-            }
-          );
-
-        const data =
-          await readJson(
-            response
-          );
-
-        if (
-          !response.ok
-        ) {
-          throw new Error(
-            data?.message ||
-              "Unable to set default image."
-          );
-        }
-      } catch (
-        defaultError
-      ) {
-        setError(
-          defaultError instanceof
-            Error
-            ? defaultError.message
-            : "Unable to set default image."
-        );
-      }
-    };
-
-  /* =======================================================
-     UPLOAD PENDING IMAGES
-
-     Sends:
-     - images[] = files
-     - imageMeta = JSON containing name/alt/isDefault
-
-     Backend must read req.body.imageMeta if you want name/alt
-     persisted in MongoDB.
-  ======================================================= */
-
-  const uploadPendingImages =
-    async (
-      id: string
-    ) => {
-      const uploadColors =
-        isColor
-          ? colors
-          : colors.slice(
-              0,
-              1
-            );
-
-      for (
-        let colorIndex =
-          0;
-        colorIndex <
-        uploadColors.length;
-        colorIndex++
-      ) {
-        const color =
-          uploadColors[
-            colorIndex
-          ];
-
-        if (
-          !color
-            .pendingImages
-            .length
-        ) {
-          continue;
-        }
-
-        setUploadMessage(
-          `Uploading ${
-            isColor
-              ? color.nameColor ||
-                `color ${colorIndex + 1}`
-              : color.nameProduct ||
-                "product"
-          } images...`
-        );
-
-        const formData =
-          new FormData();
-
-        for (
-          const image
-          of color.pendingImages
-        ) {
-          formData.append(
-            "images",
-            image.file
-          );
-        }
-
-        formData.append(
-          "imageMeta",
-          JSON.stringify(
-            color.pendingImages.map(
-              (
-                image
-              ) => ({
-                name:
-                  image.name.trim(),
-
-                alt:
-                  image.alt.trim(),
-
-                isDefault:
-                  image.isDefault,
-              })
-            )
-          )
-        );
-
-        const response =
-          await fetch(
-            `${API_URL}/api/products/${id}/colors/${encodeURIComponent(
-              isColor
-                ? color.slugColor
-                : "default"
-            )}/images`,
-            {
-              method:
-                "POST",
-
-              credentials:
-                "include",
-
-              body:
-                formData,
-            }
-          );
-
-        const data =
-          await readJson(
-            response
-          );
-
-        if (
-          !response.ok
-        ) {
-          throw new Error(
-            data?.message ||
-              `Unable to upload ${color.nameColor} images.`
-          );
-        }
-      }
-
-      setUploadMessage(
-        ""
-      );
-    };
+    updateColor(colorIndex, {
+      images: color.images.map((item) => ({
+        ...item,
+        isDefault: item.publicId === image.publicId,
+      })),
+      pendingImages: color.pendingImages.map((item) => ({
+        ...item,
+        isDefault: false,
+      })),
+    });
+  };
 
   /* =======================================================
      SUBMIT
@@ -2415,26 +2238,7 @@ export default function ProductForm({
           );
         }
 
-        await uploadPendingImages(
-          id
-        );
-
-        /*
-         * Revoke preview URLs after successful upload.
-         */
-        for (
-          const color
-          of colors
-        ) {
-          for (
-            const image
-            of color.pendingImages
-          ) {
-            URL.revokeObjectURL(
-              image.previewUrl
-            );
-          }
-        }
+        /* Images are uploaded immediately from Image Studio / Gallery. */
 
         setSuccess(
           isEdit
@@ -3138,13 +2942,20 @@ export default function ProductForm({
                     <div className="flex items-center gap-3">
                       {isColor ? (
                         <div
-                          className="h-11 w-11 rounded-2xl border border-black/10 shadow-inner"
-                          style={{
-                            backgroundColor:
-                              color.hex ||
-                              "#000000",
-                          }}
-                        />
+                          className={`grid h-11 w-11 place-items-center rounded-2xl border shadow-inner ${
+                            /^#[0-9a-fA-F]{6}$/.test(color.hex)
+                              ? "border-black/10"
+                              : "border-dashed border-black/15 bg-white text-black/25"
+                          }`}
+                          style={
+                            /^#[0-9a-fA-F]{6}$/.test(color.hex)
+                              ? { backgroundColor: color.hex }
+                              : undefined
+                          }
+                          title={color.hex || "No color selected"}
+                        >
+                          {!/^#[0-9a-fA-F]{6}$/.test(color.hex) ? "—" : null}
+                        </div>
                       ) : (
                         <div className="grid h-11 w-11 place-items-center rounded-2xl bg-[#F8E8ED] text-lg text-[#8C1839]">
                           ◇
@@ -3190,7 +3001,7 @@ export default function ProductForm({
                             }
                             className="rounded-xl border border-black/[0.08] bg-white px-3.5 py-2 text-xs font-semibold text-black/65 transition hover:border-[#8C1839]/25 hover:text-[#8C1839]"
                           >
-                            Set default
+                            {color.isDefault ? "Unset default" : "Set default"}
                           </button>
 
                           {colors.length >
@@ -3434,51 +3245,51 @@ export default function ProductForm({
                             hint="Choose color visually or enter HEX."
                           >
                             <div className="flex gap-2">
-                              <input
-                                type="color"
-                                value={
-                                  /^#[0-9a-fA-F]{6}$/.test(
-                                    color.hex
-                                  )
-                                    ? color.hex
-                                    : "#000000"
-                                }
-                                onChange={(
-                                  event
-                                ) =>
-                                  updateColor(
-                                    colorIndex,
-                                    {
-                                      hex:
-                                        event
-                                          .target
-                                          .value,
-                                    }
-                                  )
-                                }
-                                className="h-12 w-14 cursor-pointer rounded-xl border border-black/[0.08] bg-white p-1.5"
-                              />
+                              <label
+                                className={`relative grid h-12 w-14 shrink-0 cursor-pointer place-items-center overflow-hidden rounded-xl border ${
+                                  /^#[0-9a-fA-F]{6}$/.test(color.hex)
+                                    ? "border-black/[0.08]"
+                                    : "border-dashed border-black/15 bg-white text-lg text-black/25"
+                                }`}
+                                title={color.hex ? `Choose color (${color.hex})` : "Choose color"}
+                              >
+                                <span
+                                  className="absolute inset-1.5 rounded-lg"
+                                  style={
+                                    /^#[0-9a-fA-F]{6}$/.test(color.hex)
+                                      ? { backgroundColor: color.hex }
+                                      : undefined
+                                  }
+                                />
+                                {!/^#[0-9a-fA-F]{6}$/.test(color.hex) ? (
+                                  <span className="relative z-10">＋</span>
+                                ) : null}
+                                <input
+                                  type="color"
+                                  value={
+                                    /^#[0-9a-fA-F]{6}$/.test(color.hex)
+                                      ? color.hex
+                                      : "#ffffff"
+                                  }
+                                  onChange={(event) =>
+                                    updateColor(colorIndex, {
+                                      hex: event.target.value,
+                                    })
+                                  }
+                                  className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                                  aria-label="Choose color"
+                                />
+                              </label>
 
                               <input
-                                className={
-                                  inputClass
-                                }
-                                value={
-                                  color.hex
-                                }
-                                placeholder="#000000"
-                                onChange={(
-                                  event
-                                ) =>
-                                  updateColor(
-                                    colorIndex,
-                                    {
-                                      hex:
-                                        event
-                                          .target
-                                          .value,
-                                    }
-                                  )
+                                className={inputClass}
+                                value={color.hex}
+                                placeholder="No color selected — enter HEX"
+                                maxLength={7}
+                                onChange={(event) =>
+                                  updateColor(colorIndex, {
+                                    hex: event.target.value.trim(),
+                                  })
                                 }
                               />
                             </div>
@@ -3755,34 +3566,35 @@ export default function ProductForm({
                     <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
                       <SubHeading
                         title="Image Studio"
-                        description="Preview before upload, assign image name and ALT text, choose the primary image, and set the photo index. Index 1 is stored first."
+                        description="Upload photos immediately or choose existing photos from Gallery, then set image name, ALT text, primary image and photo index. Index 1 is stored first."
                       />
 
-                      <label className="group relative cursor-pointer overflow-hidden rounded-2xl bg-[#211816] px-5 py-3 text-xs font-bold text-white shadow-lg transition hover:-translate-y-0.5">
-                        <span className="relative z-10">
-                          + Choose Images
-                        </span>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setGalleryColorIndex(colorIndex)}
+                          className="rounded-2xl border border-black/10 bg-white px-5 py-3 text-xs font-bold text-[#211816] transition hover:bg-black/[0.03]"
+                        >
+                          Choose from Gallery
+                        </button>
 
-                        <input
-                          type="file"
-                          multiple
-                          accept="image/jpeg,image/png,image/webp,image/avif"
-                          className="hidden"
-                          onChange={(
-                            event
-                          ) => {
-                            addPendingImages(
-                              colorIndex,
-                              event
-                                .target
-                                .files
-                            );
+                        <label className="group relative cursor-pointer overflow-hidden rounded-2xl bg-[#211816] px-5 py-3 text-xs font-bold text-white shadow-lg transition hover:-translate-y-0.5">
+                          <span className="relative z-10">
+                            + Upload Images
+                          </span>
 
-                            event.currentTarget.value =
-                              "";
-                          }}
-                        />
-                      </label>
+                          <input
+                            type="file"
+                            multiple
+                            accept="image/jpeg,image/png,image/webp,image/avif"
+                            className="hidden"
+                            onChange={(event) => {
+                              void addPendingImages(colorIndex, event.target.files);
+                              event.currentTarget.value = "";
+                            }}
+                          />
+                        </label>
+                      </div>
                     </div>
 
                     {color.images
@@ -3802,7 +3614,7 @@ export default function ProductForm({
                         </p>
 
                         <p className="mt-1 max-w-md text-xs leading-5 text-black/45">
-                          JPG, PNG, WEBP or AVIF. You will see an instant preview before the image is uploaded.
+                          JPG, PNG, WEBP or AVIF. Image select karte hi upload ho jayegi — Product Save button ka wait nahi hoga.
                         </p>
 
                         <input
@@ -3813,11 +3625,9 @@ export default function ProductForm({
                           onChange={(
                             event
                           ) => {
-                            addPendingImages(
+                            void addPendingImages(
                               colorIndex,
-                              event
-                                .target
-                                .files
+                              event.target.files
                             );
 
                             event.currentTarget.value =
@@ -3856,6 +3666,19 @@ export default function ProductForm({
                               publicId={
                                 image.publicId
                               }
+                              position={
+                                color.images.findIndex((item) => item.publicId === image.publicId) + 1
+                              }
+                              maxPosition={
+                                color.images.length
+                              }
+                              onPositionChange={(position) =>
+                                moveExistingImageToPosition(
+                                  colorIndex,
+                                  image.publicId,
+                                  position
+                                )
+                              }
                               onNameChange={(
                                 value
                               ) =>
@@ -3881,13 +3704,13 @@ export default function ProductForm({
                                 )
                               }
                               onDefault={() =>
-                                void setDefaultImage(
+                                setDefaultImage(
                                   colorIndex,
                                   image
                                 )
                               }
                               onDelete={() =>
-                                void deleteExistingImage(
+                                deleteExistingImage(
                                   colorIndex,
                                   image
                                 )
@@ -4407,6 +4230,12 @@ export default function ProductForm({
           </div>
         </div>
       </div>
+
+      <MediaLibraryPicker
+        open={galleryColorIndex !== null}
+        onClose={() => setGalleryColorIndex(null)}
+        onSelect={addGalleryImages}
+      />
     </form>
   );
 }

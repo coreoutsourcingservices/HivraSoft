@@ -26,6 +26,8 @@ import {
 
   Search,
 
+  Trash2,
+
 } from "lucide-react";
 
 
@@ -724,6 +726,60 @@ export default function ProductsManager() {
 
 
 
+  const deleteProduct = async (product) => {
+
+    if (busy) return;
+
+    const confirmed = await confirmAdminAction({
+
+      title: "Move product to Trash?",
+
+      itemName: product.name,
+
+      description:
+
+        "This product will move to Trash. Product images are preserved until permanent deletion.",
+
+      confirmLabel: "Move to Trash",
+
+    });
+
+    if (!confirmed) return;
+
+    try {
+
+      setBusy(true);
+
+      setError("");
+
+      setSuccess("");
+
+      await apiFetch(`/api/products/${product.id}`, { method: "DELETE" });
+
+      setProducts((current) =>
+
+        current.filter((item) => item.id !== product.id)
+
+      );
+
+      setSelectedIds((current) => current.filter((id) => id !== product.id));
+
+      setSuccess("Product moved to Trash.");
+
+    } catch (deleteError) {
+
+      setError(getErrorMessage(deleteError, "Unable to delete product."));
+
+    } finally {
+
+      setBusy(false);
+
+    }
+
+  };
+
+
+
   const exportSelected = () => {
 
     const rows = products.filter((product) => selectedIds.includes(product.id));
@@ -918,7 +974,7 @@ export default function ProductsManager() {
 
   return (
 
-    <div className="mx-auto w-full max-w-[1600px]">
+    <div className="mx-auto w-full min-w-0 max-w-[1600px] overflow-x-hidden">
 
       <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
 
@@ -1180,11 +1236,12 @@ export default function ProductsManager() {
 
 
 
-      <section className="mt-3 overflow-x-auto rounded-2xl border border-[#211A18]/10 bg-white shadow-sm">
+      <section className="mt-3 w-full min-w-0 overflow-hidden rounded-2xl border border-[#211A18]/10 bg-white shadow-sm">
 
-        <div className="min-w-[1260px]">
+        <div className="w-full">
 
-          <div className="grid grid-cols-[44px_minmax(300px,1.6fr)_100px_180px_minmax(230px,1fr)_150px_120px_96px] items-center gap-4 border-b border-[#211A18]/10 bg-[#FAF8F6] px-5 py-3.5">
+          <div className="grid w-full min-w-0 items-center gap-3 border-b border-[#211A18]/10 bg-[#FAF8F6] px-4 py-3.5"
+            style={{ gridTemplateColumns: "32px minmax(260px,1.7fr) 72px 104px minmax(170px,1.05fr) 116px 90px 108px" }}>
 
             <input
 
@@ -1258,6 +1315,10 @@ export default function ProductsManager() {
 
                 onToggleSelected={() => toggleSelected(product.id)}
 
+                onDelete={() => void deleteProduct(product)}
+
+                busy={busy}
+
               />
 
             ))
@@ -1276,7 +1337,7 @@ export default function ProductsManager() {
 
 
 
-function ProductRow({ product, selected, onToggleSelected }) {
+function ProductRow({ product, selected, onToggleSelected, onDelete, busy }) {
 
   const [selectedColorId, setSelectedColorId] = useState(
 
@@ -1308,7 +1369,8 @@ function ProductRow({ product, selected, onToggleSelected }) {
 
   return (
 
-    <div className="grid grid-cols-[44px_minmax(300px,1.6fr)_100px_180px_minmax(230px,1fr)_150px_120px_96px] items-start gap-4 border-b border-[#211A18]/10 px-5 py-4 transition-colors last:border-b-0 hover:bg-[#FFFCFB]">
+    <div className="grid w-full min-w-0 items-start gap-3 border-b border-[#211A18]/10 px-4 py-4 transition-colors last:border-b-0 hover:bg-[#FFFCFB]"
+      style={{ gridTemplateColumns: "32px minmax(260px,1.7fr) 72px 104px minmax(170px,1.05fr) 116px 90px 108px" }}>
 
       <div className="pt-7">
 
@@ -1420,7 +1482,7 @@ function ProductRow({ product, selected, onToggleSelected }) {
 
         {product.isColor && product.colors.length ? (
 
-          <div className="grid w-fit grid-cols-5 gap-2">
+          <div className="grid w-fit grid-cols-3 gap-1.5">
 
             {product.colors.map((color) => {
 
@@ -1504,7 +1566,7 @@ function ProductRow({ product, selected, onToggleSelected }) {
 
         {selectedColor ? (
 
-          <div className="mt-2 max-w-[225px] rounded-xl border border-[#211A18]/10 bg-[#FAF8F6] p-2.5">
+          <div className="mt-2 max-w-[175px] rounded-xl border border-[#211A18]/10 bg-[#FAF8F6] p-2.5">
 
             <p className="mb-2 truncate text-[8px] font-bold text-[#8C1839]">
 
@@ -1594,7 +1656,7 @@ function ProductRow({ product, selected, onToggleSelected }) {
 
 
 
-      <div className="flex items-center gap-2 pt-4">
+      <div className="flex min-w-0 items-center gap-1.5 pt-4">
 
         <Link
 
@@ -1604,7 +1666,7 @@ function ProductRow({ product, selected, onToggleSelected }) {
 
           aria-label={`Edit ${product.name}`}
 
-          className="grid h-9 w-9 place-items-center rounded-lg border border-[#211A18]/10 bg-white text-[#211A18]/65 transition hover:-translate-y-0.5 hover:border-[#8C1839]/30 hover:bg-[#FFF7F8] hover:text-[#8C1839] hover:shadow-sm"
+          className="grid h-8 w-8 place-items-center rounded-lg border border-[#211A18]/10 bg-white text-[#211A18]/65 transition hover:-translate-y-0.5 hover:border-[#8C1839]/30 hover:bg-[#FFF7F8] hover:text-[#8C1839] hover:shadow-sm"
 
         >
 
@@ -1628,7 +1690,7 @@ function ProductRow({ product, selected, onToggleSelected }) {
 
             aria-label={`View ${product.name}`}
 
-            className="grid h-9 w-9 place-items-center rounded-lg border border-[#8C1839]/15 bg-[#FFF7F8] text-[#8C1839] transition hover:-translate-y-0.5 hover:bg-[#8C1839] hover:text-white hover:shadow-sm"
+            className="grid h-8 w-8 place-items-center rounded-lg border border-[#8C1839]/15 bg-[#FFF7F8] text-[#8C1839] transition hover:-translate-y-0.5 hover:bg-[#8C1839] hover:text-white hover:shadow-sm"
 
           >
 
@@ -1637,6 +1699,26 @@ function ProductRow({ product, selected, onToggleSelected }) {
           </Link>
 
         ) : null}
+
+        <button
+
+          type="button"
+
+          disabled={busy}
+
+          onClick={onDelete}
+
+          title="Delete product"
+
+          aria-label={`Delete ${product.name}`}
+
+          className="grid h-8 w-8 place-items-center rounded-lg border border-red-100 bg-white text-red-500 transition hover:-translate-y-0.5 hover:border-red-200 hover:bg-red-50 hover:text-red-600 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-45"
+
+        >
+
+          <Trash2 size={14} />
+
+        </button>
 
       </div>
 

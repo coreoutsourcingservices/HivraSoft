@@ -6,6 +6,8 @@ import {
 import {
   uploadImageBuffer,
   deleteCloudinaryImage,
+  listCloudinaryImages,
+  updateCloudinaryImageDetails,
 } from "../services/cloudinary.service";
 
 /* =========================================================
@@ -182,7 +184,11 @@ export const uploadImageController =
         await uploadImageBuffer(
           req.file.buffer,
           folder,
-          imageName
+          imageName,
+          {
+            name: stripFileExtension(req.file.originalname),
+            alt: stripFileExtension(req.file.originalname),
+          }
         );
 
       return res
@@ -209,6 +215,9 @@ export const uploadImageController =
 
             format:
               result.format,
+
+            createdAt:
+              String((result as any).created_at || new Date().toISOString()),
 
             /*
               Actual final Cloudinary filename.
@@ -248,6 +257,106 @@ export const uploadImageController =
               ? error.message
               : "Unable to upload image.",
         });
+    }
+  };
+
+
+/* =========================================================
+   LIST MEDIA LIBRARY IMAGES
+========================================================= */
+
+export const listImagesController =
+  async (
+    req: Request,
+    res: Response
+  ) => {
+    try {
+      const prefix =
+        typeof req.query.prefix === "string" && req.query.prefix.trim()
+          ? req.query.prefix.trim()
+          : "hivrasoft";
+
+      const limit = Math.max(
+        1,
+        Math.min(100, Number(req.query.limit || 60) || 60)
+      );
+
+      const nextCursor =
+        typeof req.query.nextCursor === "string" && req.query.nextCursor.trim()
+          ? req.query.nextCursor.trim()
+          : undefined;
+
+      const result = await listCloudinaryImages({
+        prefix,
+        maxResults: limit,
+        nextCursor,
+      });
+
+      return res.status(200).json({
+        success: true,
+        ...result,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message:
+          error instanceof Error
+            ? error.message
+            : "Unable to load media library.",
+      });
+    }
+  };
+
+/* =========================================================
+   UPDATE MEDIA LIBRARY IMAGE DETAILS
+========================================================= */
+
+export const updateImageDetailsController =
+  async (
+    req: Request,
+    res: Response
+  ) => {
+    try {
+      const publicId =
+        typeof req.body?.publicId === "string"
+          ? req.body.publicId.trim()
+          : "";
+
+      const name =
+        typeof req.body?.name === "string"
+          ? req.body.name.trim().slice(0, 200)
+          : "";
+
+      const alt =
+        typeof req.body?.alt === "string"
+          ? req.body.alt.trim().slice(0, 500)
+          : "";
+
+      if (!publicId) {
+        return res.status(400).json({
+          success: false,
+          message: "publicId is required.",
+        });
+      }
+
+      const image = await updateCloudinaryImageDetails(publicId, {
+        name,
+        alt,
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: "Image details updated successfully.",
+        image,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message:
+          error instanceof Error
+            ? error.message
+            : "Unable to update image details.",
+      });
     }
   };
 

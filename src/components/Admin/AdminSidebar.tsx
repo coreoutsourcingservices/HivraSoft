@@ -19,6 +19,7 @@ import {
   FileText,
   House,
   Trash2,
+  Images,
 } from "lucide-react";
 
 export default function AdminSidebar() {
@@ -92,6 +93,10 @@ export default function AdminSidebar() {
               Add Product
             </SubMenuLink>
           </DropdownMenu>
+
+          <MenuLink href="/admin/gallery" active={pathname.startsWith("/admin/gallery")} icon={<Images size={17} />}>
+            Gallery
+          </MenuLink>
 
           <MenuLink
             href="/admin/categories"
