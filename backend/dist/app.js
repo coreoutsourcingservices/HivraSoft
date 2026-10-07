@@ -22,6 +22,8 @@ const search_routes_1 = __importDefault(require("./routes/search.routes"));
 const notification_routes_1 = __importDefault(require("./routes/notification.routes"));
 const review_routes_1 = __importDefault(require("./routes/review.routes"));
 const user_settings_routes_1 = __importDefault(require("./routes/user-settings.routes"));
+const homepage_routes_1 = __importDefault(require("./routes/homepage.routes"));
+const offer_routes_1 = __importDefault(require("./routes/offer.routes"));
 const order_controller_1 = require("./controllers/order.controller");
 const app = (0, express_1.default)();
 // Hostinger forwards requests through its reverse proxy. Trust only the
@@ -93,6 +95,8 @@ app.use("/api/blog-tags", blog_taxonomy_routes_1.blogTagRoutes);
 app.use("/api/notifications", notification_routes_1.default);
 app.use("/api/reviews", review_routes_1.default);
 app.use("/api/user-settings", user_settings_routes_1.default);
+app.use("/api", homepage_routes_1.default);
+app.use("/api/offers", offer_routes_1.default);
 /* =========================================================
    404
 ========================================================= */

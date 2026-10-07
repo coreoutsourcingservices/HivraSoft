@@ -142,9 +142,10 @@ async function buildOrderSnapshot(userId, payload, paymentMethod) {
         };
     });
     const subtotal = roundMoney(Number(cart.subtotal || 0));
+    const offerDiscount = roundMoney(Number(cart.offerDiscount || 0));
     const automaticDiscount = roundMoney(Number(cart.automaticDiscount || 0));
     const codeDiscount = roundMoney(Number(cart.codeDiscount || 0));
-    const discount = roundMoney(Number(cart.discount || automaticDiscount + codeDiscount));
+    const discount = roundMoney(Number(cart.discount || offerDiscount + automaticDiscount + codeDiscount));
     const tax = roundMoney(Number(cart.tax || 0));
     const deliveryCharge = await (0, delivery_charge_service_1.calculateDeliveryCharge)(subtotal, paymentMethod);
     const shipping = roundMoney(deliveryCharge.charge);
@@ -161,6 +162,8 @@ async function buildOrderSnapshot(userId, payload, paymentMethod) {
         items,
         shippingAddress,
         subtotal,
+        offerDiscount,
+        offerDiscountDetails: cart.discountSummary?.offers || {},
         automaticDiscount,
         automaticDiscountDetails: cart.discountSummary?.automatic || {},
         codeDiscount,
@@ -366,6 +369,7 @@ async function createOrderFromCart(userId, payload) {
     await trackCreated(order);
     await createOrderStatusNotification(order.toObject(), "confirmed");
     void (0, commerce_email_service_1.sendOrderConfirmationEmailOnce)(order.toObject()).catch((error) => console.error("ORDER CONFIRMATION EMAIL ERROR:", error));
+    void (0, commerce_email_service_1.sendAdminOrderNotificationEmailOnce)(order.toObject()).catch((error) => console.error("ADMIN ORDER EMAIL ERROR:", error));
     return order;
 }
 async function createRazorpayOrderFromCart(userId, payload) {
@@ -484,6 +488,7 @@ async function finalizePaidOrder(orderId, paymentId, source) {
         await trackPurchasedCommerce(updated).catch(() => undefined);
         await createOrderStatusNotification(updated.toObject(), "confirmed").catch(() => undefined);
         void (0, commerce_email_service_1.sendOrderConfirmationEmailOnce)(updated.toObject()).catch((error) => console.error("ORDER CONFIRMATION EMAIL ERROR:", error));
+        void (0, commerce_email_service_1.sendAdminOrderNotificationEmailOnce)(updated.toObject()).catch((error) => console.error("ADMIN ORDER EMAIL ERROR:", error));
         await (0, activity_service_1.trackUserActivity)({
             userId: String(updated.user),
             type: "order_paid",

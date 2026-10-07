@@ -47,6 +47,8 @@ const orderSchema = new mongoose_1.Schema({
     customer: { type: mongoose_1.Schema.Types.Mixed, default: {} },
     items: { type: [mongoose_1.Schema.Types.Mixed], default: [] },
     subtotal: { type: Number, required: true, min: 0 },
+    offerDiscount: { type: Number, default: 0, min: 0 },
+    offerDiscountDetails: { type: mongoose_1.Schema.Types.Mixed, default: {} },
     automaticDiscount: { type: Number, default: 0, min: 0 },
     automaticDiscountDetails: { type: mongoose_1.Schema.Types.Mixed, default: {} },
     codeDiscount: { type: Number, default: 0, min: 0 },

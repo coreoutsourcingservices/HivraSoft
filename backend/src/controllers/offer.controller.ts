@@ -346,3 +346,370 @@ export async function listActiveOffers(_req: Request, res: Response) {
     });
   }
 }
+
+/* =========================================================
+   STOREFRONT PRODUCT RESOLVER
+========================================================= */
+
+async function getOfferStorefrontProducts(
+  offer: any
+) {
+  const baseQuery: Record<
+    string,
+    any
+  > = {
+    isActive: {
+      $ne: false,
+    },
+  };
+
+  /* =======================================================
+     ALL PRODUCTS
+  ======================================================= */
+
+  if (
+    offer.appliesToAllProducts
+  ) {
+    return Product.find(
+      baseQuery
+    )
+      .sort({
+        createdAt: -1,
+      })
+      .lean();
+  }
+
+  const productIds =
+    Array.isArray(
+      offer.productIds
+    )
+      ? offer.productIds.map(
+          (id: any) =>
+            String(id)
+        )
+      : [];
+
+  const selectedCategoryIds =
+    Array.isArray(
+      offer.categoryIds
+    )
+      ? offer.categoryIds.map(
+          (id: any) =>
+            String(id)
+        )
+      : [];
+
+  /* =======================================================
+     CATEGORY + CHILD CATEGORIES
+  ======================================================= */
+
+  let categoryIds:
+    string[] = [];
+
+  if (
+    selectedCategoryIds.length >
+    0
+  ) {
+    const categories =
+      await Category.find({
+        $or: [
+          {
+            _id: {
+              $in:
+                selectedCategoryIds,
+            },
+          },
+
+          {
+            ancestors: {
+              $in:
+                selectedCategoryIds,
+            },
+          },
+        ],
+      })
+        .select("_id")
+        .lean();
+
+    categoryIds =
+      categories.map(
+        (category: any) =>
+          String(
+            category._id
+          )
+      );
+  }
+
+  /* =======================================================
+     PRODUCT QUERY
+  ======================================================= */
+
+  const targets: any[] = [];
+
+  if (
+    productIds.length > 0
+  ) {
+    targets.push({
+      _id: {
+        $in: productIds,
+      },
+    });
+  }
+
+  if (
+    categoryIds.length > 0
+  ) {
+    targets.push({
+      categories: {
+        $in: categoryIds,
+      },
+    });
+  }
+
+  if (
+    targets.length === 0
+  ) {
+    return [];
+  }
+
+  return Product.find({
+    ...baseQuery,
+
+    $or: targets,
+  })
+    .sort({
+      createdAt: -1,
+    })
+    .lean();
+}
+
+/* =========================================================
+   FEATURED ACTIVE BUY & GET OFFER
+
+   Header isi endpoint ko use karega.
+
+   Multiple active offers ho to latest updated wala.
+========================================================= */
+
+export async function getFeaturedBuyGetOffer(
+  _req: Request,
+  res: Response
+) {
+  try {
+    const offer =
+      await Offer.findOne({
+        offerType:
+          "buy_get",
+
+        isActive: true,
+
+        isDeleted: {
+          $ne: true,
+        },
+      })
+        .sort({
+          updatedAt: -1,
+          createdAt: -1,
+        })
+        .lean();
+
+    if (!offer) {
+      return res
+        .status(404)
+        .json({
+          success: false,
+
+          message:
+            "No active Buy & Get offer found.",
+        });
+    }
+
+    return res.json({
+      success: true,
+
+      offer: {
+        _id:
+          String(
+            offer._id
+          ),
+
+        name:
+          offer.name,
+
+        slug:
+          offer.slug,
+
+        offerType:
+          offer.offerType,
+
+        buyQuantity:
+          offer.buyQuantity,
+
+        getQuantity:
+          offer.getQuantity,
+
+        fixedPrice:
+          offer.fixedPrice,
+
+        appliesToAllProducts:
+          offer.appliesToAllProducts,
+
+        productIds:
+          offer.productIds.map(
+            (id: any) =>
+              String(id)
+          ),
+
+        categoryIds:
+          offer.categoryIds.map(
+            (id: any) =>
+              String(id)
+          ),
+
+        isActive:
+          offer.isActive,
+      },
+    });
+  } catch (error) {
+    console.error(
+      "GET FEATURED BUY GET OFFER ERROR:",
+      error
+    );
+
+    return res
+      .status(500)
+      .json({
+        success: false,
+
+        message:
+          error instanceof Error
+            ? error.message
+            : "Unable to load offer.",
+      });
+  }
+}
+
+/* =========================================================
+   STOREFRONT OFFER BY SLUG
+
+   /api/offers/buy-3-get-1-free
+   /api/offers/buy-4-get-1-free
+========================================================= */
+
+export async function getStorefrontOfferBySlug(
+  req: Request,
+  res: Response
+) {
+  try {
+    const slug =
+      String(
+        req.params.slug ||
+          ""
+      )
+        .trim()
+        .toLowerCase();
+
+    if (!slug) {
+      return res
+        .status(400)
+        .json({
+          success: false,
+
+          message:
+            "Offer slug is required.",
+        });
+    }
+
+    const offer =
+      await Offer.findOne({
+        slug,
+
+        isActive: true,
+
+        isDeleted: {
+          $ne: true,
+        },
+      }).lean();
+
+    if (!offer) {
+      return res
+        .status(404)
+        .json({
+          success: false,
+
+          message:
+            "Offer not found.",
+        });
+    }
+
+    const products =
+      await getOfferStorefrontProducts(
+        offer
+      );
+
+    return res.json({
+      success: true,
+
+      offer: {
+        _id:
+          String(
+            offer._id
+          ),
+
+        name:
+          offer.name,
+
+        slug:
+          offer.slug,
+
+        offerType:
+          offer.offerType,
+
+        buyQuantity:
+          offer.buyQuantity,
+
+        getQuantity:
+          offer.getQuantity,
+
+        fixedPrice:
+          offer.fixedPrice,
+
+        appliesToAllProducts:
+          offer.appliesToAllProducts,
+
+        productIds:
+          offer.productIds.map(
+            (id: any) =>
+              String(id)
+          ),
+
+        categoryIds:
+          offer.categoryIds.map(
+            (id: any) =>
+              String(id)
+          ),
+
+        isActive:
+          offer.isActive,
+
+        products,
+      },
+    });
+  } catch (error) {
+    console.error(
+      "GET STOREFRONT OFFER ERROR:",
+      error
+    );
+
+    return res
+      .status(500)
+      .json({
+        success: false,
+
+        message:
+          error instanceof Error
+            ? error.message
+            : "Unable to load offer.",
+      });
+  }
+}

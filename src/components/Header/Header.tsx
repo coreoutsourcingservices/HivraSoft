@@ -1,3363 +1,6075 @@
 "use client";
-
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import {
+  usePathname,
+} from "next/navigation";
 
 import {
-<<<<<<< HEAD
-=======
   useEffect,
   useMemo,
->>>>>>> aman
   useState,
   type ReactNode,
 } from "react";
 
 import Account from "../Auth/Account";
-
-<<<<<<< HEAD
-/* =========================================================
-   WOMEN MENU DATA
-========================================================= */
-
-const braLinks = [
-  {
-    name: "Sports Bra",
-    href: "/women/bra/sports-bra/",
-  },
-  {
-    name: "Maternity Bra",
-    href: "/women/bra/maternity-bra/",
-  },
-  {
-    name: "T-Shirt Bra",
-    href: "/women/bra/t-shirt-bra/",
-  },
-  {
-    name: "Padded Bra",
-    href: "/women/bra/padded-bra/",
-  },
-  {
-    name: "Non Padded Bra",
-    href: "/women/bra/non-padded-bra/",
-  },
-];
-
-const pantyLinks = [
-  {
-    name: "Seamless Panty",
-    href: "/women/panty/seamless-panty/",
-  },
-  {
-    name: "Hipster",
-    href: "/women/panty/hipster/",
-  },
-  {
-    name: "Thongs",
-    href: "/women/panty/thongs/",
-  },
-  {
-    name: "G-String",
-    href: "/women/panty/g-string/",
-  },
-];
-
-const discoverLinks = [
-  {
-    name: "Lingerie",
-    href: "/women/lingerie/",
-  },
-  {
-    name: "Shop By Body Shape",
-    href: "/women/shop-by-body-shape/",
-  },
-  {
-    name: "Women Offers",
-    href: "/women/offers/",
-  },
-  {
-    name: "View All",
-    href: "/women/",
-=======
 import {
   apiFetch,
   requestLogin,
 } from "@/lib/api";
-
 import {
   useStorefrontCommerce,
+
 } from "@/src/components/Storefront/StorefrontCommerceProvider";
 
+
+
 /* =========================================================
-   TYPES
+
+   LOGOS
+
+
+
+   DESKTOP:
+
+   public/images/logos/hivra-desktop.png.png
+
+
+
+   MOBILE:
+
+   public/images/logos/hivramobile.png.png
+
 ========================================================= */
+
+
+
+const DESKTOP_LOGO_SRC =
+
+  "/images/logos/hivra-desktop.png.png";
+
+
+
+const MOBILE_LOGO_SRC =
+
+  "/images/logos/hivramobile.png.png";
+
+
+
+/* =========================================================
+
+   TYPES
+
+========================================================= */
+
+
 
 type HeaderCategory = {
+
   id: string;
+
+
+
   name: string;
+
+
+
   slug: string;
+
+
+
+  parent:
+
+    | string
+
+    | null;
+
+
+
+  ancestors:
+
+    string[];
+
+
+
+  level: number;
+
+
+
+  isActive: boolean;
+
+
+
   sortOrder: number;
-  children: HeaderCategory[];
+
+
+
+  children:
+
+    HeaderCategory[];
+
 };
 
-type UtilityLink = {
+
+
+type HeaderOffer = {
+
+  _id: string;
+
+
+
   name: string;
+
+
+
   slug: string;
-  href: string;
+
+
+
+  offerType:
+
+    | "buy_get"
+
+    | "fixed_price_bundle";
+
+
+
+  buyQuantity: number;
+
+
+
+  getQuantity: number;
+
+
+
+  isActive: boolean;
+
 };
 
+
+
+type HeaderOfferResponse = {
+
+  success?: boolean;
+
+
+
+  offer?:
+
+    HeaderOffer;
+
+
+
+  message?: string;
+
+};
+
+
+
+type HeaderNavItem =
+
+  | {
+
+      type:
+
+        "category";
+
+
+
+      key: string;
+
+
+
+      category:
+
+        HeaderCategory;
+
+    }
+
+  | {
+
+      type:
+
+        "offer";
+
+
+
+      key: string;
+
+
+
+      name: string;
+
+
+
+      href: string;
+
+    };
+
+
+
 /* =========================================================
-   UTILITY LINKS
 
-   Dynamic category me same slug aa gaya to duplicate
-   automatically remove ho jayega.
+   HELPERS
+
 ========================================================= */
 
-const UTILITY_LINKS: UtilityLink[] = [
-  {
-    name: "Bundle Pricing",
-    slug: "bundle-pricing",
-    href: "/bundle-pricing/",
-  },
-  {
-    name: "New Launch",
-    slug: "new-launch",
-    href: "/new-launch/",
-  },
-  {
-    name: "Buy 3 Get 1 Free",
-    slug: "buy-3-get-1-free",
-    href: "/buy-3-get-1-free/",
-  },
-  {
-    name: "Accessories",
-    slug: "accessories",
-    href: "/accessories/",
-  },
-  {
-    name: "Send Your Bra",
-    slug: "send-your-bra",
-    href: "/send-your-bra/",
->>>>>>> aman
-  },
-];
+
+
+function cleanSlug(
+
+  value: unknown,
+
+) {
+
+  return String(
+
+    value || "",
+
+  )
+
+    .trim()
+
+    .toLowerCase()
+
+    .replace(
+
+      /^\/+|\/+$/g,
+
+      "",
+
+    );
+
+}
+
+
 
 /* =========================================================
-<<<<<<< HEAD
-   MEN MENU DATA
+
+   CATEGORY NORMALIZER
+
 ========================================================= */
 
-const menLinks = [
-  {
-    name: "Trunks",
-    href: "/men/trunks/",
-  },
-  {
-    name: "Briefs",
-    href: "/men/briefs/",
-  },
-  {
-    name: "Men Thongs",
-    href: "/men/thongs/",
-  },
-  {
-    name: "G-Strings",
-    href: "/men/g-strings/",
-  },
-  {
-    name: "Men Offers",
-    href: "/men/offers/",
-  },
-];
-=======
-   NORMALIZE CATEGORY
-========================================================= */
+
 
 function normalizeCategory(
-  value: unknown
+
+  value: unknown,
+
 ): HeaderCategory | null {
+
   if (
+
     !value ||
-    typeof value !== "object"
+
+    typeof value !==
+
+      "object"
+
   ) {
+
     return null;
+
   }
 
-  const object =
-    value as Record<string, unknown>;
+
+
+  const raw =
+
+    value as Record<
+
+      string,
+
+      unknown
+
+    >;
+
+
+
+  const id =
+
+    String(
+
+      raw.id ||
+
+        raw._id ||
+
+        "",
+
+    ).trim();
+
+
 
   const name =
+
     String(
-      object.name || ""
+
+      raw.name ||
+
+        "",
+
     ).trim();
+
+
 
   const slug =
-    String(
-      object.slug || ""
-    ).trim();
+
+    cleanSlug(
+
+      raw.slug,
+
+    );
+
+
+
+  const isActive =
+
+    raw.isActive !==
+
+    false;
+
+
 
   if (
+
+    !id ||
+
     !name ||
-    !slug
+
+    !slug ||
+
+    !isActive
+
   ) {
+
     return null;
+
   }
 
-  const rawChildren =
+
+
+  const parent =
+
+    raw.parent ===
+
+      null ||
+
+    raw.parent ===
+
+      undefined ||
+
+    raw.parent ===
+
+      ""
+
+      ? null
+
+      : String(
+
+          raw.parent,
+
+        );
+
+
+
+  const ancestors =
+
     Array.isArray(
-      object.children
+
+      raw.ancestors,
+
     )
-      ? object.children
+
+      ? raw.ancestors.map(
+
+          (
+
+            ancestor,
+
+          ) =>
+
+            String(
+
+              ancestor,
+
+            ),
+
+        )
+
       : [];
 
+
+
+  const rawChildren =
+
+    Array.isArray(
+
+      raw.children,
+
+    )
+
+      ? raw.children
+
+      : [];
+
+
+
   const children =
+
     rawChildren
-      .map(normalizeCategory)
-      .filter(
-        (
-          item
-        ): item is HeaderCategory =>
-          Boolean(item)
+
+      .map(
+
+        normalizeCategory,
+
       )
-      .sort(
+
+      .filter(
+
         (
+
+          child,
+
+        ): child is HeaderCategory =>
+
+          Boolean(
+
+            child,
+
+          ),
+
+      )
+
+      .sort(
+
+        (
+
           first,
-          second
+
+          second,
+
         ) =>
+
           first.sortOrder -
+
             second.sortOrder ||
+
           first.name.localeCompare(
-            second.name
-          )
+
+            second.name,
+
+          ),
+
       );
 
+
+
   return {
-    id:
-      String(
-        object._id ||
-          object.id ||
-          slug
-      ),
+
+    id,
+
+
 
     name,
 
+
+
     slug,
 
-    sortOrder:
+
+
+    parent,
+
+
+
+    ancestors,
+
+
+
+    level:
+
       Number(
-        object.sortOrder ||
-          0
+
+        raw.level ||
+
+          0,
+
       ),
 
+
+
+    isActive,
+
+
+
+    sortOrder:
+
+      Number(
+
+        raw.sortOrder ||
+
+          0,
+
+      ),
+
+
+
     children,
+
   };
+
 }
 
+
+
 /* =========================================================
+
    NORMALIZE TREE RESPONSE
+
 ========================================================= */
 
+
+
 function normalizeTree(
-  response: unknown
+
+  response: unknown,
+
 ): HeaderCategory[] {
-  if (
-    Array.isArray(response)
-  ) {
-    return response
-      .map(normalizeCategory)
-      .filter(
-        (
-          item
-        ): item is HeaderCategory =>
-          Boolean(item)
-      )
-      .sort(
-        (
-          first,
-          second
-        ) =>
-          first.sortOrder -
-            second.sortOrder ||
-          first.name.localeCompare(
-            second.name
-          )
-      );
-  }
+
+  let rawTree:
+
+    unknown[] = [];
+
+
 
   if (
-    !response ||
-    typeof response !== "object"
-  ) {
-    return [];
-  }
 
-  const object =
-    response as Record<string, unknown>;
-
-  if (
     Array.isArray(
-      object.categories
-    )
-  ) {
-    return normalizeTree(
-      object.categories
-    );
-  }
 
-  if (
-    Array.isArray(
-      object.data
-    )
-  ) {
-    return normalizeTree(
-      object.data
-    );
-  }
+      response,
 
-  if (
-    object.data &&
-    typeof object.data ===
+    )
+
+  ) {
+
+    rawTree =
+
+      response;
+
+  } else if (
+
+    response &&
+
+    typeof response ===
+
       "object"
+
   ) {
-    const data =
-      object.data as Record<
+
+    const object =
+
+      response as Record<
+
         string,
+
         unknown
+
       >;
+
+
+
+    if (
+
+      Array.isArray(
+
+        object.categories,
+
+      )
+
+    ) {
+
+      rawTree =
+
+        object.categories;
+
+    } else if (
+
+      Array.isArray(
+
+        object.data,
+
+      )
+
+    ) {
+
+      rawTree =
+
+        object.data;
+
+    } else if (
+
+      object.data &&
+
+      typeof object.data ===
+
+        "object"
+
+    ) {
+
+      const data =
+
+        object.data as Record<
+
+          string,
+
+          unknown
+
+        >;
+
+
+
+      if (
+
+        Array.isArray(
+
+          data.categories,
+
+        )
+
+      ) {
+
+        rawTree =
+
+          data.categories;
+
+      }
+
+    }
+
+  }
+
+
+
+  return rawTree
+
+    .map(
+
+      normalizeCategory,
+
+    )
+
+    .filter(
+
+      (
+
+        category,
+
+      ): category is HeaderCategory =>
+
+        Boolean(
+
+          category,
+
+        ),
+
+    )
+
+    .filter(
+
+      (
+
+        category,
+
+      ) =>
+
+        category.parent ===
+
+        null,
+
+    )
+
+    .sort(
+
+      (
+
+        first,
+
+        second,
+
+      ) =>
+
+        first.sortOrder -
+
+          second.sortOrder ||
+
+        first.name.localeCompare(
+
+          second.name,
+
+        ),
+
+    );
+
+}
+
+
+
+/* =========================================================
+
+   CATEGORY URL
+
+========================================================= */
+
+
+
+function categoryHref(
+
+  slugs: string[],
+
+) {
+
+  const cleaned =
+
+    slugs
+
+      .filter(
+
+        Boolean,
+
+      )
+
+      .map(
+
+        cleanSlug,
+
+      );
+
+
+
+  if (
+
+    cleaned.length ===
+
+      1 &&
+
+    (
+
+      cleaned[0] ===
+
+        "new-launch" ||
+
+      cleaned[0] ===
+
+        "new-launches" ||
+
+      cleaned[0] ===
+
+        "new-arrival" ||
+
+      cleaned[0] ===
+
+        "new-arrivals"
+
+    )
+
+  ) {
+
+    return "/new-innerwear-online";
+
+  }
+
+
+
+  return `/${cleaned
+
+    .map(
+
+      encodeURIComponent,
+
+    )
+
+    .join("/")}`;
+
+}
+
+
+
+
+/* =========================================================
+   HEADER SEARCH TYPES
+========================================================= */
+
+type HeaderSearchItem = {
+  id: string;
+  label: string;
+  type: string;
+  subtitle: string;
+  href: string | null;
+};
+
+function toRecord(
+  value: unknown,
+): Record<string, unknown> | null {
+  if (
+    !value ||
+    typeof value !== "object" ||
+    Array.isArray(value)
+  ) {
+    return null;
+  }
+
+  return value as Record<string, unknown>;
+}
+
+function getSearchHref(
+  item: Record<string, unknown>,
+  type: string,
+) {
+  const directHref =
+    String(
+      item.href ||
+        item.url ||
+        item.path ||
+        item.redirect ||
+        "",
+    ).trim();
+
+  if (directHref) {
+    return directHref;
+  }
+
+  const slug =
+    cleanSlug(
+      item.slug,
+    );
+
+  if (
+    type === "category" &&
+    slug
+  ) {
+    return `/${encodeURIComponent(slug)}`;
+  }
+
+  return null;
+}
+
+function normalizeSearchItems(
+  response: unknown,
+): HeaderSearchItem[] {
+  const collected: Array<{
+    value: unknown;
+    fallbackType: string;
+  }> = [];
+
+  const pushArray = (
+    value: unknown,
+    fallbackType = "",
+  ) => {
+    if (!Array.isArray(value)) {
+      return;
+    }
+
+    value.forEach((entry) => {
+      collected.push({
+        value: entry,
+        fallbackType,
+      });
+    });
+  };
+
+  if (Array.isArray(response)) {
+    pushArray(response);
+  }
+
+  const root =
+    toRecord(response);
+
+  if (root) {
+    pushArray(
+      root.results,
+    );
+
+    pushArray(
+      root.suggestions,
+    );
+
+    pushArray(
+      root.items,
+    );
+
+    pushArray(
+      root.products,
+      "product",
+    );
+
+    pushArray(
+      root.categories,
+      "category",
+    );
+
+    pushArray(
+      root.blogs,
+      "blog",
+    );
 
     if (
       Array.isArray(
-        data.categories
+        root.data,
       )
     ) {
-      return normalizeTree(
-        data.categories
+      pushArray(
+        root.data,
+      );
+    }
+
+    const data =
+      toRecord(
+        root.data,
+      );
+
+    if (data) {
+      pushArray(
+        data.results,
+      );
+
+      pushArray(
+        data.suggestions,
+      );
+
+      pushArray(
+        data.items,
+      );
+
+      pushArray(
+        data.products,
+        "product",
+      );
+
+      pushArray(
+        data.categories,
+        "category",
+      );
+
+      pushArray(
+        data.blogs,
+        "blog",
       );
     }
   }
 
-  return [];
+  const normalized =
+    collected
+      .map(
+        (
+          entry,
+          index,
+        ): HeaderSearchItem | null => {
+          if (
+            typeof entry.value ===
+            "string"
+          ) {
+            const label =
+              entry.value.trim();
+
+            if (!label) {
+              return null;
+            }
+
+            return {
+              id:
+                `search-${label}-${index}`,
+              label,
+              type:
+                entry.fallbackType ||
+                "suggestion",
+              subtitle: "",
+              href: null,
+            };
+          }
+
+          const item =
+            toRecord(
+              entry.value,
+            );
+
+          if (!item) {
+            return null;
+          }
+
+          const label =
+            String(
+              item.title ||
+                item.name ||
+                item.label ||
+                item.query ||
+                "",
+            ).trim();
+
+          if (!label) {
+            return null;
+          }
+
+          const type =
+            String(
+              item.type ||
+                item.kind ||
+                item.searchType ||
+                entry.fallbackType ||
+                "result",
+            )
+              .trim()
+              .toLowerCase();
+
+          const subtitle =
+            String(
+              item.subtitle ||
+                item.description ||
+                item.categoryName ||
+                "",
+            ).trim();
+
+          const id =
+            String(
+              item.id ||
+                item._id ||
+                item.slug ||
+                `${type}-${label}-${index}`,
+            );
+
+          return {
+            id,
+            label,
+            type,
+            subtitle,
+            href:
+              getSearchHref(
+                item,
+                type,
+              ),
+          };
+        },
+      )
+      .filter(
+        (
+          item,
+        ): item is HeaderSearchItem =>
+          Boolean(item),
+      );
+
+  const unique =
+    new Map<
+      string,
+      HeaderSearchItem
+    >();
+
+  normalized.forEach(
+    (
+      item,
+    ) => {
+      const key =
+        `${item.type}:${item.id}:${item.label}`;
+
+      if (
+        !unique.has(
+          key,
+        )
+      ) {
+        unique.set(
+          key,
+          item,
+        );
+      }
+    },
+  );
+
+  return Array.from(
+    unique.values(),
+  ).slice(
+    0,
+    8,
+  );
 }
 
 /* =========================================================
-   CATEGORY URL
+   HEADER SEARCH
 ========================================================= */
 
-function categoryHref(
-  slugs: string[]
-) {
-  return `/${slugs
-    .filter(Boolean)
-    .map(encodeURIComponent)
-    .join("/")}`;
-}
-
-/* =========================================================
-   NORMALIZED SLUG
-========================================================= */
-
-function cleanSlug(
-  value: string
-) {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/^\/+|\/+$/g, "");
-}
->>>>>>> aman
-
-/* =========================================================
-   HEADER
-========================================================= */
-
-export default function Header() {
-<<<<<<< HEAD
-  const pathname = usePathname();
-
-  const [mobileOpen, setMobileOpen] =
-    useState(false);
-
+function HeaderSearch() {
   const [
-    mobileWomenOpen,
-    setMobileWomenOpen,
-  ] = useState(false);
-
-  const [
-    mobileMenOpen,
-    setMobileMenOpen,
-  ] = useState(false);
-
-  /* =========================================================
-     HIDE NAVBAR ON LANDING
-  ========================================================= */
-
-  if (pathname === "/landing") {
-=======
-  const pathname =
-    usePathname();
-
-  const commerce =
-    useStorefrontCommerce();
-
-  const [
-    mobileOpen,
-    setMobileOpen,
+    query,
+    setQuery,
   ] =
-    useState(false);
+    useState("");
 
   const [
-    categories,
-    setCategories,
+    items,
+    setItems,
   ] =
     useState<
-      HeaderCategory[]
+      HeaderSearchItem[]
     >([]);
 
   const [
-    expanded,
-    setExpanded,
+    open,
+    setOpen,
   ] =
-    useState<
-      Set<string>
-    >(
-      () =>
-        new Set()
-    );
+    useState(false);
 
-  /* =======================================================
-     LOAD CATEGORY TREE
-  ======================================================= */
+  const [
+    loading,
+    setLoading,
+  ] =
+    useState(false);
 
   useEffect(() => {
+    const searchText =
+      query.trim();
+
+    if (
+      searchText.length <
+      2
+    ) {
+      setItems([]);
+      setOpen(false);
+      setLoading(false);
+
+      return;
+    }
+
     let cancelled =
       false;
 
-    const loadCategories =
-      async () => {
-        try {
-          const response =
-            await apiFetch<unknown>(
-              "/api/categories/tree?active=true",
-              {
-                method: "GET",
-              }
+    const timer =
+      window.setTimeout(
+        async () => {
+          setLoading(
+            true,
+          );
+
+          try {
+            const response =
+              await apiFetch<unknown>(
+                `/api/search/suggestions?q=${encodeURIComponent(
+                  searchText,
+                )}`,
+                {
+                  method:
+                    "GET",
+                },
+              );
+
+            if (
+              cancelled
+            ) {
+              return;
+            }
+
+            setItems(
+              normalizeSearchItems(
+                response,
+              ),
             );
 
-          if (
-            cancelled
+            setOpen(
+              true,
+            );
+          } catch (
+            error
           ) {
-            return;
-          }
+            if (
+              !cancelled
+            ) {
+              console.error(
+                "HEADER SEARCH SUGGESTIONS ERROR:",
+                error,
+              );
 
-          setCategories(
-            normalizeTree(
-              response
-            )
-          );
-        } catch {
-          if (
-            !cancelled
-          ) {
-            setCategories([]);
+              setItems(
+                [],
+              );
+            }
+          } finally {
+            if (
+              !cancelled
+            ) {
+              setLoading(
+                false,
+              );
+            }
           }
-        }
-      };
-
-    void loadCategories();
+        },
+        250,
+      );
 
     return () => {
       cancelled =
         true;
+
+      window.clearTimeout(
+        timer,
+      );
     };
-  }, []);
+  }, [
+    query,
+  ]);
 
-  /* =======================================================
-     BODY LOCK
-  ======================================================= */
+  async function runGlobalSearch() {
+    const searchText =
+      query.trim();
 
-  useEffect(() => {
     if (
-      !mobileOpen
+      !searchText
     ) {
       return;
     }
 
-    const previous =
-      document.body.style
-        .overflow;
-
-    document.body.style.overflow =
-      "hidden";
-
-    return () => {
-      document.body.style.overflow =
-        previous;
-    };
-  }, [
-    mobileOpen,
-  ]);
-
-  /* =======================================================
-     ROOTS
-  ======================================================= */
-
-  const womenRoot =
-    useMemo(
-      () =>
-        categories.find(
-          (
-            category
-          ) =>
-            cleanSlug(
-              category.slug
-            ) === "women"
-        ),
-      [categories]
+    setLoading(
+      true,
     );
 
-  const menRoot =
-    useMemo(
-      () =>
-        categories.find(
-          (
-            category
-          ) =>
-            cleanSlug(
-              category.slug
-            ) === "men"
-        ),
-      [categories]
-    );
-
-  /* =======================================================
-     NO DUPLICATE UTILITY LINKS
-  ======================================================= */
-
-  const additionalLinks =
-    useMemo(() => {
-      const dynamicSlugs =
-        new Set(
-          categories.map(
-            (
-              category
-            ) =>
-              cleanSlug(
-                category.slug
-              )
-          )
+    try {
+      const response =
+        await apiFetch<unknown>(
+          `/api/search/global?q=${encodeURIComponent(
+            searchText,
+          )}&page=1&limit=8`,
+          {
+            method:
+              "GET",
+          },
         );
 
-      return UTILITY_LINKS.filter(
-        (
-          item
-        ) =>
-          !dynamicSlugs.has(
-            cleanSlug(
-              item.slug
-            )
-          )
+      setItems(
+        normalizeSearchItems(
+          response,
+        ),
       );
-    }, [
-      categories,
-    ]);
 
-  /* =======================================================
-     TOGGLE TREE NODE
-  ======================================================= */
-
-  const toggleExpanded =
-    (
-      id: string
-    ) => {
-      setExpanded(
-        (
-          current
-        ) => {
-          const next =
-            new Set(
-              current
-            );
-
-          if (
-            next.has(id)
-          ) {
-            next.delete(id);
-          } else {
-            next.add(id);
-          }
-
-          return next;
-        }
+      setOpen(
+        true,
       );
-    };
+    } catch (
+      error
+    ) {
+      console.error(
+        "HEADER GLOBAL SEARCH ERROR:",
+        error,
+      );
 
-  if (
-    pathname ===
-    "/landing"
-  ) {
->>>>>>> aman
-    return null;
+      setItems(
+        [],
+      );
+
+      setOpen(
+        true,
+      );
+    } finally {
+      setLoading(
+        false,
+      );
+    }
   }
 
   return (
-    <>
-<<<<<<< HEAD
-      {/* =====================================================
-          TOP ANNOUNCEMENT BAR
-      ===================================================== */}
+    <form
+      onSubmit={(
+        event,
+      ) => {
+        event.preventDefault();
 
+        void runGlobalSearch();
+      }}
+      className="
+        relative
+        min-w-0
+        flex-1
+        w-full
+      "
+    >
       <div
         className="
-          relative
-          z-[110]
-          bg-[#211A18]
-          px-4
-          py-[7px]
-          text-center
-=======
-      {/* ===================================================
-          ANNOUNCEMENT DESKTOP
-      =================================================== */}
+          flex
+          h-[28px]
+          w-full
+          items-center
+          gap-2
+          rounded-full
+          border
+          border-black/15
+          bg-white
+          px-3
+          text-black
+          shadow-sm
+        "
+      >
+        <span
+          className="
+            flex
+            shrink-0
+            items-center
+            justify-center
+            text-black/65
+          "
+        >
+          <SearchIcon />
+        </span>
+
+        <input
+          value={
+            query
+          }
+          onChange={(
+            event,
+          ) => {
+            setQuery(
+              event.target.value,
+            );
+          }}
+          onFocus={() => {
+            if (
+              query.trim().length >=
+                2
+            ) {
+              setOpen(
+                true,
+              );
+            }
+          }}
+          onBlur={() => {
+            window.setTimeout(
+              () => {
+                setOpen(
+                  false,
+                );
+              },
+              140,
+            );
+          }}
+          placeholder="Search..."
+          aria-label="Search products, categories and blogs"
+          className="
+            min-w-0
+            flex-1
+            bg-transparent
+            text-[11px]
+            font-medium
+            text-black
+            outline-none
+            placeholder:text-black/45
+          "
+        />
+
+        {loading ? (
+          <span
+            className="
+              h-3
+              w-3
+              shrink-0
+              animate-spin
+              rounded-full
+              border
+              border-black/25
+              border-t-black
+            "
+          />
+        ) : null}
+      </div>
+
+      {open ? (
+        <div
+          className="
+            absolute
+            right-0
+            top-[calc(100%+7px)]
+            z-[1600]
+            w-full
+            min-w-[320px]
+            overflow-hidden
+            rounded-[12px]
+            border
+            border-black/10
+            bg-white
+            text-black
+            shadow-[0_20px_50px_rgba(0,0,0,.22)]
+          "
+        >
+          {items.length >
+          0 ? (
+            <div
+              className="
+                max-h-[360px]
+                overflow-y-auto
+                p-2
+              "
+            >
+              {items.map(
+                (
+                  item,
+                ) => {
+                  const content = (
+                    <>
+                      <div
+                        className="
+                          min-w-0
+                          flex-1
+                        "
+                      >
+                        <p
+                          className="
+                            truncate
+                            text-[12px]
+                            font-semibold
+                            text-[#211A18]
+                          "
+                        >
+                          {
+                            item.label
+                          }
+                        </p>
+
+                        <div
+                          className="
+                            mt-1
+                            flex
+                            items-center
+                            gap-2
+                          "
+                        >
+                          <span
+                            className="
+                              rounded-full
+                              bg-[#F8E9EF]
+                              px-2
+                              py-0.5
+                              text-[8px]
+                              font-bold
+                              uppercase
+                              tracking-[0.08em]
+                              text-[#B31345]
+                            "
+                          >
+                            {
+                              item.type
+                            }
+                          </span>
+
+                          {item.subtitle ? (
+                            <span
+                              className="
+                                truncate
+                                text-[9px]
+                                text-black/50
+                              "
+                            >
+                              {
+                                item.subtitle
+                              }
+                            </span>
+                          ) : null}
+                        </div>
+                      </div>
+
+                      <span
+                        className="
+                          shrink-0
+                          text-black/35
+                        "
+                      >
+                        →
+                      </span>
+                    </>
+                  );
+
+                  if (
+                    item.href
+                  ) {
+                    return (
+                      <Link
+                        key={
+                          item.id
+                        }
+                        href={
+                          item.href
+                        }
+                        className="
+                          flex
+                          items-center
+                          gap-3
+                          rounded-[9px]
+                          px-3
+                          py-2.5
+                          transition
+                          hover:bg-[#FFF2F6]
+                        "
+                      >
+                        {
+                          content
+                        }
+                      </Link>
+                    );
+                  }
+
+                  return (
+                    <button
+                      key={
+                        item.id
+                      }
+                      type="button"
+                      onMouseDown={(
+                        event,
+                      ) => {
+                        event.preventDefault();
+
+                        setQuery(
+                          item.label,
+                        );
+                      }}
+                      className="
+                        flex
+                        w-full
+                        items-center
+                        gap-3
+                        rounded-[9px]
+                        px-3
+                        py-2.5
+                        text-left
+                        transition
+                        hover:bg-[#FFF2F6]
+                      "
+                    >
+                      {
+                        content
+                      }
+                    </button>
+                  );
+                },
+              )}
+            </div>
+          ) : (
+            <div
+              className="
+                px-4
+                py-4
+                text-center
+                text-[11px]
+                text-black/55
+              "
+            >
+              {loading
+                ? "Searching..."
+                : "No search results found"}
+            </div>
+          )}
+        </div>
+      ) : null}
+    </form>
+  );
+}
+
+/* =========================================================
+   RESELLER TICKER
+========================================================= */
+
+function ResellerTicker() {
+  const content = (
+    <div
+      className="
+        flex
+        shrink-0
+        items-center
+        whitespace-nowrap
+      "
+    >
+      <span
+        className="
+          px-8
+          text-[10px]
+          font-bold
+          uppercase
+          tracking-[0.035em]
+          text-white
+        "
+      >
+        ◆ &nbsp; BECOME A HIVRASOFT RESELLER
+      </span>
+
+      <span
+        className="
+          px-8
+          text-[10px]
+          font-semibold
+          text-white
+        "
+      >
+        ◆ &nbsp; Sell India&apos;s Most Comfortable Innerwear — Zero Stock, High Profit
+      </span>
+
+      <span
+        className="
+          px-8
+          text-[10px]
+          font-bold
+          uppercase
+          tracking-[0.035em]
+          text-white
+        "
+      >
+        ◆ &nbsp; BECOME A HIVRASOFT RESELLER
+      </span>
+
+      <span
+        className="
+          px-8
+          text-[10px]
+          font-semibold
+          text-white
+        "
+      >
+        ◆ &nbsp; Sell India&apos;s Most Comfortable Innerwear — Zero Stock, High Profit
+      </span>
+    </div>
+  );
+
+  return (
+    <>
+      <style>
+        {`
+          @keyframes hivraHeaderTicker {
+            from {
+              transform: translateX(0);
+            }
+
+            to {
+              transform: translateX(-50%);
+            }
+          }
+        `}
+      </style>
 
       <div
         className="
           hidden
-
-          bg-[#211A18]
-
-          px-4
-          py-[7px]
-
-          text-center
-
+          h-[30px]
+          w-full
+          overflow-hidden
+          bg-[#B31345]
           md:block
->>>>>>> aman
-        "
-      >
-        <p
-          className="
-            text-[8px]
-<<<<<<< HEAD
-            font-medium
-            uppercase
-            tracking-[0.2em]
-            text-[#F7F3EF]
-            md:text-[9px]
-          "
-        >
-          Free Shipping
-
-          <span
-            className="
-              mx-3
-              text-[#B9915C]
-            "
-          >
-            •
-          </span>
-
-          Discreet Packaging
-
-          <span
-            className="
-              mx-3
-              text-[#B9915C]
-            "
-          >
-            •
-          </span>
-
-          Easy Returns
-        </p>
-      </div>
-
-      {/* =====================================================
-          HEADER
-      ===================================================== */}
-=======
-            font-semibold
-            uppercase
-
-            tracking-[0.20em]
-
-            text-white
-          "
-        >
-          FREE SHIPPING
-
-          <span className="mx-3">
-            •
-          </span>
-
-          DISCREET PACKAGING
-
-          <span className="mx-3">
-            •
-          </span>
-
-          EASY RETURNS
-        </p>
-      </div>
-
-      {/* ===================================================
-          MAIN HEADER
-      =================================================== */}
->>>>>>> aman
-
-      <header
-        className="
-          sticky
-          top-0
-<<<<<<< HEAD
-          z-[100]
-          w-full
-          border-b
-          border-[#211A18]/10
-          bg-[#F7F3EF]
-=======
-          z-[1000]
-
-          w-full
-
-          border-b
-          border-black/10
-
-          bg-white
-
-          md:bg-[#F8F4F0]
->>>>>>> aman
         "
       >
         <div
           className="
-            mx-auto
-<<<<<<< HEAD
             flex
-            h-[74px]
-            max-w-[1600px]
+            h-full
+            w-max
             items-center
-            justify-between
-            px-4
-            md:px-6
-            xl:px-8
+            will-change-transform
           "
+          style={{
+            animation:
+              "hivraHeaderTicker 24s linear infinite",
+          }}
         >
-          {/* LOGO */}
-=======
-
-            flex
-            h-[68px]
-            max-w-[1600px]
-            items-center
-
-            px-2
-
-            sm:px-4
-
-            md:h-[74px]
-            md:px-6
-
-            xl:px-8
-          "
-        >
-          {/* =================================================
-              MOBILE HAMBURGER
-          ================================================= */}
-
-          <button
-            type="button"
-            aria-label="Open menu"
-            onClick={() =>
-              setMobileOpen(
-                true
-              )
-            }
-            className="
-              flex
-              h-11
-              w-10
-              shrink-0
-              items-center
-              justify-center
-
-              text-black
-
-              xl:hidden
-            "
-          >
-            <MenuIcon />
-          </button>
-
-          {/* =================================================
-              LOGO
-
-              Hamburger ke baad thoda gap.
-          ================================================= */}
->>>>>>> aman
-
-          <Link
-            href="/"
-            aria-label="HivraSoft Home"
-            className="
-<<<<<<< HEAD
-              flex
-              shrink-0
-              items-center
-=======
-              ml-2
-
-              flex
-              shrink-0
-              items-center
-
-              sm:ml-3
-
-              xl:ml-0
->>>>>>> aman
-            "
-          >
-            <Image
-              src="/images/logos/hivra-soft-logo.png"
-              alt="HivraSoft"
-<<<<<<< HEAD
-              width={150}
-              height={58}
-              priority
-              className="
-                h-auto
-                w-[120px]
-                object-contain
-=======
-              width={165}
-              height={65}
-              priority
-              className="
-                h-auto
-
-                w-[116px]
-
-                sm:w-[128px]
-
->>>>>>> aman
-                xl:w-[145px]
-              "
-            />
-          </Link>
-
-          {/* =================================================
-<<<<<<< HEAD
-              DESKTOP NAVIGATION
-=======
-              DESKTOP NAV
->>>>>>> aman
-          ================================================= */}
-
-          <nav
-            className="
-<<<<<<< HEAD
-              hidden
-              h-full
-              items-center
-              gap-[22px]
-=======
-              mx-auto
-
-              hidden
-              h-full
-              items-center
-
-              gap-[24px]
-
->>>>>>> aman
-              xl:flex
-            "
-          >
-            <NavLink href="/bundle-pricing/">
-              Bundle Pricing
-            </NavLink>
-
-            <NavLink href="/new-launch/">
-              New Launch
-            </NavLink>
-
-            <NavLink href="/buy-3-get-1-free/">
-              Buy 3 Get 1 Free
-            </NavLink>
-
-<<<<<<< HEAD
-            {/* WOMEN */}
-
-            <div
-              className="
-                group
-                relative
-                flex
-                h-full
-                items-center
-              "
-            >
-              <Link
-                href="/women/"
-                className="
-                  flex
-                  h-full
-                  items-center
-                  gap-[5px]
-                  text-[10px]
-                  font-semibold
-                  uppercase
-                  tracking-[0.1em]
-                  text-[#8C1839]
-                  transition-colors
-                  duration-300
-                "
-              >
-                Women
-
-                <ChevronDown />
-              </Link>
-
-              <div
-                className="
-                  invisible
-                  absolute
-                  left-1/2
-                  top-full
-                  w-[650px]
-                  -translate-x-1/2
-                  translate-y-[8px]
-                  border
-                  border-[#211A18]/5
-                  bg-[#F7F3EF]
-                  opacity-0
-                  shadow-[0_24px_60px_rgba(33,26,24,0.16)]
-                  transition-all
-                  duration-300
-
-                  group-hover:visible
-                  group-hover:translate-y-0
-                  group-hover:opacity-100
-                "
-              >
-                <div
-                  className="
-                    grid
-                    grid-cols-3
-                    gap-10
-                    px-9
-                    pb-9
-                    pt-9
-                  "
-                >
-                  {/* BRAS */}
-
-                  <div>
-                    <Link
-                      href="/women/bra/"
-                      className="
-                        mb-5
-                        inline-block
-                        text-[9px]
-                        font-semibold
-                        uppercase
-                        tracking-[0.35em]
-                        text-[#8C1839]
-                        transition
-                        hover:text-[#211A18]
-                      "
-                    >
-                      Bras
-                    </Link>
-
-                    <div
-                      className="
-                        space-y-[17px]
-                      "
-                    >
-                      {braLinks.map(
-                        (item) => (
-                          <Link
-                            key={item.href}
-                            href={item.href}
-                            className="
-                              block
-                              text-[12px]
-                              font-normal
-                              text-[#211A18]/60
-                              transition-all
-                              duration-200
-                              hover:translate-x-1
-                              hover:text-[#8C1839]
-                            "
-                          >
-                            {item.name}
-                          </Link>
-                        )
-                      )}
-                    </div>
-                  </div>
-
-                  {/* PANTIES */}
-
-                  <div>
-                    <Link
-                      href="/women/panty/"
-                      className="
-                        mb-5
-                        inline-block
-                        text-[9px]
-                        font-semibold
-                        uppercase
-                        tracking-[0.35em]
-                        text-[#8C1839]
-                        transition
-                        hover:text-[#211A18]
-                      "
-                    >
-                      Panties
-                    </Link>
-
-                    <div
-                      className="
-                        space-y-[17px]
-                      "
-                    >
-                      {pantyLinks.map(
-                        (item) => (
-                          <Link
-                            key={item.href}
-                            href={item.href}
-                            className="
-                              block
-                              text-[12px]
-                              font-normal
-                              text-[#211A18]/60
-                              transition-all
-                              duration-200
-                              hover:translate-x-1
-                              hover:text-[#8C1839]
-                            "
-                          >
-                            {item.name}
-                          </Link>
-                        )
-                      )}
-                    </div>
-                  </div>
-
-                  {/* DISCOVER */}
-
-                  <div>
-                    <p
-                      className="
-                        mb-5
-                        text-[9px]
-                        font-semibold
-                        uppercase
-                        tracking-[0.35em]
-                        text-[#8C1839]
-                      "
-                    >
-                      Discover
-                    </p>
-
-                    <div
-                      className="
-                        space-y-[17px]
-                      "
-                    >
-                      {discoverLinks.map(
-                        (item) => (
-                          <Link
-                            key={item.href}
-                            href={item.href}
-                            className="
-                              block
-                              text-[12px]
-                              font-normal
-                              text-[#211A18]/60
-                              transition-all
-                              duration-200
-                              hover:translate-x-1
-                              hover:text-[#8C1839]
-                            "
-                          >
-                            {item.name}
-                          </Link>
-                        )
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div
-                  className="
-                    border-t
-                    border-[#211A18]/10
-                    px-9
-                    py-5
-                  "
-                >
-                  <Link
-                    href="/women/"
-                    className="
-                      inline-flex
-                      items-center
-                      gap-3
-                      text-[9px]
-                      font-semibold
-                      uppercase
-                      tracking-[0.32em]
-                      text-[#8C1839]
-                      transition
-                      hover:gap-5
-                      hover:text-[#211A18]
-                    "
-                  >
-                    Explore all Women&apos;s Collection
-
-                    <span>→</span>
-                  </Link>
-                </div>
-              </div>
-            </div>
-
-            {/* MEN */}
-
-            <div
-              className="
-                group
-                relative
-                flex
-                h-full
-                items-center
-              "
-            >
-              <Link
-                href="/men/"
-                className="
-                  flex
-                  h-full
-                  items-center
-                  gap-[5px]
-                  text-[10px]
-                  font-semibold
-                  uppercase
-                  tracking-[0.1em]
-                  text-[#211A18]
-                  transition
-                  hover:text-[#8C1839]
-                "
-              >
-                Men
-
-                <ChevronDown />
-              </Link>
-
-              <div
-                className="
-                  invisible
-                  absolute
-                  left-1/2
-                  top-full
-                  w-[230px]
-                  -translate-x-1/2
-                  translate-y-2
-                  border
-                  border-[#211A18]/10
-                  bg-[#F7F3EF]
-                  p-4
-                  opacity-0
-                  shadow-[0_20px_50px_rgba(33,26,24,0.12)]
-                  transition-all
-                  duration-300
-
-                  group-hover:visible
-                  group-hover:translate-y-0
-                  group-hover:opacity-100
-                "
-              >
-                {menLinks.map(
-                  (item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className="
-                        block
-                        px-4
-                        py-3
-                        text-[11px]
-                        text-[#211A18]/65
-                        transition
-                        hover:bg-[#EFE6DC]
-                        hover:text-[#8C1839]
-                      "
-                    >
-                      {item.name}
-                    </Link>
-                  )
-                )}
-              </div>
-            </div>
-=======
-            <DesktopCategoryMenu
-              label="Women"
-              root={
-                womenRoot
-              }
-              fallbackHref="/women/"
-            />
-
-            <DesktopCategoryMenu
-              label="Men"
-              root={
-                menRoot
-              }
-              fallbackHref="/men/"
-            />
->>>>>>> aman
-
-            <NavLink href="/accessories/">
-              Accessories
-            </NavLink>
-
-<<<<<<< HEAD
-            {/* MORE */}
-
-=======
->>>>>>> aman
-            <div
-              className="
-                group
-                relative
-<<<<<<< HEAD
-=======
-
->>>>>>> aman
-                flex
-                h-full
-                items-center
-              "
-            >
-              <button
-                type="button"
-                className="
-                  flex
-                  h-full
-                  items-center
-<<<<<<< HEAD
-                  gap-[5px]
-                  text-[10px]
-                  font-semibold
-                  uppercase
-                  tracking-[0.1em]
-                  text-[#211A18]
-                  transition
-                  hover:text-[#8C1839]
-=======
-
-                  gap-1.5
-
-                  text-[10px]
-                  font-bold
-                  uppercase
-
-                  tracking-[0.10em]
-
-                  text-[#111111]
->>>>>>> aman
-                "
-              >
-                More
-
-                <ChevronDown />
-              </button>
-
-              <div
-                className="
-                  invisible
-                  absolute
-                  right-0
-                  top-full
-<<<<<<< HEAD
-                  w-[240px]
-                  translate-y-2
-                  border
-                  border-[#211A18]/10
-                  bg-[#F7F3EF]
-                  p-4
-                  opacity-0
-                  shadow-[0_20px_50px_rgba(33,26,24,0.12)]
-                  transition-all
-                  duration-300
-=======
-
-                  w-[230px]
-
-                  translate-y-2
-
-                  border
-                  border-[#F0CCD7]
-
-                  bg-[#FFF7F9]
-
-                  p-3
-
-                  opacity-0
-
-                  shadow-[0_18px_45px_rgba(0,0,0,.13)]
-
-                  transition-all
->>>>>>> aman
-
-                  group-hover:visible
-                  group-hover:translate-y-0
-                  group-hover:opacity-100
-                "
-              >
-<<<<<<< HEAD
-                <Link
-                  href="/send-your-bra/"
-                  className="
-                    block
-                    px-4
-                    py-3
-                    text-[11px]
-                    text-[#211A18]/65
-                    transition
-                    hover:bg-[#EFE6DC]
-                    hover:text-[#8C1839]
-                  "
-                >
-                  Send Your Bra
-                </Link>
-
-                <Link
-                  href="/reseller-registration/"
-                  className="
-                    block
-                    px-4
-                    py-3
-                    text-[11px]
-                    text-[#211A18]/65
-                    transition
-                    hover:bg-[#EFE6DC]
-                    hover:text-[#8C1839]
-                  "
-                >
-                  Reseller Registration
-                </Link>
-=======
-                <DropdownLink href="/send-your-bra/">
-                  Send Your Bra
-                </DropdownLink>
-
-                <DropdownLink href="/reseller-registration/">
-                  Reseller Registration
-                </DropdownLink>
->>>>>>> aman
-              </div>
-            </div>
-          </nav>
-
-          {/* =================================================
-<<<<<<< HEAD
-              DESKTOP RIGHT ICONS
-=======
-              RIGHT ICONS
-
-              Search intentionally REMOVED.
->>>>>>> aman
-          ================================================= */}
-
-          <div
-            className="
-<<<<<<< HEAD
-              hidden
-              items-center
-              gap-1
-              text-[#211A18]
-              md:flex
-            "
-          >
-            <IconLink
-              href="/search/"
-              label="Search"
-            >
-              <SearchIcon />
-            </IconLink>
-
-            <IconLink
-              href="/wishlist/"
-              label="Wishlist"
-            >
-              <HeartIcon />
-            </IconLink>
-
-            {/* ACCOUNT */}
-
-            <Account />
-
-            {/* CART */}
-
-            <Link
-              href="/cart/"
-              aria-label="Cart"
-              className="
-                relative
-                ml-1
-                flex
-                h-11
-                w-11
-                shrink-0
-                items-center
-                justify-center
-                rounded-full
-                bg-[#211A18]
-                text-white
-                shadow-sm
-                transition-all
-                duration-300
-
-                hover:bg-[#8C1839]
-=======
-              ml-auto
-
-              flex
-              items-center
-
-              gap-0
-            "
-          >
-            <button
-              type="button"
-              aria-label="Wishlist"
-              onClick={() => {
-                void commerce.openWishlist();
-              }}
-              className="
-                relative
-
-                flex
-                h-10
-                w-10
-                items-center
-                justify-center
-
-                text-[#8C1839]
-              "
-            >
-              <HeartIcon />
-
-              {commerce.wishlistCount >
-                0 && (
-                <CountBadge
-                  count={
-                    commerce.wishlistCount
-                  }
-                />
-              )}
-            </button>
-
-            <div
-              className="
-                hidden
-                md:block
-              "
-            >
-              <Account />
-            </div>
-
-            <button
-              type="button"
-              aria-label="Cart"
-              onClick={() => {
-                void commerce.openCart();
-              }}
-              className="
-                relative
-
-                flex
-                h-10
-                w-10
-                items-center
-                justify-center
-
-                text-[#111111]
-
-                md:ml-1
-                md:rounded-full
-                md:bg-[#211A18]
-                md:text-white
->>>>>>> aman
-              "
-            >
-              <BagIcon />
-
-<<<<<<< HEAD
-              <span
-                className="
-                  absolute
-                  -right-1
-                  -top-1
-                  flex
-                  h-[17px]
-                  min-w-[17px]
-                  items-center
-                  justify-center
-                  rounded-full
-                  bg-[#8C1839]
-                  px-1
-                  text-[8px]
-                  font-bold
-                  text-white
-                "
-              >
-                0
-              </span>
-            </Link>
-          </div>
-
-          {/* MOBILE BUTTON */}
-
-          <button
-            type="button"
-            aria-label="Menu"
-            onClick={() => {
-              setMobileOpen(
-                (value) => !value
-              );
-            }}
-            className="
-              flex
-              h-11
-              w-11
-              items-center
-              justify-center
-              rounded-full
-              border
-              border-[#211A18]/20
-              text-[#211A18]
-              xl:hidden
-            "
-          >
-            {mobileOpen ? (
-              <CloseIcon />
-            ) : (
-              <MenuIcon />
-            )}
-          </button>
+          {content}
+          {content}
         </div>
-
-        {/* =================================================
-            MOBILE MENU
-        ================================================= */}
-
-        <div
-          className={`
-            overflow-visible
-            border-t
-            border-[#211A18]/10
-            bg-[#F7F3EF]
-            transition-all
-            duration-500
-            xl:hidden
-
-            ${
-              mobileOpen
-                ? "max-h-[1600px] opacity-100"
-                : "max-h-0 overflow-hidden opacity-0"
-            }
-          `}
-        >
-          <div
-            className="
-              px-5
-              py-5
-            "
-          >
-            {/* QUICK ICONS */}
-
-            <div
-              className="
-                mb-5
-                grid
-                grid-cols-4
-                gap-2
-                border-b
-                border-[#211A18]/10
-                pb-5
-              "
-            >
-              <MobileIconLink
-                href="/search/"
-                label="Search"
-                close={() =>
-                  setMobileOpen(false)
-                }
-              >
-                <SearchIcon />
-              </MobileIconLink>
-
-              <MobileIconLink
-                href="/wishlist/"
-                label="Wishlist"
-                close={() =>
-                  setMobileOpen(false)
-                }
-              >
-                <HeartIcon />
-              </MobileIconLink>
-
-              {/* MOBILE ACCOUNT */}
-
-              <Account
-                mobile
-                onBeforeOpen={() => {
-                  setMobileOpen(false);
-
-                  setMobileWomenOpen(false);
-
-                  setMobileMenOpen(false);
-                }}
-              />
-
-              <MobileCartLink
-                close={() =>
-                  setMobileOpen(false)
-                }
-              />
-            </div>
-
-            {/* LINKS */}
-
-            <MobileLink
-              href="/bundle-pricing/"
-              close={() =>
-                setMobileOpen(false)
-              }
-            >
-              Bundle Pricing
-            </MobileLink>
-
-            <MobileLink
-              href="/new-launch/"
-              close={() =>
-                setMobileOpen(false)
-              }
-            >
-              New Launch
-            </MobileLink>
-
-            <MobileLink
-              href="/buy-3-get-1-free/"
-              close={() =>
-                setMobileOpen(false)
-              }
-            >
-              Buy 3 Get 1 Free
-            </MobileLink>
-
-            {/* MOBILE WOMEN */}
-
-            <button
-              type="button"
-              onClick={() => {
-                setMobileWomenOpen(
-                  (value) => !value
-                );
-              }}
-              className="
-                flex
-                w-full
-                items-center
-                justify-between
-                border-b
-                border-[#211A18]/10
-                py-4
-                text-[12px]
-                font-semibold
-                uppercase
-                tracking-[0.1em]
-                text-[#211A18]
-              "
-            >
-              Women
-
-              <span>
-                {mobileWomenOpen
-                  ? "−"
-                  : "+"}
-              </span>
-            </button>
-
-            {mobileWomenOpen && (
-              <div
-                className="
-                  bg-[#EFE6DC]/60
-                  px-4
-                  py-4
-                "
-              >
-                <Link
-                  href="/women/"
-                  onClick={() =>
-                    setMobileOpen(false)
-                  }
-                  className="
-                    block
-                    border-b
-                    border-[#211A18]/10
-                    pb-4
-                    text-[11px]
-                    font-bold
-                    uppercase
-                    tracking-[0.1em]
-                    text-[#8C1839]
-                  "
-                >
-                  View All Women
-                </Link>
-
-                <Link
-                  href="/women/bra/"
-                  onClick={() =>
-                    setMobileOpen(false)
-                  }
-                  className="
-                    mt-5
-                    block
-                    text-[10px]
-                    font-bold
-                    uppercase
-                    tracking-[0.2em]
-                    text-[#8C1839]
-                  "
-                >
-                  Bras
-                </Link>
-
-                <div
-                  className="
-                    mt-2
-                    pl-3
-                  "
-                >
-                  {braLinks.map(
-                    (item) => (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        onClick={() =>
-                          setMobileOpen(false)
-                        }
-                        className="
-                          block
-                          py-2
-                          text-[11px]
-                          text-[#6F5A4C]
-                        "
-                      >
-                        {item.name}
-                      </Link>
-                    )
-                  )}
-                </div>
-
-                <Link
-                  href="/women/panty/"
-                  onClick={() =>
-                    setMobileOpen(false)
-                  }
-                  className="
-                    mt-5
-                    block
-                    text-[10px]
-                    font-bold
-                    uppercase
-                    tracking-[0.2em]
-                    text-[#8C1839]
-                  "
-                >
-                  Panties
-                </Link>
-
-                <div
-                  className="
-                    mt-2
-                    pl-3
-                  "
-                >
-                  {pantyLinks.map(
-                    (item) => (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        onClick={() =>
-                          setMobileOpen(false)
-                        }
-                        className="
-                          block
-                          py-2
-                          text-[11px]
-                          text-[#6F5A4C]
-                        "
-                      >
-                        {item.name}
-                      </Link>
-                    )
-                  )}
-                </div>
-
-                <p
-                  className="
-                    mt-5
-                    text-[10px]
-                    font-bold
-                    uppercase
-                    tracking-[0.2em]
-                    text-[#8C1839]
-                  "
-                >
-                  Discover
-                </p>
-
-                <div
-                  className="
-                    mt-2
-                    pl-3
-                  "
-                >
-                  {discoverLinks.map(
-                    (item) => (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        onClick={() =>
-                          setMobileOpen(false)
-                        }
-                        className="
-                          block
-                          py-2
-                          text-[11px]
-                          text-[#6F5A4C]
-                        "
-                      >
-                        {item.name}
-                      </Link>
-                    )
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* MOBILE MEN */}
-
-            <button
-              type="button"
-              onClick={() => {
-                setMobileMenOpen(
-                  (value) => !value
-                );
-              }}
-              className="
-                flex
-                w-full
-                items-center
-                justify-between
-                border-b
-                border-[#211A18]/10
-                py-4
-                text-[12px]
-                font-semibold
-                uppercase
-                tracking-[0.1em]
-                text-[#211A18]
-              "
-            >
-              Men
-
-              <span>
-                {mobileMenOpen
-                  ? "−"
-                  : "+"}
-              </span>
-            </button>
-
-            {mobileMenOpen && (
-              <div
-                className="
-                  bg-[#EFE6DC]/60
-                  px-4
-                  py-3
-                "
-              >
-                <Link
-                  href="/men/"
-                  onClick={() =>
-                    setMobileOpen(false)
-                  }
-                  className="
-                    block
-                    py-3
-                    text-[11px]
-                    font-bold
-                    uppercase
-                    text-[#8C1839]
-                  "
-                >
-                  All Men
-                </Link>
-
-                {menLinks.map(
-                  (item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() =>
-                        setMobileOpen(false)
-                      }
-                      className="
-                        block
-                        py-3
-                        text-[11px]
-                        text-[#6F5A4C]
-                      "
-                    >
-                      {item.name}
-                    </Link>
-                  )
-                )}
-              </div>
-            )}
-
-            <MobileLink
-              href="/accessories/"
-              close={() =>
-                setMobileOpen(false)
-              }
-            >
-              Accessories
-            </MobileLink>
-
-            <MobileLink
-              href="/send-your-bra/"
-              close={() =>
-                setMobileOpen(false)
-              }
-            >
-              Send Your Bra
-            </MobileLink>
-
-            <MobileLink
-              href="/reseller-registration/"
-              close={() =>
-                setMobileOpen(false)
-              }
-            >
-              Reseller Registration
-            </MobileLink>
-          </div>
-        </div>
-      </header>
-=======
-              {commerce.cartCount >
-                0 && (
-                <CountBadge
-                  count={
-                    commerce.cartCount
-                  }
-                />
-              )}
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {/* ===================================================
-          MOBILE DRAWER
-      =================================================== */}
-
-      <div
-        className={`
-          fixed
-          inset-0
-          z-[10000]
-
-          xl:hidden
-
-          ${
-            mobileOpen
-              ? "pointer-events-auto"
-              : "pointer-events-none"
-          }
-        `}
-      >
-        {/* OVERLAY */}
-
-        <button
-          type="button"
-          aria-label="Close menu"
-          onClick={() =>
-            setMobileOpen(
-              false
-            )
-          }
-          className={`
-            absolute
-            inset-0
-
-            bg-black/55
-
-            transition-opacity
-            duration-300
-
-            ${
-              mobileOpen
-                ? "opacity-100"
-                : "opacity-0"
-            }
-          `}
-        />
-
-        {/* =================================================
-            DRAWER
-
-            Around half screen, not full screen.
-        ================================================= */}
-
-        <aside
-          className={`
-            absolute
-            bottom-0
-            left-0
-            top-0
-
-            w-[60vw]
-            max-w-[330px]
-
-            overflow-y-auto
-            overscroll-contain
-
-            bg-white
-
-            text-black
-
-            shadow-[18px_0_45px_rgba(0,0,0,.25)]
-
-            transition-transform
-            duration-300
-
-            ${
-              mobileOpen
-                ? "translate-x-0"
-                : "-translate-x-full"
-            }
-          `}
-        >
-          {/* USER */}
-
-          <div
-            className="
-              relative
-
-              border-b
-              border-black/10
-
-              px-4
-              pb-5
-              pt-5
-            "
-          >
-            <button
-              type="button"
-              aria-label="Close"
-              onClick={() =>
-                setMobileOpen(
-                  false
-                )
-              }
-              className="
-                absolute
-                right-2
-                top-2
-
-                flex
-                h-9
-                w-9
-                items-center
-                justify-center
-
-                text-[27px]
-
-                text-black
-              "
-            >
-              ×
-            </button>
-
-            <div
-              className="
-                flex
-                items-center
-
-                gap-3
-              "
-            >
-              <div
-                className="
-                  flex
-                  h-11
-                  w-11
-                  shrink-0
-                  items-center
-                  justify-center
-
-                  rounded-full
-
-                  bg-[#48B2C4]
-
-                  text-white
-                "
-              >
-                <UserIcon />
-              </div>
-
-              <div
-                className="
-                  min-w-0
-                "
-              >
-                <p
-                  className="
-                    truncate
-
-                    text-[16px]
-                    font-semibold
-
-                    text-black
-                  "
-                >
-                  Hi Dear
-                </p>
-
-                {commerce.isAuthenticated ===
-                true ? (
-                  <Link
-                    href="/account/"
-                    onClick={() =>
-                      setMobileOpen(
-                        false
-                      )
-                    }
-                    className="
-                      mt-1
-                      block
-
-                      text-[10px]
-                      font-medium
-
-                      text-[#D34A74]
-
-                      underline
-                    "
-                  >
-                    My Account
-                  </Link>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMobileOpen(
-                        false
-                      );
-
-                      requestLogin();
-                    }}
-                    className="
-                      mt-1
-
-                      text-[10px]
-                      font-medium
-
-                      text-[#D34A74]
-
-                      underline
-                    "
-                  >
-                    Login / Register
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* CATEGORY HEADING */}
-
-          <div
-            className="
-              flex
-              items-center
-              justify-between
-
-              border-b
-              border-black/10
-
-              px-3
-              py-4
-            "
-          >
-            <h2
-              className="
-                text-[16px]
-                font-bold
-
-                text-black
-              "
-            >
-              Categories
-            </h2>
-
-            <Link
-              href="/new-launch/"
-              onClick={() =>
-                setMobileOpen(
-                  false
-                )
-              }
-              className="
-                text-[9px]
-                font-semibold
-
-                text-[#3DAFC0]
-
-                underline
-              "
-            >
-              Quick Links
-            </Link>
-          </div>
-
-          {/* =================================================
-              DYNAMIC ROOT CATEGORIES
-          ================================================= */}
-
-          <div>
-            {categories.map(
-              (
-                category
-              ) => (
-                <MobileCategoryBranch
-                  key={
-                    category.id
-                  }
-                  node={
-                    category
-                  }
-                  parentSlugs={[]}
-                  depth={0}
-                  expanded={
-                    expanded
-                  }
-                  onToggle={
-                    toggleExpanded
-                  }
-                  onNavigate={() =>
-                    setMobileOpen(
-                      false
-                    )
-                  }
-                />
-              )
-            )}
-
-            {/* ===============================================
-                STATIC ROUTES ONLY IF NOT ALREADY DYNAMIC
-
-                This fixes duplicate New Launch etc.
-            =============================================== */}
-
-            {additionalLinks.map(
-              (
-                item
-              ) => (
-                <MobileSimpleLink
-                  key={
-                    item.href
-                  }
-                  href={
-                    item.href
-                  }
-                  onNavigate={() =>
-                    setMobileOpen(
-                      false
-                    )
-                  }
-                >
-                  {
-                    item.name
-                  }
-                </MobileSimpleLink>
-              )
-            )}
-          </div>
-        </aside>
       </div>
->>>>>>> aman
     </>
   );
 }
 
 /* =========================================================
-<<<<<<< HEAD
-=======
-   MOBILE CATEGORY TREE
 
-   Arrow only when children exist.
+   HEADER
+
 ========================================================= */
 
-function MobileCategoryBranch({
-  node,
-  parentSlugs,
-  depth,
-  expanded,
-  onToggle,
-  onNavigate,
-}: {
-  node: HeaderCategory;
 
-  parentSlugs: string[];
 
-  depth: number;
+export default function Header() {
 
-  expanded:
-    Set<string>;
+  const pathname =
 
-  onToggle: (
-    id: string
-  ) => void;
+    usePathname();
 
-  onNavigate:
-    () => void;
-}) {
-  const currentSlugs = [
-    ...parentSlugs,
-    node.slug,
-  ];
 
-  const hasChildren =
-    node.children.length >
-    0;
 
-  const open =
-    expanded.has(
-      node.id
+  const commerce =
+
+    useStorefrontCommerce();
+
+
+
+  /* =======================================================
+
+     MOBILE DRAWER
+
+  ======================================================= */
+
+
+
+  const [
+
+    mobileOpen,
+
+    setMobileOpen,
+
+  ] =
+
+    useState(
+
+      false,
+
     );
 
-  return (
-    <div
-      className="
-        border-b
-        border-black/10
-      "
-    >
-      <div
-        className="
-          flex
-          min-h-[46px]
-          items-center
-        "
-      >
-        <Link
-          href={categoryHref(
-            currentSlugs
-          )}
-          onClick={
-            onNavigate
-          }
-          className="
-            min-w-0
-            flex-1
 
-            py-3
 
-            pr-1
+  /* =======================================================
 
-            text-[11px]
-            font-medium
+     CATEGORIES
 
-            text-black
-          "
-          style={{
-            paddingLeft:
-              `${14 + depth * 12}px`,
-          }}
-        >
-          {
-            node.name
-          }
-        </Link>
+  ======================================================= */
 
-        {/* ONLY WHEN CHILDREN */}
 
-        {hasChildren && (
-          <button
-            type="button"
-            aria-label={`Open ${node.name}`}
-            onClick={() =>
-              onToggle(
-                node.id
-              )
-            }
-            className="
-              flex
-              h-[46px]
-              w-10
-              shrink-0
-              items-center
-              justify-center
 
-              text-[17px]
+  const [
 
-              text-black
-            "
-          >
-            <span
-              className={`
-                transition-transform
-                duration-200
+    categories,
 
-                ${
-                  open
-                    ? "rotate-90"
-                    : ""
-                }
-              `}
-            >
-              ›
-            </span>
-          </button>
-        )}
-      </div>
+    setCategories,
 
-      {/* ===================================================
-          OPENED CATEGORY AREA = LIGHT PINK
-      =================================================== */}
+  ] =
 
-      {hasChildren &&
-        open && (
-        <div
-          className="
-            border-t
-            border-[#F2DDE4]
+    useState<
 
-            bg-[#FFF4F7]
-          "
-        >
-          {node.children.map(
+      HeaderCategory[]
+
+    >([]);
+
+
+
+  /* =======================================================
+
+     BUY GET OFFER
+
+  ======================================================= */
+
+
+
+  const [
+
+    buyGetOffer,
+
+    setBuyGetOffer,
+
+  ] =
+
+    useState<
+
+      HeaderOffer | null
+
+    >(
+
+      null,
+
+    );
+
+
+
+  /* =======================================================
+
+     MOBILE EXPANDED
+
+  ======================================================= */
+
+
+
+  const [
+
+    expanded,
+
+    setExpanded,
+
+  ] =
+
+    useState<
+
+      Set<string>
+
+    >(
+
+      () =>
+
+        new Set(),
+
+    );
+
+
+
+  /* =======================================================
+
+     LOAD HEADER DATA
+
+  ======================================================= */
+
+
+
+  useEffect(() => {
+
+    let cancelled =
+
+      false;
+
+
+
+    async function loadHeaderData() {
+
+      /* CATEGORIES */
+
+
+
+      try {
+
+        const response =
+
+          await apiFetch<unknown>(
+
+            "/api/categories/tree?active=true",
+
+            {
+
+              method:
+
+                "GET",
+
+            },
+
+          );
+
+
+
+        if (
+
+          !cancelled
+
+        ) {
+
+          setCategories(
+
+            normalizeTree(
+
+              response,
+
+            ),
+
+          );
+
+        }
+
+      } catch (
+
+        error
+
+      ) {
+
+        console.error(
+
+          "HEADER CATEGORY ERROR:",
+
+          error,
+
+        );
+
+
+
+        if (
+
+          !cancelled
+
+        ) {
+
+          setCategories(
+
+            [],
+
+          );
+
+        }
+
+      }
+
+
+
+      /* BUY GET */
+
+
+
+      try {
+
+        const response =
+
+          await apiFetch<HeaderOfferResponse>(
+
+            "/api/offers/featured/buy-get",
+
+            {
+
+              method:
+
+                "GET",
+
+            },
+
+          );
+
+
+
+        if (
+
+          cancelled
+
+        ) {
+
+          return;
+
+        }
+
+
+
+        const offer =
+
+          response?.offer;
+
+
+
+        if (
+
+          offer &&
+
+          offer.isActive &&
+
+          offer.name &&
+
+          offer.slug
+
+        ) {
+
+          setBuyGetOffer(
+
+            offer,
+
+          );
+
+        } else {
+
+          setBuyGetOffer(
+
+            null,
+
+          );
+
+        }
+
+      } catch {
+
+        if (
+
+          !cancelled
+
+        ) {
+
+          setBuyGetOffer(
+
+            null,
+
+          );
+
+        }
+
+      }
+
+    }
+
+
+
+    void loadHeaderData();
+
+
+
+    return () => {
+
+      cancelled =
+
+        true;
+
+    };
+
+  }, []);
+
+
+
+  /* =======================================================
+
+     LOCK BODY WHEN MOBILE DRAWER OPEN
+
+  ======================================================= */
+
+
+
+  useEffect(() => {
+
+    if (
+
+      !mobileOpen
+
+    ) {
+
+      return;
+
+    }
+
+
+
+    const previous =
+
+      document.body.style
+
+        .overflow;
+
+
+
+    document.body.style.overflow =
+
+      "hidden";
+
+
+
+    return () => {
+
+      document.body.style.overflow =
+
+        previous;
+
+    };
+
+  }, [
+
+    mobileOpen,
+
+  ]);
+
+
+
+  /* =======================================================
+
+     NAVIGATION
+
+
+
+     Categories = admin
+
+     Buy/Get = dynamic
+
+     Fixed price = NOT in header
+
+  ======================================================= */
+
+
+
+  const navigationItems =
+
+    useMemo(() => {
+
+      const items:
+
+        HeaderNavItem[] =
+
+        [];
+
+
+
+      let offerInserted =
+
+        false;
+
+
+
+      categories.forEach(
+
+        (
+
+          category,
+
+        ) => {
+
+          items.push({
+
+            type:
+
+              "category",
+
+
+
+            key:
+
+              `category-${category.id}`,
+
+
+
+            category,
+
+          });
+
+
+
+          const slug =
+
+            cleanSlug(
+
+              category.slug,
+
+            );
+
+
+
+          if (
+
+            buyGetOffer &&
+
             (
-              child
-            ) => (
-              <MobileCategoryBranch
-                key={
-                  child.id
-                }
-                node={
-                  child
-                }
-                parentSlugs={
-                  currentSlugs
-                }
-                depth={
-                  depth + 1
-                }
-                expanded={
-                  expanded
-                }
-                onToggle={
-                  onToggle
-                }
-                onNavigate={
-                  onNavigate
-                }
-              />
+
+              slug ===
+
+                "new-launch" ||
+
+              slug ===
+
+                "new-launches" ||
+
+              slug ===
+
+                "new-arrival" ||
+
+              slug ===
+
+                "new-arrivals"
+
             )
-          )}
 
-          {/* VIEW ALL */}
+          ) {
 
-          <div
-            className="
-              border-t
-              border-[#EFCFD9]
+            items.push({
 
-              px-3
-              py-3
-            "
-          >
-            <Link
-              href={categoryHref(
-                currentSlugs
-              )}
-              onClick={
-                onNavigate
-              }
-              className="
-                text-[10px]
-                font-bold
+              type:
 
-                text-[#A31543]
+                "offer",
 
-                underline
-                underline-offset-2
-              "
-            >
-              View All{" "}
-              {
-                node.name
-              }
-            </Link>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
 
-/* =========================================================
-   MOBILE SIMPLE LINK
-========================================================= */
 
-function MobileSimpleLink({
-  href,
-  children,
-  onNavigate,
-}: {
-  href: string;
+              key:
 
-  children: ReactNode;
+                `offer-${buyGetOffer._id}`,
 
-  onNavigate:
-    () => void;
-}) {
-  return (
-    <Link
-      href={
-        href
+
+
+              name:
+
+                buyGetOffer.name,
+
+
+
+              href:
+
+                `/${encodeURIComponent(
+
+                  buyGetOffer.slug,
+
+                )}`,
+
+            });
+
+
+
+            offerInserted =
+
+              true;
+
+          }
+
+        },
+
+      );
+
+
+
+      if (
+
+        buyGetOffer &&
+
+        !offerInserted
+
+      ) {
+
+        items.unshift({
+
+          type:
+
+            "offer",
+
+
+
+          key:
+
+            `offer-${buyGetOffer._id}`,
+
+
+
+          name:
+
+            buyGetOffer.name,
+
+
+
+          href:
+
+            `/${encodeURIComponent(
+
+              buyGetOffer.slug,
+
+            )}`,
+
+        });
+
       }
-      onClick={
-        onNavigate
-      }
-      className="
-        flex
-        min-h-[46px]
-        items-center
 
-        border-b
-        border-black/10
 
-        px-3
-        py-3
 
-        text-[11px]
-        font-medium
+      return items;
 
-        text-black
-      "
-    >
-      {
-        children
-      }
-    </Link>
-  );
-}
+    }, [
 
-/* =========================================================
-   DESKTOP DYNAMIC CATEGORY MENU
-========================================================= */
+      categories,
 
-function DesktopCategoryMenu({
-  label,
-  root,
-  fallbackHref,
-}: {
-  label: string;
+      buyGetOffer,
 
-  root?:
-    HeaderCategory;
+    ]);
 
-  fallbackHref: string;
-}) {
-  /*
-   * No children = no dropdown arrow/menu.
-   */
 
-  if (
-    !root ||
-    root.children.length ===
-      0
+
+  /* =======================================================
+
+     MOBILE CATEGORY TOGGLE
+
+  ======================================================= */
+
+
+
+  function toggleExpanded(
+
+    id: string,
+
   ) {
-    return (
-      <NavLink
-        href={
-          root
-            ? categoryHref(
-                [
-                  root.slug,
-                ]
-              )
-            : fallbackHref
+
+    setExpanded(
+
+      (
+
+        current,
+
+      ) => {
+
+        const next =
+
+          new Set(
+
+            current,
+
+          );
+
+
+
+        if (
+
+          next.has(
+
+            id,
+
+          )
+
+        ) {
+
+          next.delete(
+
+            id,
+
+          );
+
+        } else {
+
+          next.add(
+
+            id,
+
+          );
+
         }
-      >
-        {
-          label
-        }
-      </NavLink>
+
+
+
+        return next;
+
+      },
+
     );
+
   }
 
+
+
+  /* =======================================================
+
+     HIDE ON LANDING
+
+  ======================================================= */
+
+
+
+  if (
+
+    pathname ===
+
+    "/landing"
+
+  ) {
+
+    return null;
+
+  }
+
+
+
   return (
-    <div
-      className="
-        group
-        relative
 
-        flex
-        h-full
-        items-center
-      "
-    >
-      <Link
-        href={categoryHref(
-          [
-            root.slug,
-          ]
-        )}
-        className="
-          flex
-          h-full
-          items-center
-
-          gap-1.5
-
-          text-[10px]
-          font-bold
-          uppercase
-
-          tracking-[0.10em]
-
-          text-[#111111]
-
-          transition
-
-          hover:text-[#8C1839]
-        "
-      >
-        {
-          label
-        }
-
-        <ChevronDown />
-      </Link>
+    <>
 
       {/* ===================================================
-          LIGHT PINK DYNAMIC DROPDOWN
+
+          STICKY HEADER WRAPPER
+
+
+
+          Announcement + main header dono sticky.
+
       =================================================== */}
 
+
+
       <div
+
         className="
-          invisible
 
-          absolute
-          left-1/2
-          top-full
+          sticky
 
-          w-[590px]
+          top-0
 
-          -translate-x-1/2
-          translate-y-2
+          z-[1000]
 
-          border
-          border-[#F0CFD9]
 
-          bg-[#FFF7F9]
 
-          opacity-0
+          w-full
 
-          shadow-[0_22px_55px_rgba(0,0,0,.14)]
-
-          transition-all
-          duration-200
-
-          group-hover:visible
-          group-hover:translate-y-0
-          group-hover:opacity-100
         "
+
       >
-        <div
-          className="
-            grid
-            grid-cols-3
 
-            gap-x-7
-            gap-y-7
-
-            p-6
-          "
-        >
-          {root.children.map(
-            (
-              category
-            ) => (
-              <div
-                key={
-                  category.id
-                }
-              >
-                <Link
-                  href={categoryHref(
-                    [
-                      root.slug,
-                      category.slug,
-                    ]
-                  )}
-                  className="
-                    text-[11px]
-                    font-bold
-                    uppercase
-
-                    tracking-[0.08em]
-
-                    text-[#111111]
-
-                    transition
-
-                    hover:text-[#A31543]
-                  "
-                >
-                  {
-                    category.name
-                  }
-                </Link>
-
-                {/* ONLY SHOW CHILDREN IF PRESENT */}
-
-                {category.children
-                  .length >
-                  0 && (
-                  <div
-                    className="
-                      mt-3
-
-                      space-y-2.5
-                    "
-                  >
-                    {category.children.map(
-                      (
-                        child
-                      ) => (
-                        <Link
-                          key={
-                            child.id
-                          }
-                          href={categoryHref(
-                            [
-                              root.slug,
-                              category.slug,
-                              child.slug,
-                            ]
-                          )}
-                          className="
-                            block
-
-                            text-[11px]
-                            font-medium
-
-                            text-[#6C6265]
-
-                            transition
-
-                            hover:text-[#A31543]
-                          "
-                        >
-                          {
-                            child.name
-                          }
-                        </Link>
-                      )
-                    )}
-                  </div>
-                )}
-              </div>
-            )
-          )}
-        </div>
+        <ResellerTicker />
 
         {/* =================================================
-            BOTTOM VIEW ALL
+            SERVICE BAR
+
+            White background.
+            Benefits on left.
+            Search + Wishlist + Account + Cart on right.
+
+            Desktop only:
+            main mobile/tablet action layout remains unchanged.
+
+            Search uses:
+            GET /api/search/suggestions
+            GET /api/search/global
         ================================================= */}
 
         <div
           className="
-            border-t
-            border-[#EBCED7]
-
-            px-6
-            py-4
+            hidden
+            w-full
+            border-b
+            border-black/10
+            bg-white
+            xl:block
           "
         >
-          <Link
-            href={categoryHref(
-              [
-                root.slug,
-              ]
-            )}
+          <div
             className="
-              inline-flex
+              mx-auto
+              flex
+              h-[46px]
+              w-full
+              max-w-[1600px]
               items-center
+              gap-6
+              px-5
+              2xl:px-7
+            "
+          >
+            {/* BENEFITS */}
+
+            <p
+              className="
+                flex
+                w-[470px]
+                shrink-0
+                items-center
+                whitespace-nowrap
+                text-[9px]
+                font-medium
+                text-black
+                2xl:w-[500px]
+                2xl:text-[10px]
+              "
+            >
+              <span>
+                Free Returns
+              </span>
+
+              <span
+                className="
+                  mx-2
+                  text-black/35
+                "
+              >
+                |
+              </span>
+
+              <span>
+                100% Privacy
+              </span>
+
+              <span
+                className="
+                  mx-2
+                  text-black/35
+                "
+              >
+                |
+              </span>
+
+              <span>
+                Cash On Delivery
+              </span>
+
+              <span
+                className="
+                  mx-2
+                  text-black/35
+                "
+              >
+                |
+              </span>
+
+              <span>
+                Free Shipping*
+              </span>
+            </p>
+
+            {/* SEARCH + ACTION ICONS */}
+
+            <div
+              className="
+                flex
+                min-w-0
+                flex-1
+                items-center
+                gap-3
+              "
+            >
+              <HeaderSearch />
+
+              {/* WISHLIST */}
+
+              <button
+                type="button"
+                aria-label="Wishlist"
+                onClick={() => {
+                  void commerce.openWishlist();
+                }}
+                className="
+                  relative
+                  flex
+                  h-9
+                  w-9
+                  shrink-0
+                  items-center
+                  justify-center
+                  rounded-full
+                  text-black
+                  transition
+                  hover:bg-black/5
+                  hover:text-[#B31345]
+                "
+              >
+                <HeartIcon />
+
+                {commerce.wishlistCount >
+                0 ? (
+                  <CountBadge
+                    count={
+                      commerce.wishlistCount
+                    }
+                  />
+                ) : null}
+              </button>
+
+              {/* ACCOUNT */}
+
+              <div
+                className="
+                  flex
+                  h-9
+                  min-w-[36px]
+                  shrink-0
+                  items-center
+                  justify-center
+                  text-black
+                  [&_a]:text-black
+                  [&_button]:text-black
+                  [&_svg]:text-black
+                "
+              >
+                <Account />
+              </div>
+
+              {/* CART */}
+
+              <button
+                type="button"
+                aria-label="Cart"
+                onClick={() => {
+                  void commerce.openCart();
+                }}
+                className="
+                  relative
+                  flex
+                  h-9
+                  w-9
+                  shrink-0
+                  items-center
+                  justify-center
+                  rounded-full
+                  text-black
+                  transition
+                  hover:bg-black/5
+                  hover:text-[#B31345]
+                "
+              >
+                <BagIcon />
+
+                {commerce.cartCount >
+                0 ? (
+                  <CountBadge
+                    count={
+                      commerce.cartCount
+                    }
+                  />
+                ) : null}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* =================================================
+
+            MAIN HEADER
+
+        ================================================= */}
+
+
+
+        <header
+
+          className="
+
+            w-full
+
+
+
+            border-b
+
+            border-black/10
+
+
+
+            bg-white
+
+
+
+            xl:border-white/10
+
+            xl:bg-black
+
+          "
+
+        >
+
+          <div
+
+            className="
+
+              mx-auto
+
+
+
+              flex
+
+
+
+              h-[68px]
+
+              w-full
+
+              max-w-[1600px]
+
+
+
+              items-center
+
+
+
+              px-2
+
+
+
+              sm:px-4
+
+
+
+              md:h-[74px]
+
+              md:px-6
+
+
+
+              xl:h-[88px]
+
+              xl:px-5
+
+
+
+              2xl:px-7
+
+            "
+
+          >
+
+            {/* =============================================
+
+                MOBILE MENU BUTTON
+
+            ============================================= */}
+
+
+
+            <button
+
+              type="button"
+
+              aria-label="Open menu"
+
+              onClick={() =>
+
+                setMobileOpen(
+
+                  true,
+
+                )
+
+              }
+
+              className="
+
+                flex
+
+
+
+                h-11
+
+                w-10
+
+
+
+                shrink-0
+
+
+
+                items-center
+
+                justify-center
+
+
+
+                text-black
+
+
+
+                xl:hidden
+
+              "
+
+            >
+
+              <MenuIcon />
+
+            </button>
+
+
+
+            {/* =============================================
+
+                LOGO
+
+
+
+                Mobile:
+
+                HS icon only
+
+
+
+                Desktop:
+
+                Full Hivra Soft logo
+
+            ============================================= */}
+
+
+
+            <Link
+
+              href="/"
+
+              aria-label="HivraSoft Home"
+
+              className="
+
+                ml-2
+
+
+
+                flex
+
+                shrink-0
+
+
+
+                items-center
+
+                justify-center
+
+
+
+                sm:ml-3
+
+
+
+                xl:ml-0
+
+                xl:mr-0
+
+              "
+
+            >
+
+              {/* MOBILE LOGO */}
+
+
+
+              <Image
+
+                src={
+
+                  MOBILE_LOGO_SRC
+
+                }
+
+                alt="Hivra Soft"
+
+                width={
+
+                  160
+
+                }
+
+                height={
+
+                  160
+
+                }
+
+                priority
+
+                className="
+
+                  h-[44px]
+
+                  w-[44px]
+
+
+
+                  object-contain
+
+
+
+                  sm:h-[48px]
+
+                  sm:w-[48px]
+
+
+
+                  xl:hidden
+
+                "
+
+              />
+
+
+
+              {/* DESKTOP FULL LOGO */}
+
+
+
+              <Image
+
+                src={
+
+                  DESKTOP_LOGO_SRC
+
+                }
+
+                alt="Hivra Soft"
+
+                width={
+
+                  523
+
+                }
+
+                height={
+
+                  210
+
+                }
+
+                priority
+
+                unoptimized
+
+                className="
+
+                  hidden
+
+
+
+                  h-auto
+
+
+
+                  w-[225px]
+
+
+
+                  object-contain
+
+
+
+                  xl:block
+
+
+
+                  2xl:w-[240px]
+
+                "
+
+              />
+
+            </Link>
+
+
+
+            {/* =============================================
+
+                DESKTOP NAVIGATION
+
+            ============================================= */}
+
+
+
+            <nav
+
+              className="
+
+                hidden
+
+                h-full
+
+
+
+                min-w-0
+
+
+
+                items-center
+
+                justify-start
+
+
+
+                gap-[16px]
+
+
+
+                xl:ml-[140px]
+
+                xl:mr-auto
+
+                xl:flex
+
+
+
+                2xl:ml-[160px]
+
+                2xl:gap-[22px]
+
+              "
+
+            >
+
+              {navigationItems.map(
+
+                (
+
+                  item,
+
+                ) => {
+
+                  if (
+
+                    item.type ===
+
+                    "offer"
+
+                  ) {
+
+                    return (
+
+                      <DesktopOfferLink
+
+                        key={
+
+                          item.key
+
+                        }
+
+                        href={
+
+                          item.href
+
+                        }
+
+                      >
+
+                        {
+
+                          item.name
+
+                        }
+
+                      </DesktopOfferLink>
+
+                    );
+
+                  }
+
+
+
+                  return (
+
+                    <DesktopCategory
+
+                      key={
+
+                        item.key
+
+                      }
+
+                      root={
+
+                        item.category
+
+                      }
+
+                    />
+
+                  );
+
+                },
+
+              )}
+
+            </nav>
+
+
+
+            {/* =============================================
+
+                ACTIONS
+
+
+
+                More spacing:
+
+                Wishlist / Account / Cart
+
+            ============================================= */}
+
+
+
+            <div
+
+              className="
+
+                ml-auto
+
+
+
+                flex
+
+                shrink-0
+
+
+
+                items-center
+
+
+
+                gap-[7px]
+
+
+
+                xl:hidden
+
+              "
+
+            >
+
+              {/* WISHLIST */}
+
+
+
+              <button
+
+                type="button"
+
+                aria-label="Wishlist"
+
+                onClick={() => {
+
+                  void commerce.openWishlist();
+
+                }}
+
+                className="
+
+                  relative
+
+
+
+                  flex
+
+
+
+                  h-10
+
+                  w-10
+
+
+
+                  items-center
+
+                  justify-center
+
+
+
+                  text-[#8C1839]
+
+
+
+                  transition-colors
+
+
+
+                  hover:text-[#B31345]
+
+
+
+                  xl:h-11
+
+                  xl:w-11
+
+
+
+                  xl:text-[#FF7900]
+
+
+
+                  xl:hover:text-[#FF9B38]
+
+                "
+
+              >
+
+                <HeartIcon />
+
+
+
+                {commerce.wishlistCount >
+
+                  0 ? (
+
+                  <CountBadge
+
+                    count={
+
+                      commerce.wishlistCount
+
+                    }
+
+                  />
+
+                ) : null}
+
+              </button>
+
+
+
+              {/* ACCOUNT */}
+
+
+
+              <div
+
+                className="
+
+                  hidden
+
+
+
+                  md:flex
+
+
+
+                  md:items-center
+
+                  md:justify-center
+
+
+
+                  xl:min-w-[44px]
+
+
+
+                  xl:[&_a]:text-[#FF7900]
+
+                  xl:[&_button]:text-[#FF7900]
+
+                  xl:[&_svg]:text-[#FF7900]
+
+                "
+
+              >
+
+                <Account />
+
+              </div>
+
+
+
+              {/* CART */}
+
+
+
+              <button
+
+                type="button"
+
+                aria-label="Cart"
+
+                onClick={() => {
+
+                  void commerce.openCart();
+
+                }}
+
+                className="
+
+                  relative
+
+
+
+                  flex
+
+
+
+                  h-10
+
+                  w-10
+
+
+
+                  items-center
+
+                  justify-center
+
+
+
+                  text-[#111]
+
+
+
+                  transition-colors
+
+
+
+                  md:rounded-full
+
+                  md:bg-[#211A18]
+
+                  md:text-white
+
+
+
+                  xl:h-11
+
+                  xl:w-11
+
+
+
+                  xl:bg-[#211A18]
+
+                  xl:text-white
+
+
+
+                  xl:hover:bg-[#332925]
+
+                "
+
+              >
+
+                <BagIcon />
+
+
+
+                {commerce.cartCount >
+
+                  0 ? (
+
+                  <CountBadge
+
+                    count={
+
+                      commerce.cartCount
+
+                    }
+
+                  />
+
+                ) : null}
+
+              </button>
+
+            </div>
+
+          </div>
+
+        </header>
+
+      </div>
+
+
+
+      {/* ===================================================
+
+          MOBILE DRAWER
+
+
+
+          Mobile functionality/design same.
+
+      =================================================== */}
+
+
+
+      <div
+
+        className={`
+
+          fixed
+
+          inset-0
+
+
+
+          z-[10000]
+
+
+
+          xl:hidden
+
+
+
+          ${
+
+            mobileOpen
+
+              ? `
+
+                pointer-events-auto
+
+              `
+
+              : `
+
+                pointer-events-none
+
+              `
+
+          }
+
+        `}
+
+      >
+
+        {/* OVERLAY */}
+
+
+
+        <button
+
+          type="button"
+
+          aria-label="Close menu"
+
+          onClick={() =>
+
+            setMobileOpen(
+
+              false,
+
+            )
+
+          }
+
+          className={`
+
+            absolute
+
+            inset-0
+
+
+
+            bg-black/55
+
+
+
+            transition-opacity
+
+            duration-300
+
+
+
+            ${
+
+              mobileOpen
+
+                ? `
+
+                  opacity-100
+
+                `
+
+                : `
+
+                  opacity-0
+
+                `
+
+            }
+
+          `}
+
+        />
+
+
+
+        {/* DRAWER */}
+
+
+
+        <aside
+
+          className={`
+
+            absolute
+
+
+
+            bottom-0
+
+            left-0
+
+            top-0
+
+
+
+            w-[82vw]
+
+            max-w-[360px]
+
+
+
+            overflow-y-auto
+
+            overscroll-contain
+
+
+
+            bg-white
+
+
+
+            text-black
+
+
+
+            shadow-[18px_0_45px_rgba(0,0,0,.25)]
+
+
+
+            transition-transform
+
+            duration-300
+
+
+
+            ${
+
+              mobileOpen
+
+                ? `
+
+                  translate-x-0
+
+                `
+
+                : `
+
+                  -translate-x-full
+
+                `
+
+            }
+
+          `}
+
+        >
+
+          {/* ===============================================
+
+              ACCOUNT AREA
+
+          =============================================== */}
+
+
+
+          <div
+
+            className="
+
+              relative
+
+
+
+              border-b
+
+              border-black/10
+
+
+
+              px-4
+
+              pb-5
+
+              pt-5
+
+            "
+
+          >
+
+            <button
+
+              type="button"
+
+              aria-label="Close menu"
+
+              onClick={() =>
+
+                setMobileOpen(
+
+                  false,
+
+                )
+
+              }
+
+              className="
+
+                absolute
+
+
+
+                right-2
+
+                top-2
+
+
+
+                flex
+
+
+
+                h-9
+
+                w-9
+
+
+
+                items-center
+
+                justify-center
+
+
+
+                text-[27px]
+
+              "
+
+            >
+
+              ×
+
+            </button>
+
+
+
+            <div
+
+              className="
+
+                flex
+
+
+
+                items-center
+
+
+
+                gap-3
+
+              "
+
+            >
+
+              <div
+
+                className="
+
+                  flex
+
+
+
+                  h-11
+
+                  w-11
+
+
+
+                  shrink-0
+
+
+
+                  items-center
+
+                  justify-center
+
+
+
+                  rounded-full
+
+
+
+                  bg-[#48B2C4]
+
+
+
+                  text-white
+
+                "
+
+              >
+
+                <UserIcon />
+
+              </div>
+
+
+
+              <div
+
+                className="
+
+                  min-w-0
+
+                "
+
+              >
+
+                <p
+
+                  className="
+
+                    truncate
+
+
+
+                    text-[16px]
+
+                    font-semibold
+
+                  "
+
+                >
+
+                  Hi Dear
+
+                </p>
+
+
+
+                {commerce.isAuthenticated ===
+
+                true ? (
+
+                  <Link
+
+                    href="/account/"
+
+                    onClick={() =>
+
+                      setMobileOpen(
+
+                        false,
+
+                      )
+
+                    }
+
+                    className="
+
+                      mt-1
+
+
+
+                      block
+
+
+
+                      text-[10px]
+
+                      font-medium
+
+
+
+                      text-[#D34A74]
+
+
+
+                      underline
+
+                    "
+
+                  >
+
+                    My Account
+
+                  </Link>
+
+                ) : (
+
+                  <button
+
+                    type="button"
+
+                    onClick={() => {
+
+                      setMobileOpen(
+
+                        false,
+
+                      );
+
+
+
+                      requestLogin();
+
+                    }}
+
+                    className="
+
+                      mt-1
+
+
+
+                      text-[10px]
+
+                      font-medium
+
+
+
+                      text-[#D34A74]
+
+
+
+                      underline
+
+                    "
+
+                  >
+
+                    Login / Register
+
+                  </button>
+
+                )}
+
+              </div>
+
+            </div>
+
+
+
+            {/* QUICK ACTIONS */}
+
+
+
+            <div
+
+              className="
+
+                mt-5
+
+
+
+                grid
+
+                grid-cols-3
+
+
+
+                gap-2
+
+              "
+
+            >
+
+              <MobileActionLink
+
+                href="/search/"
+
+                label="Search"
+
+                onNavigate={() =>
+
+                  setMobileOpen(
+
+                    false,
+
+                  )
+
+                }
+
+              >
+
+                <SearchIcon />
+
+              </MobileActionLink>
+
+
+
+              <button
+
+                type="button"
+
+                onClick={() => {
+
+                  setMobileOpen(
+
+                    false,
+
+                  );
+
+
+
+                  void commerce.openWishlist();
+
+                }}
+
+                className="
+
+                  flex
+
+
+
+                  min-h-[58px]
+
+
+
+                  flex-col
+
+
+
+                  items-center
+
+                  justify-center
+
+
+
+                  gap-1
+
+
+
+                  rounded-[10px]
+
+
+
+                  bg-[#F8F5F3]
+
+                "
+
+              >
+
+                <HeartIcon />
+
+
+
+                <span
+
+                  className="
+
+                    text-[9px]
+
+                    font-medium
+
+                  "
+
+                >
+
+                  Wishlist
+
+                </span>
+
+              </button>
+
+
+
+              <button
+
+                type="button"
+
+                onClick={() => {
+
+                  setMobileOpen(
+
+                    false,
+
+                  );
+
+
+
+                  void commerce.openCart();
+
+                }}
+
+                className="
+
+                  flex
+
+
+
+                  min-h-[58px]
+
+
+
+                  flex-col
+
+
+
+                  items-center
+
+                  justify-center
+
+
+
+                  gap-1
+
+
+
+                  rounded-[10px]
+
+
+
+                  bg-[#F8F5F3]
+
+                "
+
+              >
+
+                <BagIcon />
+
+
+
+                <span
+
+                  className="
+
+                    text-[9px]
+
+                    font-medium
+
+                  "
+
+                >
+
+                  Cart
+
+                </span>
+
+              </button>
+
+            </div>
+
+          </div>
+
+
+
+          {/* ===============================================
+
+              CATEGORY TITLE
+
+          =============================================== */}
+
+
+
+          <div
+
+            className="
+
+              border-b
+
+              border-black/10
+
+
+
+              px-4
+
+              py-4
+
+            "
+
+          >
+
+            <h2
+
+              className="
+
+                text-[16px]
+
+                font-bold
+
+              "
+
+            >
+
+              Categories
+
+            </h2>
+
+          </div>
+
+
+
+          {/* ===============================================
+
+              MOBILE NAV
+
+          =============================================== */}
+
+
+
+          <div>
+
+            {navigationItems.map(
+
+              (
+
+                item,
+
+              ) => {
+
+                if (
+
+                  item.type ===
+
+                  "offer"
+
+                ) {
+
+                  return (
+
+                    <MobileOfferLink
+
+                      key={
+
+                        item.key
+
+                      }
+
+                      href={
+
+                        item.href
+
+                      }
+
+                      onNavigate={() =>
+
+                        setMobileOpen(
+
+                          false,
+
+                        )
+
+                      }
+
+                    >
+
+                      {
+
+                        item.name
+
+                      }
+
+                    </MobileOfferLink>
+
+                  );
+
+                }
+
+
+
+                return (
+
+                  <MobileCategoryBranch
+
+                    key={
+
+                      item.key
+
+                    }
+
+                    node={
+
+                      item.category
+
+                    }
+
+                    parentSlugs={
+
+                      []
+
+                    }
+
+                    depth={
+
+                      0
+
+                    }
+
+                    expanded={
+
+                      expanded
+
+                    }
+
+                    onToggle={
+
+                      toggleExpanded
+
+                    }
+
+                    onNavigate={() =>
+
+                      setMobileOpen(
+
+                        false,
+
+                      )
+
+                    }
+
+                  />
+
+                );
+
+              },
+
+            )}
+
+          </div>
+
+        </aside>
+
+      </div>
+
+    </>
+
+  );
+
+}
+
+
+
+/* =========================================================
+
+   DESKTOP CATEGORY
+
+========================================================= */
+
+
+
+function DesktopCategory({
+
+  root,
+
+}: {
+
+  root:
+
+    HeaderCategory;
+
+}) {
+
+  const href =
+
+    categoryHref([
+
+      root.slug,
+
+    ]);
+
+
+
+  if (
+
+    root.children.length ===
+
+    0
+
+  ) {
+
+    return (
+
+      <DesktopNavLink
+
+        href={
+
+          href
+
+        }
+
+      >
+
+        {root.name}
+
+      </DesktopNavLink>
+
+    );
+
+  }
+
+
+
+  return (
+
+    <div
+
+      className="
+
+        group
+
+
+
+        relative
+
+
+
+        flex
+
+        h-full
+
+
+
+        items-center
+
+      "
+
+    >
+
+      <Link
+
+        href={
+
+          href
+
+        }
+
+        className="
+
+          flex
+
+          h-full
+
+
+
+          items-center
+
+
+
+          gap-1.5
+
+
+
+          whitespace-nowrap
+
+
+
+          text-[12px]
+
+          font-bold
+
+
+
+          tracking-[0.01em]
+
+
+
+          text-[#FF7900]
+
+
+
+          transition-colors
+
+
+
+          hover:text-[#FFAA57]
+
+
+
+          2xl:text-[13px]
+
+        "
+
+      >
+
+        {root.name}
+
+
+
+        <ChevronDown />
+
+      </Link>
+
+
+
+      {/* ===============================================
+
+          DROPDOWN
+
+      =============================================== */}
+
+
+
+      <div
+
+        className="
+
+          invisible
+
+
+
+          absolute
+
+
+
+          left-1/2
+
+          top-full
+
+
+
+          z-[1200]
+
+
+
+          max-h-[72vh]
+
+
+
+          w-[720px]
+
+
+
+          -translate-x-1/2
+
+          translate-y-2
+
+
+
+          overflow-y-auto
+
+
+
+          rounded-b-[14px]
+
+
+
+          border
+
+          border-black/10
+
+
+
+          bg-white
+
+
+
+          opacity-0
+
+
+
+          shadow-[0_22px_55px_rgba(0,0,0,.18)]
+
+
+
+          transition-all
+
+          duration-200
+
+
+
+          group-hover:visible
+
+          group-hover:translate-y-0
+
+          group-hover:opacity-100
+
+        "
+
+      >
+
+        <div
+
+          className="
+
+            grid
+
+            grid-cols-3
+
+
+
+            gap-x-8
+
+            gap-y-8
+
+
+
+            p-7
+
+          "
+
+        >
+
+          {root.children.map(
+
+            (
+
+              child,
+
+            ) => (
+
+              <DesktopCategoryColumn
+
+                key={
+
+                  child.id
+
+                }
+
+                node={
+
+                  child
+
+                }
+
+                path={[
+
+                  root.slug,
+
+                  child.slug,
+
+                ]}
+
+              />
+
+            ),
+
+          )}
+
+        </div>
+
+
+
+        <div
+
+          className="
+
+            border-t
+
+            border-black/10
+
+
+
+            px-7
+
+            py-4
+
+          "
+
+        >
+
+          <Link
+
+            href={
+
+              href
+
+            }
+
+            className="
+
+              inline-flex
+
+
+
+              items-center
+
+
 
               gap-2
 
+
+
               text-[10px]
+
               font-bold
+
               uppercase
 
-              tracking-[0.1em]
 
-              text-[#A31543]
 
-              transition
+              tracking-[0.10em]
+
+
+
+              text-[#D91B58]
+
+
 
               hover:underline
+
             "
+
           >
+
             View All{" "}
-            {
-              root.name
-            }
+
+            {root.name}
+
+
 
             <span>
+
               →
+
             </span>
+
           </Link>
+
         </div>
+
       </div>
+
     </div>
+
   );
+
 }
 
+
+
 /* =========================================================
->>>>>>> aman
-   NAV LINK
+
+   DESKTOP CHILD COLUMN
+
 ========================================================= */
 
-function NavLink({
-  href,
-  children,
+
+
+function DesktopCategoryColumn({
+
+  node,
+
+  path,
+
 }: {
-  href: string;
-<<<<<<< HEAD
-=======
 
->>>>>>> aman
-  children: ReactNode;
+  node:
+
+    HeaderCategory;
+
+
+
+  path:
+
+    string[];
+
 }) {
+
   return (
-    <Link
-<<<<<<< HEAD
-      href={href}
-=======
-      href={
-        href
-      }
->>>>>>> aman
+
+    <div
+
       className="
-        flex
-        h-full
-        items-center
-<<<<<<< HEAD
-        text-[10px]
-        font-semibold
-        uppercase
-        tracking-[0.1em]
-        text-[#211A18]
-        transition
-        hover:text-[#8C1839]
+
+        min-w-0
+
       "
+
     >
-      {children}
-=======
 
-        text-[10px]
-        font-bold
-        uppercase
+      <Link
 
-        tracking-[0.10em]
+        href={
 
-        text-[#111111]
+          categoryHref(
 
-        transition
+            path,
 
-        hover:text-[#8C1839]
-      "
-    >
-      {
-        children
-      }
->>>>>>> aman
-    </Link>
+          )
+
+        }
+
+        className="
+
+          block
+
+
+
+          text-[11px]
+
+          font-bold
+
+          uppercase
+
+
+
+          tracking-[0.06em]
+
+
+
+          text-[#211A18]
+
+
+
+          transition
+
+
+
+          hover:text-[#D91B58]
+
+        "
+
+      >
+
+        {node.name}
+
+      </Link>
+
+
+
+      {node.children.length >
+
+      0 ? (
+
+        <div
+
+          className="
+
+            mt-3
+
+
+
+            space-y-2.5
+
+          "
+
+        >
+
+          {node.children.map(
+
+            (
+
+              child,
+
+            ) => (
+
+              <DesktopNestedCategory
+
+                key={
+
+                  child.id
+
+                }
+
+                node={
+
+                  child
+
+                }
+
+                path={[
+
+                  ...path,
+
+                  child.slug,
+
+                ]}
+
+                depth={
+
+                  0
+
+                }
+
+              />
+
+            ),
+
+          )}
+
+        </div>
+
+      ) : null}
+
+    </div>
+
   );
+
 }
 
+
+
 /* =========================================================
-<<<<<<< HEAD
-   MOBILE LINK
+
+   DESKTOP NESTED CATEGORY
+
 ========================================================= */
 
-function MobileLink({
-  href,
-  close,
-  children,
-}: {
-  href: string;
-  close: () => void;
-=======
-   DROPDOWN LINK
-========================================================= */
 
-function DropdownLink({
-  href,
-  children,
-}: {
-  href: string;
 
->>>>>>> aman
-  children: ReactNode;
+function DesktopNestedCategory({
+
+  node,
+
+  path,
+
+  depth,
+
+}: {
+
+  node:
+
+    HeaderCategory;
+
+
+
+  path:
+
+    string[];
+
+
+
+  depth:
+
+    number;
+
 }) {
+
   return (
-    <Link
-<<<<<<< HEAD
-      href={href}
-      onClick={close}
+
+    <div>
+
+      <Link
+
+        href={
+
+          categoryHref(
+
+            path,
+
+          )
+
+        }
+
+        className="
+
+          block
+
+
+
+          text-[11px]
+
+          font-medium
+
+
+
+          leading-[1.4]
+
+
+
+          text-[#6C6265]
+
+
+
+          transition
+
+
+
+          hover:text-[#D91B58]
+
+        "
+
+        style={{
+
+          paddingLeft:
+
+            `${depth * 10}px`,
+
+        }}
+
+      >
+
+        {node.name}
+
+      </Link>
+
+
+
+      {node.children.length >
+
+      0 ? (
+
+        <div
+
+          className="
+
+            mt-2
+
+
+
+            space-y-2
+
+          "
+
+        >
+
+          {node.children.map(
+
+            (
+
+              child,
+
+            ) => (
+
+              <DesktopNestedCategory
+
+                key={
+
+                  child.id
+
+                }
+
+                node={
+
+                  child
+
+                }
+
+                path={[
+
+                  ...path,
+
+                  child.slug,
+
+                ]}
+
+                depth={
+
+                  depth + 1
+
+                }
+
+              />
+
+            ),
+
+          )}
+
+        </div>
+
+      ) : null}
+
+    </div>
+
+  );
+
+}
+
+
+
+/* =========================================================
+
+   MOBILE CATEGORY
+
+========================================================= */
+
+
+
+function MobileCategoryBranch({
+
+  node,
+
+  parentSlugs,
+
+  depth,
+
+  expanded,
+
+  onToggle,
+
+  onNavigate,
+
+}: {
+
+  node:
+
+    HeaderCategory;
+
+
+
+  parentSlugs:
+
+    string[];
+
+
+
+  depth:
+
+    number;
+
+
+
+  expanded:
+
+    Set<string>;
+
+
+
+  onToggle: (
+
+    id: string,
+
+  ) => void;
+
+
+
+  onNavigate:
+
+    () => void;
+
+}) {
+
+  const currentSlugs = [
+
+    ...parentSlugs,
+
+    node.slug,
+
+  ];
+
+
+
+  const hasChildren =
+
+    node.children.length >
+
+    0;
+
+
+
+  const open =
+
+    expanded.has(
+
+      node.id,
+
+    );
+
+
+
+  return (
+
+    <div
+
       className="
-        block
+
         border-b
-        border-[#211A18]/10
-        py-4
-        text-[12px]
-        font-semibold
-        uppercase
-        tracking-[0.1em]
-        text-[#211A18]
+
+        border-black/10
+
       "
+
     >
-      {children}
-=======
+
+      <div
+
+        className="
+
+          flex
+
+
+
+          min-h-[47px]
+
+
+
+          items-center
+
+        "
+
+      >
+
+        <Link
+
+          href={
+
+            categoryHref(
+
+              currentSlugs,
+
+            )
+
+          }
+
+          onClick={
+
+            onNavigate
+
+          }
+
+          className="
+
+            min-w-0
+
+            flex-1
+
+
+
+            py-3
+
+            pr-2
+
+
+
+            text-[11px]
+
+            font-medium
+
+
+
+            text-black
+
+          "
+
+          style={{
+
+            paddingLeft:
+
+              `${
+
+                14 +
+
+                depth * 13
+
+              }px`,
+
+          }}
+
+        >
+
+          {node.name}
+
+        </Link>
+
+
+
+        {hasChildren ? (
+
+          <button
+
+            type="button"
+
+            aria-label={`Open ${node.name}`}
+
+            onClick={() =>
+
+              onToggle(
+
+                node.id,
+
+              )
+
+            }
+
+            className="
+
+              flex
+
+
+
+              h-[47px]
+
+              w-11
+
+
+
+              shrink-0
+
+
+
+              items-center
+
+              justify-center
+
+
+
+              text-[18px]
+
+            "
+
+          >
+
+            <span
+
+              className={`
+
+                transition-transform
+
+                duration-200
+
+
+
+                ${
+
+                  open
+
+                    ? `
+
+                      rotate-90
+
+                    `
+
+                    : ""
+
+                }
+
+              `}
+
+            >
+
+              ›
+
+            </span>
+
+          </button>
+
+        ) : null}
+
+      </div>
+
+
+
+      {hasChildren &&
+
+      open ? (
+
+        <div
+
+          className="
+
+            border-t
+
+            border-[#F2DDE4]
+
+
+
+            bg-[#FFF4F7]
+
+          "
+
+        >
+
+          {node.children.map(
+
+            (
+
+              child,
+
+            ) => (
+
+              <MobileCategoryBranch
+
+                key={
+
+                  child.id
+
+                }
+
+                node={
+
+                  child
+
+                }
+
+                parentSlugs={
+
+                  currentSlugs
+
+                }
+
+                depth={
+
+                  depth + 1
+
+                }
+
+                expanded={
+
+                  expanded
+
+                }
+
+                onToggle={
+
+                  onToggle
+
+                }
+
+                onNavigate={
+
+                  onNavigate
+
+                }
+
+              />
+
+            ),
+
+          )}
+
+
+
+          <div
+
+            className="
+
+              border-t
+
+              border-[#EFCFD9]
+
+
+
+              px-4
+
+              py-3
+
+            "
+
+          >
+
+            <Link
+
+              href={
+
+                categoryHref(
+
+                  currentSlugs,
+
+                )
+
+              }
+
+              onClick={
+
+                onNavigate
+
+              }
+
+              className="
+
+                text-[10px]
+
+                font-bold
+
+
+
+                text-[#A31543]
+
+
+
+                underline
+
+                underline-offset-2
+
+              "
+
+            >
+
+              View All{" "}
+
+              {node.name}
+
+            </Link>
+
+          </div>
+
+        </div>
+
+      ) : null}
+
+    </div>
+
+  );
+
+}
+
+
+
+/* =========================================================
+
+   DESKTOP NORMAL LINK
+
+========================================================= */
+
+
+
+function DesktopNavLink({
+
+  href,
+
+  children,
+
+}: {
+
+  href:
+
+    string;
+
+
+
+  children:
+
+    ReactNode;
+
+}) {
+
+  return (
+
+    <Link
+
       href={
+
         href
+
       }
+
       className="
-        block
 
-        rounded-[6px]
+        flex
 
-        px-3
-        py-2.5
+        h-full
+
+
+
+        items-center
+
+
+
+        whitespace-nowrap
+
+
+
+        text-[12px]
+
+        font-bold
+
+
+
+        tracking-[0.01em]
+
+
+
+        text-[#FF7900]
+
+
+
+        transition-colors
+
+
+
+        hover:text-[#FFAA57]
+
+
+
+        2xl:text-[13px]
+
+      "
+
+    >
+
+      {children}
+
+    </Link>
+
+  );
+
+}
+
+
+
+/* =========================================================
+
+   DESKTOP BUY GET
+
+========================================================= */
+
+
+
+function DesktopOfferLink({
+
+  href,
+
+  children,
+
+}: {
+
+  href:
+
+    string;
+
+
+
+  children:
+
+    ReactNode;
+
+}) {
+
+  return (
+
+    <Link
+
+      href={
+
+        href
+
+      }
+
+      className="
+
+        flex
+
+        h-full
+
+
+
+        items-center
+
+
+
+        whitespace-nowrap
+
+
+
+        text-[12px]
+
+        font-bold
+
+
+
+        tracking-[0.01em]
+
+
+
+        text-[#FF7900]
+
+
+
+        transition-colors
+
+
+
+        hover:text-[#FFAA57]
+
+
+
+        2xl:text-[13px]
+
+      "
+
+    >
+
+      {children}
+
+    </Link>
+
+  );
+
+}
+
+
+
+/* =========================================================
+
+   MOBILE OFFER
+
+========================================================= */
+
+
+
+function MobileOfferLink({
+
+  href,
+
+  children,
+
+  onNavigate,
+
+}: {
+
+  href:
+
+    string;
+
+
+
+  children:
+
+    ReactNode;
+
+
+
+  onNavigate:
+
+    () => void;
+
+}) {
+
+  return (
+
+    <Link
+
+      href={
+
+        href
+
+      }
+
+      onClick={
+
+        onNavigate
+
+      }
+
+      className="
+
+        flex
+
+
+
+        min-h-[48px]
+
+
+
+        items-center
+
+        justify-between
+
+
+
+        border-b
+
+        border-black/10
+
+
+
+        bg-[#211A18]
+
+
+
+        px-4
+
+        py-3
+
+
 
         text-[11px]
-        font-medium
 
-        text-[#111111]
+        font-bold
 
-        transition
+        uppercase
 
-        hover:bg-[#FBE9EF]
-        hover:text-[#A31543]
-      "
-    >
-      {
-        children
-      }
->>>>>>> aman
-    </Link>
-  );
-}
 
-/* =========================================================
-<<<<<<< HEAD
-   DESKTOP ICON LINK
-========================================================= */
 
-function IconLink({
-  href,
-  label,
-  children,
-}: {
-  href: string;
-  label: string;
-  children: ReactNode;
-}) {
-  return (
-    <Link
-      href={href}
-      aria-label={label}
-      title={label}
-      className="
-        flex
-        h-11
-        w-11
-        shrink-0
-        items-center
-        justify-center
-        rounded-full
-        text-[#8C1839]
-        transition-all
-        duration-300
+        tracking-[0.07em]
 
-        hover:bg-[#EFE6DC]
-        hover:text-[#8C1839]
 
-        focus-visible:outline-none
-        focus-visible:ring-2
-        focus-visible:ring-[#8C1839]
-        focus-visible:ring-offset-2
-      "
-    >
-      {children}
-    </Link>
-  );
-}
 
-/* =========================================================
-   MOBILE ICON LINK
-========================================================= */
-
-function MobileIconLink({
-  href,
-  label,
-  close,
-  children,
-}: {
-  href: string;
-  label: string;
-  close: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <Link
-      href={href}
-      onClick={close}
-      aria-label={label}
-      title={label}
-      className="
-        flex
-        h-12
-        items-center
-        justify-center
-        rounded-md
-        border
-        border-[#211A18]/15
-        bg-[#F7F3EF]
-        text-[#211A18]
-        transition
-
-        hover:border-[#8C1839]
-        hover:text-[#8C1839]
-      "
-    >
-      {children}
-    </Link>
-  );
-}
-
-/* =========================================================
-   MOBILE CART
-========================================================= */
-
-function MobileCartLink({
-  close,
-}: {
-  close: () => void;
-}) {
-  return (
-    <Link
-      href="/cart/"
-      onClick={close}
-      aria-label="Cart"
-      title="Cart"
-      className="
-        relative
-        flex
-        h-12
-        items-center
-        justify-center
-        rounded-md
-        bg-[#211A18]
         text-white
-        transition
 
-        hover:bg-[#8C1839]
       "
+
     >
-      <BagIcon />
+
+      <span>
+
+        {children}
+
+      </span>
+
+
+
+      <span>
+
+        →
+
+      </span>
+
+    </Link>
+
+  );
+
+}
+
+
+
+/* =========================================================
+
+   MOBILE QUICK ACTION
+
+========================================================= */
+
+
+
+function MobileActionLink({
+
+  href,
+
+  label,
+
+  children,
+
+  onNavigate,
+
+}: {
+
+  href:
+
+    string;
+
+
+
+  label:
+
+    string;
+
+
+
+  children:
+
+    ReactNode;
+
+
+
+  onNavigate:
+
+    () => void;
+
+}) {
+
+  return (
+
+    <Link
+
+      href={
+
+        href
+
+      }
+
+      onClick={
+
+        onNavigate
+
+      }
+
+      className="
+
+        flex
+
+
+
+        min-h-[58px]
+
+
+
+        flex-col
+
+
+
+        items-center
+
+        justify-center
+
+
+
+        gap-1
+
+
+
+        rounded-[10px]
+
+
+
+        bg-[#F8F5F3]
+
+
+
+        text-black
+
+      "
+
+    >
+
+      {children}
+
+
 
       <span
+
         className="
-          absolute
-          right-1
-          top-1
-          flex
-          h-[16px]
-          min-w-[16px]
-          items-center
-          justify-center
-          rounded-full
-          bg-[#8C1839]
-          px-1
-          text-[8px]
-          font-bold
-          text-white
+
+          text-[9px]
+
+          font-medium
+
         "
+
       >
-        0
+
+        {label}
+
       </span>
+
     </Link>
-=======
-   BADGE
+
+  );
+
+}
+
+
+
+/* =========================================================
+
+   COUNT BADGE
+
 ========================================================= */
 
+
+
 function CountBadge({
+
   count,
+
 }: {
-  count: number;
+
+  count:
+
+    number;
+
 }) {
+
   return (
+
     <span
+
       className="
+
         absolute
 
+
+
         -right-1
+
         -top-1
 
+
+
         flex
+
+
+
         h-[17px]
+
         min-w-[17px]
+
+
+
         items-center
+
         justify-center
 
+
+
         rounded-full
+
+
 
         bg-[#D91B58]
 
+
+
         px-1
 
+
+
         text-[8px]
+
         font-bold
 
+
+
         text-white
+
       "
+
     >
+
       {count >
+
       99
+
         ? "99+"
+
         : count}
+
     </span>
->>>>>>> aman
+
   );
+
 }
+
+
 
 /* =========================================================
+
    ICONS
+
 ========================================================= */
 
-<<<<<<< HEAD
-function ChevronDown() {
-  return (
-    <svg
-      width="11"
-      height="11"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="m6 9 6 6 6-6" />
-    </svg>
-  );
-}
 
-function SearchIcon() {
-  return (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <circle
-        cx="11"
-        cy="11"
-        r="7"
-      />
 
-      <path d="m20 20-3.5-3.5" />
-=======
 function MenuIcon() {
+
   return (
+
     <svg
+
       width="28"
+
       height="28"
+
       viewBox="0 0 24 24"
+
       fill="none"
+
       stroke="currentColor"
+
       strokeWidth="1.5"
+
       strokeLinecap="round"
+
     >
+
       <path d="M3 6h18" />
+
       <path d="M3 12h13" />
+
       <path d="M3 18h18" />
->>>>>>> aman
+
     </svg>
+
   );
+
 }
+
+
 
 function HeartIcon() {
+
   return (
+
     <svg
-<<<<<<< HEAD
-      width="20"
-      height="20"
+
+      width="23"
+
+      height="23"
+
       viewBox="0 0 24 24"
+
       fill="none"
+
       stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-=======
-      width="22"
-      height="22"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
+
       strokeWidth="1.7"
+
       strokeLinecap="round"
+
       strokeLinejoin="round"
->>>>>>> aman
+
     >
+
       <path d="M20.8 4.6a5.4 5.4 0 0 0-7.6 0L12 5.8l-1.2-1.2a5.4 5.4 0 0 0-7.6 7.6L12 21l8.8-8.8a5.4 5.4 0 0 0 0-7.6Z" />
+
     </svg>
+
   );
+
 }
+
+
 
 function BagIcon() {
+
   return (
+
     <svg
-<<<<<<< HEAD
-      width="19"
-      height="19"
+
+      width="22"
+
+      height="22"
+
       viewBox="0 0 24 24"
+
       fill="none"
+
       stroke="currentColor"
-      strokeWidth="1.9"
+
+      strokeWidth="1.7"
+
       strokeLinecap="round"
+
       strokeLinejoin="round"
-      aria-hidden="true"
+
     >
+
       <path d="M5 8h14l-1 13H6L5 8Z" />
 
-=======
-      width="21"
-      height="21"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.7"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M5 8h14l-1 13H6L5 8Z" />
->>>>>>> aman
       <path d="M9 8V6a3 3 0 0 1 6 0v2" />
+
     </svg>
+
   );
+
 }
 
-<<<<<<< HEAD
-function MenuIcon() {
-  return (
-    <svg
-      width="21"
-      height="21"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M4 7h16M4 12h16M4 17h16" />
-=======
+
+
 function UserIcon() {
+
   return (
+
     <svg
+
       width="24"
+
       height="24"
+
       viewBox="0 0 24 24"
+
       fill="none"
+
       stroke="currentColor"
+
       strokeWidth="1.5"
+
       strokeLinecap="round"
+
     >
+
       <circle
+
         cx="12"
+
         cy="8"
+
         r="4"
+
       />
 
+
+
       <path d="M5 21c0-4 3-7 7-7s7 3 7 7" />
->>>>>>> aman
+
     </svg>
+
   );
+
 }
 
-<<<<<<< HEAD
-function CloseIcon() {
+
+
+function SearchIcon() {
+
   return (
+
     <svg
-      width="21"
-      height="21"
-=======
-function ChevronDown() {
-  return (
-    <svg
-      width="10"
-      height="10"
->>>>>>> aman
+
+      width="22"
+
+      height="22"
+
       viewBox="0 0 24 24"
+
       fill="none"
+
       stroke="currentColor"
-      strokeWidth="2"
+
+      strokeWidth="1.7"
+
       strokeLinecap="round"
+
       strokeLinejoin="round"
-<<<<<<< HEAD
-      aria-hidden="true"
+
     >
-      <path d="m6 6 12 12M18 6 6 18" />
-=======
-    >
-      <path d="m6 9 6 6 6-6" />
->>>>>>> aman
+
+      <circle
+
+        cx="11"
+
+        cy="11"
+
+        r="7"
+
+      />
+
+
+
+      <path d="m20 20-4-4" />
+
     </svg>
+
   );
+
+}
+
+
+
+function ChevronDown() {
+
+  return (
+
+    <svg
+
+      width="11"
+
+      height="11"
+
+      viewBox="0 0 24 24"
+
+      fill="none"
+
+      stroke="currentColor"
+
+      strokeWidth="2"
+
+      strokeLinecap="round"
+
+      strokeLinejoin="round"
+
+    >
+
+      <path d="m6 9 6 6 6-6" />
+
+    </svg>
+
+  );
+
 }

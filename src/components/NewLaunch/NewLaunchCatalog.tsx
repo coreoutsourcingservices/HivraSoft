@@ -3,120 +3,6 @@
 import Link from "next/link";
 
 import {
-<<<<<<< HEAD
-  useMemo,
-  useState,
-} from "react";
-
-/* =========================================================
-   TYPES
-========================================================= */
-
-type NewLaunchProduct = {
-  id: string;
-
-  name: string;
-  slug: string;
-
-  shortDescription: string;
-
-  price: number;
-  compareAtPrice: number;
-
-  image: string;
-  hoverImage: string;
-
-  colorCount: number;
-};
-
-type SortValue =
-  | "featured"
-  | "low-high"
-  | "high-low"
-  | "discount";
-
-type NewLaunchCatalogProps = {
-  products: NewLaunchProduct[];
-
-  bannerUrl: string;
-
-  categoryName: string;
-};
-
-/* =========================================================
-   COMPONENT
-========================================================= */
-
-export default function NewLaunchCatalog({
-  products,
-  bannerUrl,
-  categoryName,
-}: NewLaunchCatalogProps) {
-  const [
-    sort,
-    setSort,
-  ] =
-    useState<SortValue>(
-      "featured"
-    );
-
-  /* =======================================================
-     SORT PRODUCTS
-  ======================================================= */
-
-  const sortedProducts =
-    useMemo(() => {
-      const items = [
-        ...products,
-      ];
-
-      switch (sort) {
-        case "low-high":
-          return items.sort(
-            (a, b) =>
-              a.price -
-              b.price
-          );
-
-        case "high-low":
-          return items.sort(
-            (a, b) =>
-              b.price -
-              a.price
-          );
-
-        case "discount":
-          return items.sort(
-            (a, b) => {
-              const aDiscount =
-                a.compareAtPrice >
-                a.price
-                  ? a.compareAtPrice -
-                    a.price
-                  : 0;
-
-              const bDiscount =
-                b.compareAtPrice >
-                b.price
-                  ? b.compareAtPrice -
-                    b.price
-                  : 0;
-
-              return (
-                bDiscount -
-                aDiscount
-              );
-            }
-          );
-
-        default:
-          return items;
-      }
-    }, [
-      products,
-      sort,
-    ]);
-=======
   useEffect,
   useMemo,
   useRef,
@@ -137,6 +23,10 @@ import type {
   CatalogProduct,
 } from "@/types/catalog";
 
+/* =========================================================
+   TYPES
+========================================================= */
+
 type Gender =
   | "men"
   | "women";
@@ -156,9 +46,29 @@ type Props = {
     | StorefrontCategoryNode
     | null;
 
-  backgroundImage:
-    string;
+  /* MULTIPLE ADMIN CATEGORY BANNERS */
+
+  bannerImages:
+    string[];
 };
+
+/* =========================================================
+   MONEY
+========================================================= */
+
+function money(
+  value: number,
+) {
+  return `₹${Number(
+    value || 0,
+  ).toLocaleString(
+    "en-IN",
+    {
+      maximumFractionDigits:
+        2,
+    },
+  )}`;
+}
 
 /* =========================================================
    GENDER TOGGLE
@@ -167,59 +77,66 @@ type Props = {
 function GenderToggle({
   gender,
   onChange,
-  dark = false,
 }: {
   gender: Gender;
 
   onChange: (
-    gender: Gender
+    gender: Gender,
   ) => void;
-
-  dark?: boolean;
 }) {
   return (
     <div
-      className={`
-        grid
+      className="
+        inline-grid
         grid-cols-2
 
-        rounded-[12px]
+        rounded-[11px]
 
         border
+        border-black/20
 
-        p-2
+        bg-white
 
-        ${
-          dark
-            ? "border-white/50 bg-black/20 backdrop-blur"
-            : "border-black/30 bg-white"
-        }
-      `}
+        p-1
+      "
     >
       <button
         type="button"
         onClick={() =>
-          onChange("men")
+          onChange(
+            "men",
+          )
         }
         className={`
-          min-w-[125px]
+          min-w-[76px]
 
           rounded-[8px]
 
-          px-6
-          py-3
+          px-3
+          py-2
 
-          text-sm
+          text-[10px]
+          font-medium
 
           transition
+
+          sm:min-w-[100px]
+          sm:px-5
+          sm:py-2.5
+          sm:text-[12px]
+
+          lg:min-w-[125px]
 
           ${
             gender ===
             "men"
-              ? "bg-[#292727] text-white"
-              : dark
-                ? "text-white"
-                : "text-[#292727]"
+              ? `
+                bg-[#292727]
+                text-white
+              `
+              : `
+                text-[#292727]
+              `
           }
         `}
       >
@@ -230,34 +147,415 @@ function GenderToggle({
         type="button"
         onClick={() =>
           onChange(
-            "women"
+            "women",
           )
         }
         className={`
-          min-w-[125px]
+          min-w-[76px]
 
           rounded-[8px]
 
-          px-6
-          py-3
+          px-3
+          py-2
 
-          text-sm
+          text-[10px]
+          font-medium
 
           transition
+
+          sm:min-w-[100px]
+          sm:px-5
+          sm:py-2.5
+          sm:text-[12px]
+
+          lg:min-w-[125px]
 
           ${
             gender ===
             "women"
-              ? "bg-[#292727] text-white"
-              : dark
-                ? "text-white"
-                : "text-[#292727]"
+              ? `
+                bg-[#292727]
+                text-white
+              `
+              : `
+                text-[#292727]
+              `
           }
         `}
       >
         Women
       </button>
     </div>
+  );
+}
+
+/* =========================================================
+   MULTIPLE NEW LAUNCH BANNERS
+
+   Admin Category:
+   images[0]
+   images[1]
+   images[2]
+   images[3]
+   ...
+
+   Sab banner me available honge.
+
+   Mobile ratio ko existing style ke close rakha hai.
+========================================================= */
+
+function NewLaunchBanner({
+  images,
+}: {
+  images: string[];
+}) {
+  const validImages =
+    useMemo(
+      () =>
+        Array.from(
+          new Set(
+            images
+              .map(
+                (
+                  image,
+                ) =>
+                  String(
+                    image ||
+                      "",
+                  ).trim(),
+              )
+              .filter(
+                Boolean,
+              ),
+          ),
+        ),
+      [
+        images,
+      ],
+    );
+
+  const [
+    activeIndex,
+    setActiveIndex,
+  ] =
+    useState(0);
+
+  /* =======================================================
+     RESET IF ADMIN BANNERS CHANGE
+  ======================================================= */
+
+  useEffect(() => {
+    if (
+      validImages.length ===
+      0
+    ) {
+      setActiveIndex(
+        0,
+      );
+
+      return;
+    }
+
+    setActiveIndex(
+      (
+        current,
+      ) =>
+        current >=
+        validImages.length
+          ? 0
+          : current,
+    );
+  }, [
+    validImages.length,
+  ]);
+
+  if (
+    validImages.length ===
+    0
+  ) {
+    return null;
+  }
+
+  function previousBanner() {
+    setActiveIndex(
+      (
+        current,
+      ) =>
+        current === 0
+          ? validImages.length -
+            1
+          : current - 1,
+    );
+  }
+
+  function nextBanner() {
+    setActiveIndex(
+      (
+        current,
+      ) =>
+        (
+          current +
+          1
+        ) %
+        validImages.length,
+    );
+  }
+
+  return (
+    <section
+      className="
+        relative
+
+        w-full
+
+        overflow-hidden
+
+        bg-[#F8F2EF]
+      "
+    >
+      <div
+        className="
+          relative
+
+          w-full
+
+          aspect-[1537/536]
+        "
+      >
+        {/* ===============================================
+            ALL BANNERS
+        =============================================== */}
+
+        {validImages.map(
+          (
+            image,
+            index,
+          ) => (
+            <img
+              key={`${image}-${index}`}
+              src={image}
+              alt={`Hivra Soft New Launch Banner ${
+                index + 1
+              }`}
+              className={`
+                absolute
+                inset-0
+
+                h-full
+                w-full
+
+                object-cover
+                object-center
+
+                transition-opacity
+                duration-500
+
+                ${
+                  activeIndex ===
+                  index
+                    ? `
+                      z-10
+                      opacity-100
+                    `
+                    : `
+                      z-0
+                      opacity-0
+                    `
+                }
+              `}
+            />
+          ),
+        )}
+
+        {/* ===============================================
+            ARROWS
+
+            Mobile par hidden rakhe hain taaki
+            existing mobile look disturb na ho.
+        =============================================== */}
+
+        {validImages.length >
+        1 ? (
+          <>
+            <button
+              type="button"
+              aria-label="Previous banner"
+              onClick={
+                previousBanner
+              }
+              className="
+                absolute
+
+                left-4
+                top-1/2
+                z-30
+
+                hidden
+
+                h-10
+                w-10
+
+                -translate-y-1/2
+
+                place-items-center
+
+                rounded-full
+
+                bg-white/90
+
+                text-[22px]
+                text-[#292526]
+
+                shadow-[0_5px_18px_rgba(0,0,0,0.15)]
+
+                backdrop-blur
+
+                transition
+
+                hover:bg-white
+
+                sm:grid
+
+                lg:left-8
+                lg:h-11
+                lg:w-11
+              "
+            >
+              ‹
+            </button>
+
+            <button
+              type="button"
+              aria-label="Next banner"
+              onClick={
+                nextBanner
+              }
+              className="
+                absolute
+
+                right-4
+                top-1/2
+                z-30
+
+                hidden
+
+                h-10
+                w-10
+
+                -translate-y-1/2
+
+                place-items-center
+
+                rounded-full
+
+                bg-white/90
+
+                text-[22px]
+                text-[#292526]
+
+                shadow-[0_5px_18px_rgba(0,0,0,0.15)]
+
+                backdrop-blur
+
+                transition
+
+                hover:bg-white
+
+                sm:grid
+
+                lg:right-8
+                lg:h-11
+                lg:w-11
+              "
+            >
+              ›
+            </button>
+
+            {/* ===========================================
+                DOTS
+            =========================================== */}
+
+            <div
+              className="
+                absolute
+
+                bottom-3
+                left-1/2
+                z-30
+
+                flex
+
+                -translate-x-1/2
+
+                items-center
+
+                gap-1.5
+
+                rounded-full
+
+                bg-white/80
+
+                px-2.5
+                py-1.5
+
+                shadow-sm
+
+                backdrop-blur
+
+                sm:bottom-4
+                sm:gap-2
+                sm:px-3
+                sm:py-2
+              "
+            >
+              {validImages.map(
+                (
+                  _,
+                  index,
+                ) => (
+                  <button
+                    key={`banner-dot-${index}`}
+                    type="button"
+                    aria-label={`Open banner ${
+                      index +
+                      1
+                    }`}
+                    onClick={() =>
+                      setActiveIndex(
+                        index,
+                      )
+                    }
+                    className={`
+                      h-[6px]
+
+                      rounded-full
+
+                      transition-all
+                      duration-300
+
+                      ${
+                        activeIndex ===
+                        index
+                          ? `
+                            w-5
+                            bg-[#B31345]
+
+                            sm:w-6
+                          `
+                          : `
+                            w-[6px]
+                            bg-black/30
+                          `
+                      }
+                    `}
+                  />
+                ),
+              )}
+            </div>
+          </>
+        ) : null}
+      </div>
+    </section>
   );
 }
 
@@ -277,6 +575,9 @@ function DynamicCategories({
 }) {
   if (
     !category ||
+    !Array.isArray(
+      category.children,
+    ) ||
     category.children.length ===
       0
   ) {
@@ -287,11 +588,11 @@ function DynamicCategories({
     ...category.children,
   ].sort(
     (
-      a,
-      b
+      first,
+      second,
     ) =>
-      a.sortOrder -
-      b.sortOrder
+      first.sortOrder -
+      second.sortOrder,
   );
 
   return (
@@ -302,8 +603,14 @@ function DynamicCategories({
 
         bg-white
 
-        px-6
-        py-7
+        px-3
+        py-4
+
+        sm:px-5
+        sm:py-5
+
+        lg:px-6
+        lg:py-7
       "
     >
       <div
@@ -311,43 +618,61 @@ function DynamicCategories({
           mx-auto
 
           flex
-          max-w-[1280px]
-          flex-wrap
-          items-center
-          justify-center
+          max-w-[1380px]
 
-          gap-3
+          gap-2
+
+          overflow-x-auto
+
+          pb-1
+
+          [scrollbar-width:none]
+
+          [&::-webkit-scrollbar]:hidden
+
+          lg:flex-wrap
+          lg:justify-center
+          lg:gap-3
+          lg:overflow-visible
+          lg:pb-0
         "
       >
         <Link
           href={`/${gender}`}
           className="
+            shrink-0
+
             rounded-full
 
             bg-[#B31345]
 
-            px-6
-            py-3
+            px-5
+            py-2.5
 
-            text-[11px]
+            text-[9px]
             font-bold
             uppercase
 
-            tracking-[0.12em]
+            tracking-[0.1em]
 
             text-white
+
+            lg:px-6
+            lg:py-3
+            lg:text-[11px]
           "
         >
-          ALL{" "}
+          All{" "}
+
           {gender ===
           "men"
-            ? "MEN"
-            : "WOMEN"}
+            ? "Men"
+            : "Women"}
         </Link>
 
         {children.map(
           (
-            child
+            child,
           ) => (
             <Link
               key={
@@ -355,6 +680,8 @@ function DynamicCategories({
               }
               href={`/${gender}/${child.slug}`}
               className="
+                shrink-0
+
                 rounded-full
 
                 border
@@ -362,26 +689,30 @@ function DynamicCategories({
 
                 bg-[#F7F5F3]
 
-                px-6
-                py-3
+                px-5
+                py-2.5
 
-                text-[11px]
+                text-[9px]
                 font-semibold
                 uppercase
 
-                tracking-[0.1em]
+                tracking-[0.08em]
 
                 transition
 
                 hover:border-[#B31345]
                 hover:text-[#B31345]
+
+                lg:px-6
+                lg:py-3
+                lg:text-[11px]
               "
             >
               {
                 child.name
               }
             </Link>
-          )
+          ),
         )}
       </div>
     </section>
@@ -397,14 +728,19 @@ export default function NewLaunchCatalog({
   womenProducts,
   menCategory,
   womenCategory,
-  backgroundImage,
+  bannerImages,
 }: Props) {
   const commerce =
     useStorefrontCommerce();
 
+  /* =======================================================
+     DEFAULT GENDER
+  ======================================================= */
+
   const defaultGender:
     Gender =
-    menProducts.length > 0
+    menProducts.length >
+    0
       ? "men"
       : "women";
 
@@ -413,7 +749,7 @@ export default function NewLaunchCatalog({
     setGender,
   ] =
     useState<Gender>(
-      defaultGender
+      defaultGender,
     );
 
   const [
@@ -422,10 +758,20 @@ export default function NewLaunchCatalog({
   ] =
     useState(0);
 
+  const [
+    selectedImage,
+    setSelectedImage,
+  ] =
+    useState("");
+
   const railRef =
-    useRef<HTMLDivElement>(
-      null
+    useRef<HTMLDivElement | null>(
+      null,
     );
+
+  /* =======================================================
+     CURRENT PRODUCTS
+  ======================================================= */
 
   const products =
     useMemo(
@@ -438,19 +784,59 @@ export default function NewLaunchCatalog({
         gender,
         menProducts,
         womenProducts,
-      ]
+      ],
     );
 
   const category =
-    gender === "men"
+    gender ===
+    "men"
       ? menCategory
       : womenCategory;
 
+  /* =======================================================
+     RESET ON GENDER CHANGE
+  ======================================================= */
+
   useEffect(() => {
-    setSelectedIndex(0);
+    setSelectedIndex(
+      0,
+    );
   }, [
     gender,
   ]);
+
+  useEffect(() => {
+    if (
+      products.length ===
+      0
+    ) {
+      setSelectedIndex(
+        0,
+      );
+
+      setSelectedImage(
+        "",
+      );
+
+      return;
+    }
+
+    if (
+      selectedIndex >=
+      products.length
+    ) {
+      setSelectedIndex(
+        0,
+      );
+    }
+  }, [
+    products.length,
+    selectedIndex,
+  ]);
+
+  /* =======================================================
+     FEATURED PRODUCT
+  ======================================================= */
 
   const featured =
     products[
@@ -460,636 +846,182 @@ export default function NewLaunchCatalog({
     null;
 
   /* =======================================================
-     FEATURE PREVIEW IMAGES
-  ======================================================= */
+     OTHER IMAGES
 
-  const previewProducts =
-    products.slice(
-      0,
-      4
-    );
+     IMPORTANT:
+
+     ONLY CURRENT SELECTED PRODUCT.
+
+     Dusre product/color ki image mix nahi hogi.
+  ======================================================= */
 
   const featureImages =
-    featured
-      ? Array.from(
-          new Set(
-            [
-              featured.image1,
-              featured.image2,
+    useMemo(() => {
+      if (
+        !featured
+      ) {
+        return [];
+      }
 
-              ...previewProducts.map(
-                (
-                  product
-                ) =>
-                  product.image1
-              ),
-            ].filter(Boolean)
-          )
-        ).slice(
-          0,
-          4
-        )
-      : [];
+      return Array.from(
+        new Set(
+          [
+            featured.image1,
+            featured.image2,
+          ].filter(
+            Boolean,
+          ),
+        ),
+      );
+    }, [
+      featured,
+    ]);
 
   /* =======================================================
-     RAIL
+     DEFAULT FEATURE IMAGE
   ======================================================= */
 
-  const scrollRail = (
+  useEffect(() => {
+    setSelectedImage(
+      featured?.image1 ||
+        featureImages[0] ||
+        "",
+    );
+  }, [
+    featured?.variantKey,
+    featureImages,
+  ]);
+
+  /* =======================================================
+     SELECT PRODUCT
+  ======================================================= */
+
+  function selectProduct(
+    index: number,
+  ) {
+    const nextProduct =
+      products[index];
+
+    if (
+      !nextProduct
+    ) {
+      return;
+    }
+
+    setSelectedIndex(
+      index,
+    );
+
+    setSelectedImage(
+      nextProduct.image1 ||
+        "",
+    );
+  }
+
+  /* =======================================================
+     PREVIOUS FEATURED PRODUCT
+  ======================================================= */
+
+  function previousFeaturedProduct() {
+    if (
+      products.length <=
+      1
+    ) {
+      return;
+    }
+
+    setSelectedIndex(
+      (
+        current,
+      ) => {
+        const nextIndex =
+          current === 0
+            ? products.length -
+              1
+            : current - 1;
+
+        const nextProduct =
+          products[
+            nextIndex
+          ];
+
+        setSelectedImage(
+          nextProduct?.image1 ||
+            "",
+        );
+
+        return nextIndex;
+      },
+    );
+  }
+
+  /* =======================================================
+     NEXT FEATURED PRODUCT
+  ======================================================= */
+
+  function nextFeaturedProduct() {
+    if (
+      products.length <=
+      1
+    ) {
+      return;
+    }
+
+    setSelectedIndex(
+      (
+        current,
+      ) => {
+        const nextIndex =
+          (
+            current +
+            1
+          ) %
+          products.length;
+
+        const nextProduct =
+          products[
+            nextIndex
+          ];
+
+        setSelectedImage(
+          nextProduct?.image1 ||
+            "",
+        );
+
+        return nextIndex;
+      },
+    );
+  }
+
+  /* =======================================================
+     FRESH STYLE RAIL
+  ======================================================= */
+
+  function scrollRail(
     direction:
       | "left"
-      | "right"
-  ) => {
-    railRef.current?.scrollBy({
-      left:
-        direction ===
-        "right"
-          ? 330
-          : -330,
+      | "right",
+  ) {
+    railRef.current?.scrollBy(
+      {
+        left:
+          direction ===
+          "right"
+            ? 330
+            : -330,
 
-      behavior:
-        "smooth",
-    });
-  };
->>>>>>> aman
+        behavior:
+          "smooth",
+      },
+    );
+  }
 
   return (
     <main
       className="
         min-h-screen
-<<<<<<< HEAD
-        bg-white
-        text-[#292526]
-      "
-    >
-      {/* =================================================
-          NEW LAUNCH BANNER
-      ================================================= */}
 
-      {bannerUrl ? (
-        <section
-          className="
-            relative
-            w-full
-            overflow-hidden
-            bg-[#F4F1EF]
-          "
-        >
-          <div
-            className="
-              relative
-              w-full
-
-              aspect-[16/6]
-
-              sm:aspect-[16/5.5]
-
-              md:aspect-[16/5]
-
-              lg:aspect-[1920/520]
-            "
-          >
-            <img
-              src={
-                bannerUrl
-              }
-              alt={
-                categoryName
-              }
-              className="
-                absolute
-                inset-0
-                h-full
-                w-full
-                object-cover
-                object-center
-              "
-            />
-          </div>
-        </section>
-      ) : null}
-
-      {/* =================================================
-          PRODUCTS
-      ================================================= */}
-
-      <section
-        className="
-          mx-auto
-          w-full
-          max-w-[1350px]
-          px-4
-          pb-20
-          pt-10
-
-          sm:px-6
-
-          md:px-8
-          md:pt-12
-
-          lg:px-10
-        "
-      >
-        {/* =================================================
-            HEADING
-        ================================================= */}
-
-        <div
-          className="
-            flex
-            flex-col
-            gap-5
-            border-b
-            border-black/[0.08]
-            pb-6
-
-            sm:flex-row
-            sm:items-end
-            sm:justify-between
-          "
-        >
-          <div>
-            <p
-              className="
-                text-[9px]
-                font-semibold
-                uppercase
-                tracking-[0.18em]
-                text-[#9D173E]
-              "
-            >
-              New Launch
-            </p>
-
-            <div
-              className="
-                mt-2
-                flex
-                flex-wrap
-                items-end
-                gap-3
-              "
-            >
-              <h1
-                className="
-                  text-[24px]
-                  font-semibold
-                  tracking-[-0.02em]
-
-                  sm:text-[27px]
-
-                  md:text-[30px]
-                "
-              >
-                Freshly Arrived
-              </h1>
-
-              <span
-                className="
-                  mb-1
-                  text-[10px]
-                  text-black/40
-                "
-              >
-                {
-                  products.length
-                }{" "}
-                {products.length ===
-                1
-                  ? "product"
-                  : "products"}
-              </span>
-            </div>
-          </div>
-
-          {/* =================================================
-              SORT
-          ================================================= */}
-
-          {products.length >
-            0 && (
-            <div
-              className="
-                flex
-                items-center
-                gap-3
-              "
-            >
-              <span
-                className="
-                  hidden
-                  text-[9px]
-                  font-medium
-                  uppercase
-                  tracking-[0.12em]
-                  text-black/45
-
-                  sm:block
-                "
-              >
-                Sort By
-              </span>
-
-              <select
-                value={
-                  sort
-                }
-                onChange={(
-                  event
-                ) =>
-                  setSort(
-                    event.target
-                      .value as SortValue
-                  )
-                }
-                className="
-                  h-11
-                  min-w-[180px]
-                  cursor-pointer
-                  rounded-full
-                  border
-                  border-black/10
-                  bg-white
-                  px-4
-                  text-[10px]
-                  font-medium
-                  outline-none
-                  transition
-
-                  hover:border-black/25
-
-                  focus:border-[#9D173E]/50
-                "
-              >
-                <option value="featured">
-                  Featured
-                </option>
-
-                <option value="low-high">
-                  Price: Low to High
-                </option>
-
-                <option value="high-low">
-                  Price: High to Low
-                </option>
-
-                <option value="discount">
-                  Best Discount
-                </option>
-              </select>
-            </div>
-          )}
-        </div>
-
-        {/* =================================================
-            EMPTY
-        ================================================= */}
-
-        {sortedProducts.length ===
-        0 ? (
-          <div
-            className="
-              flex
-              min-h-[360px]
-              w-full
-              flex-col
-              items-center
-              justify-center
-              px-5
-              text-center
-            "
-          >
-            <div
-              className="
-                flex
-                h-14
-                w-14
-                items-center
-                justify-center
-                rounded-full
-                bg-[#9D173E]/[0.05]
-              "
-            >
-              <NewIcon />
-            </div>
-
-            <h2
-              className="
-                mt-5
-                text-[20px]
-                font-semibold
-              "
-            >
-              New launches
-              coming soon
-            </h2>
-
-            <p
-              className="
-                mt-2
-                max-w-[430px]
-                text-[10px]
-                leading-5
-                text-black/45
-              "
-            >
-              Products marked as
-              New Launch or assigned
-              to the New Launch
-              category will appear
-              here automatically.
-            </p>
-          </div>
-        ) : (
-          /* =================================================
-              GRID
-          ================================================= */
-
-          <div
-            className="
-              mt-8
-              grid
-              grid-cols-2
-              gap-x-3
-              gap-y-8
-
-              sm:gap-x-5
-
-              md:grid-cols-3
-              md:gap-x-6
-              md:gap-y-10
-
-              lg:grid-cols-4
-              lg:gap-x-7
-              lg:gap-y-12
-            "
-          >
-            {sortedProducts.map(
-              (
-                product,
-                index
-              ) => (
-                <ProductCard
-                  key={
-                    product.id
-                  }
-                  product={
-                    product
-                  }
-                  index={
-                    index
-                  }
-                />
-              )
-            )}
-          </div>
-        )}
-      </section>
-    </main>
-  );
-}
-
-/* =========================================================
-   PRODUCT CARD
-========================================================= */
-
-function ProductCard({
-  product,
-  index,
-}: {
-  product: NewLaunchProduct;
-  index: number;
-}) {
-  const hasDiscount =
-    product.compareAtPrice >
-    product.price;
-
-  const discount =
-    hasDiscount
-      ? Math.round(
-          ((product.compareAtPrice -
-            product.price) /
-            product.compareAtPrice) *
-            100
-        )
-      : 0;
-
-  return (
-    <article
-      className="
-        group
-        min-w-0
-      "
-    >
-      <Link
-        href={`/product/${product.slug}`}
-        className="
-          block
-        "
-      >
-        {/* IMAGE */}
-
-        <div
-          className="
-            relative
-            aspect-[4/5]
-            overflow-hidden
-            rounded-[14px]
-            border
-            border-black/[0.055]
-            bg-[#F2F0EE]
-          "
-        >
-          {/* NEW BADGE */}
-
-          <span
-            className="
-              absolute
-              left-3
-              top-3
-              z-20
-              rounded-full
-              bg-white/90
-              px-2.5
-              py-1.5
-              text-[7px]
-              font-semibold
-              uppercase
-              tracking-[0.12em]
-              text-[#9D173E]
-              backdrop-blur
-            "
-          >
-            New
-          </span>
-
-          {/* NUMBER */}
-
-          <span
-            className="
-              absolute
-              bottom-3
-              left-3
-              z-20
-              rounded-full
-              bg-white/90
-              px-2.5
-              py-1.5
-              text-[7px]
-              font-semibold
-              tracking-[0.12em]
-              text-black/45
-              backdrop-blur
-            "
-          >
-            {String(
-              index + 1
-            ).padStart(
-              2,
-              "0"
-            )}
-          </span>
-
-          {/* DISCOUNT */}
-
-          {hasDiscount && (
-            <span
-              className="
-                absolute
-                right-3
-                top-3
-                z-20
-                rounded-full
-                bg-[#9D173E]
-                px-2.5
-                py-1.5
-                text-[7px]
-                font-semibold
-                text-white
-              "
-            >
-              {discount}% OFF
-            </span>
-          )}
-
-          {/* IMAGE */}
-
-          {product.image ? (
-            <>
-              <img
-                src={
-                  product.image
-                }
-                alt={
-                  product.name
-                }
-                className={`
-                  absolute
-                  inset-0
-                  h-full
-                  w-full
-                  object-cover
-                  object-center
-                  transition-all
-                  duration-500
-
-                  ${
-                    product.hoverImage &&
-                    product.hoverImage !==
-                      product.image
-                      ? "group-hover:opacity-0 group-hover:scale-[1.025]"
-                      : "group-hover:scale-[1.035]"
-                  }
-                `}
-              />
-
-              {product.hoverImage &&
-                product.hoverImage !==
-                  product.image && (
-                  <img
-                    src={
-                      product.hoverImage
-                    }
-                    alt={`${product.name} alternate`}
-                    className="
-                      absolute
-                      inset-0
-                      h-full
-                      w-full
-                      scale-[1.02]
-                      object-cover
-                      object-center
-                      opacity-0
-                      transition-all
-                      duration-500
-
-                      group-hover:scale-100
-                      group-hover:opacity-100
-                    "
-                  />
-                )}
-            </>
-          ) : (
-            <div
-              className="
-                flex
-                h-full
-                w-full
-                items-center
-                justify-center
-                text-[10px]
-                text-black/30
-              "
-            >
-              No Image
-            </div>
-          )}
-
-          {/* VIEW PRODUCT */}
-
-          <div
-            className="
-              absolute
-              inset-x-3
-              bottom-3
-              z-30
-              translate-y-2
-              opacity-0
-              transition-all
-              duration-300
-
-              group-hover:translate-y-0
-              group-hover:opacity-100
-            "
-          >
-            <div
-              className="
-                flex
-                h-10
-                items-center
-                justify-center
-                rounded-full
-                bg-[#292526]/95
-                text-[8px]
-                font-semibold
-                uppercase
-                tracking-[0.12em]
-                text-white
-                shadow-lg
-              "
-            >
-              View Product
-            </div>
-          </div>
-        </div>
-
-        {/* INFO */}
-
-        <div
-          className="
-            px-1
-            pt-4
-=======
+        overflow-x-hidden
 
         bg-white
 
@@ -1097,66 +1029,110 @@ function ProductCard({
       "
     >
       {/* ===================================================
-          NEW ARRIVALS
+          1. MULTIPLE NEW LAUNCH BANNERS
+      =================================================== */}
+
+      <NewLaunchBanner
+        images={
+          bannerImages
+        }
+      />
+
+      {/* ===================================================
+          2. NEW ARRIVALS
       =================================================== */}
 
       <section
         className="
           bg-[#EFEFEF]
 
-          px-6
+          px-3
           py-8
 
+          sm:px-5
+          sm:py-10
+
           lg:px-10
-          lg:py-10
+          lg:py-12
         "
       >
         <div
           className="
             mx-auto
 
-            max-w-[1280px]
+            max-w-[1380px]
           "
         >
-          {/* TOP */}
+          {/* =================================================
+              TITLE + GENDER
+          ================================================= */}
 
           <div
             className="
-              mb-8
+              mb-7
 
               flex
               flex-col
+              items-center
+
               gap-5
+
+              text-center
+
+              sm:mb-8
 
               lg:flex-row
               lg:items-center
               lg:justify-between
+              lg:text-left
             "
           >
-            <h1
-              className="
-                text-[44px]
-                font-black
-                uppercase
-                leading-none
-
-                tracking-[-0.04em]
-
-                sm:text-[58px]
-                lg:text-[68px]
-              "
-            >
-              NEW{" "}
-              <span
+            <div>
+              <p
                 className="
-                  font-light
+                  mb-2
 
-                  text-[#555152]
+                  text-[7px]
+
+                  uppercase
+
+                  tracking-[0.35em]
+
+                  text-[#8B7468]
                 "
               >
-                ARRIVALS
-              </span>
-            </h1>
+                Just Dropped
+              </p>
+
+              <h1
+                className="
+                  text-[40px]
+
+                  font-black
+                  uppercase
+
+                  leading-none
+
+                  tracking-[-0.04em]
+
+                  sm:text-[54px]
+
+                  lg:text-[68px]
+                "
+              >
+                New{" "}
+
+                <span
+                  className="
+                    font-light
+
+                    text-[#555152]
+                  "
+                >
+                  Arrivals
+                </span>
+              </h1>
+            </div>
 
             <GenderToggle
               gender={
@@ -1169,146 +1145,205 @@ function ProductCard({
           </div>
 
           {featured ? (
-            <div
-              className="
-                grid
-                gap-8
-
-                lg:grid-cols-[1.1fr_.9fr]
-              "
-            >
+            <>
               {/* =============================================
-                  LEFT
+                  MOBILE / TABLET
+
+                  ORIGINAL STRUCTURE SAME
               ============================================= */}
 
               <div
                 className="
-                  grid
-                  gap-5
-
-                  sm:grid-cols-[220px_1fr]
-                "
-              >
-                {/* OTHER IMAGES */}
-
-                <div>
-                  <p
-                    className="
-                      mb-4
-
-                      text-sm
-                      font-medium
-                    "
-                  >
-                    Other Images
-                  </p>
-
-                  <div
-                    className="
-                      grid
-                      grid-cols-2
-                      gap-3
-                    "
-                  >
-                    {featureImages.map(
-                      (
-                        image,
-                        index
-                      ) => (
-                        <button
-                          key={`${image}-${index}`}
-                          type="button"
-                          className="
-                            aspect-[1/1.05]
-
-                            overflow-hidden
-
-                            rounded-[14px]
-
-                            border-2
-                            border-white
-
-                            bg-white
-                          "
-                        >
-                          <img
-                            src={
-                              image
-                            }
-                            alt=""
-                            className="
-                              h-full
-                              w-full
-
-                              object-cover
-                            "
-                          />
-                        </button>
-                      )
-                    )}
-                  </div>
-                </div>
-
-                {/* BIG FEATURE */}
-
-                <Link
-                  href={`/product/${encodeURIComponent(
-                    featured.slug
-                  )}`}
-                  className="
-                    flex
-                    min-h-[500px]
-                    items-end
-                    justify-center
-
-                    overflow-hidden
-                  "
-                >
-                  <img
-                    src={
-                      featured.image1
-                    }
-                    alt={
-                      featured.name
-                    }
-                    className="
-                      h-full
-                      max-h-[590px]
-                      w-full
-
-                      object-contain
-                    "
-                  />
-                </Link>
-              </div>
-
-              {/* =============================================
-                  RIGHT
-              ============================================= */}
-
-              <div
-                className="
-                  flex
-                  flex-col
-                  justify-center
+                  lg:hidden
                 "
               >
                 <div
                   className="
                     grid
-                    grid-cols-3
+
+                    grid-cols-[78px_minmax(0,1fr)]
+
                     gap-3
+
+                    sm:grid-cols-[110px_minmax(0,1fr)]
+                    sm:gap-5
+                  "
+                >
+                  {/* OTHER IMAGES */}
+
+                  <div
+                    className="
+                      flex
+                      flex-col
+                      justify-center
+                    "
+                  >
+                    <p
+                      className="
+                        mb-3
+
+                        text-[10px]
+                        font-medium
+
+                        sm:text-[13px]
+                      "
+                    >
+                      Other Images
+                    </p>
+
+                    <div
+                      className="
+                        flex
+                        flex-col
+                        gap-2
+                      "
+                    >
+                      {featureImages.map(
+                        (
+                          image,
+                          index,
+                        ) => (
+                          <button
+                            key={`${image}-${index}`}
+                            type="button"
+                            onClick={() =>
+                              setSelectedImage(
+                                image,
+                              )
+                            }
+                            className={`
+                              aspect-[3/4]
+
+                              w-full
+
+                              overflow-hidden
+
+                              rounded-[10px]
+
+                              border-2
+
+                              bg-white
+
+                              ${
+                                selectedImage ===
+                                image
+                                  ? `
+                                    border-[#B31345]
+                                  `
+                                  : `
+                                    border-white
+                                  `
+                              }
+                            `}
+                          >
+                            <img
+                              src={
+                                image
+                              }
+                              alt=""
+                              className="
+                                h-full
+                                w-full
+
+                                object-cover
+                              "
+                            />
+                          </button>
+                        ),
+                      )}
+                    </div>
+                  </div>
+
+                  {/* BIG IMAGE */}
+
+                  <Link
+                    href={`/product/${encodeURIComponent(
+                      featured.slug,
+                    )}`}
+                    className="
+                      flex
+
+                      h-[430px]
+
+                      items-end
+                      justify-center
+
+                      overflow-hidden
+
+                      sm:h-[540px]
+                    "
+                  >
+                    {selectedImage ? (
+                      <img
+                        src={
+                          selectedImage
+                        }
+                        alt={
+                          featured.name
+                        }
+                        className="
+                          h-full
+                          w-full
+
+                          object-contain
+                          object-bottom
+                        "
+                      />
+                    ) : (
+                      <div
+                        className="
+                          flex
+
+                          h-full
+                          w-full
+
+                          items-center
+                          justify-center
+
+                          text-xs
+
+                          text-black/40
+                        "
+                      >
+                        No image
+                      </div>
+                    )}
+                  </Link>
+                </div>
+
+                {/* PRODUCT SELECTORS */}
+
+                <div
+                  className="
+                    -mx-3
+                    mt-3
+
+                    flex
+
+                    snap-x
+                    snap-mandatory
+
+                    gap-2
+
+                    overflow-x-auto
+
+                    px-3
+                    pb-2
+
+                    [scrollbar-width:none]
+
+                    [&::-webkit-scrollbar]:hidden
                   "
                 >
                   {products
                     .slice(
                       0,
-                      3
+                      5,
                     )
                     .map(
                       (
                         product,
-                        index
+                        index,
                       ) => (
                         <button
                           key={
@@ -1316,81 +1351,98 @@ function ProductCard({
                           }
                           type="button"
                           onClick={() =>
-                            setSelectedIndex(
-                              index
+                            selectProduct(
+                              index,
                             )
                           }
                           className={`
                             aspect-square
 
+                            w-[30vw]
+                            max-w-[130px]
+
+                            shrink-0
+
+                            snap-center
+
                             overflow-hidden
 
-                            rounded-[14px]
+                            rounded-[12px]
 
-                            border
+                            border-2
 
                             bg-white
 
                             ${
                               selectedIndex ===
                               index
-                                ? "border-[#292526]"
-                                : "border-black/20"
+                                ? `
+                                  border-[#292526]
+                                `
+                                : `
+                                  border-black/10
+                                `
                             }
                           `}
                         >
-                          <img
-                            src={
-                              product.image1
-                            }
-                            alt={
-                              product.name
-                            }
-                            className="
-                              h-full
-                              w-full
+                          {product.image1 ? (
+                            <img
+                              src={
+                                product.image1
+                              }
+                              alt={
+                                product.name
+                              }
+                              className="
+                                h-full
+                                w-full
 
-                              object-cover
-                            "
-                          />
+                                object-cover
+                              "
+                            />
+                          ) : null}
                         </button>
-                      )
+                      ),
                     )}
                 </div>
 
-                {/* PRODUCT INFO */}
+                {/* MOBILE PRODUCT INFO */}
 
                 <div
                   className="
-                    mt-5
+                    mt-4
 
                     overflow-hidden
 
-                    rounded-[18px]
+                    rounded-[15px]
 
                     bg-white
+
+                    shadow-sm
                   "
                 >
                   <div
                     className="
                       bg-[#292727]
 
-                      px-6
-                      py-5
+                      px-4
+                      py-4
 
                       text-white
                     "
                   >
                     <span
                       className="
+                        inline-flex
+
                         rounded-full
 
                         bg-white/15
 
-                        px-4
-                        py-2
+                        px-3
+                        py-1
 
-                        text-xs
+                        text-[8px]
                       "
                     >
                       New
@@ -1398,9 +1450,11 @@ function ProductCard({
 
                     <h2
                       className="
-                        mt-4
+                        mt-2
 
-                        text-xl
+                        line-clamp-2
+
+                        text-[13px]
                         font-semibold
                       "
                     >
@@ -1409,78 +1463,80 @@ function ProductCard({
                       }
                     </h2>
 
-                    {featured.colorName && (
+                    {featured.colorName ? (
                       <p
                         className="
                           mt-1
 
-                          text-xs
+                          text-[9px]
 
-                          text-white/70
+                          text-white/65
                         "
                       >
                         Color:{" "}
+
                         {
                           featured.colorName
                         }
                       </p>
-                    )}
+                    ) : null}
                   </div>
 
                   <div
                     className="
-                      p-6
+                      p-4
                     "
                   >
+                    {/* PRICE */}
+
                     <div
                       className="
                         flex
                         flex-wrap
                         items-center
-                        gap-3
+
+                        gap-2
                       "
                     >
                       <strong
                         className="
-                          text-2xl
+                          text-[18px]
                         "
                       >
-                        ₹
-                        {featured.showPrice.toLocaleString(
-                          "en-IN"
+                        {money(
+                          featured.showPrice,
                         )}
                       </strong>
 
                       {featured.originalPrice >
-                        featured.showPrice && (
+                      featured.showPrice ? (
                         <span
                           className="
-                            text-sm
+                            text-[10px]
 
                             text-black/35
 
                             line-through
                           "
                         >
-                          ₹
-                          {featured.originalPrice.toLocaleString(
-                            "en-IN"
+                          {money(
+                            featured.originalPrice,
                           )}
                         </span>
-                      )}
+                      ) : null}
 
                       {featured.discountPercent >
-                        0 && (
+                      0 ? (
                         <span
                           className="
                             rounded-full
 
                             bg-[#F7E4EA]
 
-                            px-3
+                            px-2.5
                             py-1
 
-                            text-[10px]
+                            text-[8px]
                             font-bold
 
                             text-[#B31345]
@@ -1491,68 +1547,776 @@ function ProductCard({
                           }
                           % OFF
                         </span>
-                      )}
+                      ) : null}
                     </div>
+
+                    {/* ACTIONS */}
 
                     <div
                       className="
-                        mt-6
+                        mt-4
 
                         grid
-                        grid-cols-2
 
-                        gap-3
+                        grid-cols-[1fr_auto_auto]
+
+                        gap-2
                       "
                     >
                       <Link
                         href={`/product/${encodeURIComponent(
-                          featured.slug
+                          featured.slug,
                         )}`}
                         className="
                           flex
-                          h-11
+                          h-10
+
                           items-center
                           justify-center
 
-                          rounded-lg
+                          rounded-[7px]
 
                           border
                           border-[#292526]
 
-                          text-xs
-                          font-semibold
+                          px-3
+
+                          text-[8px]
+                          font-bold
+                          uppercase
                         "
                       >
-                        EXPLORE
+                        Explore
                       </Link>
+
+                      <button
+                        type="button"
+                        disabled={
+                          commerce.isWishlistBusy(
+                            featured,
+                          )
+                        }
+                        onClick={() => {
+                          void commerce.toggleWishlist(
+                            featured,
+                          );
+                        }}
+                        className="
+                          grid
+
+                          h-10
+                          w-10
+
+                          place-items-center
+
+                          rounded-[7px]
+
+                          bg-[#292526]
+
+                          text-[17px]
+
+                          text-white
+                        "
+                      >
+                        {commerce.isWishlisted(
+                          featured,
+                        )
+                          ? "♥"
+                          : "♡"}
+                      </button>
 
                       <button
                         type="button"
                         onClick={() => {
                           void commerce.openAddToBag(
-                            featured
+                            featured,
                           );
                         }}
                         className="
-                          h-11
+                          h-10
 
-                          rounded-lg
+                          rounded-[7px]
 
-                          bg-[#292526]
+                          bg-[#EC477C]
 
-                          text-xs
-                          font-semibold
+                          px-4
+
+                          text-[8px]
+                          font-bold
+                          uppercase
 
                           text-white
                         "
                       >
-                        ADD TO BAG
+                        Add to Bag
                       </button>
                     </div>
                   </div>
                 </div>
+
+                {/* MOBILE PREV NEXT */}
+
+                {products.length >
+                1 ? (
+                  <div
+                    className="
+                      mt-4
+
+                      flex
+
+                      justify-end
+
+                      gap-2
+                    "
+                  >
+                    <button
+                      type="button"
+                      aria-label="Previous new launch product"
+                      onClick={
+                        previousFeaturedProduct
+                      }
+                      className="
+                        grid
+
+                        h-9
+                        w-9
+
+                        place-items-center
+
+                        rounded-[5px]
+
+                        bg-[#292727]
+
+                        text-[19px]
+
+                        text-white
+                      "
+                    >
+                      ‹
+                    </button>
+
+                    <button
+                      type="button"
+                      aria-label="Next new launch product"
+                      onClick={
+                        nextFeaturedProduct
+                      }
+                      className="
+                        grid
+
+                        h-9
+                        w-9
+
+                        place-items-center
+
+                        rounded-[5px]
+
+                        bg-[#292727]
+
+                        text-[19px]
+
+                        text-white
+                      "
+                    >
+                      ›
+                    </button>
+                  </div>
+                ) : null}
               </div>
-            </div>
+
+              {/* =============================================
+                  DESKTOP
+              ============================================= */}
+
+              <div
+                className="
+                  hidden
+
+                  gap-8
+
+                  lg:grid
+                  lg:grid-cols-[1.08fr_.92fr]
+                "
+              >
+                {/* ===========================================
+                    LEFT
+                =========================================== */}
+
+                <div
+                  className="
+                    grid
+
+                    grid-cols-[175px_minmax(0,1fr)]
+
+                    gap-5
+
+                    xl:grid-cols-[190px_minmax(0,1fr)]
+                  "
+                >
+                  {/* OTHER IMAGES */}
+
+                  <div
+                    className="
+                      flex
+                      flex-col
+                      justify-center
+                    "
+                  >
+                    <p
+                      className="
+                        mb-4
+
+                        text-sm
+                        font-medium
+                      "
+                    >
+                      Other Images
+                    </p>
+
+                    <div
+                      className="
+                        grid
+
+                        grid-cols-2
+
+                        gap-3
+                      "
+                    >
+                      {featureImages.map(
+                        (
+                          image,
+                          index,
+                        ) => (
+                          <button
+                            key={`${image}-${index}`}
+                            type="button"
+                            onClick={() =>
+                              setSelectedImage(
+                                image,
+                              )
+                            }
+                            className={`
+                              aspect-[3/4]
+
+                              overflow-hidden
+
+                              rounded-[12px]
+
+                              border-2
+
+                              bg-white
+
+                              ${
+                                selectedImage ===
+                                image
+                                  ? `
+                                    border-[#292526]
+                                  `
+                                  : `
+                                    border-white
+                                  `
+                              }
+                            `}
+                          >
+                            <img
+                              src={
+                                image
+                              }
+                              alt=""
+                              className="
+                                h-full
+                                w-full
+
+                                object-cover
+                              "
+                            />
+                          </button>
+                        ),
+                      )}
+                    </div>
+                  </div>
+
+                  {/* MAIN PRODUCT */}
+
+                  <Link
+                    href={`/product/${encodeURIComponent(
+                      featured.slug,
+                    )}`}
+                    className="
+                      flex
+
+                      h-[560px]
+
+                      items-end
+                      justify-center
+
+                      overflow-hidden
+                    "
+                  >
+                    {selectedImage ? (
+                      <img
+                        src={
+                          selectedImage
+                        }
+                        alt={
+                          featured.name
+                        }
+                        className="
+                          h-full
+                          w-full
+
+                          object-contain
+                          object-bottom
+                        "
+                      />
+                    ) : (
+                      <div
+                        className="
+                          flex
+
+                          h-full
+                          w-full
+
+                          items-center
+                          justify-center
+
+                          text-xs
+
+                          text-black/40
+                        "
+                      >
+                        No image
+                      </div>
+                    )}
+                  </Link>
+                </div>
+
+                {/* ===========================================
+                    RIGHT
+                =========================================== */}
+
+                <div
+                  className="
+                    flex
+                    min-w-0
+                    flex-col
+                    justify-center
+                  "
+                >
+                  {/* PRODUCT VARIANTS */}
+
+                  <div
+                    className="
+                      flex
+
+                      gap-3
+
+                      overflow-x-auto
+
+                      pb-2
+
+                      [scrollbar-width:none]
+
+                      [&::-webkit-scrollbar]:hidden
+                    "
+                  >
+                    {products
+                      .slice(
+                        0,
+                        5,
+                      )
+                      .map(
+                        (
+                          product,
+                          index,
+                        ) => (
+                          <button
+                            key={
+                              product.variantKey
+                            }
+                            type="button"
+                            onClick={() =>
+                              selectProduct(
+                                index,
+                              )
+                            }
+                            className={`
+                              aspect-square
+
+                              w-[145px]
+
+                              shrink-0
+
+                              overflow-hidden
+
+                              rounded-[14px]
+
+                              border
+
+                              bg-white
+
+                              ${
+                                selectedIndex ===
+                                index
+                                  ? `
+                                    border-[#292526]
+                                  `
+                                  : `
+                                    border-black/20
+                                  `
+                              }
+                            `}
+                          >
+                            {product.image1 ? (
+                              <img
+                                src={
+                                  product.image1
+                                }
+                                alt={
+                                  product.name
+                                }
+                                className="
+                                  h-full
+                                  w-full
+
+                                  object-cover
+                                "
+                              />
+                            ) : null}
+                          </button>
+                        ),
+                      )}
+                  </div>
+
+                  {/* PRODUCT INFO */}
+
+                  <div
+                    className="
+                      mt-4
+
+                      overflow-hidden
+
+                      rounded-[18px]
+
+                      bg-white
+                    "
+                  >
+                    {/* DARK HEADER */}
+
+                    <div
+                      className="
+                        bg-[#292727]
+
+                        px-6
+                        py-5
+
+                        text-white
+                      "
+                    >
+                      <span
+                        className="
+                          rounded-full
+
+                          bg-white/15
+
+                          px-4
+                          py-2
+
+                          text-xs
+                        "
+                      >
+                        New
+                      </span>
+
+                      <h2
+                        className="
+                          mt-4
+
+                          line-clamp-2
+
+                          text-xl
+                          font-semibold
+                        "
+                      >
+                        {
+                          featured.name
+                        }
+                      </h2>
+
+                      {featured.colorName ? (
+                        <p
+                          className="
+                            mt-1
+
+                            text-xs
+
+                            text-white/70
+                          "
+                        >
+                          Color:{" "}
+
+                          {
+                            featured.colorName
+                          }
+                        </p>
+                      ) : null}
+                    </div>
+
+                    {/* WHITE AREA */}
+
+                    <div
+                      className="
+                        p-6
+                      "
+                    >
+                      <div
+                        className="
+                          flex
+                          flex-wrap
+                          items-center
+
+                          gap-3
+                        "
+                      >
+                        <strong
+                          className="
+                            text-2xl
+                          "
+                        >
+                          {money(
+                            featured.showPrice,
+                          )}
+                        </strong>
+
+                        {featured.originalPrice >
+                        featured.showPrice ? (
+                          <span
+                            className="
+                              text-sm
+
+                              text-black/35
+
+                              line-through
+                            "
+                          >
+                            {money(
+                              featured.originalPrice,
+                            )}
+                          </span>
+                        ) : null}
+
+                        {featured.discountPercent >
+                        0 ? (
+                          <span
+                            className="
+                              rounded-full
+
+                              bg-[#F7E4EA]
+
+                              px-3
+                              py-1
+
+                              text-[10px]
+                              font-bold
+
+                              text-[#B31345]
+                            "
+                          >
+                            {
+                              featured.discountPercent
+                            }
+                            % OFF
+                          </span>
+                        ) : null}
+                      </div>
+
+                      {/* BUTTONS */}
+
+                      <div
+                        className="
+                          mt-6
+
+                          grid
+
+                          grid-cols-[1fr_auto_1fr]
+
+                          gap-3
+                        "
+                      >
+                        <Link
+                          href={`/product/${encodeURIComponent(
+                            featured.slug,
+                          )}`}
+                          className="
+                            flex
+
+                            h-11
+
+                            items-center
+                            justify-center
+
+                            rounded-lg
+
+                            border
+                            border-[#292526]
+
+                            text-xs
+                            font-semibold
+                          "
+                        >
+                          EXPLORE
+                        </Link>
+
+                        <button
+                          type="button"
+                          disabled={
+                            commerce.isWishlistBusy(
+                              featured,
+                            )
+                          }
+                          onClick={() => {
+                            void commerce.toggleWishlist(
+                              featured,
+                            );
+                          }}
+                          className="
+                            grid
+
+                            h-11
+                            w-11
+
+                            place-items-center
+
+                            rounded-lg
+
+                            bg-[#292526]
+
+                            text-lg
+
+                            text-white
+                          "
+                        >
+                          {commerce.isWishlisted(
+                            featured,
+                          )
+                            ? "♥"
+                            : "♡"}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            void commerce.openAddToBag(
+                              featured,
+                            );
+                          }}
+                          className="
+                            h-11
+
+                            rounded-lg
+
+                            bg-[#292526]
+
+                            text-xs
+                            font-semibold
+
+                            text-white
+
+                            transition
+
+                            hover:bg-[#B31345]
+                          "
+                        >
+                          ADD TO BAG
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* DESKTOP PREVIOUS / NEXT */}
+
+                  {products.length >
+                  1 ? (
+                    <div
+                      className="
+                        mt-5
+
+                        flex
+
+                        items-center
+                        justify-end
+
+                        gap-2
+                      "
+                    >
+                      <button
+                        type="button"
+                        aria-label="Previous new launch product"
+                        onClick={
+                          previousFeaturedProduct
+                        }
+                        className="
+                          grid
+
+                          h-9
+                          w-9
+
+                          place-items-center
+
+                          rounded-[5px]
+
+                          bg-[#292727]
+
+                          text-[19px]
+
+                          text-white
+
+                          shadow-sm
+
+                          transition
+
+                          hover:bg-[#B31345]
+                        "
+                      >
+                        ‹
+                      </button>
+
+                      <button
+                        type="button"
+                        aria-label="Next new launch product"
+                        onClick={
+                          nextFeaturedProduct
+                        }
+                        className="
+                          grid
+
+                          h-9
+                          w-9
+
+                          place-items-center
+
+                          rounded-[5px]
+
+                          bg-[#292727]
+
+                          text-[19px]
+
+                          text-white
+
+                          shadow-sm
+
+                          transition
+
+                          hover:bg-[#B31345]
+                        "
+                      >
+                        ›
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            </>
           ) : (
             <div
               className="
@@ -1563,15 +2327,16 @@ function ProductCard({
                 text-black/50
               "
             >
-              No new launch products
-              available.
+              No new launch
+              products available
+              for {gender}.
             </div>
           )}
         </div>
       </section>
 
       {/* ===================================================
-          MEN / WOMEN DYNAMIC CATEGORIES
+          3. CATEGORY ROW
       =================================================== */}
 
       <DynamicCategories
@@ -1584,7 +2349,12 @@ function ProductCard({
       />
 
       {/* ===================================================
-          BACKGROUND PRODUCT SECTION
+          4. FRESH STYLES
+
+          IMPORTANT:
+
+          ❌ NO CATEGORY/BANNER BACKGROUND IMAGE
+          ✅ SIMPLE LIGHT BACKGROUND
       =================================================== */}
 
       <section
@@ -1593,29 +2363,17 @@ function ProductCard({
 
           overflow-hidden
 
-          px-5
-          py-14
+          bg-[#F3F1EF]
+
+          px-3
+          py-10
+
+          sm:px-5
+          sm:py-12
 
           lg:px-10
-          lg:py-20
+          lg:py-16
         "
-        style={
-          backgroundImage
-            ? {
-                backgroundImage:
-                  `linear-gradient(rgba(0,0,0,.25), rgba(0,0,0,.38)), url("${backgroundImage}")`,
-
-                backgroundSize:
-                  "cover",
-
-                backgroundPosition:
-                  "center",
-              }
-            : {
-                background:
-                  "linear-gradient(135deg,#5C4B43,#171717)",
-              }
-        }
       >
         <div
           className="
@@ -1624,234 +2382,68 @@ function ProductCard({
 
             mx-auto
 
-            max-w-[1280px]
->>>>>>> aman
+            max-w-[1380px]
           "
         >
+          {/* HEADER */}
+
           <div
             className="
-<<<<<<< HEAD
+              mb-6
+
               flex
+
               items-start
               justify-between
-              gap-2
-            "
-          >
-            <h2
-              className="
-                min-w-0
-                flex-1
-                text-[11px]
-                font-semibold
-                leading-[1.45]
 
-                sm:text-[12px]
-              "
-            >
-              {
-                product.name
-              }
-            </h2>
+              gap-3
 
-            <span
-              className="
-                shrink-0
-                text-[14px]
-                text-black/25
-                transition
-
-                group-hover:translate-x-1
-                group-hover:text-[#9D173E]
-              "
-            >
-              →
-            </span>
-          </div>
-
-          {product.shortDescription && (
-            <p
-              className="
-                mt-1.5
-                line-clamp-2
-                text-[8px]
-                leading-4
-                text-black/40
-
-                sm:text-[9px]
-              "
-            >
-              {
-                product.shortDescription
-              }
-            </p>
-          )}
-
-          {/* PRICE */}
-
-          <div
-            className="
-              mt-3
-              flex
-              flex-wrap
-              items-center
-              gap-x-2
-              gap-y-1
-            "
-          >
-            <strong
-              className="
-                text-[12px]
-                font-semibold
-
-                sm:text-[13px]
-              "
-            >
-              ₹
-              {product.price.toLocaleString(
-                "en-IN"
-              )}
-            </strong>
-
-            {hasDiscount && (
-              <>
-                <span
-                  className="
-                    text-[8px]
-                    text-black/30
-                    line-through
-                  "
-                >
-                  ₹
-                  {product.compareAtPrice.toLocaleString(
-                    "en-IN"
-                  )}
-                </span>
-
-                <span
-                  className="
-                    text-[7px]
-                    font-semibold
-                    text-green-700
-                  "
-                >
-                  SAVE{" "}
-                  {
-                    discount
-                  }%
-                </span>
-              </>
-            )}
-          </div>
-
-          {/* COLORS */}
-
-          {product.colorCount >
-            0 && (
-            <div
-              className="
-                mt-3
-                flex
-                items-center
-                gap-1.5
-              "
-            >
-              <span
-                className="
-                  h-1.5
-                  w-1.5
-                  rounded-full
-                  bg-[#9D173E]/60
-                "
-              />
-
-              <span
-                className="
-                  text-[7px]
-                  uppercase
-                  tracking-[0.08em]
-                  text-black/40
-                "
-              >
-                {
-                  product.colorCount
-                }{" "}
-                {product.colorCount ===
-                1
-                  ? "colour"
-                  : "colours"}
-              </span>
-            </div>
-          )}
-        </div>
-      </Link>
-    </article>
-  );
-}
-
-/* =========================================================
-   NEW ICON
-========================================================= */
-
-function NewIcon() {
-  return (
-    <svg
-      width="23"
-      height="23"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="#9D173E"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M12 3v18" />
-      <path d="M3 12h18" />
-      <path d="m5.6 5.6 12.8 12.8" />
-      <path d="m18.4 5.6-12.8 12.8" />
-    </svg>
-=======
-              mb-8
-
-              flex
-              flex-col
-              gap-5
-
-              lg:flex-row
-              lg:items-center
-              lg:justify-between
+              sm:mb-8
+              sm:items-center
             "
           >
             <div
               className="
-                text-white
+                text-[#292526]
               "
             >
               <p
                 className="
-                  text-[11px]
+                  text-[8px]
+
                   font-semibold
                   uppercase
 
                   tracking-[0.22em]
+
+                  text-[#8B7468]
+
+                  sm:text-[10px]
                 "
               >
-                JUST DROPPED
+                Just Dropped
               </p>
 
               <h2
                 className="
-                  mt-2
+                  mt-1
 
-                  text-4xl
+                  text-[27px]
                   font-black
                   uppercase
 
                   tracking-[-0.03em]
+
+                  sm:text-[34px]
+
+                  lg:text-[44px]
                 "
               >
-                FRESH STYLES
+                Fresh Styles
               </h2>
             </div>
+
+            {/* LIGHT TOGGLE */}
 
             <GenderToggle
               gender={
@@ -1860,63 +2452,110 @@ function NewIcon() {
               onChange={
                 setGender
               }
-              dark
             />
           </div>
 
-          <div
-            ref={
-              railRef
-            }
-            className="
-              flex
-              gap-4
+          {/* PRODUCTS */}
 
-              overflow-x-auto
-
-              pb-5
-
-              [scrollbar-width:none]
-
-              [&::-webkit-scrollbar]:hidden
-            "
-          >
-            {products.map(
-              (
-                product
-              ) => (
-                <div
-                  key={
-                    product.variantKey
-                  }
-                  className="
-                    w-[260px]
-                    flex-none
-
-                    md:w-[285px]
-                  "
-                >
-                  <StorefrontProductCard
-                    product={
-                      product
-                    }
-                    overlay
-                  />
-                </div>
-              )
-            )}
-          </div>
-
-          {products.length >
-            3 && (
+          {products.length ? (
             <div
+              ref={
+                railRef
+              }
               className="
-                mt-4
-
                 flex
-                justify-end
+
+                snap-x
+                snap-mandatory
 
                 gap-3
+
+                overflow-x-auto
+
+                pb-4
+
+                [scrollbar-width:none]
+
+                [&::-webkit-scrollbar]:hidden
+
+                sm:gap-4
+              "
+            >
+              {products.map(
+                (
+                  product,
+                ) => (
+                  <div
+                    key={
+                      product.variantKey
+                    }
+                    className="
+                      w-[72vw]
+                      max-w-[255px]
+
+                      shrink-0
+
+                      snap-start
+
+                      sm:w-[300px]
+                      sm:max-w-none
+
+                      lg:w-[260px]
+
+                      xl:w-[285px]
+                    "
+                  >
+                    <StorefrontProductCard
+                      product={
+                        product
+                      }
+                      overlay
+                    />
+                  </div>
+                ),
+              )}
+            </div>
+          ) : (
+            <div
+              className="
+                rounded-[15px]
+
+                border
+                border-black/5
+
+                bg-white
+
+                px-5
+                py-12
+
+                text-center
+
+                text-sm
+
+                text-black/50
+              "
+            >
+              No {gender} new
+              launch products
+              available.
+            </div>
+          )}
+
+          {/* FRESH STYLE ARROWS */}
+
+          {products.length >
+          1 ? (
+            <div
+              className="
+                mt-3
+
+                flex
+
+                justify-center
+
+                gap-3
+
+                sm:justify-end
               "
             >
               <button
@@ -1924,22 +2563,33 @@ function NewIcon() {
                 aria-label="Previous products"
                 onClick={() =>
                   scrollRail(
-                    "left"
+                    "left",
                   )
                 }
                 className="
-                  flex
-                  h-11
-                  w-11
-                  items-center
-                  justify-center
+                  grid
+
+                  h-10
+                  w-10
+
+                  place-items-center
 
                   rounded-full
 
-                  bg-white
+                  bg-[#292727]
 
                   text-xl
-                  text-black
+
+                  text-white
+
+                  shadow-md
+
+                  transition
+
+                  hover:bg-[#B31345]
+
+                  lg:h-11
+                  lg:w-11
                 "
               >
                 ‹
@@ -1950,31 +2600,41 @@ function NewIcon() {
                 aria-label="Next products"
                 onClick={() =>
                   scrollRail(
-                    "right"
+                    "right",
                   )
                 }
                 className="
-                  flex
-                  h-11
-                  w-11
-                  items-center
-                  justify-center
+                  grid
+
+                  h-10
+                  w-10
+
+                  place-items-center
 
                   rounded-full
 
-                  bg-white
+                  bg-[#292727]
 
                   text-xl
-                  text-black
+
+                  text-white
+
+                  shadow-md
+
+                  transition
+
+                  hover:bg-[#B31345]
+
+                  lg:h-11
+                  lg:w-11
                 "
               >
                 ›
               </button>
             </div>
-          )}
+          ) : null}
         </div>
       </section>
     </main>
->>>>>>> aman
   );
 }

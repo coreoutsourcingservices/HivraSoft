@@ -1,19 +1,12 @@
 "use client";
 
 import Link from "next/link";
-
-import {
-  useMemo,
-  useState,
-} from "react";
+import { useMemo, useState } from "react";
 
 import CategoryBannerSlider from "@/src/components/Storefront/CategoryBannerSlider";
-
 import StorefrontProductCard from "@/src/components/Storefront/StorefrontProductCard";
 
-import type {
-  StorefrontCategoryNode,
-} from "@/src/services/categories";
+import type { StorefrontCategoryNode } from "@/src/services/categories";
 
 import type {
   CatalogBanner,
@@ -37,9 +30,7 @@ type FilterState = {
 };
 
 type Props = {
-  basePath:
-    | "/women"
-    | "/men";
+  basePath: "/women" | "/men"   | "/accessories";
 
   allLabel: string;
 
@@ -51,8 +42,7 @@ type Props = {
 
   description: string;
 
-  categoryRoot:
-    StorefrontCategoryNode;
+  categoryRoot: StorefrontCategoryNode;
 
   categoryPath: string[];
 };
@@ -65,9 +55,7 @@ function categoryHref(
   basePath: string,
   slugs: string[]
 ) {
-  if (
-    slugs.length === 0
-  ) {
+  if (slugs.length === 0) {
     return basePath;
   }
 
@@ -82,27 +70,13 @@ function categoryHref(
 ========================================================= */
 
 function sortNodes(
-  nodes:
-    StorefrontCategoryNode[]
+  nodes: StorefrontCategoryNode[]
 ) {
-  return [
-    ...nodes,
-  ].sort(
-    (
-      first,
-      second
-    ) =>
-      Number(
-        first.sortOrder ||
-          0
-      ) -
-        Number(
-          second.sortOrder ||
-            0
-        ) ||
-      first.name.localeCompare(
-        second.name
-      )
+  return [...nodes].sort(
+    (first, second) =>
+      Number(first.sortOrder || 0) -
+        Number(second.sortOrder || 0) ||
+      first.name.localeCompare(second.name)
   );
 }
 
@@ -111,40 +85,25 @@ function sortNodes(
 ========================================================= */
 
 function resolveSelectedNodes(
-  root:
-    StorefrontCategoryNode,
+  root: StorefrontCategoryNode,
   path: string[]
 ) {
-  const result:
-    StorefrontCategoryNode[] =
-    [];
+  const result: StorefrontCategoryNode[] = [];
 
-  let children =
-    root.children || [];
+  let children = root.children || [];
 
-  for (
-    const slug of path
-  ) {
-    const found =
-      children.find(
-        (
-          child
-        ) =>
-          child.slug ===
-          slug
-      );
+  for (const slug of path) {
+    const found = children.find(
+      (child) => child.slug === slug
+    );
 
     if (!found) {
       break;
     }
 
-    result.push(
-      found
-    );
+    result.push(found);
 
-    children =
-      found.children ||
-      [];
+    children = found.children || [];
   }
 
   return result;
@@ -164,42 +123,30 @@ function CategoryRow({
   activeSlug,
 }: {
   basePath: string;
-
   prefix: string[];
-
   allHref: string;
-
   allLabel: string;
-
   allActive: boolean;
-
-  nodes:
-    StorefrontCategoryNode[];
-
+  nodes: StorefrontCategoryNode[];
   activeSlug?: string;
 }) {
   return (
     <div
       className="
         w-full
-
         overflow-x-auto
         overflow-y-hidden
-
         [scrollbar-width:none]
-
         [&::-webkit-scrollbar]:hidden
       "
     >
       <div
         className="
           mx-auto
-
           flex
           min-w-max
           flex-nowrap
           items-center
-
           gap-2.5
 
           px-3
@@ -213,6 +160,8 @@ function CategoryRow({
           xl:gap-3
         "
       >
+        {/* ALL CATEGORY BUTTON */}
+
         <Link
           href={allHref}
           className={`
@@ -223,7 +172,6 @@ function CategoryRow({
             justify-center
 
             rounded-full
-
             border
 
             px-5
@@ -231,9 +179,7 @@ function CategoryRow({
             text-[10px]
             font-bold
             uppercase
-
             tracking-[0.08em]
-
             whitespace-nowrap
 
             transition
@@ -248,59 +194,50 @@ function CategoryRow({
           {allLabel}
         </Link>
 
-        {nodes.map(
-          (
-            node
-          ) => {
-            const active =
-              activeSlug ===
-              node.slug;
+        {/* CATEGORY BUTTONS */}
 
-            return (
-              <Link
-                key={node.id}
-                href={categoryHref(
-                  basePath,
-                  [
-                    ...prefix,
-                    node.slug,
-                  ]
-                )}
-                className={`
-                  flex
-                  h-[42px]
-                  shrink-0
-                  items-center
-                  justify-center
+        {nodes.map((node) => {
+          const active =
+            activeSlug === node.slug;
 
-                  rounded-full
+          return (
+            <Link
+              key={node.id}
+              href={categoryHref(
+                basePath,
+                [...prefix, node.slug]
+              )}
+              className={`
+                flex
+                h-[42px]
+                shrink-0
+                items-center
+                justify-center
 
-                  border
+                rounded-full
+                border
 
-                  px-5
+                px-5
 
-                  text-[10px]
-                  font-bold
-                  uppercase
+                text-[10px]
+                font-bold
+                uppercase
+                tracking-[0.08em]
+                whitespace-nowrap
 
-                  tracking-[0.08em]
+                transition
 
-                  whitespace-nowrap
-
-                  transition
-
-                  ${
-                    active
-                      ? "border-[#B31345] bg-[#FFF3F6] text-[#B31345]"
-                      : "border-[#DDD4CE] bg-white text-[#111111] hover:border-[#B31345] hover:text-[#B31345]"
-                  }
-                `}
-              >
-                {node.name}
-              </Link>
-            );
-          }
-        )}
+                ${
+                  active
+                    ? "border-[#B31345] bg-[#FFF3F6] text-[#B31345]"
+                    : "border-[#DDD4CE] bg-white text-[#111111] hover:border-[#B31345] hover:text-[#B31345]"
+                }
+              `}
+            >
+              {node.name}
+            </Link>
+          );
+        })}
       </div>
     </div>
   );
@@ -308,6 +245,12 @@ function CategoryRow({
 
 /* =========================================================
    CATEGORY NAVIGATION
+
+   MOBILE:
+   Header ke neeche sticky rahega.
+
+   DESKTOP:
+   Normal/static rahega.
 ========================================================= */
 
 function CategoryNavigation({
@@ -316,52 +259,58 @@ function CategoryNavigation({
   basePath,
   allLabel,
 }: {
-  root:
-    StorefrontCategoryNode;
-
+  root: StorefrontCategoryNode;
   path: string[];
-
   basePath: string;
-
   allLabel: string;
 }) {
-  const rootChildren =
-    useMemo(
-      () =>
-        sortNodes(
-          root.children ||
-            []
-        ),
-      [
-        root.children,
-      ]
-    );
+  const rootChildren = useMemo(
+    () =>
+      sortNodes(
+        root.children || []
+      ),
+    [root.children]
+  );
 
-  const selectedNodes =
-    useMemo(
-      () =>
-        resolveSelectedNodes(
-          root,
-          path
-        ),
-      [
+  const selectedNodes = useMemo(
+    () =>
+      resolveSelectedNodes(
         root,
-        path,
-      ]
-    );
+        path
+      ),
+    [root, path]
+  );
 
   return (
     <section
       className="
+        sticky
+        top-[56px]
+        z-[900]
+
         w-full
 
         border-y
         border-[#EEE5E0]
 
         bg-white
+
+        shadow-[0_4px_12px_rgba(0,0,0,0.06)]
+
+        md:static
+        md:z-auto
+        md:shadow-none
       "
     >
-      {/* ROOT ROW */}
+      {/* ===================================================
+          ROOT CATEGORY ROW
+
+          WOMEN:
+          ALL WOMEN / BRA / LINGERIE / PANTY
+
+          MEN:
+          ALL MEN / ...
+      =================================================== */}
 
       <CategoryRow
         basePath={basePath}
@@ -375,17 +324,18 @@ function CategoryNavigation({
         activeSlug={path[0]}
       />
 
-      {/* SUB CATEGORY ROWS */}
+      {/* ===================================================
+          SUB CATEGORY ROWS
+
+          Example:
+          ALL BRA / MATERNITY BRA / NON-PADDED BRA
+      =================================================== */}
 
       {selectedNodes.map(
-        (
-          node,
-          index
-        ) => {
+        (node, index) => {
           if (
             !node.children ||
-            node.children.length ===
-              0
+            node.children.length === 0
           ) {
             return null;
           }
@@ -402,7 +352,6 @@ function CategoryNavigation({
               className="
                 border-t
                 border-[#F0E6E8]
-
                 bg-[#FFF9FA]
               "
             >
@@ -446,9 +395,7 @@ function FilterRow({
   onClick,
 }: {
   label: string;
-
   active: boolean;
-
   onClick: () => void;
 }) {
   return (
@@ -468,7 +415,6 @@ function FilterRow({
         py-4
 
         text-[14px]
-
         text-black
       "
     >
@@ -479,7 +425,10 @@ function FilterRow({
           relative
           h-6
           w-11
+
           rounded-full
+
+          transition-colors
 
           ${
             active
@@ -497,7 +446,6 @@ function FilterRow({
             w-4
 
             rounded-full
-
             bg-white
 
             transition-all
@@ -525,13 +473,10 @@ function SortSheet({
   onClose,
 }: {
   open: boolean;
-
   value: SortValue;
-
   onChange: (
     value: SortValue
   ) => void;
-
   onClose: () => void;
 }) {
   if (!open) {
@@ -552,11 +497,13 @@ function SortSheet({
     },
     {
       value: "price-low",
-      label: "Price: Low to High",
+      label:
+        "Price: Low to High",
     },
     {
       value: "price-high",
-      label: "Price: High to Low",
+      label:
+        "Price: High to Low",
     },
   ];
 
@@ -574,9 +521,7 @@ function SortSheet({
 
         md:hidden
       "
-      onMouseDown={(
-        event
-      ) => {
+      onMouseDown={(event) => {
         if (
           event.target ===
           event.currentTarget
@@ -603,6 +548,7 @@ function SortSheet({
             mx-auto
             h-1
             w-12
+
             rounded-full
             bg-black/15
           "
@@ -641,11 +587,11 @@ function SortSheet({
 
         <div className="mt-3">
           {options.map(
-            (
-              option
-            ) => (
+            (option) => (
               <button
-                key={option.value}
+                key={
+                  option.value
+                }
                 type="button"
                 onClick={() => {
                   onChange(
@@ -681,7 +627,6 @@ function SortSheet({
                     justify-center
 
                     rounded-full
-
                     border
 
                     ${
@@ -724,30 +669,24 @@ function FilterSheet({
   onClose,
 }: {
   open: boolean;
-
   value: FilterState;
-
   onChange: (
     value: FilterState
   ) => void;
-
   onClose: () => void;
 }) {
   if (!open) {
     return null;
   }
 
-  const toggle =
-    (
-      key:
-        keyof FilterState
-    ) => {
-      onChange({
-        ...value,
-        [key]:
-          !value[key],
-      });
-    };
+  const toggle = (
+    key: keyof FilterState
+  ) => {
+    onChange({
+      ...value,
+      [key]: !value[key],
+    });
+  };
 
   return (
     <div
@@ -763,6 +702,14 @@ function FilterSheet({
 
         md:hidden
       "
+      onMouseDown={(event) => {
+        if (
+          event.target ===
+          event.currentTarget
+        ) {
+          onClose();
+        }
+      }}
     >
       <div
         className="
@@ -782,6 +729,7 @@ function FilterSheet({
             mx-auto
             h-1
             w-12
+
             rounded-full
             bg-black/15
           "
@@ -941,14 +889,12 @@ export default function ResponsiveCatalog({
   const [
     sortOpen,
     setSortOpen,
-  ] =
-    useState(false);
+  ] = useState(false);
 
   const [
     filterOpen,
     setFilterOpen,
-  ] =
-    useState(false);
+  ] = useState(false);
 
   /* =======================================================
      FILTER / SORT
@@ -960,48 +906,48 @@ export default function ResponsiveCatalog({
         ...products,
       ];
 
+      /* IN STOCK */
+
       if (
         filters.inStock
       ) {
         result =
           result.filter(
-            (
-              product
-            ) =>
+            (product) =>
               product.sizes.some(
-                (
-                  size
-                ) =>
+                (size) =>
                   size.stock >
                   0
               )
           );
       }
 
+      /* DISCOUNTED */
+
       if (
         filters.discounted
       ) {
         result =
           result.filter(
-            (
-              product
-            ) =>
+            (product) =>
               product.discountPercent >
               0
           );
       }
+
+      /* NEW LAUNCH */
 
       if (
         filters.newLaunch
       ) {
         result =
           result.filter(
-            (
-              product
-            ) =>
+            (product) =>
               product.isNewLaunch
           );
       }
+
+      /* SORT */
 
       if (
         sort ===
@@ -1069,10 +1015,15 @@ export default function ResponsiveCatalog({
     <main
       className="
         min-h-screen
-        overflow-x-hidden
+
+        overflow-x-clip
+
         bg-[#FAF8F6]
+
         pb-[68px]
+
         text-[#211A18]
+
         md:pb-16
       "
     >
@@ -1083,41 +1034,31 @@ export default function ResponsiveCatalog({
       {banners.length >
         0 && (
         <CategoryBannerSlider
-          banners={
-            banners
-          }
+          banners={banners}
         />
       )}
 
       {/* ===================================================
-          CATEGORY NAV
+          STICKY CATEGORY NAVIGATION
+
+          MOBILE:
+          Navbar ke neeche sticky.
+
+          Products iske neeche scroll karenge.
+
+          DESKTOP:
+          Normal behavior.
       =================================================== */}
 
       <CategoryNavigation
-        root={
-          categoryRoot
-        }
-        path={
-          categoryPath
-        }
-        basePath={
-          basePath
-        }
-        allLabel={
-          allLabel
-        }
+        root={categoryRoot}
+        path={categoryPath}
+        basePath={basePath}
+        allLabel={allLabel}
       />
 
       {/* ===================================================
-          IMPORTANT:
-          OLD TITLE BLOCK REMOVED
-
-          No:
-          30 PRODUCTS
-          Bra
-          Shop HivraSoft Bra.
-
-          Desktop me sirf sort control.
+          DESKTOP SORT
       =================================================== */}
 
       <section
@@ -1135,7 +1076,6 @@ export default function ResponsiveCatalog({
         <div
           className="
             mx-auto
-
             flex
             max-w-[1500px]
             justify-end
@@ -1200,6 +1140,9 @@ export default function ResponsiveCatalog({
 
       <section
         className="
+          relative
+          z-0
+
           mx-auto
           w-full
           max-w-[1500px]
@@ -1238,9 +1181,7 @@ export default function ResponsiveCatalog({
             "
           >
             {visibleProducts.map(
-              (
-                product
-              ) => (
+              (product) => (
                 <div
                   key={
                     product.variantKey
@@ -1355,16 +1296,14 @@ export default function ResponsiveCatalog({
         </button>
       </div>
 
+      {/* ===================================================
+          MOBILE SHEETS
+      =================================================== */}
+
       <SortSheet
-        open={
-          sortOpen
-        }
-        value={
-          sort
-        }
-        onChange={
-          setSort
-        }
+        open={sortOpen}
+        value={sort}
+        onChange={setSort}
         onClose={() =>
           setSortOpen(
             false
@@ -1376,9 +1315,7 @@ export default function ResponsiveCatalog({
         open={
           filterOpen
         }
-        value={
-          filters
-        }
+        value={filters}
         onChange={
           setFilters
         }

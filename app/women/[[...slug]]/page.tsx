@@ -7,43 +7,9 @@ import Header from "@/src/components/Header/Header";
 import WomenCatalog from "@/src/components/Women/WomenCatalog";
 
 import {
-<<<<<<< HEAD
-  getWomenBanners,
-  getWomenPageDescription,
-  getWomenPageTitle,
-  isValidWomenPath,
-  type WomenProduct,
-} from "@/src/data/women";
-
-import {
-  getActiveProducts,
-  getProductCategorySlugs,
-  getProductId,
-  getProductImageUrls,
-  isProductOnOffer,
-  type ApiProduct,
-} from "@/src/services/products";
-
-/* =========================================================
-   DYNAMIC PAGE
-========================================================= */
-
-export const dynamic =
-  "force-dynamic";
-
-/* =========================================================
-   PROPS
-========================================================= */
-=======
   findCategoryRoot,
-  getActiveCategoryTree,
   resolveCategoryPath,
 } from "@/src/services/categories";
-
-import {
-  getActiveProducts,
-} from "@/src/services/products";
->>>>>>> aman
 
 import {
   getCategoryBanners,
@@ -51,8 +17,24 @@ import {
   productBelongsToCategory,
 } from "@/src/services/storefront-catalog";
 
-export const dynamic =
-  "force-dynamic";
+import {
+  getCachedActiveCategoryTree,
+  getCachedActiveProducts,
+  getCachedFixedPriceOfferForCategory,
+} from "@/src/services/storefront-fast";
+
+/* =========================================================
+   REVALIDATE
+
+   force-dynamic hata diya.
+========================================================= */
+
+export const revalidate =
+  30;
+
+/* =========================================================
+   TYPES
+========================================================= */
 
 type Props = {
   params: Promise<{
@@ -60,248 +42,10 @@ type Props = {
   }>;
 };
 
-<<<<<<< HEAD
 /* =========================================================
-   WOMEN PRODUCT CHECK
+   WOMEN PAGE
 ========================================================= */
 
-function isWomenProduct(
-  product: ApiProduct
-): boolean {
-  const categorySlugs =
-    getProductCategorySlugs(
-      product
-    );
-
-  return categorySlugs.includes(
-    "women"
-  );
-}
-
-/* =========================================================
-   CHECK ROUTE EXISTS
-========================================================= */
-
-function womenRouteExists(
-  products: ApiProduct[],
-  category?: string,
-  subcategory?: string
-): boolean {
-  if (!category) {
-    return true;
-  }
-
-  if (category === "offers") {
-    return true;
-  }
-
-  return products.some(
-    (product) => {
-      const slugs =
-        getProductCategorySlugs(
-          product
-        );
-
-      if (
-        !slugs.includes("women")
-      ) {
-        return false;
-      }
-
-      if (
-        !slugs.includes(category)
-      ) {
-        return false;
-      }
-
-      if (
-        subcategory &&
-        !slugs.includes(
-          subcategory
-        )
-      ) {
-        return false;
-      }
-
-      return true;
-    }
-  );
-}
-
-/* =========================================================
-   WOMEN ROUTE FILTER
-========================================================= */
-
-function matchesWomenRoute(
-  product: ApiProduct,
-  category?: string,
-  subcategory?: string
-): boolean {
-  const categorySlugs =
-    getProductCategorySlugs(
-      product
-    );
-
-  /* Product must belong to Women */
-
-  if (
-    !categorySlugs.includes(
-      "women"
-    )
-  ) {
-    return false;
-  }
-
-  /* /women */
-
-  if (!category) {
-    return true;
-  }
-
-  /* /women/offers */
-
-  if (category === "offers") {
-    return isProductOnOffer(
-      product
-    );
-  }
-
-  /* /women/bra */
-
-  if (
-    !categorySlugs.includes(
-      category
-    )
-  ) {
-    return false;
-  }
-
-  /* No sub category */
-
-  if (!subcategory) {
-    return true;
-  }
-
-  /* /women/bra/sports-bra */
-
-  return categorySlugs.includes(
-    subcategory
-  );
-}
-
-/* =========================================================
-   MAP API -> WOMEN PRODUCT
-========================================================= */
-
-function mapProductToWomenProduct(
-  product: ApiProduct
-): WomenProduct {
-  const categorySlugs =
-    getProductCategorySlugs(
-      product
-    );
-
-  const imageUrls =
-    getProductImageUrls(
-      product
-    );
-
-  const image1 =
-    imageUrls[0] || "";
-
-  const image2 =
-    imageUrls[1] ||
-    image1;
-
-  const sellingPrice =
-    Number(
-      product.price
-    ) || 0;
-
-  const compareAtPrice =
-    Number(
-      product.compareAtPrice ||
-        0
-    );
-
-  const actualPrice =
-    compareAtPrice >
-    sellingPrice
-      ? compareAtPrice
-      : sellingPrice;
-
-  /*
-   * Example:
-   *
-   * women
-   * bra
-   * sports-bra
-   *
-   * Main category = bra
-   * Sub category = sports-bra
-   */
-
-  const hierarchy =
-    categorySlugs.filter(
-      (slug) =>
-        slug !== "women"
-    );
-
-  const mainCategory =
-    hierarchy[0] ||
-    "women";
-
-  const subcategories =
-    hierarchy.slice(1);
-
-  return {
-    id:
-      getProductId(
-        product
-      ),
-
-    name:
-      product.name || "Product",
-
-    slug:
-      product.slug || "",
-
-    image1,
-
-    image2,
-
-    actualPrice,
-
-    discountedPrice:
-      sellingPrice,
-
-    category:
-      mainCategory,
-
-    subcategories,
-
-    onOffer:
-      actualPrice >
-      sellingPrice,
-
-    isFeatured:
-      Boolean(
-        product.isFeatured
-      ),
-
-    isNewLaunch:
-      Boolean(
-        product.isNewLaunch
-      ),
-  };
-}
-
-/* =========================================================
-   PAGE
-========================================================= */
-
-=======
->>>>>>> aman
 export default async function WomenPage({
   params,
 }: Props) {
@@ -309,166 +53,113 @@ export default async function WomenPage({
     await params;
 
   const slugParts =
-<<<<<<< HEAD
-    resolvedParams.slug ??
-    [];
-
-  /*
-   * Supported:
-   *
-   * /women
-   * /women/bra
-   * /women/bra/sports-bra
-   */
-
-  if (
-    slugParts.length > 2
-  ) {
-    notFound();
-  }
-
-  const category =
-    slugParts[0];
-
-  const subcategory =
-    slugParts[1];
-
-  /* Validate URL syntax */
-=======
     (
       resolved.slug ||
       []
     )
-      .map((slug) =>
-        String(slug)
-          .trim()
-          .toLowerCase()
+      .map(
+        (
+          slug,
+        ) =>
+          String(
+            slug,
+          )
+            .trim()
+            .toLowerCase(),
       )
-      .filter(Boolean);
+      .filter(
+        Boolean,
+      );
 
   /* =======================================================
-     CATEGORY TREE
+     CATEGORY TREE + PRODUCTS PARALLEL
   ======================================================= */
->>>>>>> aman
 
-  const tree =
-    await getActiveCategoryTree();
+  const [
+    tree,
+    apiProducts,
+  ] =
+    await Promise.all([
+      getCachedActiveCategoryTree(),
+
+      getCachedActiveProducts(),
+    ]);
+
+  /* =======================================================
+     WOMEN ROOT
+  ======================================================= */
 
   const womenRoot =
     findCategoryRoot(
       tree,
-      "women"
+      "women",
     );
 
-  if (!womenRoot) {
+  if (
+    !womenRoot
+  ) {
     notFound();
   }
 
   /* =======================================================
-<<<<<<< HEAD
-     FETCH ALL ACTIVE PRODUCTS
-  ======================================================= */
-
-  const allProducts =
-    await getActiveProducts();
-=======
      CURRENT CATEGORY
   ======================================================= */
 
   const selected =
     resolveCategoryPath(
       womenRoot,
-      slugParts
+      slugParts,
     );
-
-  if (!selected) {
-    notFound();
-  }
-
-  const currentCategory =
-    selected.at(-1) ||
-    womenRoot;
->>>>>>> aman
-
-  /* =======================================================
-     ALL WOMEN PRODUCTS
-  ======================================================= */
-
-  const womenProducts =
-    allProducts.filter(
-      isWomenProduct
-    );
-
-  /* =======================================================
-     INVALID CATEGORY -> 404
-  ======================================================= */
 
   if (
-    !womenRouteExists(
-      womenProducts,
-      category,
-      subcategory
-    )
+    !selected
   ) {
     notFound();
   }
 
+  const currentCategory =
+    selected.at(
+      -1,
+    ) ||
+    womenRoot;
+
   /* =======================================================
-     FILTER CURRENT ROUTE
+     FIXED PRICE OFFER
   ======================================================= */
 
-<<<<<<< HEAD
-  const products =
-    womenProducts
-      .filter((product) =>
-        matchesWomenRoute(
-          product,
-          category,
-          subcategory
-        )
-      )
-      .map(
-        mapProductToWomenProduct
-=======
-  const apiProducts =
-    await getActiveProducts();
+  const fixedPriceOffer =
+    await getCachedFixedPriceOfferForCategory(
+      currentCategory.id,
+    );
+
+  /* =======================================================
+     PRODUCTS
+  ======================================================= */
 
   const products =
     apiProducts
-      .filter((product) =>
-        productBelongsToCategory(
+      .filter(
+        (
           product,
-          currentCategory
-        )
+        ) =>
+          productBelongsToCategory(
+            product,
+            currentCategory,
+          ),
       )
       .flatMap(
-        mapProductToColorCards
->>>>>>> aman
+        mapProductToColorCards,
       );
 
   /* =======================================================
-     BANNER
-
-     ONLY CURRENT CATEGORY.
-     NO WOMEN ROOT FALLBACK.
+     BANNERS
   ======================================================= */
 
   const banners =
     getCategoryBanners(
       currentCategory,
       "/women",
-      slugParts
-    );
-
-<<<<<<< HEAD
-  /* =======================================================
-     TITLE
-  ======================================================= */
-
-  const title =
-    getWomenPageTitle(
-      category,
-      subcategory
+      slugParts,
     );
 
   /* =======================================================
@@ -476,17 +167,18 @@ export default async function WomenPage({
   ======================================================= */
 
   const description =
-    getWomenPageDescription(
-      category,
-      subcategory
+    currentCategory.description ||
+    (
+      currentCategory.id ===
+      womenRoot.id
+        ? "Explore HivraSoft women's collection designed around comfort and confidence."
+        : `Shop HivraSoft ${currentCategory.name}.`
     );
 
   /* =======================================================
      RENDER
   ======================================================= */
 
-=======
->>>>>>> aman
   return (
     <>
       <Header />
@@ -502,19 +194,16 @@ export default async function WomenPage({
           currentCategory.name
         }
         description={
-          currentCategory.description ||
-          (
-            currentCategory.id ===
-            womenRoot.id
-              ? "Explore HivraSoft women's collection designed around comfort and confidence."
-              : `Shop HivraSoft ${currentCategory.name}.`
-          )
+          description
         }
         categoryRoot={
           womenRoot
         }
         categoryPath={
           slugParts
+        }
+        fixedPriceOffer={
+          fixedPriceOffer
         }
       />
     </>

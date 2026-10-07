@@ -1468,7 +1468,6 @@ export default function ProductForm({
     );
   };
 
-<<<<<<< HEAD
   const movePendingImageToPosition = (
     colorIndex: number,
     imageId: string,
@@ -1537,8 +1536,6 @@ export default function ProductForm({
     );
   };
 
-=======
->>>>>>> aman
   const removePendingImage = (
     colorIndex: number,
     imageId: string
@@ -2599,11 +2596,7 @@ export default function ProductForm({
                 ? "assertive"
                 : "polite"
             }
-<<<<<<< HEAD
             className={`fixed right-5 top-7 z-[100] w-[calc(100%-40px)] max-w-sm overflow-hidden rounded-2xl border shadow-[0_20px_60px_rgba(0,0,0,0.18)] backdrop-blur-sm ${
-=======
-            className={`fixed right-5 top-7 z-[100] w-[calc(100%-40px)] max-w-sm rounded-2xl border px-5 py-4 text-sm font-semibold shadow-[0_20px_60px_rgba(0,0,0,0.18)] backdrop-blur-sm ${
->>>>>>> aman
               error
                 ? "border-red-200 bg-red-50 text-red-700"
                 : uploadMessage
@@ -2611,7 +2604,6 @@ export default function ProductForm({
                   : "border-emerald-200 bg-emerald-50 text-emerald-700"
             }`}
           >
-<<<<<<< HEAD
             <div className="flex items-start gap-3 px-5 py-4">
               <div className="min-w-0 flex-1 text-sm font-semibold leading-5">
                 {error ||
@@ -2639,11 +2631,6 @@ export default function ProductForm({
                 ×
               </button>
             </div>
-=======
-            {error ||
-              uploadMessage ||
-              success}
->>>>>>> aman
           </div>
         )}
 
@@ -3743,11 +3730,7 @@ export default function ProductForm({
                     <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
                       <SubHeading
                         title="Image Studio"
-<<<<<<< HEAD
                         description="Preview before upload, assign image name and ALT text, choose the primary image, and set the photo index. Index 1 is stored first."
-=======
-                        description="Preview before upload, assign image name and ALT text, and choose the primary image."
->>>>>>> aman
                       />
 
                       <label className="group relative cursor-pointer overflow-hidden rounded-2xl bg-[#211816] px-5 py-3 text-xs font-bold text-white shadow-lg transition hover:-translate-y-0.5">
@@ -3892,12 +3875,8 @@ export default function ProductForm({
 
                         {color.pendingImages.map(
                           (
-<<<<<<< HEAD
                             image,
                             imageIndex
-=======
-                            image
->>>>>>> aman
                           ) => (
                             <ImageEditorCard
                               key={
@@ -3924,7 +3903,6 @@ export default function ProductForm({
                               ).toFixed(
                                 2
                               )} MB · ${image.file.type}`}
-<<<<<<< HEAD
                               position={
                                 imageIndex +
                                 1
@@ -3943,8 +3921,6 @@ export default function ProductForm({
                                   position
                                 )
                               }
-=======
->>>>>>> aman
                               onNameChange={(
                                 value
                               ) =>
@@ -4422,12 +4398,9 @@ function ImageEditorCard({
   alt,
   publicId,
   fileInfo,
-<<<<<<< HEAD
   position,
   maxPosition,
   onPositionChange,
-=======
->>>>>>> aman
   onNameChange,
   onAltChange,
   onDefault,
@@ -4440,14 +4413,11 @@ function ImageEditorCard({
   alt: string;
   publicId?: string;
   fileInfo?: string;
-<<<<<<< HEAD
   position?: number;
   maxPosition?: number;
   onPositionChange?:
     (position: number) =>
       void;
-=======
->>>>>>> aman
 
   onNameChange:
     (value: string) =>
@@ -4543,7 +4513,6 @@ function ImageEditorCard({
           />
         </Field>
 
-<<<<<<< HEAD
         {typeof position ===
           "number" &&
           typeof maxPosition ===
@@ -4581,8 +4550,6 @@ function ImageEditorCard({
             </Field>
           )}
 
-=======
->>>>>>> aman
         {(fileInfo ||
           publicId) && (
           <div className="rounded-xl bg-[#F8F6F4] px-3 py-2 text-[10px] leading-4 text-black/40">

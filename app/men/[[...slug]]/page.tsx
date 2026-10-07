@@ -7,295 +7,43 @@ import Header from "@/src/components/Header/Header";
 import MenCatalog from "@/src/components/Men/MenCatalog";
 
 import {
-<<<<<<< HEAD
-  getMenBanners,
-  getMenPageDescription,
-  getMenPageTitle,
-  isValidMenPath,
-  type MenProduct,
-} from "@/src/data/men";
-
-import {
-  getActiveProducts,
-  normalizeStoreProduct,
-  type ApiProduct,
-} from "@/src/services/products";
-
-/* =========================================================
-   DYNAMIC
-========================================================= */
-=======
   findCategoryRoot,
-  getActiveCategoryTree,
   resolveCategoryPath,
 } from "@/src/services/categories";
-
-import {
-  getActiveProducts,
-} from "@/src/services/products";
 
 import {
   getCategoryBanners,
   mapProductToColorCards,
   productBelongsToCategory,
 } from "@/src/services/storefront-catalog";
->>>>>>> aman
 
-export const dynamic =
-  "force-dynamic";
+import {
+  getCachedActiveCategoryTree,
+  getCachedActiveProducts,
+  getCachedFixedPriceOfferForCategory,
+} from "@/src/services/storefront-fast";
 
-<<<<<<< HEAD
+/* =========================================================
+   REVALIDATE
+========================================================= */
+
+export const revalidate =
+  30;
+
 /* =========================================================
    TYPES
 ========================================================= */
 
-type MenPageProps = {
-=======
 type Props = {
->>>>>>> aman
   params: Promise<{
     slug?: string[];
   }>;
 };
 
-<<<<<<< HEAD
-/* =========================================================
-   MEN ROOT CATEGORY ALIASES
-========================================================= */
-
-const MEN_ROOT_SLUGS =
-  new Set([
-    "men",
-    "mens",
-    "menswear",
-    "male",
-  ]);
-
-/* =========================================================
-   IS MEN PRODUCT
-========================================================= */
-
-function isMenProduct(
-  product: ApiProduct
-): boolean {
-  const normalized =
-    normalizeStoreProduct(
-      product
-    );
-
-  return normalized
-    .categorySlugs
-    .some(
-      (slug) =>
-        MEN_ROOT_SLUGS.has(
-          slug
-        )
-    );
-}
-
-/* =========================================================
-   MATCH CURRENT ROUTE
-========================================================= */
-
-function matchesMenRoute(
-  product: ApiProduct,
-  category?: string,
-  subcategory?: string
-): boolean {
-  const normalized =
-    normalizeStoreProduct(
-      product
-    );
-
-  const categorySlugs =
-    normalized.categorySlugs;
-
-  /* =======================================================
-     MUST BELONG TO MEN
-  ======================================================= */
-
-  const belongsToMen =
-    categorySlugs.some(
-      (slug) =>
-        MEN_ROOT_SLUGS.has(
-          slug
-        )
-    );
-
-  if (!belongsToMen) {
-    return false;
-  }
-
-  /* =======================================================
-     /men
-  ======================================================= */
-
-  if (!category) {
-    return true;
-  }
-
-  /* =======================================================
-     /men/offers
-  ======================================================= */
-
-  if (
-    category === "offers"
-  ) {
-    return (
-      normalized.actualPrice >
-      normalized.sellingPrice
-    );
-  }
-
-  /* =======================================================
-     CATEGORY
-  ======================================================= */
-
-  if (
-    !categorySlugs.includes(
-      category
-    )
-  ) {
-    return false;
-  }
-
-  /* =======================================================
-     NO SUBCATEGORY
-  ======================================================= */
-
-  if (!subcategory) {
-    return true;
-  }
-
-  /* =======================================================
-     SUBCATEGORY
-  ======================================================= */
-
-  return categorySlugs.includes(
-    subcategory
-  );
-}
-
-/* =========================================================
-   API PRODUCT -> MEN PRODUCT
-========================================================= */
-
-function mapProductToMenProduct(
-  product: ApiProduct
-): MenProduct {
-  const normalized =
-    normalizeStoreProduct(
-      product
-    );
-
-  const hierarchy =
-    normalized
-      .categorySlugs
-      .filter(
-        (slug) =>
-          !MEN_ROOT_SLUGS.has(
-            slug
-          )
-      );
-
-  const mainCategory =
-    hierarchy[0] ||
-    "men";
-
-  const subcategories =
-    hierarchy.slice(1);
-
-  return {
-    id:
-      normalized.id,
-
-    name:
-      normalized.name,
-
-    slug:
-      normalized.slug,
-
-    image1:
-      normalized.image1,
-
-    image2:
-      normalized.image2,
-
-    actualPrice:
-      normalized.actualPrice,
-
-    discountedPrice:
-      normalized.sellingPrice,
-
-    category:
-      mainCategory,
-
-    subcategories,
-
-    onOffer:
-      normalized.actualPrice >
-      normalized.sellingPrice,
-
-    isFeatured:
-      normalized.isFeatured,
-
-    isNewLaunch:
-      normalized.isNewLaunch,
-  };
-}
-
 /* =========================================================
    MEN PAGE
 ========================================================= */
 
-export default async function MenPage({
-  params,
-}: MenPageProps) {
-  const resolvedParams =
-    await params;
-
-  const slugParts =
-    resolvedParams.slug ??
-    [];
-
-  /* =======================================================
-     MAX:
-
-     /men
-     /men/underwear
-     /men/underwear/trunks
-  ======================================================= */
-
-  if (
-    slugParts.length >
-    2
-  ) {
-    notFound();
-  }
-
-  const category =
-    slugParts[0];
-
-  const subcategory =
-    slugParts[1];
-
-  /* =======================================================
-     URL VALIDATION
-  ======================================================= */
-
-  if (
-    !isValidMenPath(
-      category,
-      subcategory
-    )
-  ) {
-    notFound();
-  }
-
-  /* =======================================================
-     FETCH ACTIVE PRODUCTS
-  ======================================================= */
-=======
 export default async function MenPage({
   params,
 }: Props) {
@@ -307,154 +55,128 @@ export default async function MenPage({
       resolved.slug ||
       []
     )
-      .map((slug) =>
-        String(slug)
-          .trim()
-          .toLowerCase()
+      .map(
+        (
+          slug,
+        ) =>
+          String(
+            slug,
+          )
+            .trim()
+            .toLowerCase(),
       )
-      .filter(Boolean);
+      .filter(
+        Boolean,
+      );
 
-  const tree =
-    await getActiveCategoryTree();
+  /* =======================================================
+     CATEGORY TREE + PRODUCTS PARALLEL
+  ======================================================= */
+
+  const [
+    tree,
+    apiProducts,
+  ] =
+    await Promise.all([
+      getCachedActiveCategoryTree(),
+
+      getCachedActiveProducts(),
+    ]);
+
+  /* =======================================================
+     MEN ROOT
+  ======================================================= */
 
   const menRoot =
     findCategoryRoot(
       tree,
-      "men"
+      "men",
     );
 
-  if (!menRoot) {
+  if (
+    !menRoot
+  ) {
     notFound();
   }
+
+  /* =======================================================
+     CURRENT CATEGORY
+  ======================================================= */
 
   const selected =
     resolveCategoryPath(
       menRoot,
-      slugParts
+      slugParts,
     );
 
-  if (!selected) {
+  if (
+    !selected
+  ) {
     notFound();
   }
 
   const currentCategory =
-    selected.at(-1) ||
+    selected.at(
+      -1,
+    ) ||
     menRoot;
->>>>>>> aman
-
-  const apiProducts =
-    await getActiveProducts();
-
-<<<<<<< HEAD
-  /* =======================================================
-     DEBUG
-
-     Terminal me count show hoga.
-     Isse pata chalega API data aa raha hai ya nahi.
-  ======================================================= */
-
-  console.log(
-    "[MEN PAGE] Active products:",
-    apiProducts.length
-  );
 
   /* =======================================================
-     ONLY MEN PRODUCTS
+     FIXED PRICE OFFER
   ======================================================= */
 
-  const menApiProducts =
-    apiProducts.filter(
-      isMenProduct
+  const fixedPriceOffer =
+    await getCachedFixedPriceOfferForCategory(
+      currentCategory.id,
     );
 
-  console.log(
-    "[MEN PAGE] Men products:",
-    menApiProducts.length
-  );
-
   /* =======================================================
-     CURRENT CATEGORY PRODUCTS
+     PRODUCTS
   ======================================================= */
 
   const products =
-    menApiProducts
+    apiProducts
       .filter(
-        (product) =>
-          matchesMenRoute(
+        (
+          product,
+        ) =>
+          productBelongsToCategory(
             product,
-            category,
-            subcategory
-          )
+            currentCategory,
+          ),
       )
-      .map(
-        mapProductToMenProduct
-      )
-      .filter(
-        (product) =>
-          Boolean(
-            product.id
-          ) &&
-          Boolean(
-            product.slug
-          )
+      .flatMap(
+        mapProductToColorCards,
       );
 
-  console.log(
-    "[MEN PAGE] Visible products:",
-    products.length
-  );
-
   /* =======================================================
-     BANNER
+     BANNERS
   ======================================================= */
 
   const banners =
-    getMenBanners(
-      category,
-      subcategory
+    getCategoryBanners(
+      currentCategory,
+      "/men",
+      slugParts,
     );
 
   /* =======================================================
-     TEXT
+     DESCRIPTION
   ======================================================= */
 
-  const title =
-    getMenPageTitle(
-      category,
-      subcategory
-    );
-
   const description =
-    getMenPageDescription(
-      category,
-      subcategory
+    currentCategory.description ||
+    (
+      currentCategory.id ===
+      menRoot.id
+        ? "Explore HivraSoft men's collection."
+        : `Shop HivraSoft ${currentCategory.name}.`
     );
 
   /* =======================================================
      RENDER
   ======================================================= */
 
-=======
-  const products =
-    apiProducts
-      .filter((product) =>
-        productBelongsToCategory(
-          product,
-          currentCategory
-        )
-      )
-      .flatMap(
-        mapProductToColorCards
-      );
-
-  const banners =
-    getCategoryBanners(
-      currentCategory,
-      "/men",
-      slugParts
-    );
-
->>>>>>> aman
   return (
     <>
       <Header />
@@ -467,35 +189,19 @@ export default async function MenPage({
           banners
         }
         title={
-<<<<<<< HEAD
-          title
-        }
-        description={
-          description
-        }
-        category={
-          category
-        }
-        subcategory={
-          subcategory
-=======
           currentCategory.name
         }
         description={
-          currentCategory.description ||
-          (
-            currentCategory.id ===
-            menRoot.id
-              ? "Explore HivraSoft men's collection."
-              : `Shop HivraSoft ${currentCategory.name}.`
-          )
+          description
         }
         categoryRoot={
           menRoot
         }
         categoryPath={
           slugParts
->>>>>>> aman
+        }
+        fixedPriceOffer={
+          fixedPriceOffer
         }
       />
     </>

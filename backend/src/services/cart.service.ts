@@ -10,12 +10,8 @@ import Cart, {
 import Product from "../models/Product.model";
 import DiscountCode from "../models/DiscountCode.model";
 import { calculateDiscounts } from "./discount.service";
-<<<<<<< HEAD
-import { trackUserActivity } from "./activity.service";
-=======
 import { markActivityEmailSent, trackUserActivity } from "./activity.service";
 import { sendCartAddedEmail } from "./commerce-email.service";
->>>>>>> aman
 import { calculateTax } from "./tax.service";
 
 /* =========================================================
@@ -413,10 +409,7 @@ const buildCartResponse =
       items
         .filter((item: any) => item.available && item.product?._id)
         .map((item: any) => ({
-<<<<<<< HEAD
           lineId: String(item._id || ""),
-=======
->>>>>>> aman
           productId: String(item.product._id),
           unitPrice: Number(item.unitPrice || 0),
           quantity: Number(item.quantity || 0),
@@ -424,24 +417,15 @@ const buildCartResponse =
       cart.discountCode || null
     );
 
-<<<<<<< HEAD
     const discountByLine = new Map(
       discountResult.itemDiscounts.map((item) => [String(item.lineId || item.productId), item])
-=======
-    const discountByProduct = new Map(
-      discountResult.itemDiscounts.map((item) => [item.productId, item])
->>>>>>> aman
     );
 
     const discountedItems = items.map((item: any) => {
       if (!item.product?._id) return item;
-<<<<<<< HEAD
       const discount =
         discountByLine.get(String(item._id || "")) ||
         discountByLine.get(String(item.product._id));
-=======
-      const discount = discountByProduct.get(String(item.product._id));
->>>>>>> aman
       return { ...item, discount: discount || null };
     });
 
@@ -462,7 +446,6 @@ const buildCartResponse =
       items: discountedItems,
       totalItems,
       subtotal,
-<<<<<<< HEAD
       offerDiscount: discountResult.offerDiscount,
       automaticDiscount: discountResult.automaticDiscount,
       codeDiscount: discountResult.codeDiscount,
@@ -472,12 +455,6 @@ const buildCartResponse =
         automatic: discountResult.automatic,
         code: discountResult.code,
       },
-=======
-      automaticDiscount: discountResult.automaticDiscount,
-      codeDiscount: discountResult.codeDiscount,
-      discount: discountResult.totalDiscount,
-      discountSummary: { automatic: discountResult.automatic, code: discountResult.code },
->>>>>>> aman
       appliedDiscountCode: cart.discountCode || "",
       taxableAmount: taxResult.taxableAmount,
       tax: taxResult.amount,
@@ -639,11 +616,7 @@ export const addItemToCart =
 
     await cart.save();
 
-<<<<<<< HEAD
-    await trackUserActivity({
-=======
     const activity = await trackUserActivity({
->>>>>>> aman
       userId,
       type: "cart_add",
       productId: data.productId,
@@ -656,11 +629,6 @@ export const addItemToCart =
       },
     });
 
-<<<<<<< HEAD
-    return buildCartResponse(
-      cart
-    );
-=======
     const response = await buildCartResponse(
       cart
     );
@@ -681,7 +649,6 @@ export const addItemToCart =
       .catch((error) => console.error("CART ADDED EMAIL ERROR:", error));
 
     return response;
->>>>>>> aman
   };
 
 /* =========================================================

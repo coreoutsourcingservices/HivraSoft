@@ -6,9 +6,18 @@ import {
   useCallback,
   useEffect,
   useState,
+  type ReactNode,
 } from "react";
 
+import {
+  Heart,
+  Package,
+  ShoppingBag,
+  Trash2,
+} from "lucide-react";
+
 import Header from "@/src/components/Header/Header";
+import AccountSidebar from "@/app/account/components/AccountSidebar";
 
 import {
   useStorefrontCommerce,
@@ -21,18 +30,15 @@ import {
 } from "@/lib/wishlist";
 
 /* =========================================================
-   TYPE
+   TYPES
 ========================================================= */
 
 type WishlistDisplayItem = {
   productId: string;
-
   colorId: string;
 
   name: string;
-
   slug: string;
-
   color: string;
 
   image1: string;
@@ -43,19 +49,15 @@ type WishlistDisplayItem = {
 };
 
 /* =========================================================
-   OBJECT
+   HELPERS
 ========================================================= */
 
 function asObject(
-  value: unknown
-): Record<
-  string,
-  unknown
-> {
+  value: unknown,
+): Record<string, unknown> {
   if (
     value &&
-    typeof value ===
-      "object" &&
+    typeof value === "object" &&
     !Array.isArray(value)
   ) {
     return value as Record<
@@ -67,31 +69,20 @@ function asObject(
   return {};
 }
 
-/* =========================================================
-   ARRAY
-========================================================= */
-
 function asArray(
-  value: unknown
+  value: unknown,
 ): unknown[] {
-  return Array.isArray(
-    value
-  )
+  return Array.isArray(value)
     ? value
     : [];
 }
-
-/* =========================================================
-   STRING
-========================================================= */
 
 function firstString(
   ...values: unknown[]
 ): string {
   for (const value of values) {
     if (
-      typeof value ===
-        "string" &&
+      typeof value === "string" &&
       value.trim()
     ) {
       return value.trim();
@@ -100,10 +91,6 @@ function firstString(
 
   return "";
 }
-
-/* =========================================================
-   POSITIVE PRICE
-========================================================= */
 
 function positiveNumber(
   ...values: unknown[]
@@ -121,9 +108,7 @@ function positiveNumber(
       Number(value);
 
     if (
-      Number.isFinite(
-        parsed
-      ) &&
+      Number.isFinite(parsed) &&
       parsed > 0
     ) {
       return parsed;
@@ -133,16 +118,11 @@ function positiveNumber(
   return 0;
 }
 
-/* =========================================================
-   ID
-========================================================= */
-
 function getId(
-  value: unknown
+  value: unknown,
 ): string {
   if (
-    typeof value ===
-    "string"
+    typeof value === "string"
   ) {
     return value.trim();
   }
@@ -152,20 +132,15 @@ function getId(
 
   return firstString(
     object._id,
-    object.id
+    object.id,
   );
 }
 
-/* =========================================================
-   IMAGE
-========================================================= */
-
 function getImageUrl(
-  value: unknown
+  value: unknown,
 ): string {
   if (
-    typeof value ===
-    "string"
+    typeof value === "string"
   ) {
     return value.trim();
   }
@@ -177,12 +152,12 @@ function getImageUrl(
     image.url,
     image.src,
     image.image,
-    image.imageUrl
+    image.imageUrl,
   );
 }
 
 function getImages(
-  value: unknown
+  value: unknown,
 ): string[] {
   const values =
     asArray(value);
@@ -191,47 +166,38 @@ function getImages(
     values.filter(
       (item) =>
         asObject(item)
-          .isDefault ===
-        true
+          .isDefault === true,
     );
 
-  const rest =
+  const others =
     values.filter(
       (item) =>
         asObject(item)
-          .isDefault !==
-        true
+          .isDefault !== true,
     );
 
   return Array.from(
     new Set(
       [
         ...defaults,
-        ...rest,
+        ...others,
       ]
-        .map(
-          getImageUrl
-        )
-        .filter(Boolean)
-    )
+        .map(getImageUrl)
+        .filter(Boolean),
+    ),
   );
 }
 
-/* =========================================================
-   FIND COLOR
-========================================================= */
-
 function findColor(
-  product:
-    Record<
-      string,
-      unknown
-    >,
-  colorId: string
+  product: Record<
+    string,
+    unknown
+  >,
+  colorId: string,
 ) {
   const colors =
     asArray(
-      product.colors
+      product.colors,
     );
 
   if (colorId) {
@@ -239,99 +205,84 @@ function findColor(
       colors.find(
         (color) =>
           getId(color) ===
-          colorId
+          colorId,
       );
 
     if (exact) {
       return asObject(
-        exact
+        exact,
       );
     }
   }
 
   return asObject(
-    colors[0]
+    colors[0],
   );
 }
 
 /* =========================================================
-   NORMALIZE ITEM
+   NORMALIZE
 ========================================================= */
 
 function normalizeWishlistItem(
-  wishlistItem: WishlistItem
+  wishlistItem: WishlistItem,
 ): WishlistDisplayItem {
   const rawItem =
     asObject(
-      wishlistItem
+      wishlistItem,
     );
-
-  /* =======================================================
-     PRODUCT
-  ======================================================= */
 
   const product =
     typeof wishlistItem.product ===
     "string"
       ? {}
       : asObject(
-          wishlistItem.product
+          wishlistItem.product,
         );
 
   const productId =
     firstString(
       getId(
-        wishlistItem.product
+        wishlistItem.product,
       ),
-
-      rawItem.productId
+      rawItem.productId,
     );
-
-  /* =======================================================
-     COLOR
-  ======================================================= */
 
   const colorId =
     firstString(
       getId(
-        rawItem.colorId
+        rawItem.colorId,
       ),
-
       getId(
-        rawItem.color
-      )
+        rawItem.color,
+      ),
     );
 
   const directColor =
     asObject(
       rawItem.color ||
-        rawItem.selectedColor
+        rawItem.selectedColor,
     );
 
   const color =
     Object.keys(
-      directColor
-    ).length >
-    0
+      directColor,
+    ).length > 0
       ? directColor
       : findColor(
           product,
-          colorId
+          colorId,
         );
-
-  /* =======================================================
-     IMAGES
-  ======================================================= */
 
   const colorImages =
     getImages(
-      color.images
+      color.images,
     );
 
   const productImages =
     getImages(
       product.mainImages ||
-        product.images
+        product.images,
     );
 
   const images =
@@ -340,76 +291,53 @@ function normalizeWishlistItem(
         [
           ...colorImages,
           ...productImages,
-        ].filter(Boolean)
-      )
+        ].filter(Boolean),
+      ),
     );
-
-  /* =======================================================
-     PRICE
-
-     Wishlist price always selected color showPrice.
-  ======================================================= */
 
   const showPrice =
     positiveNumber(
       color.showPrice,
-
       color.sellingPrice,
-
       rawItem.showPrice,
-
       rawItem.price,
-
-      product.showPrice
+      product.showPrice,
     );
 
   const originalPrice =
     positiveNumber(
       color.originalPrice,
-
       color.mrp,
-
       rawItem.originalPrice,
-
       product.originalPrice,
-
-      showPrice
+      showPrice,
     );
 
   return {
     productId,
-
     colorId,
 
     name:
       firstString(
         color.nameProduct,
-
         rawItem.nameProduct,
-
         product.nameProduct,
-
         product.name,
-
-        "Saved product"
+        "Saved product",
       ),
 
     slug:
       firstString(
         color.slugProduct,
-
         rawItem.slugProduct,
-
         product.slugProduct,
-
-        product.slug
+        product.slug,
       ),
 
     color:
       firstString(
         color.nameColor,
-
-        rawItem.colorName
+        rawItem.colorName,
       ),
 
     image1:
@@ -425,9 +353,23 @@ function normalizeWishlistItem(
     originalPrice:
       Math.max(
         originalPrice,
-        showPrice
+        showPrice,
       ),
   };
+}
+
+function money(
+  value: number,
+) {
+  return `₹${Number(
+    value || 0,
+  ).toLocaleString(
+    "en-IN",
+    {
+      maximumFractionDigits:
+        2,
+    },
+  )}`;
 }
 
 /* =========================================================
@@ -472,45 +414,40 @@ export default function WishlistPage() {
           true
         ) {
           setItems([]);
-
-          setLoading(
-            false
-          );
-
+          setLoading(false);
           return;
         }
 
         try {
-          setLoading(
-            true
-          );
+          setLoading(true);
 
           const response =
             await getWishlist();
 
           setItems(
             response.items.map(
-              normalizeWishlistItem
-            )
+              normalizeWishlistItem,
+            ),
           );
-        } catch {
+        } catch (error) {
+          console.error(
+            "LOAD WISHLIST ERROR:",
+            error,
+          );
+
           setItems([]);
         } finally {
-          setLoading(
-            false
-          );
+          setLoading(false);
         }
       },
       [
         commerce.isAuthenticated,
-      ]
+      ],
     );
 
   useEffect(() => {
     void loadWishlist();
-  }, [
-    loadWishlist,
-  ]);
+  }, [loadWishlist]);
 
   useEffect(() => {
     const handleUpdate =
@@ -520,715 +457,872 @@ export default function WishlistPage() {
 
     window.addEventListener(
       "hivrasoft-wishlist-updated",
-      handleUpdate
+      handleUpdate,
     );
 
     return () => {
       window.removeEventListener(
         "hivrasoft-wishlist-updated",
-        handleUpdate
+        handleUpdate,
       );
     };
-  }, [
-    loadWishlist,
-  ]);
+  }, [loadWishlist]);
 
   /* =======================================================
      REMOVE
   ======================================================= */
 
-  const handleRemove =
-    async (
-      productId: string
-    ) => {
-      if (!productId) {
-        return;
-      }
+  async function handleRemove(
+    productId: string,
+  ) {
+    if (
+      !productId ||
+      busyProductId
+    ) {
+      return;
+    }
 
-      try {
-        setBusyProductId(
-          productId
-        );
+    try {
+      setBusyProductId(
+        productId,
+      );
 
-        await removeFromWishlist(
-          productId
-        );
+      await removeFromWishlist(
+        productId,
+      );
 
-        await loadWishlist();
+      await loadWishlist();
 
-        await commerce.refreshCommerce();
-      } finally {
-        setBusyProductId(
-          null
-        );
-      }
-    };
+      await commerce.refreshCommerce();
+    } catch (error) {
+      console.error(
+        "REMOVE WISHLIST ERROR:",
+        error,
+      );
+    } finally {
+      setBusyProductId(null);
+    }
+  }
 
   return (
     <>
       <Header />
 
-      <main
+      <div
         className="
           min-h-screen
-
-          bg-[#FAF8F6]
-
-          px-5
-          py-10
-
-          md:px-8
+          w-full
+          bg-[#FDFCFB]
         "
       >
         <div
           className="
             mx-auto
+            flex
+            w-full
+            max-w-[1600px]
+            flex-col
 
-            max-w-[1350px]
+            lg:flex-row
+            lg:items-start
           "
         >
-          <div
+          <AccountSidebar />
+
+          <main
             className="
-              flex
-              items-end
-              justify-between
+              min-w-0
+              w-full
+              max-w-full
+              flex-1
+              overflow-x-hidden
+              px-2
+              pb-10
+              pt-3
 
-              border-b
-              border-black/10
+              sm:px-5
 
-              pb-5
+              lg:px-7
+              lg:pt-4
             "
           >
-            <div>
-              <p
-                className="
-                  text-[10px]
-                  font-bold
-                  uppercase
+            {/* HERO */}
 
-                  tracking-[0.18em]
-
-                  text-[#8C1839]
-                "
-              >
-                Saved Products
-              </p>
-
-              <h1
-                className="
-                  mt-2
-
-                  text-[30px]
-                  font-bold
-
-                  text-[#111111]
-                "
-              >
-                My Wishlist
-              </h1>
-            </div>
-
-            {commerce.isAuthenticated ===
-              true && (
-              <span
-                className="
-                  text-[11px]
-                  font-semibold
-
-                  text-[#444444]
-                "
-              >
-                {
-                  items.length
-                }{" "}
-                ITEMS
-              </span>
-            )}
-          </div>
-
-          {/* AUTH CHECK */}
-
-          {commerce.isAuthenticated ===
-            null && (
             <div
               className="
-                py-24
-
-                text-center
-
-                text-sm
-
-                text-[#555555]
-              "
-            >
-              Checking your
-              account...
-            </div>
-          )}
-
-          {/* LOGGED OUT */}
-
-          {commerce.isAuthenticated ===
-            false && (
-            <div
-              className="
-                mx-auto
-                mt-12
-
-                max-w-[520px]
-
-                rounded-[22px]
-
-                border
-                border-black/10
-
-                bg-white
-
-                px-8
-                py-12
-
-                text-center
-              "
-            >
-              <div
-                className="
-                  mx-auto
-
-                  flex
-                  h-14
-                  w-14
-                  items-center
-                  justify-center
-
-                  rounded-full
-
-                  bg-[#F7E8ED]
-
-                  text-[#8C1839]
-                "
-              >
-                <HeartIcon />
-              </div>
-
-              <h2
-                className="
-                  mt-5
-
-                  text-xl
-                  font-semibold
-
-                  text-[#111111]
-                "
-              >
-                Login to check your
-                wishlist
-              </h2>
-
-              <p
-                className="
-                  mt-2
-
-                  text-sm
-                  leading-6
-
-                  text-[#666666]
-                "
-              >
-                Sign in to view and
-                manage all products
-                saved in your
-                wishlist.
-              </p>
-
-              <button
-                type="button"
-                onClick={() =>
-                  commerce.openLoginPrompt(
-                    "wishlist"
-                  )
-                }
-                className="
-                  mt-6
-
-                  h-12
-
-                  rounded-[10px]
-
-                  bg-[#8C1839]
-
-                  px-10
-
-                  text-[11px]
-                  font-bold
-                  uppercase
-
-                  tracking-[0.14em]
-
-                  text-white
-                "
-              >
-                Login / Sign Up
-              </button>
-            </div>
-          )}
-
-          {/* LOADING */}
-
-          {commerce.isAuthenticated ===
-            true &&
-            loading && (
-            <div
-              className="
-                py-24
-
-                text-center
-
-                text-sm
-
-                text-[#555555]
-              "
-            >
-              Loading wishlist...
-            </div>
-          )}
-
-          {/* EMPTY */}
-
-          {commerce.isAuthenticated ===
-            true &&
-            !loading &&
-            items.length ===
-              0 && (
-            <div
-              className="
-                mt-10
-
-                rounded-[20px]
-
-                border
-                border-black/10
-
-                bg-white
-
-                py-20
-
-                text-center
-              "
-            >
-              <h2
-                className="
-                  text-lg
-                  font-semibold
-
-                  text-[#111111]
-                "
-              >
-                Your wishlist is
-                empty
-              </h2>
-
-              <p
-                className="
-                  mt-2
-
-                  text-sm
-
-                  text-[#666666]
-                "
-              >
-                Tap the heart on any
-                product to save it
-                here.
-              </p>
-            </div>
-          )}
-
-          {/* PRODUCTS */}
-
-          {commerce.isAuthenticated ===
-            true &&
-            !loading &&
-            items.length >
-              0 && (
-            <div
-              className="
-                mt-8
-
                 grid
+                w-full
+                min-w-0
                 grid-cols-1
+                gap-3
 
-                gap-6
-
-                sm:grid-cols-2
-                lg:grid-cols-3
-                xl:grid-cols-4
+                xl:grid-cols-[minmax(0,1.7fr)_minmax(300px,1fr)]
+                xl:gap-[18px]
               "
             >
-              {items.map(
-                (
-                  item,
-                  index
-                ) => {
-                  const hasSecondImage =
-                    Boolean(
-                      item.image2 &&
-                        item.image2 !==
-                          item.image1
-                    );
+              <section
+                className="
+                  relative
+                  min-w-0
+                  overflow-hidden
+                  rounded-[12px]
+                  px-4
+                  py-5
 
-                  const hasDiscount =
-                    item.originalPrice >
-                    item.showPrice;
+                  sm:min-h-[165px]
+                  sm:px-[30px]
+                  sm:py-6
+                "
+                style={{
+                  background: `
+                    radial-gradient(
+                      circle at 84% 28%,
+                      rgba(255,255,255,.90) 0 7%,
+                      rgba(255,255,255,0) 22%
+                    ),
+                    linear-gradient(
+                      90deg,
+                      #FAEDEB 0%,
+                      #FBEFED 54%,
+                      #F7E4E5 100%
+                    )
+                  `,
+                }}
+              >
+                <p
+                  className="
+                    text-[8px]
+                    font-semibold
+                    uppercase
+                    text-[#282221]
 
-                  return (
-                    <article
-                      key={`${item.productId}-${item.colorId}-${index}`}
+                    sm:text-[10px]
+                  "
+                >
+                  MY ACCOUNT &gt;
+                  WISHLIST
+                </p>
+
+                <h1
+                  className="
+                    mt-3
+                    font-serif
+                    text-[30px]
+                    leading-none
+                    text-[#171313]
+
+                    sm:text-[44px]
+                  "
+                >
+                  My Wishlist
+                </h1>
+
+                <p
+                  className="
+                    mt-3
+                    max-w-[470px]
+                    text-[9px]
+                    font-medium
+                    leading-[1.6]
+                    text-[#332E2C]
+
+                    sm:text-[12px]
+                  "
+                >
+                  Save your favorite
+                  finds and keep
+                  everything you love
+                  together in one
+                  place.
+                </p>
+              </section>
+
+              {/* SUMMARY */}
+
+              <section
+                className="
+                  min-w-0
+                  rounded-[12px]
+                  border
+                  border-[#E7DEDA]
+                  bg-white
+                  p-4
+
+                  sm:min-h-[165px]
+                  sm:p-5
+                "
+              >
+                <div
+                  className="
+                    flex
+                    min-w-0
+                    items-center
+                    justify-between
+                    gap-2
+                  "
+                >
+                  <div
+                    className="
+                      flex
+                      min-w-0
+                      items-center
+                      gap-2
+                    "
+                  >
+                    <div
                       className="
-                        overflow-hidden
+                        grid
+                        h-10
+                        w-10
+                        shrink-0
+                        place-items-center
+                        rounded-full
+                        bg-[#FCEAEA]
+                        text-[#AD2348]
 
-                        rounded-[18px]
-
-                        border
-                        border-black/10
-
-                        bg-white
-
-                        p-2.5
-
-                        transition
-
-                        hover:shadow-[0_14px_35px_rgba(0,0,0,.08)]
+                        sm:h-12
+                        sm:w-12
                       "
                     >
-                      {/* IMAGE */}
+                      <Heart
+                        size={19}
+                      />
+                    </div>
 
-                      <Link
-                        href={
-                          item.slug
-                            ? `/product/${encodeURIComponent(
-                                item.slug
-                              )}`
-                            : "#"
-                        }
+                    <span
+                      className="
+                        truncate
+                        font-serif
+                        text-[14px]
+                        text-[#171313]
+
+                        sm:text-[17px]
+                      "
+                    >
+                      Wishlist Summary
+                    </span>
+                  </div>
+
+                  <span
+                    className="
+                      shrink-0
+                      rounded-[7px]
+                      bg-[#F7F2F0]
+                      px-2
+                      py-1.5
+                      text-[7px]
+                      font-bold
+
+                      sm:text-[9px]
+                    "
+                  >
+                    {items.length}{" "}
+                    {items.length ===
+                    1
+                      ? "Item"
+                      : "Items"}
+                  </span>
+                </div>
+
+                <div
+                  className="
+                    mt-5
+                    grid
+                    grid-cols-2
+                    divide-x
+                    divide-[#ECE7E4]
+                  "
+                >
+                  <SummaryStat
+                    value={
+                      loading
+                        ? "—"
+                        : String(
+                            items.length,
+                          )
+                    }
+                    label="Saved Products"
+                  />
+
+                  <SummaryStat
+                    value={
+                      items.length >
+                      0
+                        ? "Ready"
+                        : "Empty"
+                    }
+                    label="Wishlist Status"
+                  />
+                </div>
+              </section>
+            </div>
+
+            {/* AUTH */}
+
+            {commerce.isAuthenticated ===
+              null && (
+              <StateBox>
+                Checking your
+                account...
+              </StateBox>
+            )}
+
+            {commerce.isAuthenticated ===
+              false && (
+              <StateBox>
+                <div>
+                  <Heart
+                    className="
+                      mx-auto
+                      text-[#A90D3B]
+                    "
+                    size={29}
+                  />
+
+                  <h2
+                    className="
+                      mt-4
+                      font-serif
+                      text-[23px]
+                    "
+                  >
+                    Login to check
+                    your wishlist
+                  </h2>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      commerce.openLoginPrompt(
+                        "wishlist",
+                      )
+                    }
+                    className="
+                      mt-5
+                      rounded-[8px]
+                      bg-[#A90D3B]
+                      px-6
+                      py-3
+                      text-[10px]
+                      font-bold
+                      text-white
+                    "
+                  >
+                    Login / Sign Up
+                  </button>
+                </div>
+              </StateBox>
+            )}
+
+            {commerce.isAuthenticated ===
+              true &&
+              loading && (
+              <StateBox>
+                Loading wishlist...
+              </StateBox>
+            )}
+
+            {/* EMPTY */}
+
+            {commerce.isAuthenticated ===
+              true &&
+              !loading &&
+              items.length ===
+                0 && (
+              <section
+                className="
+                  mt-3
+                  rounded-[12px]
+                  border
+                  border-[#E7DEDA]
+                  bg-white
+                  px-5
+                  py-16
+                  text-center
+                "
+              >
+                <Heart
+                  className="
+                    mx-auto
+                    text-[#A90D3B]
+                  "
+                  size={34}
+                />
+
+                <h2
+                  className="
+                    mt-4
+                    font-serif
+                    text-[26px]
+                  "
+                >
+                  Your wishlist is
+                  empty
+                </h2>
+
+                <Link
+                  href="/"
+                  className="
+                    mt-5
+                    inline-flex
+                    items-center
+                    gap-2
+                    rounded-[8px]
+                    bg-[#A90D3B]
+                    px-6
+                    py-3
+                    text-[10px]
+                    font-bold
+                    text-white
+                  "
+                >
+                  <ShoppingBag
+                    size={14}
+                  />
+                  Start Shopping
+                </Link>
+              </section>
+            )}
+
+            {/* PRODUCTS */}
+
+            {commerce.isAuthenticated ===
+              true &&
+              !loading &&
+              items.length >
+                0 && (
+              <section
+                className="
+                  mt-3
+                  grid
+                  w-full
+                  min-w-0
+                  grid-cols-2
+                  gap-[6px]
+
+                  sm:mt-[18px]
+                  sm:gap-4
+
+                  lg:grid-cols-3
+
+                  2xl:grid-cols-4
+                "
+              >
+                {items.map(
+                  (
+                    item,
+                    index,
+                  ) => {
+                    const hasSecondImage =
+                      Boolean(
+                        item.image2 &&
+                          item.image2 !==
+                            item.image1,
+                      );
+
+                    const hasDiscount =
+                      item.originalPrice >
+                      item.showPrice;
+
+                    const removing =
+                      busyProductId ===
+                      item.productId;
+
+                    return (
+                      <article
+                        key={`${item.productId}-${item.colorId}-${index}`}
                         className="
-                          group
-
-                          relative
-
-                          block
-                          aspect-[0.8]
-
+                          min-w-0
+                          max-w-full
                           overflow-hidden
+                          rounded-[8px]
+                          border
+                          border-[#E9DFDB]
+                          bg-white
 
-                          rounded-[14px]
-
-                          bg-[#F4F1EF]
+                          sm:rounded-[12px]
                         "
                       >
-                        {item.image1 ? (
-                          <>
-                            <img
-                              src={
-                                item.image1
-                              }
-                              alt={
-                                item.name
-                              }
-                              className={`
-                                absolute
-                                inset-0
+                        <div
+                          className="
+                            relative
+                            w-full
+                            min-w-0
+                            overflow-hidden
+                            bg-[#F5F1EF]
+                          "
+                        >
+                          <Link
+                            href={
+                              item.slug
+                                ? `/product/${encodeURIComponent(
+                                    item.slug,
+                                  )}`
+                                : "#"
+                            }
+                            className="
+                              group
+                              relative
+                              block
+                              aspect-[0.77]
+                              w-full
+                              overflow-hidden
+                            "
+                          >
+                            {item.image1 ? (
+                              <>
+                                <img
+                                  src={
+                                    item.image1
+                                  }
+                                  alt={
+                                    item.name
+                                  }
+                                  className={`
+                                    absolute
+                                    inset-0
+                                    h-full
+                                    w-full
+                                    object-cover
+                                    transition-all
+                                    duration-500
 
-                                h-full
-                                w-full
+                                    ${
+                                      hasSecondImage
+                                        ? "group-hover:opacity-0"
+                                        : "group-hover:scale-[1.03]"
+                                    }
+                                  `}
+                                />
 
-                                object-cover
+                                {hasSecondImage && (
+                                  <img
+                                    src={
+                                      item.image2
+                                    }
+                                    alt={`${item.name} alternate`}
+                                    className="
+                                      absolute
+                                      inset-0
+                                      h-full
+                                      w-full
+                                      object-cover
+                                      opacity-0
+                                      transition-all
+                                      duration-500
 
-                                transition-all
-                                duration-500
-
-                                ${
-                                  hasSecondImage
-                                    ? "group-hover:scale-[1.02] group-hover:opacity-0"
-                                    : "group-hover:scale-[1.03]"
-                                }
-                              `}
-                            />
-
-                            {hasSecondImage && (
-                              <img
-                                src={
-                                  item.image2
-                                }
-                                alt={`${item.name} alternate`}
+                                      group-hover:opacity-100
+                                    "
+                                  />
+                                )}
+                              </>
+                            ) : (
+                              <div
                                 className="
-                                  absolute
-                                  inset-0
-
+                                  grid
                                   h-full
-                                  w-full
-
-                                  object-cover
-
-                                  opacity-0
-
-                                  transition-all
-                                  duration-500
-
-                                  group-hover:scale-[1.02]
-                                  group-hover:opacity-100
+                                  place-items-center
                                 "
-                              />
+                              >
+                                <Package
+                                  size={28}
+                                />
+                              </div>
                             )}
-                          </>
-                        ) : (
+                          </Link>
+
                           <div
                             className="
-                              flex
-                              h-full
-                              items-center
-                              justify-center
-
-                              text-xs
-
-                              text-black/40
+                              absolute
+                              right-1.5
+                              top-1.5
+                              grid
+                              h-7
+                              w-7
+                              place-items-center
+                              rounded-full
+                              bg-white
+                              text-[#A90D3B]
+                              shadow
                             "
                           >
-                            No image
+                            <Heart
+                              size={13}
+                              fill="currentColor"
+                            />
                           </div>
-                        )}
-                      </Link>
-
-                      {/* DETAILS */}
-
-                      <div
-                        className="
-                          px-2
-                          pb-2
-                          pt-4
-                        "
-                      >
-                        <Link
-                          href={
-                            item.slug
-                              ? `/product/${encodeURIComponent(
-                                  item.slug
-                                )}`
-                              : "#"
-                          }
-                          className="
-                            line-clamp-2
-
-                            min-h-[40px]
-
-                            text-[12px]
-                            font-semibold
-                            leading-5
-
-                            text-[#111111]
-
-                            hover:text-[#8C1839]
-                          "
-                        >
-                          {
-                            item.name
-                          }
-                        </Link>
-
-                        {item.color && (
-                          <p
-                            className="
-                              mt-1
-
-                              text-[10px]
-
-                              text-[#666666]
-                            "
-                          >
-                            Color:{" "}
-                            <span
-                              className="
-                                font-medium
-
-                                text-[#222222]
-                              "
-                            >
-                              {
-                                item.color
-                              }
-                            </span>
-                          </p>
-                        )}
-
-                        {/* BLACK PRICE */}
-
-                        <div
-                          className="
-                            mt-3
-
-                            flex
-                            flex-wrap
-                            items-center
-
-                            gap-2
-                          "
-                        >
-                          <strong
-                            className="
-                              text-[15px]
-                              font-bold
-
-                              text-[#000000]
-                            "
-                          >
-                            ₹
-                            {item.showPrice.toLocaleString(
-                              "en-IN",
-                              {
-                                maximumFractionDigits:
-                                  2,
-                              }
-                            )}
-                          </strong>
-
-                          {hasDiscount && (
-                            <span
-                              className="
-                                text-[10px]
-
-                                text-[#666666]
-
-                                line-through
-                              "
-                            >
-                              ₹
-                              {item.originalPrice.toLocaleString(
-                                "en-IN",
-                                {
-                                  maximumFractionDigits:
-                                    2,
-                                }
-                              )}
-                            </span>
-                          )}
                         </div>
 
-                        {/* BUTTONS */}
-
                         <div
                           className="
-                            mt-4
+                            min-w-0
+                            p-2
 
-                            grid
-                            grid-cols-2
-
-                            gap-2
+                            sm:p-4
                           "
                         >
-                          {item.slug ? (
-                            <Link
-                              href={`/product/${encodeURIComponent(
-                                item.slug
-                              )}`}
+                          <Link
+                            href={
+                              item.slug
+                                ? `/product/${encodeURIComponent(
+                                    item.slug,
+                                  )}`
+                                : "#"
+                            }
+                            className="
+                              line-clamp-2
+                              block
+                              min-h-[30px]
+                              break-words
+                              font-serif
+                              text-[9px]
+                              font-medium
+                              leading-[14px]
+                              text-[#171313]
+
+                              sm:min-h-[42px]
+                              sm:text-[15px]
+                              sm:leading-5
+                            "
+                          >
+                            {item.name}
+                          </Link>
+
+                          {item.color && (
+                            <p
+                              className="
+                                mt-1
+                                truncate
+                                text-[7px]
+                                text-[#5B504C]
+
+                                sm:text-[10px]
+                              "
+                            >
+                              Color:{" "}
+                              <strong>
+                                {
+                                  item.color
+                                }
+                              </strong>
+                            </p>
+                          )}
+
+                          <div
+                            className="
+                              mt-1.5
+                              flex
+                              min-w-0
+                              flex-wrap
+                              items-center
+                              gap-1
+
+                              sm:mt-4
+                              sm:gap-2
+                            "
+                          >
+                            <strong
+                              className="
+                                whitespace-nowrap
+                                font-serif
+                                text-[13px]
+                                text-black
+
+                                sm:text-[18px]
+                              "
+                            >
+                              {money(
+                                item.showPrice,
+                              )}
+                            </strong>
+
+                            {hasDiscount && (
+                              <span
+                                className="
+                                  text-[6px]
+                                  text-[#766B67]
+                                  line-through
+
+                                  sm:text-[10px]
+                                "
+                              >
+                                {money(
+                                  item.originalPrice,
+                                )}
+                              </span>
+                            )}
+                          </div>
+
+                          <div
+                            className="
+                              mt-2
+                              grid
+                              grid-cols-1
+                              gap-1
+
+                              sm:mt-5
+                              sm:grid-cols-2
+                              sm:gap-2
+                            "
+                          >
+                            {item.slug && (
+                              <Link
+                                href={`/product/${encodeURIComponent(
+                                  item.slug,
+                                )}`}
+                                className="
+                                  flex
+                                  h-7
+                                  items-center
+                                  justify-center
+                                  rounded-[5px]
+                                  border
+                                  border-[#DCCFCC]
+                                  bg-white
+                                  px-1
+                                  text-[6px]
+                                  font-bold
+                                  text-[#171313]
+
+                                  sm:h-10
+                                  sm:text-[10px]
+                                "
+                              >
+                                View Product
+                              </Link>
+                            )}
+
+                            <button
+                              type="button"
+                              disabled={
+                                removing
+                              }
+                              onClick={() =>
+                                void handleRemove(
+                                  item.productId,
+                                )
+                              }
                               className="
                                 flex
-                                h-10
+                                h-7
                                 items-center
                                 justify-center
-
-                                rounded-[8px]
-
+                                gap-1
+                                rounded-[5px]
                                 border
-                                border-[#211A18]/20
-
-                                bg-white
-
-                                text-[9px]
+                                border-[#E5C8CE]
+                                bg-[#FFF7F8]
+                                text-[6px]
                                 font-bold
-                                uppercase
+                                text-[#A90D3B]
 
-                                tracking-[0.08em]
+                                disabled:opacity-40
 
-                                text-[#111111]
-
-                                transition
-
-                                hover:border-[#8C1839]
-                                hover:text-[#8C1839]
+                                sm:h-10
+                                sm:text-[10px]
                               "
                             >
-                              View
-                            </Link>
-                          ) : (
-                            <div />
-                          )}
+                              <Trash2
+                                size={9}
+                              />
 
-                          <button
-                            type="button"
-                            disabled={
-                              busyProductId ===
-                              item.productId
-                            }
-                            onClick={() => {
-                              void handleRemove(
-                                item.productId
-                              );
-                            }}
-                            className="
-                              h-10
-
-                              rounded-[8px]
-
-                              bg-[#8C1839]
-
-                              text-[9px]
-                              font-bold
-                              uppercase
-
-                              tracking-[0.08em]
-
-                              text-white
-
-                              transition
-
-                              hover:bg-[#6E102D]
-
-                              disabled:opacity-40
-                            "
-                          >
-                            Remove
-                          </button>
+                              {removing
+                                ? "Removing"
+                                : "Remove"}
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    </article>
-                  );
-                }
-              )}
-            </div>
-          )}
+                      </article>
+                    );
+                  },
+                )}
+              </section>
+            )}
+          </main>
         </div>
-      </main>
+      </div>
     </>
   );
 }
 
 /* =========================================================
-   ICON
+   STATE
 ========================================================= */
 
-function HeartIcon() {
+function StateBox({
+  children,
+}: {
+  children: ReactNode;
+}) {
   return (
-    <svg
-      width="25"
-      height="25"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
+    <div
+      className="
+        mt-3
+        flex
+        min-h-[180px]
+        items-center
+        justify-center
+        rounded-[12px]
+        border
+        border-[#E7DEDA]
+        bg-white
+        px-4
+        text-center
+        text-[12px]
+        text-[#171313]
+      "
     >
-      <path d="M20.8 4.6a5.4 5.4 0 0 0-7.6 0L12 5.8l-1.2-1.2a5.4 5.4 0 0 0-7.6 7.6L12 21l8.8-8.8a5.4 5.4 0 0 0 0-7.6Z" />
-    </svg>
+      {children}
+    </div>
+  );
+}
+
+/* =========================================================
+   SUMMARY
+========================================================= */
+
+function SummaryStat({
+  value,
+  label,
+}: {
+  value: string;
+  label: string;
+}) {
+  return (
+    <div
+      className="
+        min-w-0
+        px-1
+        text-center
+      "
+    >
+      <strong
+        className="
+          block
+          truncate
+          font-serif
+          text-[14px]
+          text-black
+
+          sm:text-[18px]
+        "
+      >
+        {value}
+      </strong>
+
+      <span
+        className="
+          mt-1
+          block
+          text-[6px]
+          font-semibold
+          text-[#403633]
+
+          sm:text-[9px]
+        "
+      >
+        {label}
+      </span>
+    </div>
   );
 }

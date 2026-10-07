@@ -1,14 +1,10 @@
 import { Types } from "mongoose";
-<<<<<<< HEAD
 import path from "node:path";
-=======
->>>>>>> aman
 import Product from "../models/Product.model";
 import User from "../models/User.model";
 import Notification from "../models/Notification.model";
 import { sendEmail } from "./mail.service";
 
-<<<<<<< HEAD
 const ADMIN_ORDER_EMAIL = "hivrasoft@gmail.com";
 const YOUTUBE_URL = "https://www.youtube.com/@HivraSoft";
 const INSTAGRAM_URL = "https://www.instagram.com/hivrasoft/";
@@ -22,8 +18,6 @@ const brandLogoAttachment = () => [{
   cid: BRAND_LOGO_CID,
 }];
 
-=======
->>>>>>> aman
 const money = (value: unknown) => {
   const amount = Number(value || 0);
   return `₹${Number.isFinite(amount) ? amount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "0.00"}`;
@@ -39,7 +33,6 @@ const escapeHtml = (value: unknown) =>
 
 const frontendUrl = () => String(process.env.FRONTEND_URL || "http://localhost:3000").replace(/\/$/, "");
 
-<<<<<<< HEAD
 function formatDateTime(value: unknown) {
   const date = value ? new Date(value as any) : new Date();
   if (Number.isNaN(date.getTime())) return "—";
@@ -54,8 +47,6 @@ function formatDateTime(value: unknown) {
   });
 }
 
-=======
->>>>>>> aman
 function reminderStageLabel(stageMinutes: number) {
   if (stageMinutes === 1440) return "24 hours";
   if (stageMinutes === 2880) return "48 hours (2 days)";
@@ -73,7 +64,6 @@ function reminderStageLabel(stageMinutes: number) {
 function baseTemplate(input: { title: string; preheader: string; body: string }) {
   return `<!doctype html>
   <html>
-<<<<<<< HEAD
     <head>
       <meta name="viewport" content="width=device-width,initial-scale=1" />
       <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
@@ -144,43 +134,18 @@ function baseTemplate(input: { title: string; preheader: string; body: string })
             </table>
           </td>
         </tr>
-=======
-    <body style="margin:0;background:#f7f3ef;font-family:Arial,sans-serif;color:#211A18;">
-      <div style="display:none;max-height:0;overflow:hidden;opacity:0;">${escapeHtml(input.preheader)}</div>
-      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f7f3ef;padding:24px 12px;">
-        <tr><td align="center">
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px;background:#ffffff;border:1px solid #eadfda;border-radius:20px;overflow:hidden;">
-            <tr><td style="padding:24px 28px;background:#211A18;color:#ffffff;">
-              <div style="font-size:20px;font-weight:700;letter-spacing:4px;">HIVRASOFT</div>
-              <div style="margin-top:8px;font-size:12px;color:#ffffffaa;">${escapeHtml(input.title)}</div>
-            </td></tr>
-            <tr><td style="padding:28px;">${input.body}</td></tr>
-            <tr><td style="padding:18px 28px;border-top:1px solid #eee4df;font-size:11px;color:#766a65;">
-              This is an automatic HivraSoft store email.
-            </td></tr>
-          </table>
-        </td></tr>
->>>>>>> aman
       </table>
     </body>
   </html>`;
 }
 
 function cta(label: string, href: string) {
-<<<<<<< HEAD
   return `<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin-top:20px;"><tr><td style="background:#ce0f55;border-radius:10px;"><a href="${escapeHtml(href)}" style="display:inline-block;padding:12px 20px;color:#ffffff;text-decoration:none;font-size:13px;font-weight:700;">${escapeHtml(label)}</a></td></tr></table>`;
-=======
-  return `<a href="${escapeHtml(href)}" style="display:inline-block;margin-top:20px;padding:12px 18px;border-radius:10px;background:#A51D45;color:#fff;text-decoration:none;font-size:13px;font-weight:700;">${escapeHtml(label)}</a>`;
->>>>>>> aman
 }
 
 function imageBlock(url: string, alt: string) {
   if (!url) return "";
-<<<<<<< HEAD
   return `<img src="${escapeHtml(url)}" alt="${escapeHtml(alt)}" width="120" style="display:block;width:120px;max-width:100%;height:auto;margin:16px 0;border-radius:12px;border:1px solid #f2d2dc;" />`;
-=======
-  return `<img src="${escapeHtml(url)}" alt="${escapeHtml(alt)}" width="170" style="display:block;width:170px;max-width:100%;height:auto;margin:18px 0;border-radius:14px;border:1px solid #eee4df;" />`;
->>>>>>> aman
 }
 
 function productSnapshot(product: any, colorId?: string | null, sizeId?: string | null) {
@@ -197,11 +162,8 @@ function productSnapshot(product: any, colorId?: string | null, sizeId?: string 
     name: String(color?.nameProduct || "Product"),
     image: String(image?.url || ""),
     price: Number(size?.showPrice ?? color?.showPrice ?? 0),
-<<<<<<< HEAD
     colorName: String(color?.nameColor || ""),
     sizeName: String(size?.size || ""),
-=======
->>>>>>> aman
   };
 }
 
@@ -210,11 +172,7 @@ async function customerAndProduct(userId: string, productId: string, colorId?: s
     throw new Error("Invalid user or product ID for email.");
   }
   const [user, product] = await Promise.all([
-<<<<<<< HEAD
     User.findById(userId).select("name email phone isActive role").lean(),
-=======
-    User.findById(userId).select("name email isActive role").lean(),
->>>>>>> aman
     Product.findById(productId).select("colors isActive").lean(),
   ]);
   if (!user || user.role !== "customer" || user.isActive === false || !user.email) return null;
@@ -222,8 +180,6 @@ async function customerAndProduct(userId: string, productId: string, colorId?: s
   return { user, product: productSnapshot(product, colorId, sizeId) };
 }
 
-<<<<<<< HEAD
-=======
 export async function sendCartAddedEmail(input: {
   userId: string;
   productId: string;
@@ -277,7 +233,6 @@ export async function sendWishlistAddedEmail(input: {
   return true;
 }
 
->>>>>>> aman
 export async function sendCartReminderEmail(input: {
   userId: string;
   productId: string;
@@ -288,7 +243,6 @@ export async function sendCartReminderEmail(input: {
 }) {
   const data = await customerAndProduct(input.userId, input.productId, input.colorId, input.sizeId);
   if (!data) return false;
-<<<<<<< HEAD
   const label = reminderStageLabel(input.stageMinutes);
   const isTwoDay = input.stageMinutes >= 2880;
   const quantity = Math.max(1, Number(input.quantity || 1));
@@ -313,24 +267,6 @@ export async function sendCartReminderEmail(input: {
     subject: isTwoDay ? "Your cart is still waiting — stock is limited" : "Your cart is waiting — buy before stock runs out",
     attachments: brandLogoAttachment(),
     html: baseTemplate({ title: isTwoDay ? "Your Cart is Still Waiting!" : "Your Cart is Waiting!", preheader: `${data.product.name} is still in your cart and stock may change.`, body }),
-=======
-  const isDay = input.stageMinutes >= 1440;
-  const isTwoDay = input.stageMinutes >= 2880;
-  const label = reminderStageLabel(input.stageMinutes);
-  const body = `
-    <p style="margin:0 0 14px;font-size:15px;">Hi <strong>${escapeHtml((data.user as any).name || "Customer")}</strong>,</p>
-    <p style="margin:0;color:#5f5550;font-size:14px;line-height:1.6;">This product has been waiting in your cart for ${escapeHtml(label)}.</p>
-    ${imageBlock(data.product.image, data.product.name)}
-    <div style="font-size:17px;font-weight:700;">${escapeHtml(data.product.name)}</div>
-    <div style="margin-top:8px;font-size:13px;color:#5f5550;">Quantity: <strong>${Math.max(1, Number(input.quantity || 1))}</strong></div>
-    <div style="margin-top:5px;font-size:13px;color:#5f5550;">Price: <strong>${money(data.product.price)}</strong></div>
-    ${cta("Complete Your Order", `${frontendUrl()}/account/card`)}
-  `;
-  await sendEmail({
-    to: String((data.user as any).email),
-    subject: isTwoDay ? "Your cart is still waiting after 2 days" : isDay ? "Your cart is still waiting" : "You left something in your cart",
-    html: baseTemplate({ title: "Cart Reminder", preheader: `${data.product.name} is still in your cart.`, body }),
->>>>>>> aman
   });
   return true;
 }
@@ -344,7 +280,6 @@ export async function sendWishlistReminderEmail(input: {
 }) {
   const data = await customerAndProduct(input.userId, input.productId, input.colorId, input.sizeId);
   if (!data) return false;
-<<<<<<< HEAD
   const label = reminderStageLabel(input.stageMinutes);
   const isTwoDay = input.stageMinutes >= 2880;
   const body = `
@@ -367,28 +302,10 @@ export async function sendWishlistReminderEmail(input: {
     subject: isTwoDay ? "Your wishlist item is still waiting after 2 days" : "Your wishlist item is still waiting",
     attachments: brandLogoAttachment(),
     html: baseTemplate({ title: "Still on Your Wishlist!", preheader: `${data.product.name} is still in your wishlist.`, body }),
-=======
-  const isDay = input.stageMinutes >= 1440;
-  const isTwoDay = input.stageMinutes >= 2880;
-  const label = reminderStageLabel(input.stageMinutes);
-  const body = `
-    <p style="margin:0 0 14px;font-size:15px;">Hi <strong>${escapeHtml((data.user as any).name || "Customer")}</strong>,</p>
-    <p style="margin:0;color:#5f5550;font-size:14px;line-height:1.6;">A product you saved ${escapeHtml(label)} ago is still on your wishlist.</p>
-    ${imageBlock(data.product.image, data.product.name)}
-    <div style="font-size:17px;font-weight:700;">${escapeHtml(data.product.name)}</div>
-    <div style="margin-top:8px;font-size:13px;color:#5f5550;">Price: <strong>${money(data.product.price)}</strong></div>
-    ${cta("View Product / Buy Now", `${frontendUrl()}/account/wishlist`)}
-  `;
-  await sendEmail({
-    to: String((data.user as any).email),
-    subject: isTwoDay ? "Your wishlist item is still waiting after 2 days" : isDay ? "Your wishlist item is still waiting" : "Still thinking about your wishlist item?",
-    html: baseTemplate({ title: "Wishlist Reminder", preheader: `${data.product.name} is still in your wishlist.`, body }),
->>>>>>> aman
   });
   return true;
 }
 
-<<<<<<< HEAD
 function orderItemRows(items: any[]) {
   return items.map((item: any) => `
     <tr>
@@ -433,8 +350,6 @@ function shippingAddressBlock(order: any) {
     </div>`;
 }
 
-=======
->>>>>>> aman
 export async function sendOrderConfirmationEmailOnce(order: any) {
   const orderId = String(order?._id || "");
   const userId = String(order?.user || "");
@@ -444,7 +359,6 @@ export async function sendOrderConfirmationEmailOnce(order: any) {
   const notification = await Notification.findOne({ dedupeKey });
   if ((notification?.metadata as any)?.orderEmailSentAt) return false;
 
-<<<<<<< HEAD
   const user = await User.findById(userId).select("name email phone isActive role").lean();
   if (!user || user.role !== "customer" || user.isActive === false || !user.email) return false;
 
@@ -465,55 +379,14 @@ export async function sendOrderConfirmationEmailOnce(order: any) {
       ${orderSummaryRows(order)}
     </table>
     ${shippingAddressBlock(order)}
-=======
-  const user = await User.findById(userId).select("name email isActive role").lean();
-  if (!user || user.role !== "customer" || user.isActive === false || !user.email) return false;
-
-  const items = Array.isArray(order?.items) ? order.items : [];
-  const itemRows = items.map((item: any) => `
-    <tr>
-      <td style="padding:12px 0;border-bottom:1px solid #eee4df;width:72px;vertical-align:top;">
-        ${item?.image ? `<img src="${escapeHtml(item.image)}" alt="${escapeHtml(item?.name || "Product")}" width="58" style="display:block;width:58px;height:58px;object-fit:cover;border-radius:9px;" />` : ""}
-      </td>
-      <td style="padding:12px 10px;border-bottom:1px solid #eee4df;vertical-align:top;">
-        <div style="font-weight:700;font-size:13px;">${escapeHtml(item?.name || "Product")}</div>
-        <div style="margin-top:4px;font-size:12px;color:#6d625d;">Qty: ${Math.max(1, Number(item?.quantity || 1))}</div>
-      </td>
-      <td align="right" style="padding:12px 0;border-bottom:1px solid #eee4df;font-size:13px;font-weight:700;vertical-align:top;">${money(item?.finalTotal ?? item?.subtotal ?? 0)}</td>
-    </tr>`).join("");
-
-  const summary: string[] = [];
-  summary.push(`<div style="display:flex;justify-content:space-between;margin-top:8px;font-size:13px;"><span>Subtotal</span><strong>${money(order?.subtotal)}</strong></div>`);
-  if (Number(order?.discount || 0) > 0) summary.push(`<div style="display:flex;justify-content:space-between;margin-top:8px;font-size:13px;"><span>Discount</span><strong>- ${money(order.discount)}</strong></div>`);
-  if (Number(order?.tax || 0) > 0) summary.push(`<div style="display:flex;justify-content:space-between;margin-top:8px;font-size:13px;"><span>${escapeHtml(order?.taxName || "GST")}</span><strong>${money(order.tax)}</strong></div>`);
-  if (Number(order?.shipping || 0) > 0) summary.push(`<div style="display:flex;justify-content:space-between;margin-top:8px;font-size:13px;"><span>Delivery Charge</span><strong>${money(order.shipping)}</strong></div>`);
-  summary.push(`<div style="display:flex;justify-content:space-between;margin-top:12px;padding-top:12px;border-top:1px solid #ddd0ca;font-size:15px;"><span>Grand Total</span><strong>${money(order?.total)}</strong></div>`);
-
-  const body = `
-    <p style="margin:0 0 8px;font-size:15px;">Hi <strong>${escapeHtml((user as any).name || order?.customer?.name || "Customer")}</strong>,</p>
-    <p style="margin:0 0 18px;color:#5f5550;font-size:14px;line-height:1.6;">Your order has been confirmed.</p>
-    <div style="padding:14px;border-radius:12px;background:#faf8f6;font-size:12px;line-height:1.8;">
-      <strong>Order ID:</strong> ${escapeHtml(order?.orderNumber || orderId)}<br/>
-      <strong>Order Date:</strong> ${escapeHtml(new Date(order?.createdAt || Date.now()).toLocaleString("en-IN"))}<br/>
-      <strong>Payment Method:</strong> ${escapeHtml(String(order?.paymentMethod || "").toUpperCase())}<br/>
-      <strong>Order Status:</strong> ${escapeHtml(String(order?.status || "confirmed").replaceAll("_", " ").toUpperCase())}
-    </div>
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:14px;">${itemRows}</table>
-    <div style="margin-top:16px;">${summary.join("")}</div>
->>>>>>> aman
     ${cta("View Order", `${frontendUrl()}/account/orders?order=${encodeURIComponent(orderId)}`)}
   `;
 
   await sendEmail({
     to: String((user as any).email),
-<<<<<<< HEAD
     subject: `Your HivraSoft order ${order?.orderNumber || orderId} is confirmed`,
     attachments: brandLogoAttachment(),
     html: baseTemplate({ title: "Your Order is Confirmed!", preheader: `Order ${order?.orderNumber || orderId} has been confirmed.`, body }),
-=======
-    subject: "Your order has been confirmed",
-    html: baseTemplate({ title: "Order Confirmation", preheader: `Order ${order?.orderNumber || orderId} has been confirmed.`, body }),
->>>>>>> aman
   });
 
   if (notification) {
@@ -524,7 +397,6 @@ export async function sendOrderConfirmationEmailOnce(order: any) {
   }
   return true;
 }
-<<<<<<< HEAD
 
 export async function sendAdminOrderNotificationEmailOnce(order: any) {
   const orderId = String(order?._id || "");
@@ -574,5 +446,3 @@ export async function sendAdminOrderNotificationEmailOnce(order: any) {
   }
   return true;
 }
-=======
->>>>>>> aman

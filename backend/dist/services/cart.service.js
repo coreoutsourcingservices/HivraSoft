@@ -204,15 +204,17 @@ const buildCartResponse = async (cart) => {
     const discountResult = await (0, discount_service_1.calculateDiscounts)(items
         .filter((item) => item.available && item.product?._id)
         .map((item) => ({
+        lineId: String(item._id || ""),
         productId: String(item.product._id),
         unitPrice: Number(item.unitPrice || 0),
         quantity: Number(item.quantity || 0),
     })), cart.discountCode || null);
-    const discountByProduct = new Map(discountResult.itemDiscounts.map((item) => [item.productId, item]));
+    const discountByLine = new Map(discountResult.itemDiscounts.map((item) => [String(item.lineId || item.productId), item]));
     const discountedItems = items.map((item) => {
         if (!item.product?._id)
             return item;
-        const discount = discountByProduct.get(String(item.product._id));
+        const discount = discountByLine.get(String(item._id || "")) ||
+            discountByLine.get(String(item.product._id));
         return { ...item, discount: discount || null };
     });
     const discountedSubtotal = Math.max(0, subtotal - discountResult.totalDiscount);
@@ -229,10 +231,15 @@ const buildCartResponse = async (cart) => {
         items: discountedItems,
         totalItems,
         subtotal,
+        offerDiscount: discountResult.offerDiscount,
         automaticDiscount: discountResult.automaticDiscount,
         codeDiscount: discountResult.codeDiscount,
         discount: discountResult.totalDiscount,
-        discountSummary: { automatic: discountResult.automatic, code: discountResult.code },
+        discountSummary: {
+            offers: discountResult.offers,
+            automatic: discountResult.automatic,
+            code: discountResult.code,
+        },
         appliedDiscountCode: cart.discountCode || "",
         taxableAmount: taxResult.taxableAmount,
         tax: taxResult.amount,

@@ -3,10 +3,7 @@
 import {
   useEffect,
   useMemo,
-<<<<<<< HEAD
-=======
   useRef,
->>>>>>> aman
   useState,
 } from "react";
 
@@ -16,17 +13,6 @@ import {
 
 import {
   getDefaultColor,
-<<<<<<< HEAD
-  getProductImageUrls,
-  getProductName,
-  getProductPrices,
-  type ApiColor,
-  type ApiProduct,
-} from "@/src/services/products";
-
-/* =========================================================
-   TYPE
-=======
   getProductCategorySlugs,
   getProductImageUrls,
   getProductName,
@@ -48,26 +34,11 @@ import type {
 
 /* =========================================================
    TYPES
->>>>>>> aman
 ========================================================= */
 
 export type ProductDetailsData =
   ApiProduct;
 
-<<<<<<< HEAD
-type ProductDetailsProps = {
-  product: ProductDetailsData;
-
-  /*
-   * Current URL slug:
-   *
-   * mens-light-green-cotton-brief
-   * mens-dark-green-cotton-brief
-   */
-  currentSlug: string;
-};
-
-=======
 type Props = {
   product: ProductDetailsData;
   currentSlug: string;
@@ -165,7 +136,6 @@ function positiveNumber(
   return undefined;
 }
 
->>>>>>> aman
 /* =========================================================
    CLEAN HTML
 ========================================================= */
@@ -204,42 +174,6 @@ function cleanDescriptionHtml(
 }
 
 /* =========================================================
-<<<<<<< HEAD
-   GET FIRST NUMBER
-========================================================= */
-
-function firstNumber(
-  ...values: unknown[]
-) {
-  for (
-    const value of values
-  ) {
-    if (
-      value === undefined ||
-      value === null ||
-      value === ""
-    ) {
-      continue;
-    }
-
-    const number =
-      Number(value);
-
-    if (
-      Number.isFinite(
-        number
-      )
-    ) {
-      return number;
-    }
-  }
-
-  return undefined;
-}
-
-/* =========================================================
-   COMPONENT
-=======
    GALLERY
 ========================================================= */
 
@@ -1373,18 +1307,11 @@ function GalleryHeartIcon({
 
 /* =========================================================
    MAIN
->>>>>>> aman
 ========================================================= */
 
 export default function ProductDetails({
   product,
   currentSlug,
-<<<<<<< HEAD
-}: ProductDetailsProps) {
-  const router =
-    useRouter();
-
-=======
 }: Props) {
   const router =
     useRouter();
@@ -1395,7 +1322,6 @@ export default function ProductDetails({
   const productId =
     getId(product);
 
->>>>>>> aman
   /* =======================================================
      COLORS
   ======================================================= */
@@ -1411,69 +1337,16 @@ export default function ProductDetails({
       }
 
       return product.colors.filter(
-<<<<<<< HEAD
-        (color) =>
-          color?.isActive !==
-=======
         (
           color
         ) =>
           color.isActive !==
->>>>>>> aman
           false
       );
     }, [
       product.colors,
     ]);
 
-<<<<<<< HEAD
-  /* =======================================================
-     FIND COLOR FROM CURRENT URL SLUG
-
-     Example:
-
-     URL:
-     mens-dark-green-cotton-brief
-
-     colors[].slugProduct:
-     mens-dark-green-cotton-brief
-
-     => Dark Green selected
-  ======================================================= */
-
-  const urlColorIndex =
-    useMemo(() => {
-      if (
-        !currentSlug
-      ) {
-        return -1;
-      }
-
-      return activeColors.findIndex(
-        (color) =>
-          String(
-            color?.slugProduct ||
-              ""
-          ) === currentSlug
-      );
-    }, [
-      activeColors,
-      currentSlug,
-    ]);
-
-  /* =======================================================
-     DEFAULT COLOR
-  ======================================================= */
-
-  const defaultColorIndex =
-    useMemo(() => {
-      /*
-       * URL slug has highest priority.
-       */
-
-      if (
-        urlColorIndex >= 0
-=======
   const urlColorIndex =
     useMemo(
       () =>
@@ -1498,32 +1371,10 @@ export default function ProductDetails({
       if (
         urlColorIndex >=
         0
->>>>>>> aman
       ) {
         return urlColorIndex;
       }
 
-<<<<<<< HEAD
-      /*
-       * Otherwise backend default color.
-       */
-
-      const backendDefaultIndex =
-        activeColors.findIndex(
-          (color) =>
-            color?.isDefault ===
-            true
-        );
-
-      if (
-        backendDefaultIndex >=
-        0
-      ) {
-        return backendDefaultIndex;
-      }
-
-      return 0;
-=======
       const backendDefault =
         activeColors.findIndex(
           (
@@ -1537,19 +1388,11 @@ export default function ProductDetails({
         0
         ? backendDefault
         : 0;
->>>>>>> aman
     }, [
       activeColors,
       urlColorIndex,
     ]);
 
-<<<<<<< HEAD
-  /* =======================================================
-     STATE
-  ======================================================= */
-
-=======
->>>>>>> aman
   const [
     selectedColorIndex,
     setSelectedColorIndex,
@@ -1567,33 +1410,11 @@ export default function ProductDetails({
     >(null);
 
   const [
-<<<<<<< HEAD
-    activeImageIndex,
-    setActiveImageIndex,
-  ] =
-    useState(0);
-
-  const [
-=======
->>>>>>> aman
     quantity,
     setQuantity,
   ] =
     useState(1);
 
-<<<<<<< HEAD
-  /* =======================================================
-     SYNC COLOR WHEN URL CHANGES
-
-     /light-green
-           ↓ click Dark Green
-     /dark-green
-           ↓
-     selectedColorIndex = dark green
-  ======================================================= */
-
-=======
->>>>>>> aman
   useEffect(() => {
     setSelectedColorIndex(
       defaultColorIndex
@@ -1603,33 +1424,15 @@ export default function ProductDetails({
       null
     );
 
-<<<<<<< HEAD
-    setActiveImageIndex(
-      0
-    );
-
-    setQuantity(
-      1
-    );
-=======
     setQuantity(1);
->>>>>>> aman
   }, [
     defaultColorIndex,
     currentSlug,
   ]);
 
-<<<<<<< HEAD
-  /* =======================================================
-     SELECTED COLOR
-  ======================================================= */
-
-  const selectedColor =
-=======
   const selectedColor:
     | ApiColor
     | null =
->>>>>>> aman
     activeColors[
       selectedColorIndex
     ] ||
@@ -1637,30 +1440,16 @@ export default function ProductDetails({
       product
     );
 
-<<<<<<< HEAD
-=======
   const colorId =
     getId(
       selectedColor
     );
 
->>>>>>> aman
   /* =======================================================
      IMAGES
   ======================================================= */
 
   const images =
-<<<<<<< HEAD
-    useMemo(() => {
-      const colorImages =
-        Array.isArray(
-          selectedColor?.images
-        )
-          ? selectedColor.images.filter(
-              (image) =>
-                Boolean(
-                  image?.url
-=======
     useMemo<
       GalleryImage[]
     >(() => {
@@ -1675,7 +1464,6 @@ export default function ProductDetails({
               ) =>
                 Boolean(
                   image.url
->>>>>>> aman
                 )
             )
           : [];
@@ -1686,36 +1474,15 @@ export default function ProductDetails({
       ) {
         const defaultImage =
           colorImages.find(
-<<<<<<< HEAD
-            (image) =>
-              image?.isDefault ===
-=======
             (
               image
             ) =>
               image.isDefault ===
->>>>>>> aman
               true
           );
 
         return [
           ...(defaultImage
-<<<<<<< HEAD
-            ? [defaultImage]
-            : []),
-
-          ...colorImages.filter(
-            (image) =>
-              image !==
-              defaultImage
-          ),
-        ];
-      }
-
-      /*
-       * Fallback
-       */
-=======
             ? [
                 defaultImage,
               ]
@@ -1746,42 +1513,25 @@ export default function ProductDetails({
           })
         );
       }
->>>>>>> aman
 
       return getProductImageUrls(
         product
       ).map(
-<<<<<<< HEAD
-        (url) => ({
-=======
         (
           url
         ) => ({
->>>>>>> aman
           url,
         })
       );
     }, [
-<<<<<<< HEAD
-      product,
-      selectedColor,
-=======
       selectedColor,
       product,
->>>>>>> aman
     ]);
 
   /* =======================================================
      SIZES
   ======================================================= */
 
-<<<<<<< HEAD
-  const sizes =
-    useMemo(() => {
-      if (
-        !Array.isArray(
-          selectedColor?.sizes
-=======
   const sizes:
     ApiSize[] =
     useMemo(() => {
@@ -1789,22 +1539,16 @@ export default function ProductDetails({
         !Array.isArray(
           selectedColor
             ?.sizes
->>>>>>> aman
         )
       ) {
         return [];
       }
 
       return selectedColor.sizes.filter(
-<<<<<<< HEAD
-        (size) =>
-          size?.isActive !==
-=======
         (
           size
         ) =>
           size.isActive !==
->>>>>>> aman
           false
       );
     }, [
@@ -1820,121 +1564,6 @@ export default function ProductDetails({
       : undefined;
 
   /* =======================================================
-<<<<<<< HEAD
-     TOTAL STOCK
-  ======================================================= */
-
-  const totalStock =
-    activeColors.reduce(
-      (
-        total,
-        color
-      ) => {
-        const colorSizes =
-          Array.isArray(
-            color?.sizes
-          )
-            ? color.sizes
-            : [];
-
-        return (
-          total +
-          colorSizes.reduce(
-            (
-              sum,
-              size
-            ) => {
-              if (
-                size
-                  ?.isActive ===
-                false
-              ) {
-                return sum;
-              }
-
-              return (
-                sum +
-                Math.max(
-                  0,
-                  Number(
-                    size
-                      ?.stock ||
-                      0
-                  )
-                )
-              );
-            },
-            0
-          )
-        );
-      },
-      0
-    );
-
-  /* =======================================================
-     CURRENT COLOR STOCK
-  ======================================================= */
-
-  const selectedColorStock =
-    sizes.reduce(
-      (
-        total,
-        size
-      ) =>
-        total +
-        Math.max(
-          0,
-          Number(
-            size?.stock ||
-              0
-          )
-        ),
-      0
-    );
-
-  /* =======================================================
-     CURRENT STOCK
-  ======================================================= */
-
-  const currentStock =
-    selectedSize
-      ? Math.max(
-          0,
-          Number(
-            selectedSize
-              ?.stock ||
-              0
-          )
-        )
-      : selectedColor
-        ? selectedColorStock
-        : totalStock;
-
-  /* =======================================================
-     NAME
-
-     Name automatically selected color se badlega.
-  ======================================================= */
-
-  const name =
-    selectedColor
-      ?.nameProduct ||
-    getProductName(
-      product
-    );
-
-  /* =======================================================
-     DESCRIPTION
-  ======================================================= */
-
-  const shortDescription =
-    selectedColor
-      ?.shortDescription ||
-    product.shortDescription ||
-    "";
-
-  const descriptionHtml =
-=======
      TEXT
   ======================================================= */
 
@@ -1971,7 +1600,6 @@ export default function ProductDetails({
     );
 
   const description =
->>>>>>> aman
     cleanDescriptionHtml(
       selectedColor
         ?.description ||
@@ -1982,83 +1610,6 @@ export default function ProductDetails({
      PRICES
   ======================================================= */
 
-<<<<<<< HEAD
-  const basePrices =
-    getProductPrices(
-      product
-    );
-
-  const sellingPrice =
-    firstNumber(
-      selectedSize
-        ?.discountedPrice,
-
-      selectedSize
-        ?.salePrice,
-
-      selectedSize
-        ?.sellingPrice,
-
-      selectedSize?.price,
-
-      selectedColor
-        ?.discountedPrice,
-
-      selectedColor
-        ?.salePrice,
-
-      selectedColor
-        ?.sellingPrice,
-
-      selectedColor?.price,
-
-      basePrices.sellingPrice
-    ) ?? 0;
-
-  const comparePrice =
-    firstNumber(
-      selectedSize
-        ?.compareAtPrice,
-
-      selectedSize
-        ?.actualPrice,
-
-      selectedSize
-        ?.originalPrice,
-
-      selectedSize?.mrp,
-
-      selectedColor
-        ?.compareAtPrice,
-
-      selectedColor
-        ?.actualPrice,
-
-      selectedColor
-        ?.originalPrice,
-
-      selectedColor?.mrp,
-
-      basePrices.actualPrice
-    ) ??
-    sellingPrice;
-
-  const actualPrice =
-    comparePrice >
-    sellingPrice
-      ? comparePrice
-      : sellingPrice;
-
-  const discount =
-    actualPrice >
-      sellingPrice &&
-    actualPrice >
-      0
-      ? Math.round(
-          ((actualPrice -
-            sellingPrice) /
-            actualPrice) *
-=======
   const showPrice =
     positiveNumber(
       field(
@@ -2173,119 +1724,11 @@ export default function ProductDetails({
             discountAmount /
             originalPrice
           ) *
->>>>>>> aman
             100
         )
       : 0;
 
   /* =======================================================
-<<<<<<< HEAD
-     SELECT COLOR
-
-     ⭐ MAIN FIX
-
-     Color select
-       ↓
-     local state update
-       ↓
-     color.slugProduct
-       ↓
-     router.push()
-       ↓
-     browser URL changes
-  ======================================================= */
-
-  const selectColor = (
-    index: number
-  ) => {
-    const color =
-      activeColors[
-        index
-      ];
-
-    if (!color) {
-      return;
-    }
-
-    /* LOCAL UI UPDATE */
-
-    setSelectedColorIndex(
-      index
-    );
-
-    setSelectedSizeIndex(
-      null
-    );
-
-    setActiveImageIndex(
-      0
-    );
-
-    setQuantity(
-      1
-    );
-
-    /* =====================================================
-       URL SLUG UPDATE
-    ===================================================== */
-
-    const nextSlug =
-      String(
-        color.slugProduct ||
-          ""
-      ).trim();
-
-    if (
-      nextSlug &&
-      nextSlug !==
-        currentSlug
-    ) {
-      router.push(
-        `/product/${encodeURIComponent(
-          nextSlug
-        )}`,
-        {
-          scroll: false,
-        }
-      );
-    }
-  };
-
-  /* =======================================================
-     SELECT SIZE
-  ======================================================= */
-
-  const selectSize = (
-    index: number
-  ) => {
-    const size =
-      sizes[index];
-
-    if (
-      !size ||
-      size.isActive ===
-        false ||
-      Number(
-        size.stock ||
-          0
-      ) <= 0
-    ) {
-      return;
-    }
-
-    setSelectedSizeIndex(
-      index
-    );
-
-    setQuantity(
-      1
-    );
-  };
-
-  /* =======================================================
-     RENDER
-  ======================================================= */
-=======
      STOCK
   ======================================================= */
 
@@ -2631,18 +2074,11 @@ export default function ProductDetails({
         }
       );
     };
->>>>>>> aman
 
   return (
     <main
       className="
         min-h-screen
-<<<<<<< HEAD
-        bg-white
-        text-[#292526]
-      "
-    >
-=======
 
         bg-white
 
@@ -2653,155 +2089,11 @@ export default function ProductDetails({
           PRODUCT FIRST
       =================================================== */}
 
->>>>>>> aman
       <section
         className="
           mx-auto
 
           grid
-<<<<<<< HEAD
-          w-full
-          max-w-[1180px]
-
-          grid-cols-1
-          gap-8
-
-          px-4
-          pb-12
-          pt-8
-
-          md:px-6
-
-          lg:grid-cols-[minmax(0,520px)_minmax(0,1fr)]
-          lg:gap-12
-        "
-      >
-        {/* =================================================
-            PRODUCT IMAGE
-        ================================================= */}
-
-        <div>
-          <div
-            className="
-              relative
-
-              aspect-[4/5]
-
-              overflow-hidden
-
-              rounded-xl
-
-              bg-[#f3f3f3]
-            "
-          >
-            {images.length >
-            0 ? (
-              <img
-                src={
-                  images[
-                    Math.min(
-                      activeImageIndex,
-                      images.length -
-                        1
-                    )
-                  ]?.url
-                }
-                alt={
-                  name
-                }
-                className="
-                  h-full
-                  w-full
-                  object-cover
-                "
-              />
-            ) : (
-              <div
-                className="
-                  grid
-                  h-full
-                  place-items-center
-
-                  text-sm
-                  text-black/35
-                "
-              >
-                No Product Image
-              </div>
-            )}
-          </div>
-
-          {/* IMAGE THUMBNAILS */}
-
-          {images.length >
-            1 && (
-            <div
-              className="
-                mt-3
-
-                flex
-                gap-3
-
-                overflow-x-auto
-
-                pb-1
-              "
-            >
-              {images.map(
-                (
-                  image,
-                  index
-                ) => (
-                  <button
-                    key={`${("publicId" in image && image.publicId) || image.url}-${index}`}
-                    type="button"
-                    onClick={() =>
-                      setActiveImageIndex(
-                        index
-                      )
-                    }
-                    className={`
-                      h-20
-                      w-16
-                      shrink-0
-
-                      overflow-hidden
-
-                      rounded-lg
-
-                      border-2
-
-                      ${
-                        activeImageIndex ===
-                        index
-                          ? "border-[#8C1839]"
-                          : "border-transparent"
-                      }
-                    `}
-                  >
-                    <img
-                      src={
-                        image.url
-                      }
-                      alt={`${name} ${
-                        index + 1
-                      }`}
-                      className="
-                        h-full
-                        w-full
-                        object-cover
-                      "
-                    />
-                  </button>
-                )
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* =================================================
-            RIGHT DETAILS
-=======
 
           w-full
           max-w-[1260px]
@@ -2849,17 +2141,10 @@ export default function ProductDetails({
 
         {/* =================================================
             DETAILS
->>>>>>> aman
         ================================================= */}
 
         <div
           className="
-<<<<<<< HEAD
-            pt-2
-          "
-        >
-          {/* BADGES */}
-=======
             min-w-0
 
             px-1
@@ -2870,21 +2155,10 @@ export default function ProductDetails({
           "
         >
           {/* FLAGS */}
->>>>>>> aman
 
           <div
             className="
               flex
-<<<<<<< HEAD
-              flex-wrap
-              gap-2
-
-              text-[9px]
-              font-semibold
-              uppercase
-              tracking-[0.14em]
-              text-[#8C1839]
-=======
               gap-2
 
               text-[9px]
@@ -2894,7 +2168,6 @@ export default function ProductDetails({
               tracking-[0.15em]
 
               text-[#B31345]
->>>>>>> aman
             "
           >
             {product.isNewLaunch && (
@@ -2910,34 +2183,6 @@ export default function ProductDetails({
             )}
           </div>
 
-<<<<<<< HEAD
-          {/* NAME */}
-
-          <h1
-            className="
-              mt-3
-
-              text-2xl
-              font-semibold
-              leading-tight
-              text-[#211A18]
-
-              md:text-3xl
-            "
-          >
-            {name}
-          </h1>
-
-          {shortDescription && (
-            <p
-              className="
-                mt-4
-                max-w-xl
-
-                text-sm
-                leading-6
-                text-[#211A18]/60
-=======
           {/* TITLE */}
 
           <h1
@@ -2971,7 +2216,6 @@ export default function ProductDetails({
                 leading-5
 
                 text-black/50
->>>>>>> aman
               "
             >
               {
@@ -2986,66 +2230,11 @@ export default function ProductDetails({
 
           <div
             className="
-<<<<<<< HEAD
-              mt-6
-=======
               mt-5
->>>>>>> aman
 
               flex
               flex-wrap
               items-center
-<<<<<<< HEAD
-              gap-3
-            "
-          >
-            <span
-              className="
-                text-[24px]
-                font-semibold
-                text-[#211A18]
-              "
-            >
-              ₹
-              {sellingPrice.toLocaleString(
-                "en-IN"
-              )}
-            </span>
-
-            {actualPrice >
-              sellingPrice && (
-              <>
-                <span
-                  className="
-                    text-[14px]
-                    text-[#211A18]/35
-                    line-through
-                  "
-                >
-                  ₹
-                  {actualPrice.toLocaleString(
-                    "en-IN"
-                  )}
-                </span>
-
-                <span
-                  className="
-                    rounded-full
-
-                    bg-[#F8E5E8]
-
-                    px-3
-                    py-1.5
-
-                    text-[9px]
-                    font-semibold
-                    text-[#8C1839]
-                  "
-                >
-                  {discount}% OFF
-                </span>
-              </>
-=======
 
               gap-2.5
             "
@@ -3103,7 +2292,6 @@ export default function ProductDetails({
                 }
                 % OFF
               </span>
->>>>>>> aman
             )}
           </div>
 
@@ -3115,21 +2303,12 @@ export default function ProductDetails({
             0 && (
             <div
               className="
-<<<<<<< HEAD
-                mt-8
-              "
-            >
-              <div
-                className="
-                  text-sm
-=======
                 mt-7
               "
             >
               <p
                 className="
                   text-[11px]
->>>>>>> aman
                   font-semibold
                 "
               >
@@ -3138,25 +2317,6 @@ export default function ProductDetails({
                 <span
                   className="
                     font-normal
-<<<<<<< HEAD
-                    text-black/55
-                  "
-                >
-                  {
-                    selectedColor
-                      ?.nameColor
-                  }
-                </span>
-              </div>
-
-              <div
-                className="
-                  mt-4
-
-                  flex
-                  flex-wrap
-                  gap-3
-=======
 
                     text-black/50
                   "
@@ -3182,7 +2342,6 @@ export default function ProductDetails({
                   [scrollbar-width:none]
 
                   [&::-webkit-scrollbar]:hidden
->>>>>>> aman
                 "
               >
                 {activeColors.map(
@@ -3190,24 +2349,6 @@ export default function ProductDetails({
                     color,
                     index
                   ) => {
-<<<<<<< HEAD
-                    const image =
-                      color.images?.find(
-                        (
-                          item
-                        ) =>
-                          item.isDefault
-                      )?.url ||
-                      color.images?.[0]
-                        ?.url;
-
-                    const hex =
-                      (
-                        color as ApiColor & {
-                          hex?: string;
-                        }
-                      ).hex;
-=======
                     const colorImages =
                       Array.isArray(
                         color.images
@@ -3231,20 +2372,13 @@ export default function ProductDetails({
                           true
                       ) ||
                       colorImages[0];
->>>>>>> aman
 
                     return (
                       <button
                         key={
-<<<<<<< HEAD
-                          color._id ||
-                          color.slugProduct ||
-                          color.slugColor ||
-=======
                           getId(
                             color
                           ) ||
->>>>>>> aman
                           index
                         }
                         type="button"
@@ -3253,15 +2387,6 @@ export default function ProductDetails({
                             index
                           )
                         }
-<<<<<<< HEAD
-                        title={
-                          color.nameProduct ||
-                          color.nameColor
-                        }
-                        className="
-                          w-[76px]
-                          text-center
-=======
                         className="
                           w-[62px]
 
@@ -3270,7 +2395,6 @@ export default function ProductDetails({
                           cursor-pointer
 
                           text-left
->>>>>>> aman
                         "
                       >
                         <div
@@ -3279,36 +2403,14 @@ export default function ProductDetails({
 
                             overflow-hidden
 
-<<<<<<< HEAD
-                            rounded-lg
-
-                            border-2
-
-                            transition
-
-=======
                             rounded-[8px]
 
                             border-2
 
->>>>>>> aman
                             ${
                               selectedColorIndex ===
                               index
                                 ? "border-[#211A18]"
-<<<<<<< HEAD
-                                : "border-transparent hover:border-black/20"
-                            }
-                          `}
-                        >
-                          {image ? (
-                            <img
-                              src={
-                                image
-                              }
-                              alt={
-                                color.nameProduct ||
-=======
                                 : "border-transparent"
                             }
                           `}
@@ -3320,65 +2422,22 @@ export default function ProductDetails({
                                 image.url
                               }
                               alt={
->>>>>>> aman
                                 color.nameColor ||
                                 name
                               }
                               className="
                                 h-full
                                 w-full
-<<<<<<< HEAD
-                                object-cover
-                              "
-                            />
-                          ) : (
-                            <div
-                              className="
-                                grid
-                                h-full
-                                place-items-center
-
-                                bg-[#f5f2ef]
-                              "
-                            >
-                              <span
-                                className="
-                                  h-8
-                                  w-8
-
-                                  rounded-full
-                                  border
-                                "
-                                style={{
-                                  backgroundColor:
-                                    hex ||
-                                    "#ddd",
-                                }}
-                              />
-                            </div>
-                          )}
-=======
 
                                 object-cover
                               "
                             />
                           ) : null}
->>>>>>> aman
                         </div>
 
                         <span
                           className="
                             mt-1
-<<<<<<< HEAD
-                            block
-                            truncate
-
-                            text-[10px]
-                          "
-                        >
-                          {
-                            color.nameColor
-=======
 
                             block
                             truncate
@@ -3391,7 +2450,6 @@ export default function ProductDetails({
                           {
                             color.nameColor ||
                             "Default"
->>>>>>> aman
                           }
                         </span>
                       </button>
@@ -3403,41 +2461,24 @@ export default function ProductDetails({
           )}
 
           {/* =================================================
-<<<<<<< HEAD
-              SIZE
-=======
               SIZES
->>>>>>> aman
           ================================================= */}
 
           {sizes.length >
             0 && (
             <div
               className="
-<<<<<<< HEAD
-                mt-8
-              "
-            >
-              <div
-                className="
-                  text-sm
-=======
                 mt-7
               "
             >
               <p
                 className="
                   text-[11px]
->>>>>>> aman
                   font-semibold
                 "
               >
                 Select Size
-<<<<<<< HEAD
-              </div>
-=======
               </p>
->>>>>>> aman
 
               <div
                 className="
@@ -3445,12 +2486,8 @@ export default function ProductDetails({
 
                   flex
                   flex-wrap
-<<<<<<< HEAD
-                  gap-3
-=======
 
                   gap-2
->>>>>>> aman
                 "
               >
                 {sizes.map(
@@ -3467,15 +2504,10 @@ export default function ProductDetails({
                     return (
                       <button
                         key={
-<<<<<<< HEAD
-                          size._id ||
-                          `${size.size || size.name}-${index}`
-=======
                           getId(
                             size
                           ) ||
                           index
->>>>>>> aman
                         }
                         type="button"
                         disabled={
@@ -3487,18 +2519,6 @@ export default function ProductDetails({
                           )
                         }
                         className={`
-<<<<<<< HEAD
-                          min-w-12
-
-                          rounded-lg
-
-                          border
-
-                          px-4
-                          py-3
-
-                          text-xs
-=======
                           min-w-[48px]
 
                           cursor-pointer
@@ -3511,33 +2531,17 @@ export default function ProductDetails({
                           py-2.5
 
                           text-[11px]
->>>>>>> aman
                           font-semibold
 
                           ${
                             selectedSizeIndex ===
                             index
                               ? "border-[#211A18] bg-[#211A18] text-white"
-<<<<<<< HEAD
-                              : "border-black/20"
-=======
                               : "border-black/20 bg-white text-black"
->>>>>>> aman
                           }
 
                           ${
                             disabled
-<<<<<<< HEAD
-                              ? "cursor-not-allowed opacity-30 line-through"
-                              : ""
-                          }
-                        `}
-                      >
-                        {
-                          size.size ||
-                          size.name
-                        }
-=======
                               ? "cursor-not-allowed bg-black/5 text-black/20 line-through"
                               : "hover:border-[#B31345] hover:text-[#B31345]"
                           }
@@ -3545,7 +2549,6 @@ export default function ProductDetails({
                       >
                         {size.size ||
                           size.name}
->>>>>>> aman
                       </button>
                     );
                   }
@@ -3556,60 +2559,6 @@ export default function ProductDetails({
 
           {/* STOCK */}
 
-<<<<<<< HEAD
-          <div
-            className="
-              mt-7
-              text-sm
-            "
-          >
-            {currentStock >
-            0 ? (
-              <span
-                className="
-                  text-green-700
-                "
-              >
-                In Stock (
-                {currentStock})
-              </span>
-            ) : (
-              <span
-                className="
-                  text-red-600
-                "
-              >
-                Out of Stock
-              </span>
-            )}
-          </div>
-
-          {/* QUANTITY */}
-
-          <div
-            className="
-              mt-6
-
-              grid
-              grid-cols-[130px_1fr]
-
-              gap-3
-            "
-          >
-            <div
-              className="
-                flex
-                h-12
-                items-center
-                justify-between
-
-                rounded-lg
-
-                border
-                border-black/40
-
-                px-4
-=======
           <p
             className={`
               mt-5
@@ -3673,7 +2622,6 @@ export default function ProductDetails({
                 border-black/20
 
                 px-3
->>>>>>> aman
               "
             >
               <button
@@ -3681,37 +2629,22 @@ export default function ProductDetails({
                 onClick={() =>
                   setQuantity(
                     (
-<<<<<<< HEAD
-                      value
-                    ) =>
-                      Math.max(
-                        1,
-                        value -
-=======
                       current
                     ) =>
                       Math.max(
                         1,
                         current -
->>>>>>> aman
                           1
                       )
                   )
                 }
-<<<<<<< HEAD
-=======
                 className="
                   cursor-pointer
                 "
->>>>>>> aman
               >
                 −
               </button>
 
-<<<<<<< HEAD
-              <strong>
-                {quantity}
-=======
               <strong
                 className="
                   text-[11px]
@@ -3720,104 +2653,46 @@ export default function ProductDetails({
                 {
                   quantity
                 }
->>>>>>> aman
               </strong>
 
               <button
                 type="button"
                 disabled={
-<<<<<<< HEAD
-                  quantity >=
-                    currentStock ||
-                  currentStock <=
-                    0
-=======
                   currentStock <=
                     0 ||
                   quantity >=
                     currentStock
->>>>>>> aman
                 }
                 onClick={() =>
                   setQuantity(
                     (
-<<<<<<< HEAD
-                      value
-                    ) =>
-                      Math.min(
-                        currentStock,
-                        value +
-=======
                       current
                     ) =>
                       Math.min(
                         currentStock,
                         current +
->>>>>>> aman
                           1
                       )
                   )
                 }
-<<<<<<< HEAD
-=======
                 className="
                   cursor-pointer
 
                   disabled:cursor-not-allowed
                   disabled:opacity-30
                 "
->>>>>>> aman
               >
                 +
               </button>
             </div>
 
-<<<<<<< HEAD
-=======
             {/* ADD TO BAG */}
 
->>>>>>> aman
             <button
               type="button"
               disabled={
                 currentStock <=
                   0 ||
-<<<<<<< HEAD
-                (sizes.length >
-                  0 &&
-                  !selectedSize)
-              }
-              className="
-                h-12
-
-                rounded-lg
-
-                bg-[#2F2D2D]
-
-                px-5
-
-                text-xs
-                font-semibold
-                uppercase
-                text-white
-
-                transition
-
-                hover:bg-[#9D173E]
-
-                disabled:cursor-not-allowed
-                disabled:bg-[#aaa]
-              "
-            >
-              {currentStock <=
-              0
-                ? "Out Of Stock"
-                : sizes.length >
-                      0 &&
-                    !selectedSize
-                  ? "Select Size"
-                  : "Add To Bag"}
-=======
                 (
                   sizes.length >
                     0 &&
@@ -3899,16 +2774,12 @@ export default function ProductDetails({
               {wished
                 ? "♥"
                 : "♡"}
->>>>>>> aman
             </button>
           </div>
         </div>
       </section>
 
       {/* ===================================================
-<<<<<<< HEAD
-          DESCRIPTION
-=======
           REVIEWS SECOND
       =================================================== */}
 
@@ -3925,7 +2796,6 @@ export default function ProductDetails({
 
       {/* ===================================================
           DESCRIPTION THIRD
->>>>>>> aman
       =================================================== */}
 
       <section
@@ -3933,12 +2803,6 @@ export default function ProductDetails({
           border-t
           border-black/10
 
-<<<<<<< HEAD
-          px-4
-          py-12
-
-          md:px-6
-=======
           bg-white
 
           px-4
@@ -3947,57 +2811,11 @@ export default function ProductDetails({
           sm:px-6
 
           lg:py-18
->>>>>>> aman
         "
       >
         <div
           className="
             mx-auto
-<<<<<<< HEAD
-            max-w-[1180px]
-          "
-        >
-          <p
-            className="
-              text-[9px]
-              font-semibold
-              uppercase
-              tracking-[0.18em]
-              text-[#9D173E]
-            "
-          >
-            Product Information
-          </p>
-
-          <h2
-            className="
-              mt-2
-
-              text-2xl
-              font-semibold
-              text-[#211A18]
-            "
-          >
-            Product Description
-          </h2>
-
-          {descriptionHtml ? (
-            <div
-              className="
-                prose
-
-                mt-6
-
-                max-w-4xl
-
-                text-sm
-                leading-7
-                text-[#554A45]
-              "
-              dangerouslySetInnerHTML={{
-                __html:
-                  descriptionHtml,
-=======
 
             max-w-[960px]
           "
@@ -4086,21 +2904,11 @@ export default function ProductDetails({
               dangerouslySetInnerHTML={{
                 __html:
                   description,
->>>>>>> aman
               }}
             />
           ) : (
             <p
               className="
-<<<<<<< HEAD
-                mt-5
-
-                text-sm
-                text-black/45
-              "
-            >
-              No description
-=======
                 mt-8
 
                 text-center
@@ -4111,7 +2919,6 @@ export default function ProductDetails({
               "
             >
               No product description
->>>>>>> aman
               available.
             </p>
           )}
@@ -4119,8 +2926,4 @@ export default function ProductDetails({
       </section>
     </main>
   );
-<<<<<<< HEAD
-}   
-=======
 }
->>>>>>> aman
