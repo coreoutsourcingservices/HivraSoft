@@ -1,20 +1,65 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
+import {
+  useRouter,
+} from "next/navigation";
+
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
+
+import {
+  Heart,
+  Mail,
+  Package,
+  Phone,
+  ShoppingBag,
+  Sparkles,
+  UserRound,
+} from "lucide-react";
+
 import Header from "@/src/components/Header/Header";
 import AccountSidebar from "./components/AccountSidebar";
+
+import {
+  getMyOrders,
+} from "@/lib/orders";
+
+import {
+  getWishlist,
+} from "@/lib/wishlist";
+
+import {
+  getCart,
+} from "@/lib/cart";
+
+import type {
+  Order,
+} from "@/types/order";
 
 /* =========================================================
    API
 ========================================================= */
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const API_URL = (
+  process.env.NEXT_PUBLIC_API_URL ||
+  "http://localhost:5000"
+).replace(/\/$/, "");
 
 /* =========================================================
-   ACCOUNT API TYPES
+   WELCOME
+========================================================= */
+
+const WELCOME_BANNER =
+  "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=1200&q=85";
+
+/* =========================================================
+   TYPES
 ========================================================= */
 
 type AccountData = {
@@ -23,369 +68,1079 @@ type AccountData = {
   email: string;
   phone: string;
 
-  avatar: {
+  avatar?: {
     url: string;
-    publicId: string;
-  };
+    publicId?: string;
+  } | null;
 
   memberSince: string;
 };
 
 type AccountApiResponse = {
   success: boolean;
-  message: string;
+  message?: string;
   account?: AccountData;
 };
-type AddressType = "home" | "work" | "other";
+
+type AddressType =
+  | "home"
+  | "work"
+  | "other";
 
 type AddressData = {
   id: string;
   userId?: string;
-
   fullName: string;
   phone: string;
   alternatePhone?: string;
-
   addressLine1: string;
   addressLine2?: string;
   landmark?: string;
-
   city: string;
   district?: string;
   state: string;
   postalCode: string;
-
   country: string;
   countryCode?: string;
-
   addressType: AddressType;
-
   isDefault: boolean;
-
   isShippingAddress?: boolean;
   isBillingAddress?: boolean;
-
   instructions?: string;
-
   createdAt?: string;
   updatedAt?: string;
 };
 
 type AddressesApiResponse = {
   success: boolean;
-  message: string;
+  message?: string;
   count?: number;
   addresses?: AddressData[];
 };
 
-/* =========================================================
-   STATIC USER / PAGE DATA
+type WishlistPreviewItem = {
+  productId: string;
+  name: string;
+  slug: string;
+  image: string;
+  price: number;
+};
 
-   YE DATA REMOVE NAHI KARNA.
-   Sidebar, Banner, Orders, Wishlist,
-   Cart, Address sab isi se chalenge.
-========================================================= */
-
-const user = {
-  name: "Prahlad",
-
-  email: "prahlad0227@gmail.com",
-
-  phone: "+91 98765 43210",
-
-  memberSince: "Sep 2026",
-
-  photo:
-    "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=500&q=85",
-
-  /* WELCOME BANNER */
-
-  welcomeBanner:
-    "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=1200&q=85",
-
-  /* SIDEBAR BANNER */
-
-  sidebarBanner:
-    "https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=800&q=85",
-
-  /* ADDRESS */
-
-  /* ORDER */
-
-  recentOrder: {
-    id: "ORD-1001",
-
-    name: "Linen Blend Kurta Set",
-
-    image:
-      "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=500&q=80",
-
-    size: "M",
-
-    quantity: 1,
-
-    price: 2499,
-
-    status: "Delivered",
-
-    date: "12 Sep 2026",
-  },
-
-  /* WISHLIST */
-
-  wishlist: [
-    {
-      id: 1,
-
-      name: "Floral Midi Dress",
-
-      price: 2199,
-
-      image:
-        "https://images.unsplash.com/photo-1566174053879-31528523f8ae?auto=format&fit=crop&w=500&q=80",
-    },
-
-    {
-      id: 2,
-
-      name: "Textured Shoulder Bag",
-
-      price: 1799,
-
-      image:
-        "https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=500&q=80",
-    },
-  ],
-
-  /* CART */
-
-  cart: {
-    itemCount: 2,
-
-    subtotal: 3998,
-
-    image:
-      "https://images.unsplash.com/photo-1434389677669-e08b4cac3105?auto=format&fit=crop&w=500&q=80",
-  },
+type CartPreview = {
+  itemCount: number;
+  subtotal: number;
+  image: string;
+  name: string;
 };
 
 /* =========================================================
    HELPERS
 ========================================================= */
 
-function capitalizeName(name: string) {
-  const value = name.trim();
+function asObject(
+  value: unknown,
+): Record<string, unknown> {
+  if (
+    value &&
+    typeof value ===
+      "object" &&
+    !Array.isArray(value)
+  ) {
+    return value as Record<
+      string,
+      unknown
+    >;
+  }
+
+  return {};
+}
+
+function asArray(
+  value: unknown,
+): unknown[] {
+  return Array.isArray(
+    value,
+  )
+    ? value
+    : [];
+}
+
+function firstString(
+  ...values: unknown[]
+): string {
+  for (
+    const value of values
+  ) {
+    if (
+      typeof value ===
+        "string" &&
+      value.trim()
+    ) {
+      return value.trim();
+    }
+  }
+
+  return "";
+}
+
+function positiveNumber(
+  ...values: unknown[]
+): number {
+  for (
+    const value of values
+  ) {
+    if (
+      value === null ||
+      value === undefined ||
+      value === ""
+    ) {
+      continue;
+    }
+
+    const parsed =
+      Number(value);
+
+    if (
+      Number.isFinite(
+        parsed,
+      ) &&
+      parsed > 0
+    ) {
+      return parsed;
+    }
+  }
+
+  return 0;
+}
+
+function getId(
+  value: unknown,
+): string {
+  if (
+    typeof value ===
+    "string"
+  ) {
+    return value.trim();
+  }
+
+  const object =
+    asObject(value);
+
+  return firstString(
+    object._id,
+    object.id,
+  );
+}
+
+function getImageUrl(
+  value: unknown,
+): string {
+  if (
+    typeof value ===
+    "string"
+  ) {
+    return value.trim();
+  }
+
+  const image =
+    asObject(value);
+
+  return firstString(
+    image.url,
+    image.src,
+    image.image,
+    image.imageUrl,
+  );
+}
+
+function getImages(
+  value: unknown,
+): string[] {
+  const list =
+    asArray(value);
+
+  const defaultImages =
+    list.filter(
+      (item) =>
+        asObject(item)
+          .isDefault === true,
+    );
+
+  const normalImages =
+    list.filter(
+      (item) =>
+        asObject(item)
+          .isDefault !== true,
+    );
+
+  return Array.from(
+    new Set(
+      [
+        ...defaultImages,
+        ...normalImages,
+      ]
+        .map(getImageUrl)
+        .filter(Boolean),
+    ),
+  );
+}
+
+function findById(
+  value: unknown,
+  id: string,
+): Record<string, unknown> {
+  if (!id) {
+    return {};
+  }
+
+  for (
+    const item of asArray(
+      value,
+    )
+  ) {
+    const object =
+      asObject(item);
+
+    if (
+      getId(object) === id
+    ) {
+      return object;
+    }
+  }
+
+  return {};
+}
+
+function capitalizeName(
+  name: string,
+) {
+  const value =
+    String(name || "").trim();
 
   if (!value) {
     return "User";
   }
 
-  return value.charAt(0).toUpperCase() + value.slice(1);
+  return (
+    value.charAt(0).toUpperCase() +
+    value.slice(1)
+  );
 }
 
-function formatPhone(phone: string) {
+function formatPhone(
+  phone: string,
+) {
   if (!phone) {
     return "-";
   }
 
-  const digits = phone.replace(/\D/g, "");
+  const digits =
+    phone.replace(
+      /\D/g,
+      "",
+    );
 
-  if (digits.length === 10) {
-    return `+91 ${digits.slice(0, 5)} ${digits.slice(5)}`;
+  if (
+    digits.length === 10
+  ) {
+    return `+91 ${digits.slice(
+      0,
+      5,
+    )} ${digits.slice(5)}`;
   }
 
-  if (digits.length === 12 && digits.startsWith("91")) {
-    const number = digits.slice(2);
+  if (
+    digits.length === 12 &&
+    digits.startsWith("91")
+  ) {
+    const number =
+      digits.slice(2);
 
-    return `+91 ${number.slice(0, 5)} ${number.slice(5)}`;
+    return `+91 ${number.slice(
+      0,
+      5,
+    )} ${number.slice(5)}`;
   }
 
   return phone;
 }
 
-function formatMemberSince(date: string) {
-  if (!date) {
-    return "";
-  }
-
-  const parsedDate = new Date(date);
-
-  if (Number.isNaN(parsedDate.getTime())) {
-    return "";
-  }
-
-  return parsedDate.toLocaleDateString("en-US", {
-    month: "short",
-    year: "numeric",
-  });
+function money(
+  value:
+    | number
+    | undefined,
+) {
+  return `₹${Number(
+    value || 0,
+  ).toLocaleString(
+    "en-IN",
+    {
+      maximumFractionDigits:
+        2,
+    },
+  )}`;
 }
 
-function getInitial(name: string) {
-  return name?.trim().charAt(0).toUpperCase() || "U";
+function formatDate(
+  value?: string,
+) {
+  if (!value) {
+    return "";
+  }
+
+  const date =
+    new Date(value);
+
+  if (
+    Number.isNaN(
+      date.getTime(),
+    )
+  ) {
+    return "";
+  }
+
+  return date.toLocaleDateString(
+    "en-IN",
+    {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    },
+  );
 }
 
 /* =========================================================
-   ACCOUNT PAGE
+   ORDER STATUS
+========================================================= */
+
+function normalizeStatus(
+  value?: string,
+) {
+  return String(
+    value || "confirmed",
+  )
+    .trim()
+    .toLowerCase()
+    .replace(
+      /\s+/g,
+      "_",
+    );
+}
+
+function formatStatus(
+  value?: string,
+) {
+  const status =
+    normalizeStatus(value);
+
+  const map: Record<
+    string,
+    string
+  > = {
+    pending:
+      "Pending",
+
+    pending_payment:
+      "Payment Pending",
+
+    confirmed:
+      "Confirmed",
+
+    processing:
+      "Processing",
+
+    shipped:
+      "Shipped",
+
+    out_for_delivery:
+      "Out for Delivery",
+
+    delivered:
+      "Delivered",
+
+    cancelled:
+      "Cancelled",
+
+    canceled:
+      "Cancelled",
+
+    returned:
+      "Returned",
+
+    refunded:
+      "Refunded",
+  };
+
+  return (
+    map[status] ||
+    status
+      .replace(
+        /_/g,
+        " ",
+      )
+      .replace(
+        /\b\w/g,
+        (letter) =>
+          letter.toUpperCase(),
+      )
+  );
+}
+
+function statusClasses(
+  value?: string,
+) {
+  const status =
+    normalizeStatus(value);
+
+  if (
+    status === "delivered"
+  ) {
+    return `
+      bg-[#DDF0DF]
+      text-[#31703A]
+    `;
+  }
+
+  if (
+    status === "cancelled" ||
+    status === "canceled"
+  ) {
+    return `
+      bg-[#FDE7E7]
+      text-[#A12B2B]
+    `;
+  }
+
+  if (
+    status === "shipped" ||
+    status ===
+      "out_for_delivery"
+  ) {
+    return `
+      bg-[#E8F1FE]
+      text-[#315B92]
+    `;
+  }
+
+  if (
+    status === "processing"
+  ) {
+    return `
+      bg-[#FFF2D9]
+      text-[#80601B]
+    `;
+  }
+
+  return `
+    bg-[#F8E1E2]
+    text-[#8C1839]
+  `;
+}
+
+/* =========================================================
+   WISHLIST
+========================================================= */
+
+function normalizeWishlistItem(
+  value: unknown,
+): WishlistPreviewItem | null {
+  const raw =
+    asObject(value);
+
+  const product =
+    asObject(
+      raw.product,
+    );
+
+  const productId =
+    firstString(
+      getId(raw.product),
+      raw.productId,
+    );
+
+  const colorId =
+    firstString(
+      getId(raw.colorId),
+      getId(raw.color),
+    );
+
+  const directColor =
+    asObject(
+      raw.color ||
+        raw.selectedColor,
+    );
+
+  const matchedColor =
+    findById(
+      product.colors,
+      colorId,
+    );
+
+  const firstColor =
+    asObject(
+      asArray(
+        product.colors,
+      )[0],
+    );
+
+  const color =
+    Object.keys(
+      directColor,
+    ).length > 0
+      ? directColor
+      : Object.keys(
+            matchedColor,
+          ).length > 0
+        ? matchedColor
+        : firstColor;
+
+  const images =
+    Array.from(
+      new Set(
+        [
+          ...getImages(
+            color.images,
+          ),
+
+          ...getImages(
+            product.mainImages ||
+              product.images,
+          ),
+        ].filter(Boolean),
+      ),
+    );
+
+  const name =
+    firstString(
+      color.nameProduct,
+      raw.nameProduct,
+      product.nameProduct,
+      product.name,
+      "Saved product",
+    );
+
+  const slug =
+    firstString(
+      color.slugProduct,
+      raw.slugProduct,
+      product.slugProduct,
+      product.slug,
+    );
+
+  const price =
+    positiveNumber(
+      color.showPrice,
+      color.sellingPrice,
+      raw.showPrice,
+      raw.price,
+      product.showPrice,
+    );
+
+  if (
+    !productId &&
+    !name
+  ) {
+    return null;
+  }
+
+  return {
+    productId,
+    name,
+    slug,
+    image:
+      images[0] || "",
+    price,
+  };
+}
+
+/* =========================================================
+   CART
+========================================================= */
+
+function normalizeCart(
+  response: unknown,
+): CartPreview {
+  const root =
+    asObject(response);
+
+  const data =
+    asObject(root.data);
+
+  const cart =
+    asObject(
+      root.cart ||
+        data.cart ||
+        data,
+    );
+
+  const rawItems =
+    Array.isArray(
+      cart.items,
+    )
+      ? cart.items
+      : Array.isArray(
+            root.items,
+          )
+        ? root.items
+        : [];
+
+  let itemCount = 0;
+  let calculatedSubtotal = 0;
+  let firstImage = "";
+  let firstName = "";
+
+  rawItems.forEach(
+    (rawValue) => {
+      const item =
+        asObject(rawValue);
+
+      const product =
+        asObject(
+          item.product,
+        );
+
+      const colorId =
+        firstString(
+          getId(item.colorId),
+          getId(item.color),
+        );
+
+      const directColor =
+        asObject(
+          item.color ||
+            item.selectedColor,
+        );
+
+      const color =
+        Object.keys(
+          directColor,
+        ).length > 0
+          ? directColor
+          : findById(
+              product.colors,
+              colorId,
+            );
+
+      const sizeId =
+        firstString(
+          getId(item.sizeId),
+          getId(item.size),
+        );
+
+      const directSize =
+        asObject(
+          item.size ||
+            item.selectedSize,
+        );
+
+      const size =
+        Object.keys(
+          directSize,
+        ).length > 0
+          ? directSize
+          : findById(
+              color.sizes,
+              sizeId,
+            );
+
+      const quantity =
+        Math.max(
+          1,
+          Math.floor(
+            positiveNumber(
+              item.quantity,
+              1,
+            ),
+          ),
+        );
+
+      const price =
+        positiveNumber(
+          size.showPrice,
+          size.sellingPrice,
+          color.showPrice,
+          color.sellingPrice,
+          item.showPrice,
+          item.sellingPrice,
+          item.unitPrice,
+          item.priceAtAdd,
+          item.price,
+          product.showPrice,
+        );
+
+      itemCount += quantity;
+
+      calculatedSubtotal +=
+        price * quantity;
+
+      if (!firstImage) {
+        const images =
+          Array.from(
+            new Set(
+              [
+                firstString(
+                  item.image,
+                  item.imageUrl,
+                ),
+
+                ...getImages(
+                  color.images,
+                ),
+
+                ...getImages(
+                  product.mainImages ||
+                    product.images,
+                ),
+              ].filter(Boolean),
+            ),
+          );
+
+        firstImage =
+          images[0] || "";
+      }
+
+      if (!firstName) {
+        firstName =
+          firstString(
+            color.nameProduct,
+            item.nameProduct,
+            item.productName,
+            product.nameProduct,
+            product.name,
+            "Cart Product",
+          );
+      }
+    },
+  );
+
+  const apiSubtotal =
+    Number(
+      cart.subtotal ??
+        root.subtotal ??
+        data.subtotal,
+    );
+
+  return {
+    itemCount,
+
+    subtotal:
+      Number.isFinite(
+        apiSubtotal,
+      ) &&
+      apiSubtotal >= 0
+        ? apiSubtotal
+        : calculatedSubtotal,
+
+    image:
+      firstImage,
+
+    name:
+      firstName,
+  };
+}
+
+/* =========================================================
+   PAGE
 ========================================================= */
 
 export default function AccountPage() {
-  const router = useRouter();
+  const router =
+    useRouter();
 
-  /* =======================================================
-     API ACCOUNT DATA
+  const [
+    account,
+    setAccount,
+  ] =
+    useState<AccountData | null>(
+      null,
+    );
 
-     SIRF ACCOUNT CARD KE LIYE
-  ======================================================= */
+  const [
+    accountLoading,
+    setAccountLoading,
+  ] =
+    useState(true);
 
-  const [account, setAccount] = useState<AccountData | null>(null);
+  const [
+    accountError,
+    setAccountError,
+  ] =
+    useState("");
 
-  const [accountLoading, setAccountLoading] = useState(true);
+  const [
+    showLoginMessage,
+    setShowLoginMessage,
+  ] =
+    useState(false);
 
-  const [accountError, setAccountError] = useState("");
+  const [
+    defaultAddress,
+    setDefaultAddress,
+  ] =
+    useState<AddressData | null>(
+      null,
+    );
 
-  const [showLoginMessage, setShowLoginMessage] = useState(false);
-  /* =======================================================
-   ADDRESS API DATA
-======================================================= */
+  const [
+    addressLoading,
+    setAddressLoading,
+  ] =
+    useState(true);
 
-  const [defaultAddress, setDefaultAddress] = useState<AddressData | null>(
-    null,
-  );
+  const [
+    addressError,
+    setAddressError,
+  ] =
+    useState("");
 
-  const [addressLoading, setAddressLoading] = useState(true);
+  const [
+    orders,
+    setOrders,
+  ] =
+    useState<Order[]>([]);
 
-  const [addressError, setAddressError] = useState("");
+  const [
+    ordersLoading,
+    setOrdersLoading,
+  ] =
+    useState(true);
+
+  const [
+    wishlist,
+    setWishlist,
+  ] =
+    useState<
+      WishlistPreviewItem[]
+    >([]);
+
+  const [
+    wishlistLoading,
+    setWishlistLoading,
+  ] =
+    useState(true);
+
+  const [
+    cart,
+    setCart,
+  ] =
+    useState<CartPreview>({
+      itemCount: 0,
+      subtotal: 0,
+      image: "",
+      name: "",
+    });
+
+  const [
+    cartLoading,
+    setCartLoading,
+  ] =
+    useState(true);
 
   /* =======================================================
      FETCH ACCOUNT
   ======================================================= */
 
   useEffect(() => {
-    let redirectTimer: ReturnType<typeof setTimeout> | undefined;
+    let redirectTimer:
+      | ReturnType<
+          typeof setTimeout
+        >
+      | undefined;
 
-    const loadAccount = async () => {
+    async function loadAccount() {
       try {
-        setAccountLoading(true);
+        setAccountLoading(
+          true,
+        );
+
         setAccountError("");
 
-        const response = await fetch(`${API_URL}/api/auth/account`, {
-          method: "GET",
-          credentials: "include",
-          cache: "no-store",
-          headers: {
-            Accept: "application/json",
-          },
-        });
+        const response =
+          await fetch(
+            `${API_URL}/api/auth/account`,
+            {
+              method: "GET",
+              credentials:
+                "include",
+              cache:
+                "no-store",
+              headers: {
+                Accept:
+                  "application/json",
+              },
+            },
+          );
 
-        /* NOT LOGGED IN */
-
-        if (response.status === 401) {
+        if (
+          response.status ===
+          401
+        ) {
           setAccount(null);
-          setShowLoginMessage(true);
-          setAccountLoading(false);
 
-          redirectTimer = setTimeout(() => {
-            router.replace("/");
-          }, 1000);
+          setShowLoginMessage(
+            true,
+          );
+
+          setAccountLoading(
+            false,
+          );
+
+          redirectTimer =
+            setTimeout(
+              () => {
+                router.replace(
+                  "/",
+                );
+              },
+              1000,
+            );
 
           return;
         }
 
-        const data = (await response.json()) as AccountApiResponse;
+        const data =
+          (await response.json()) as AccountApiResponse;
 
-        if (!response.ok || !data.success || !data.account) {
-          throw new Error(data.message || "Unable to load account.");
+        if (
+          !response.ok ||
+          !data.success ||
+          !data.account
+        ) {
+          throw new Error(
+            data.message ||
+              "Unable to load account.",
+          );
         }
 
-        setAccount(data.account);
+        setAccount(
+          data.account,
+        );
       } catch (error) {
-        console.error("ACCOUNT API ERROR:", error);
+        console.error(
+          "ACCOUNT API ERROR:",
+          error,
+        );
 
         setAccountError(
-          error instanceof Error ? error.message : "Unable to load account.",
+          error instanceof Error
+            ? error.message
+            : "Unable to load account.",
         );
       } finally {
-        setAccountLoading(false);
+        setAccountLoading(
+          false,
+        );
       }
-    };
+    }
 
     void loadAccount();
 
     return () => {
       if (redirectTimer) {
-        clearTimeout(redirectTimer);
+        clearTimeout(
+          redirectTimer,
+        );
       }
     };
   }, [router]);
 
   /* =======================================================
-   FETCH DEFAULT ADDRESS
-======================================================= */
+     ADDRESS
+  ======================================================= */
 
   useEffect(() => {
-    let cancelled = false;
+    let cancelled =
+      false;
 
-    const loadDefaultAddress = async () => {
+    async function loadAddress() {
       try {
-        setAddressLoading(true);
+        setAddressLoading(
+          true,
+        );
+
         setAddressError("");
 
-        const response = await fetch(`${API_URL}/api/address/`, {
-          method: "GET",
+        const response =
+          await fetch(
+            `${API_URL}/api/address/`,
+            {
+              method: "GET",
+              credentials:
+                "include",
+              cache:
+                "no-store",
+              headers: {
+                Accept:
+                  "application/json",
+              },
+            },
+          );
 
-          credentials: "include",
-
-          cache: "no-store",
-
-          headers: {
-            Accept: "application/json",
-          },
-        });
-
-        const data = (await response.json()) as AddressesApiResponse;
+        const data =
+          (await response.json()) as AddressesApiResponse;
 
         if (cancelled) {
           return;
         }
 
-        if (!response.ok || !data.success) {
-          throw new Error(data.message || "Unable to load address.");
+        if (
+          !response.ok ||
+          !data.success
+        ) {
+          throw new Error(
+            data.message ||
+              "Unable to load address.",
+          );
         }
 
-        const addresses = Array.isArray(data.addresses) ? data.addresses : [];
+        const addresses =
+          Array.isArray(
+            data.addresses,
+          )
+            ? data.addresses
+            : [];
 
-        /*
-          Default address find karo.
-          Agar kisi reason se default
-          nahi mila to first address.
-        */
+        const selected =
+          addresses.find(
+            (address) =>
+              address.isDefault ===
+              true,
+          ) ||
+          addresses[0] ||
+          null;
 
-        const selectedAddress =
-          addresses.find((address) => address.isDefault === true) || null;
-
-        setDefaultAddress(selectedAddress);
-
-        setDefaultAddress(selectedAddress);
+        setDefaultAddress(
+          selected,
+        );
       } catch (error) {
         if (cancelled) {
           return;
         }
 
-        console.error("ADDRESS API ERROR:", error);
+        console.error(
+          "ADDRESS API ERROR:",
+          error,
+        );
 
-        setDefaultAddress(null);
+        setDefaultAddress(
+          null,
+        );
 
         setAddressError(
-          error instanceof Error ? error.message : "Unable to load address.",
+          error instanceof Error
+            ? error.message
+            : "Unable to load address.",
         );
       } finally {
         if (!cancelled) {
-          setAddressLoading(false);
+          setAddressLoading(
+            false,
+          );
         }
       }
-    };
+    }
 
-    void loadDefaultAddress();
+    void loadAddress();
 
     return () => {
       cancelled = true;
@@ -393,104 +1148,317 @@ export default function AccountPage() {
   }, []);
 
   /* =======================================================
-     ACCOUNT CARD VALUES FROM API
+     ORDERS
   ======================================================= */
 
-  const accountName = account ? capitalizeName(account.name) : "";
+  const loadOrders =
+    useCallback(
+      async () => {
+        try {
+          setOrdersLoading(
+            true,
+          );
 
-  const accountEmail = account?.email || "";
+          const rows =
+            await getMyOrders();
 
-  const accountPhone = account ? formatPhone(account.phone) : "";
-  const accountMemberSince = account
-    ? formatMemberSince(account.memberSince)
-    : "";
+          const sorted =
+            [...rows].sort(
+              (a, b) =>
+                new Date(
+                  b.createdAt ||
+                    0,
+                ).getTime() -
+                new Date(
+                  a.createdAt ||
+                    0,
+                ).getTime(),
+            );
 
-  const accountInitial = account ? getInitial(account.name) : "U";
+          setOrders(sorted);
+        } catch (error) {
+          console.error(
+            "ACCOUNT ORDERS ERROR:",
+            error,
+          );
 
-  const accountAvatar = account?.avatar?.url?.trim() || "";
+          setOrders([]);
+        } finally {
+          setOrdersLoading(
+            false,
+          );
+        }
+      },
+      [],
+    );
 
   /* =======================================================
-   DEFAULT ADDRESS DISPLAY VALUES
-======================================================= */
+     WISHLIST
+  ======================================================= */
 
-  const defaultAddressLine1 = defaultAddress
-    ? [
-        defaultAddress.addressLine1,
-        defaultAddress.addressLine2,
-        defaultAddress.landmark,
-      ]
-        .filter(Boolean)
-        .join(", ")
-    : "";
+  const loadWishlist =
+    useCallback(
+      async () => {
+        try {
+          setWishlistLoading(
+            true,
+          );
 
-  const defaultAddressLine2 = defaultAddress
-    ? [
-        defaultAddress.city,
-        defaultAddress.postalCode,
-        defaultAddress.state,
-        defaultAddress.country,
-      ]
-        .filter(Boolean)
-        .join(", ")
-    : "";
+          const response =
+            await getWishlist();
 
-  const defaultAddressPhone = defaultAddress
-    ? formatPhone(defaultAddress.phone)
-    : "";
+          const rows =
+            response.items
+              .map(
+                (item) =>
+                  normalizeWishlistItem(
+                    item,
+                  ),
+              )
+              .filter(
+                (
+                  item,
+                ): item is WishlistPreviewItem =>
+                  Boolean(item),
+              )
+              .slice(0, 2);
 
-  const defaultAddressType = defaultAddress
-    ? defaultAddress.addressType.charAt(0).toUpperCase() +
-      defaultAddress.addressType.slice(1)
-    : "";
+          setWishlist(rows);
+        } catch (error) {
+          console.error(
+            "ACCOUNT WISHLIST ERROR:",
+            error,
+          );
+
+          setWishlist([]);
+        } finally {
+          setWishlistLoading(
+            false,
+          );
+        }
+      },
+      [],
+    );
+
+  /* =======================================================
+     CART
+  ======================================================= */
+
+  const loadCart =
+    useCallback(
+      async () => {
+        try {
+          setCartLoading(true);
+
+          const response =
+            await getCart();
+
+          setCart(
+            normalizeCart(
+              response,
+            ),
+          );
+        } catch (error) {
+          console.error(
+            "ACCOUNT CART ERROR:",
+            error,
+          );
+
+          setCart({
+            itemCount: 0,
+            subtotal: 0,
+            image: "",
+            name: "",
+          });
+        } finally {
+          setCartLoading(false);
+        }
+      },
+      [],
+    );
+
+  /* =======================================================
+     INITIAL LOAD
+  ======================================================= */
+
+  useEffect(() => {
+    void Promise.all([
+      loadOrders(),
+      loadWishlist(),
+      loadCart(),
+    ]);
+  }, [
+    loadOrders,
+    loadWishlist,
+    loadCart,
+  ]);
+
+  /* =======================================================
+     EVENTS
+  ======================================================= */
+
+  useEffect(() => {
+    function handleWishlistUpdate() {
+      void loadWishlist();
+    }
+
+    function handleCartUpdate() {
+      void loadCart();
+    }
+
+    window.addEventListener(
+      "hivrasoft-wishlist-updated",
+      handleWishlistUpdate,
+    );
+
+    window.addEventListener(
+      "hivrasoft-cart-updated",
+      handleCartUpdate,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "hivrasoft-wishlist-updated",
+        handleWishlistUpdate,
+      );
+
+      window.removeEventListener(
+        "hivrasoft-cart-updated",
+        handleCartUpdate,
+      );
+    };
+  }, [
+    loadWishlist,
+    loadCart,
+  ]);
+
+  /* =======================================================
+     VALUES
+  ======================================================= */
+
+  const accountName =
+    account
+      ? capitalizeName(
+          account.name,
+        )
+      : "";
+
+  const latestOrder =
+    useMemo(
+      () =>
+        orders[0] || null,
+      [orders],
+    );
+
+  const latestOrderItem =
+    latestOrder
+      ?.items?.[0] ||
+    null;
+
+  const defaultAddressLine1 =
+    defaultAddress
+      ? [
+          defaultAddress
+            .addressLine1,
+
+          defaultAddress
+            .addressLine2,
+
+          defaultAddress
+            .landmark,
+        ]
+          .filter(Boolean)
+          .join(", ")
+      : "";
+
+  const defaultAddressLine2 =
+    defaultAddress
+      ? [
+          defaultAddress.city,
+          defaultAddress
+            .postalCode,
+          defaultAddress.state,
+          defaultAddress.country,
+        ]
+          .filter(Boolean)
+          .join(", ")
+      : "";
+
+  const defaultAddressPhone =
+    defaultAddress
+      ? formatPhone(
+          defaultAddress.phone,
+        )
+      : "";
+
+  const defaultAddressType =
+    defaultAddress
+      ? defaultAddress
+          .addressType
+          .charAt(0)
+          .toUpperCase() +
+        defaultAddress
+          .addressType
+          .slice(1)
+      : "";
+
+  /* =======================================================
+     UI
+
+     IMPORTANT:
+     - main par overflow-hidden NAHI.
+     - 50px height calculation NAHI.
+     - AccountSidebar direct flex child hai.
+     - Isi se mobile + desktop sticky properly chalega.
+  ======================================================= */
 
   return (
     <>
       <Header />
+
       <main
         className="
-        min-h-screen
-        bg-[#FCFAF8]
-        text-[#211A18]
-      "
+          min-h-screen
+          bg-[#FCFAF8]
+          text-[#211A18]
+        "
       >
-        {/* ===================================================
-          LOGIN REQUIRED TOAST
-      =================================================== */}
+        {/* LOGIN TOAST */}
 
         {showLoginMessage && (
           <div
             className="
-            fixed
-            right-5
-            top-5
-            z-[9999]
-            flex
-            min-w-[260px]
-            items-center
-            gap-3
-            rounded-[14px]
-            border
-            border-[#8C1839]/15
-            bg-white
-            px-5
-            py-4
-            shadow-[0_20px_60px_rgba(33,26,24,0.20)]
-          "
+              fixed
+              right-5
+              top-5
+              z-[9999]
+              flex
+              min-w-[260px]
+              items-center
+              gap-3
+              rounded-[14px]
+              border
+              border-[#8C1839]/15
+              bg-white
+              px-5
+              py-4
+              shadow-[0_20px_60px_rgba(33,26,24,0.20)]
+            "
           >
             <div
               className="
-              flex
-              h-10
-              w-10
-              shrink-0
-              items-center
-              justify-center
-              rounded-full
-              bg-[#F8E1E2]
-              text-[18px]
-              font-bold
-              text-[#8C1839]
-            "
+                flex
+                h-10
+                w-10
+                shrink-0
+                items-center
+                justify-center
+                rounded-full
+                bg-[#F8E1E2]
+                text-[18px]
+                font-bold
+                text-[#8C1839]
+              "
             >
               !
             </div>
@@ -498,155 +1466,173 @@ export default function AccountPage() {
             <div>
               <p
                 className="
-                text-[13px]
-                font-semibold
-              "
+                  text-[13px]
+                  font-semibold
+                "
               >
                 Please login
               </p>
 
               <p
                 className="
-                mt-1
-                text-[10px]
-                text-[#211A18]/55
-              "
+                  mt-1
+                  text-[10px]
+                  text-[#211A18]/55
+                "
               >
-                Redirecting to home...
+                Redirecting to
+                home...
               </p>
             </div>
           </div>
         )}
 
+        {/* =================================================
+            IMPORTANT LAYOUT
+
+            AccountSidebar direct child hai.
+            Iske aas paas koi same-height wrapper nahi hai.
+        ================================================= */}
+
         <div
           className="
-          mx-auto
-          flex
-          max-w-[1600px]
-        "
-        >
-          {/* =================================================
-            LEFT SIDEBAR
+            mx-auto
+            flex
+            w-full
+            max-w-[1600px]
+            flex-col
 
-            STATIC USER DATA
-        ================================================= */}
+            lg:flex-row
+            lg:items-start
+          "
+        >
+          {/* LEFT STICKY */}
 
           <AccountSidebar />
-          {/* =================================================
-            RIGHT CONTENT
-        ================================================= */}
+
+          {/* RIGHT CONTENT */}
 
           <section
             className="
-            min-w-0
-            flex-1
-            p-4
-            md:p-6
-            lg:p-7
-          "
-          >
-            {/* =================================================
-              WELCOME BANNER
+              min-w-0
+              flex-1
+              p-4
 
-              STATIC DATA
-          ================================================= */}
+              md:p-6
+
+              lg:p-7
+            "
+          >
+            {/* ===============================================
+                WELCOME
+            =============================================== */}
 
             <div
               className="
-              relative
-              min-h-[280px]
-              overflow-hidden
-              rounded-[22px]
-              bg-[#F7E6E1]
-            "
+                relative
+                min-h-[280px]
+                overflow-hidden
+                rounded-[22px]
+                bg-[#F7E6E1]
+              "
             >
-              {/* IMAGE */}
-
               <div
                 className="
-                absolute
-                inset-y-0
-                right-0
-                hidden
-                w-[48%]
-                md:block
-              "
-              >
-                <Image
-                  src={user.welcomeBanner}
-                  alt="Hivra Soft lifestyle"
-                  fill
-                  priority
-                  sizes="(min-width: 1280px) 600px, 45vw"
-                  className="
-                  object-cover
-                  object-center
+                  absolute
+                  inset-y-0
+                  right-0
+                  hidden
+                  w-[48%]
+
+                  md:block
                 "
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+
+                <img
+                  src={
+                    WELCOME_BANNER
+                  }
+                  alt="Hivra Soft lifestyle"
+                  className="
+                    h-full
+                    w-full
+                    object-cover
+                    object-center
+                  "
                 />
 
                 <div
                   className="
-                  absolute
-                  inset-0
-                  bg-gradient-to-r
-                  from-[#F7E6E1]
-                  via-[#F7E6E1]/35
-                  to-transparent
-                "
+                    absolute
+                    inset-0
+                    bg-gradient-to-r
+                    from-[#F7E6E1]
+                    via-[#F7E6E1]/35
+                    to-transparent
+                  "
                 />
               </div>
 
-              {/* TEXT */}
-
               <div
                 className="
-                relative
-                z-10
-                flex
-                min-h-[280px]
-                items-center
-                px-7
-                py-10
-                md:px-12
-                xl:px-14
-              "
+                  relative
+                  z-10
+                  flex
+                  min-h-[280px]
+                  items-center
+                  px-7
+                  py-10
+
+                  md:px-12
+
+                  xl:px-14
+                "
               >
                 <div
                   className="
-                  max-w-[720px]
-                  md:max-w-[58%]
-                "
+                    max-w-[720px]
+
+                    md:max-w-[58%]
+                  "
                 >
                   <p
                     className="
-                    mb-5
-                    text-[11px]
-                    font-medium
-                    uppercase
-                    tracking-[0.38em]
-                    text-[#211A18]/50
-                  "
+                      mb-5
+                      text-[11px]
+                      font-medium
+                      uppercase
+                      tracking-[0.38em]
+                      text-[#211A18]/50
+                    "
                   >
                     My Account
                   </p>
 
                   <h1
                     className="
-                    font-serif
-                    text-[42px]
-                    leading-[1.05]
-                    tracking-[-0.02em]
-                    md:text-[54px]
-                    xl:text-[64px]
-                  "
+                      font-serif
+                      text-[42px]
+                      leading-[1.05]
+                      tracking-[-0.02em]
+
+                      md:text-[54px]
+
+                      xl:text-[64px]
+                    "
                   >
                     Welcome back,{" "}
-                    {accountLoading ? "..." : accountName || "there"}{" "}
+
+                    {accountLoading
+                      ? "..."
+                      : accountName ||
+                        "there"}{" "}
+
                     <span
                       className="
-                      font-normal
-                      text-[#B94A62]
-                    "
+                        font-normal
+                        text-[#B94A62]
+                      "
                     >
                       ♡
                     </span>
@@ -654,36 +1640,47 @@ export default function AccountPage() {
 
                   <p
                     className="
-                    mt-6
-                    text-[15px]
-                    leading-7
-                    text-[#211A18]/65
-                    md:text-[16px]
-                  "
+                      mt-6
+                      text-[15px]
+                      leading-7
+                      text-[#211A18]/65
+
+                      md:text-[16px]
+                    "
                   >
-                    So glad to have you here. Let&apos;s make today stylish!
+                    So glad to have
+                    you here.
+                    Let&apos;s make
+                    today stylish!
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* =================================================
-              FIRST ROW
-          ================================================= */}
+            {/* ===============================================
+                ROW ONE
+            =============================================== */}
 
             <div
               className="
-              mt-5
-              grid
-              gap-4
-              xl:grid-cols-3
-            "
+                mt-5
+                grid
+                gap-4
+
+                xl:grid-cols-3
+              "
             >
               <AccountProfileCard
                 account={account}
-                loading={accountLoading}
-                error={accountError}
+                loading={
+                  accountLoading
+                }
+                error={
+                  accountError
+                }
               />
+
+              {/* ORDERS */}
 
               <DashboardCard>
                 <CardHeader
@@ -694,138 +1691,191 @@ export default function AccountPage() {
                   href="/account/orders"
                 />
 
-                <div
-                  className="
-                  mt-5
-                  rounded-[14px]
-                  bg-[#F8F5F2]
-                  p-4
-                "
-                >
+                {ordersLoading ? (
+                  <DashboardLoading />
+                ) : latestOrder ? (
                   <div
                     className="
-                    mb-3
-                    flex
-                    items-center
-                    justify-between
-                    gap-3
-                  "
-                  >
-                    <span
-                      className="
-                      text-[13px]
-                      font-semibold
+                      mt-5
+                      rounded-[14px]
+                      bg-[#F8F5F2]
+                      p-4
                     "
-                    >
-                      Recent Order
-                    </span>
-
-                    <span
-                      className="
-                      rounded-full
-                      bg-[#DDF0DF]
-                      px-3
-                      py-1
-                      text-[10px]
-                      font-medium
-                      text-[#31703A]
-                    "
-                    >
-                      {user.recentOrder.status}
-                    </span>
-                  </div>
-
-                  <div
-                    className="
-                    flex
-                    gap-4
-                  "
                   >
                     <div
                       className="
-                      relative
-                      h-[76px]
-                      w-[68px]
-                      shrink-0
-                      overflow-hidden
-                      rounded-[10px]
-                      bg-[#E9DFD8]
-                    "
-                    >
-                      <Image
-                        src={user.recentOrder.image}
-                        alt={user.recentOrder.name}
-                        fill
-                        sizes="68px"
-                        className="
-                        object-cover
-                      "
-                      />
-                    </div>
-
-                    <div
-                      className="
-                      min-w-0
-                      flex-1
-                    "
-                    >
-                      <p
-                        className="
-                        truncate
-                        text-[13px]
-                        font-medium
-                      "
-                      >
-                        {user.recentOrder.name}
-                      </p>
-
-                      <p
-                        className="
-                        mt-1
-                        text-[11px]
-                        text-[#211A18]/50
-                      "
-                      >
-                        Size {user.recentOrder.size} | Qty{" "}
-                        {user.recentOrder.quantity}
-                      </p>
-
-                      <div
-                        className="
-                        mt-3
+                        mb-3
                         flex
                         items-center
                         justify-between
+                        gap-3
                       "
+                    >
+                      <span
+                        className="
+                          text-[13px]
+                          font-semibold
+                        "
                       >
-                        <span
-                          className="
-                          text-[14px]
-                          font-bold
-                        "
-                        >
-                          ₹{user.recentOrder.price.toLocaleString("en-IN")}
-                        </span>
+                        Latest Order
+                      </span>
 
-                        <span
-                          className="
-                          text-[10px]
-                          text-[#211A18]/50
+                      <span
+                        className={`
+                          rounded-full
+                          px-3
+                          py-1
+                          text-[9px]
+                          font-medium
+
+                          ${statusClasses(
+                            latestOrder.status,
+                          )}
+                        `}
+                      >
+                        {formatStatus(
+                          latestOrder.status,
+                        )}
+                      </span>
+                    </div>
+
+                    <div
+                      className="
+                        flex
+                        gap-4
+                      "
+                    >
+                      <div
+                        className="
+                          h-[76px]
+                          w-[68px]
+                          shrink-0
+                          overflow-hidden
+                          rounded-[10px]
+                          bg-[#E9DFD8]
                         "
+                      >
+                        {latestOrderItem?.image ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={
+                              latestOrderItem.image
+                            }
+                            alt={
+                              latestOrderItem.name
+                            }
+                            className="
+                              h-full
+                              w-full
+                              object-cover
+                            "
+                          />
+                        ) : (
+                          <div
+                            className="
+                              flex
+                              h-full
+                              w-full
+                              items-center
+                              justify-center
+                              text-[#8C1839]
+                            "
+                          >
+                            <Package
+                              size={22}
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      <div
+                        className="
+                          min-w-0
+                          flex-1
+                        "
+                      >
+                        <p
+                          className="
+                            line-clamp-2
+                            text-[13px]
+                            font-medium
+                          "
                         >
-                          {user.recentOrder.date}
-                        </span>
+                          {latestOrderItem?.name ||
+                            `Order #${latestOrder.orderNumber}`}
+                        </p>
+
+                        <p
+                          className="
+                            mt-1
+                            text-[11px]
+                            text-[#211A18]/50
+                          "
+                        >
+                          {
+                            latestOrder
+                              .items
+                              .length
+                          }{" "}
+                          item
+                          {latestOrder
+                            .items
+                            .length ===
+                          1
+                            ? ""
+                            : "s"}
+
+                          {latestOrderItem?.size
+                            ? ` • Size ${latestOrderItem.size}`
+                            : ""}
+                        </p>
+
+                        <div
+                          className="
+                            mt-3
+                            flex
+                            items-center
+                            justify-between
+                            gap-2
+                          "
+                        >
+                          <span
+                            className="
+                              text-[14px]
+                              font-bold
+                            "
+                          >
+                            {money(
+                              latestOrder.total,
+                            )}
+                          </span>
+
+                          <span
+                            className="
+                              text-[10px]
+                              text-[#211A18]/50
+                            "
+                          >
+                            {formatDate(
+                              latestOrder.createdAt,
+                            )}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
+                ) : (
+                  <DashboardEmpty
+                    icon="◇"
+                    title="No orders yet"
+                    description="Your latest order will appear here after checkout."
+                    href="/"
+                    action="Start Shopping"
+                  />
+                )}
               </DashboardCard>
 
-              {/* ===============================================
-                WISHLIST
-
-                STATIC DATA
-            =============================================== */}
+              {/* WISHLIST */}
 
               <DashboardCard>
                 <CardHeader
@@ -836,107 +1886,155 @@ export default function AccountPage() {
                   href="/wishlist"
                 />
 
-                <div
-                  className="
-                  mt-5
-                  grid
-                  grid-cols-2
-                  gap-3
-                "
-                >
-                  {user.wishlist.map((item) => (
-                    <Link
-                      href="/wishlist"
-                      key={item.id}
-                      className="
-                        group
-                        min-w-0
-                      "
-                    >
-                      <div
-                        className="
-                          relative
-                          aspect-[1.35/1]
-                          overflow-hidden
-                          rounded-[11px]
-                          bg-[#F3ECE7]
-                        "
-                      >
-                        <Image
-                          src={item.image}
-                          alt={item.name}
-                          fill
-                          sizes="220px"
+                {wishlistLoading ? (
+                  <DashboardLoading />
+                ) : wishlist.length >
+                  0 ? (
+                  <div
+                    className="
+                      mt-5
+                      grid
+                      grid-cols-2
+                      gap-3
+                    "
+                  >
+                    {wishlist.map(
+                      (
+                        item,
+                        index,
+                      ) => (
+                        <Link
+                          key={`${item.productId}-${index}`}
+                          href={
+                            item.slug
+                              ? `/product/${encodeURIComponent(
+                                  item.slug,
+                                )}`
+                              : "/wishlist"
+                          }
                           className="
-                            object-cover
-                            transition
-                            duration-300
-                            group-hover:scale-105
-                          "
-                        />
-
-                        <span
-                          className="
-                            absolute
-                            right-2
-                            top-2
-                            flex
-                            h-7
-                            w-7
-                            items-center
-                            justify-center
-                            rounded-full
-                            bg-white
-                            text-[#C75C70]
-                            shadow-sm
+                            group
+                            min-w-0
                           "
                         >
-                          ♥
-                        </span>
-                      </div>
+                          <div
+                            className="
+                              relative
+                              aspect-[1.35/1]
+                              overflow-hidden
+                              rounded-[11px]
+                              bg-[#F3ECE7]
+                            "
+                          >
+                            {item.image ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={
+                                  item.image
+                                }
+                                alt={
+                                  item.name
+                                }
+                                className="
+                                  h-full
+                                  w-full
+                                  object-cover
+                                  transition
+                                  duration-300
 
-                      <p
-                        className="
-                          mt-2
-                          text-[12px]
-                          font-semibold
-                        "
-                      >
-                        ₹{item.price.toLocaleString("en-IN")}
-                      </p>
+                                  group-hover:scale-105
+                                "
+                              />
+                            ) : (
+                              <div
+                                className="
+                                  flex
+                                  h-full
+                                  w-full
+                                  items-center
+                                  justify-center
+                                  text-[#8C1839]
+                                "
+                              >
+                                <Heart
+                                  size={22}
+                                />
+                              </div>
+                            )}
 
-                      <p
-                        className="
-                          truncate
-                          text-[10px]
-                          text-[#211A18]/60
-                        "
-                      >
-                        {item.name}
-                      </p>
-                    </Link>
-                  ))}
-                </div>
+                            <span
+                              className="
+                                absolute
+                                right-2
+                                top-2
+                                flex
+                                h-7
+                                w-7
+                                items-center
+                                justify-center
+                                rounded-full
+                                bg-white
+                                text-[#C75C70]
+                                shadow-sm
+                              "
+                            >
+                              ♥
+                            </span>
+                          </div>
+
+                          <p
+                            className="
+                              mt-2
+                              text-[12px]
+                              font-semibold
+                            "
+                          >
+                            {money(
+                              item.price,
+                            )}
+                          </p>
+
+                          <p
+                            className="
+                              truncate
+                              text-[10px]
+                              text-[#211A18]/60
+                            "
+                          >
+                            {
+                              item.name
+                            }
+                          </p>
+                        </Link>
+                      ),
+                    )}
+                  </div>
+                ) : (
+                  <DashboardEmpty
+                    icon="♡"
+                    title="Wishlist is empty"
+                    description="Save something you love and it will appear here."
+                    href="/"
+                    action="Explore Products"
+                  />
+                )}
               </DashboardCard>
             </div>
 
-            {/* =================================================
-              SECOND ROW
-          ================================================= */}
+            {/* ===============================================
+                ROW TWO
+            =============================================== */}
 
             <div
               className="
-              mt-4
-              grid
-              gap-4
-              xl:grid-cols-[1fr_1.1fr_0.6fr]
-            "
-            >
-              {/* ===============================================
-                CART
+                mt-4
+                grid
+                gap-4
 
-                STATIC DATA
-            =============================================== */}
+                xl:grid-cols-[1fr_1.1fr_0.6fr]
+              "
+            >
+              {/* CART */}
 
               <DashboardCard>
                 <CardHeader
@@ -947,99 +2045,143 @@ export default function AccountPage() {
                   href="/cart"
                 />
 
-                <div
-                  className="
-                  mt-5
-                  flex
-                  gap-4
-                "
-                >
-                  <div
-                    className="
-                    relative
-                    h-[72px]
-                    w-[88px]
-                    shrink-0
-                    overflow-hidden
-                    rounded-[10px]
-                    bg-[#EFE7E1]
-                  "
-                  >
-                    <Image
-                      src={user.cart.image}
-                      alt="Cart product"
-                      fill
-                      sizes="88px"
+                {cartLoading ? (
+                  <DashboardLoading />
+                ) : cart.itemCount >
+                  0 ? (
+                  <>
+                    <div
                       className="
-                      object-cover
-                    "
-                    />
-                  </div>
-
-                  <div>
-                    <p
-                      className="
-                      text-[13px]
-                    "
+                        mt-5
+                        flex
+                        gap-4
+                      "
                     >
-                      {user.cart.itemCount} items in your cart
-                    </p>
+                      <div
+                        className="
+                          h-[72px]
+                          w-[88px]
+                          shrink-0
+                          overflow-hidden
+                          rounded-[10px]
+                          bg-[#EFE7E1]
+                        "
+                      >
+                        {cart.image ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={
+                              cart.image
+                            }
+                            alt={
+                              cart.name ||
+                              "Cart Product"
+                            }
+                            className="
+                              h-full
+                              w-full
+                              object-cover
+                            "
+                          />
+                        ) : (
+                          <div
+                            className="
+                              flex
+                              h-full
+                              w-full
+                              items-center
+                              justify-center
+                              text-[#8C1839]
+                            "
+                          >
+                            <ShoppingBag
+                              size={22}
+                            />
+                          </div>
+                        )}
+                      </div>
 
-                    <p
+                      <div>
+                        <p
+                          className="
+                            text-[13px]
+                          "
+                        >
+                          {
+                            cart.itemCount
+                          }{" "}
+                          item
+                          {cart.itemCount ===
+                          1
+                            ? ""
+                            : "s"}{" "}
+                          in your cart
+                        </p>
+
+                        <p
+                          className="
+                            mt-2
+                            text-[11px]
+                            text-[#211A18]/50
+                          "
+                        >
+                          Subtotal
+                        </p>
+
+                        <p
+                          className="
+                            text-[15px]
+                            font-bold
+                          "
+                        >
+                          {money(
+                            cart.subtotal,
+                          )}
+                        </p>
+                      </div>
+                    </div>
+
+                    <Link
+                      href="/account/checkout"
                       className="
-                      mt-2
-                      text-[11px]
-                      text-[#211A18]/50
-                    "
-                    >
-                      Subtotal
-                    </p>
+                        mt-4
+                        flex
+                        h-11
+                        w-full
+                        items-center
+                        justify-center
+                        gap-3
+                        rounded-[10px]
+                        bg-[#D97887]
+                        text-[12px]
+                        font-medium
+                        text-white
+                        transition
+                        duration-300
 
-                    <p
-                      className="
-                      text-[15px]
-                      font-bold
-                    "
+                        hover:bg-[#8C1839]
+                      "
                     >
-                      ₹{user.cart.subtotal.toLocaleString("en-IN")}
-                    </p>
-                  </div>
-                </div>
+                      Proceed to
+                      Checkout
 
-                <Link
-                  href="/checkout"
-                  className="
-                  mt-4
-                  flex
-                  h-11
-                  w-full
-                  items-center
-                  justify-center
-                  gap-3
-                  rounded-[10px]
-                  bg-[#D97887]
-                  text-[12px]
-                  font-medium
-                  text-white
-                  transition
-                  duration-300
-                  hover:bg-[#8C1839]
-                "
-                >
-                  Proceed to Checkout
-                  <span>→</span>
-                </Link>
+                      <span>
+                        →
+                      </span>
+                    </Link>
+                  </>
+                ) : (
+                  <DashboardEmpty
+                    icon="♧"
+                    title="Your cart is empty"
+                    description="Add something to your bag and it will appear here."
+                    href="/"
+                    action="Continue Shopping"
+                  />
+                )}
               </DashboardCard>
 
-              {/* ===============================================
-                ADDRESS
-
-                STATIC DATA
-            =============================================== */}
-
-              {/* ===============================================
-  DEFAULT ADDRESS
-=============================================== */}
+              {/* ADDRESS */}
 
               <DashboardCard>
                 <CardHeader
@@ -1051,99 +2193,170 @@ export default function AccountPage() {
                 />
 
                 {addressLoading ? (
-                  <div className="mt-5 rounded-[14px] bg-[#F8F5F2] p-5">
-                    <div className="animate-pulse space-y-3">
-                      <div className="h-5 w-[80px] rounded-full bg-[#E9DFD8]" />
-                      <div className="h-4 w-[140px] rounded bg-[#E9DFD8]" />
-                      <div className="h-3 w-full rounded bg-[#E9DFD8]" />
-                      <div className="h-3 w-[70%] rounded bg-[#E9DFD8]" />
-                    </div>
-                  </div>
+                  <DashboardLoading />
                 ) : addressError ? (
-                  <div className="mt-5 rounded-[14px] border border-red-100 bg-red-50 p-5">
-                    <p className="text-[11px] text-red-700">{addressError}</p>
+                  <div
+                    className="
+                      mt-5
+                      rounded-[14px]
+                      border
+                      border-red-100
+                      bg-red-50
+                      p-5
+                    "
+                  >
+                    <p
+                      className="
+                        text-[11px]
+                        text-red-700
+                      "
+                    >
+                      {
+                        addressError
+                      }
+                    </p>
                   </div>
                 ) : defaultAddress ? (
-                  <div className="mt-5 rounded-[14px] bg-[#F8F5F2] p-5">
-                    <div className="flex items-start gap-4">
-                      {/* ICON */}
-                      <span className="mt-1 text-[22px]">
-                        {defaultAddress.addressType === "home"
+                  <div
+                    className="
+                      mt-5
+                      rounded-[14px]
+                      bg-[#F8F5F2]
+                      p-5
+                    "
+                  >
+                    <div
+                      className="
+                        flex
+                        items-start
+                        gap-4
+                      "
+                    >
+                      <span
+                        className="
+                          mt-1
+                          text-[22px]
+                        "
+                      >
+                        {defaultAddress.addressType ===
+                        "home"
                           ? "⌂"
-                          : defaultAddress.addressType === "work"
+                          : defaultAddress.addressType ===
+                              "work"
                             ? "▣"
                             : "⌖"}
                       </span>
 
-                      <div className="min-w-0 flex-1">
-                        {/* BADGES */}
-                        <div className="flex items-center gap-2">
+                      <div
+                        className="
+                          min-w-0
+                          flex-1
+                        "
+                      >
+                        <div
+                          className="
+                            flex
+                            items-center
+                            gap-2
+                          "
+                        >
                           <span
                             className="
-                inline-flex
-                rounded-full
-                bg-[#F7DEE1]
-                px-3
-                py-1
-                text-[10px]
-                font-medium
-                text-[#B04B5C]
-              "
+                              inline-flex
+                              rounded-full
+                              bg-[#F7DEE1]
+                              px-3
+                              py-1
+                              text-[10px]
+                              font-medium
+                              text-[#B04B5C]
+                            "
                           >
                             Default
                           </span>
 
                           <span
                             className="
-                inline-flex
-                rounded-full
-                bg-white
-                px-3
-                py-1
-                text-[10px]
-                font-medium
-                text-[#211A18]/60
-              "
+                              inline-flex
+                              rounded-full
+                              bg-white
+                              px-3
+                              py-1
+                              text-[10px]
+                              font-medium
+                              text-[#211A18]/60
+                            "
                           >
-                            {defaultAddressType}
+                            {
+                              defaultAddressType
+                            }
                           </span>
                         </div>
 
-                        <div className="mt-2 flex justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="text-[12px] font-semibold">
-                              {defaultAddress.fullName}
+                        <div
+                          className="
+                            mt-2
+                            flex
+                            justify-between
+                            gap-3
+                          "
+                        >
+                          <div
+                            className="
+                              min-w-0
+                            "
+                          >
+                            <p
+                              className="
+                                text-[12px]
+                                font-semibold
+                              "
+                            >
+                              {
+                                defaultAddress.fullName
+                              }
                             </p>
 
                             <p
                               className="
-                  mt-1
-                  text-[11px]
-                  leading-5
-                  text-[#211A18]/60
-                "
+                                mt-1
+                                text-[11px]
+                                leading-5
+                                text-[#211A18]/60
+                              "
                             >
-                              {defaultAddressLine1}
+                              {
+                                defaultAddressLine1
+                              }
 
-                              {defaultAddressLine1 && <br />}
+                              {defaultAddressLine1 && (
+                                <br />
+                              )}
 
-                              {defaultAddressLine2}
+                              {
+                                defaultAddressLine2
+                              }
 
-                              {defaultAddressLine2 && <br />}
+                              {defaultAddressLine2 && (
+                                <br />
+                              )}
 
-                              {defaultAddressPhone}
+                              {
+                                defaultAddressPhone
+                              }
                             </p>
                           </div>
 
                           <Link
                             href="/account/addresses"
                             className="
-                shrink-0
-                text-[11px]
-                font-medium
-                text-[#B04B5C]
-                hover:underline
-              "
+                              shrink-0
+                              text-[11px]
+                              font-medium
+                              text-[#B04B5C]
+
+                              hover:underline
+                            "
                           >
                             Edit
                           </Link>
@@ -1152,74 +2365,50 @@ export default function AccountPage() {
                     </div>
                   </div>
                 ) : (
-                  <div
-                    className="
-        mt-5
-        rounded-[14px]
-        border
-        border-dashed
-        border-[#211A18]/15
-        bg-[#F8F5F2]
-        p-5
-      "
-                  >
-                    <p className="text-[12px] font-semibold">
-                      No saved address
-                    </p>
-
-                    <p className="mt-1 text-[10px] text-[#211A18]/50">
-                      Add an address for faster checkout.
-                    </p>
-
-                    <Link
-                      href="/account/addresses"
-                      className="
-          mt-4
-          flex
-          h-10
-          items-center
-          justify-center
-          rounded-[9px]
-          bg-[#D97887]
-          text-[11px]
-          font-medium
-          text-white
-          hover:bg-[#8C1839]
-        "
-                    >
-                      Add Address
-                    </Link>
-                  </div>
+                  <DashboardEmpty
+                    icon="⌖"
+                    title="No saved address"
+                    description="Add an address for faster checkout."
+                    href="/account/addresses"
+                    action="Add Address"
+                  />
                 )}
               </DashboardCard>
-              {/* ===============================================
-                QUOTE
-            =============================================== */}
+
+              {/* QUOTE */}
 
               <div
                 className="
-                relative
-                flex
-                min-h-[250px]
-                flex-col
-                items-center
-                justify-center
-                overflow-hidden
-                rounded-[16px]
-                bg-gradient-to-br
-                from-[#F6E2DE]
-                to-[#F2E9E3]
-                p-6
-                text-center
-              "
+                  relative
+                  flex
+                  min-h-[250px]
+                  flex-col
+                  items-center
+                  justify-center
+                  overflow-hidden
+                  rounded-[16px]
+                  bg-gradient-to-br
+                  from-[#F6E2DE]
+                  to-[#F2E9E3]
+                  p-6
+                  text-center
+                "
               >
+                <Sparkles
+                  size={19}
+                  className="
+                    mb-2
+                    text-[#B94A62]
+                  "
+                />
+
                 <p
                   className="
-                  font-serif
-                  text-[29px]
-                  italic
-                  leading-tight
-                "
+                    font-serif
+                    text-[29px]
+                    italic
+                    leading-tight
+                  "
                 >
                   Same girl...
                   <br />
@@ -1228,63 +2417,44 @@ export default function AccountPage() {
 
                 <span
                   className="
-                  mt-3
-                  text-[25px]
-                  text-[#8C1839]
-                "
+                    mt-3
+                    text-[25px]
+                    text-[#8C1839]
+                  "
                 >
                   ♡
                 </span>
 
                 <p
                   className="
-                  mt-6
-                  font-serif
-                  text-[19px]
-                "
+                    mt-6
+                    font-serif
+                    text-[19px]
+                  "
                 >
                   Hivra Soft
                 </p>
 
                 <p
                   className="
-                  mt-1
-                  text-[7px]
-                  uppercase
-                  tracking-[0.35em]
-                  text-[#211A18]/50
-                "
+                    mt-1
+                    text-[7px]
+                    uppercase
+                    tracking-[0.35em]
+                    text-[#211A18]/50
+                  "
                 >
-                  Fashion lives in kindness
+                  Fashion lives in
+                  kindness
                 </p>
               </div>
             </div>
 
-            {/* =================================================
-              MOBILE LINKS
-          ================================================= */}
-
             <div
               className="
-              mt-5
-              grid
-              grid-cols-2
-              gap-3
-              lg:hidden
-            "
-            >
-              <MobileAccountLink href="/orders">Orders</MobileAccountLink>
-
-              <MobileAccountLink href="/wishlist">Wishlist</MobileAccountLink>
-
-              <MobileAccountLink href="/account/addresses">
-                Addresses
-              </MobileAccountLink>
-
-              <MobileAccountLink href="/account/settings">
-                Settings
-              </MobileAccountLink>
-            </div>
+                h-5
+              "
+            />
           </section>
         </div>
       </main>
@@ -1293,60 +2463,7 @@ export default function AccountPage() {
 }
 
 /* =========================================================
-   ACCOUNT LOADING
-========================================================= */
-
-function AccountLoading() {
-  return (
-    <div
-      className="
-        mt-7
-        space-y-5
-      "
-    >
-      <LoadingRow />
-
-      <LoadingRow />
-
-      <LoadingRow />
-    </div>
-  );
-}
-
-function LoadingRow() {
-  return (
-    <div
-      className="
-        flex
-        items-center
-        gap-4
-      "
-    >
-      <div
-        className="
-          h-5
-          w-5
-          animate-pulse
-          rounded-full
-          bg-[#EFE6E1]
-        "
-      />
-
-      <div
-        className="
-          h-4
-          w-[170px]
-          animate-pulse
-          rounded
-          bg-[#EFE6E1]
-        "
-      />
-    </div>
-  );
-}
-
-/* =========================================================
-   DASHBOARD CARD
+   ACCOUNT CARD
 ========================================================= */
 
 function AccountProfileCard({
@@ -1354,11 +2471,24 @@ function AccountProfileCard({
   loading,
   error,
 }: {
-  account: AccountData | null;
+  account:
+    | AccountData
+    | null;
+
   loading: boolean;
+
   error: string;
 }) {
-  const name = account ? capitalizeName(account.name) : "";
+  const name =
+    account
+      ? capitalizeName(
+          account.name,
+        )
+      : "";
+
+  const avatar =
+    account?.avatar?.url?.trim() ||
+    "";
 
   return (
     <DashboardCard>
@@ -1367,36 +2497,99 @@ function AccountProfileCard({
         title="Account"
         subtitle="Manage your personal information"
         action="Edit"
-        href="/account/settings"
+        href="/account"
       />
 
       {loading ? (
-        <div className="mt-5 space-y-3 animate-pulse">
-          <div className="h-4 w-3/4 rounded bg-[#EFE6E1]" />
-          <div className="h-4 w-full rounded bg-[#EFE6E1]" />
-          <div className="h-4 w-2/3 rounded bg-[#EFE6E1]" />
-        </div>
+        <DashboardLoading />
       ) : error ? (
-        <p className="mt-5 text-[11px] text-red-600">{error}</p>
+        <p
+          className="
+            mt-5
+            text-[11px]
+            text-red-600
+          "
+        >
+          {error}
+        </p>
       ) : account ? (
-        <div className="mt-5 space-y-3">
-          <InfoRow icon="👤">{name}</InfoRow>
-          <InfoRow icon="✉">{account.email}</InfoRow>
-          <InfoRow icon="☎">{formatPhone(account.phone)}</InfoRow>
+        <div
+          className="
+            mt-5
+            space-y-3
+          "
+        >
+          <InfoRow
+            icon={
+              avatar ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={avatar}
+                  alt={name}
+                  className="
+                    h-6
+                    w-6
+                    rounded-full
+                    object-cover
+                  "
+                />
+              ) : (
+                <UserRound
+                  size={18}
+                />
+              )
+            }
+          >
+            {name}
+          </InfoRow>
+
+          <InfoRow
+            icon={
+              <Mail size={18} />
+            }
+          >
+            {account.email}
+          </InfoRow>
+
+          <InfoRow
+            icon={
+              <Phone size={18} />
+            }
+          >
+            {formatPhone(
+              account.phone,
+            )}
+          </InfoRow>
         </div>
       ) : (
-        <p className="mt-5 text-[11px] text-[#211A18]/55">
-          Please login to view your account.
+        <p
+          className="
+            mt-5
+            text-[11px]
+            text-[#211A18]/55
+          "
+        >
+          Please login to view
+          your account.
         </p>
       )}
     </DashboardCard>
   );
 }
 
-function DashboardCard({ children }: { children: ReactNode }) {
+/* =========================================================
+   DASHBOARD CARD
+========================================================= */
+
+function DashboardCard({
+  children,
+}: {
+  children: ReactNode;
+}) {
   return (
     <div
       className="
+        min-w-0
         rounded-[16px]
         border
         border-[#211A18]/10
@@ -1500,6 +2693,7 @@ function CardHeader({
           font-medium
           transition
           duration-300
+
           hover:bg-[#EFE3DC]
           hover:text-[#8C1839]
         "
@@ -1514,7 +2708,13 @@ function CardHeader({
    INFO ROW
 ========================================================= */
 
-function InfoRow({ icon, children }: { icon: string; children: ReactNode }) {
+function InfoRow({
+  icon,
+  children,
+}: {
+  icon: ReactNode;
+  children: ReactNode;
+}) {
   return (
     <div
       className="
@@ -1525,9 +2725,10 @@ function InfoRow({ icon, children }: { icon: string; children: ReactNode }) {
     >
       <span
         className="
+          flex
           w-6
-          text-center
-          text-[20px]
+          shrink-0
+          justify-center
         "
       >
         {icon}
@@ -1535,6 +2736,7 @@ function InfoRow({ icon, children }: { icon: string; children: ReactNode }) {
 
       <p
         className="
+          min-w-0
           truncate
           text-[13px]
         "
@@ -1546,87 +2748,174 @@ function InfoRow({ icon, children }: { icon: string; children: ReactNode }) {
 }
 
 /* =========================================================
-   SIDEBAR LINK
+   LOADING
 ========================================================= */
 
-function SidebarLink({
-  href,
-  children,
-  icon,
-  active = false,
-}: {
-  href: string;
-  children: ReactNode;
-  icon: string;
-  active?: boolean;
-}) {
+function DashboardLoading() {
   return (
-    <Link
-      href={href}
-      className={`
-        flex
-        h-12
-        items-center
-        gap-4
-        rounded-[10px]
-        px-4
-        text-[13px]
-        transition
-        duration-300
-
-        ${
-          active
-            ? "bg-[#F5DFDE] font-semibold text-[#211A18]"
-            : "hover:bg-[#F8F3EF] hover:text-[#8C1839]"
-        }
-      `}
+    <div
+      className="
+        mt-5
+        animate-pulse
+        rounded-[14px]
+        bg-[#F8F5F2]
+        p-4
+      "
     >
-      <span
+      <div
         className="
-          w-6
-          text-center
-          text-[20px]
+          h-3
+          w-[90px]
+          rounded
+          bg-[#E8DDD7]
+        "
+      />
+
+      <div
+        className="
+          mt-4
+          flex
+          gap-3
         "
       >
-        {icon}
-      </span>
+        <div
+          className="
+            h-[72px]
+            w-[70px]
+            rounded-[10px]
+            bg-[#E8DDD7]
+          "
+        />
 
-      {children}
-    </Link>
+        <div
+          className="
+            flex-1
+            space-y-3
+          "
+        >
+          <div
+            className="
+              h-3
+              w-[75%]
+              rounded
+              bg-[#E8DDD7]
+            "
+          />
+
+          <div
+            className="
+              h-3
+              w-[55%]
+              rounded
+              bg-[#E8DDD7]
+            "
+          />
+
+          <div
+            className="
+              h-4
+              w-[35%]
+              rounded
+              bg-[#E8DDD7]
+            "
+          />
+        </div>
+      </div>
+    </div>
   );
 }
 
 /* =========================================================
-   MOBILE LINK
+   EMPTY
 ========================================================= */
 
-function MobileAccountLink({
+function DashboardEmpty({
+  icon,
+  title,
+  description,
   href,
-  children,
+  action,
 }: {
+  icon: string;
+  title: string;
+  description: string;
   href: string;
-  children: ReactNode;
+  action: string;
 }) {
   return (
-    <Link
-      href={href}
+    <div
       className="
-        rounded-[12px]
+        mt-5
+        flex
+        min-h-[150px]
+        flex-col
+        items-center
+        justify-center
+        rounded-[14px]
         border
-        border-[#211A18]/10
-        bg-white
-        px-4
-        py-4
+        border-dashed
+        border-[#DCCFCC]
+        bg-[#FCF9F7]
+        p-5
         text-center
-        text-[12px]
-        font-semibold
-        transition
-        duration-300
-        hover:border-[#8C1839]
-        hover:text-[#8C1839]
       "
     >
-      {children}
-    </Link>
+      <div
+        className="
+          flex
+          h-11
+          w-11
+          items-center
+          justify-center
+          rounded-full
+          bg-[#F8E1E2]
+          text-[20px]
+          text-[#8C1839]
+        "
+      >
+        {icon}
+      </div>
+
+      <p
+        className="
+          mt-3
+          text-[12px]
+          font-semibold
+        "
+      >
+        {title}
+      </p>
+
+      <p
+        className="
+          mt-1
+          max-w-[240px]
+          text-[10px]
+          leading-4
+          text-[#211A18]/50
+        "
+      >
+        {description}
+      </p>
+
+      <Link
+        href={href}
+        className="
+          mt-3
+          rounded-[8px]
+          bg-[#8C1839]
+          px-4
+          py-2
+          text-[9px]
+          font-semibold
+          text-white
+          transition
+
+          hover:bg-[#6E102D]
+        "
+      >
+        {action}
+      </Link>
+    </div>
   );
 }

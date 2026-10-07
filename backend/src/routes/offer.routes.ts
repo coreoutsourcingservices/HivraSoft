@@ -1,8 +1,44 @@
-import { Router } from "express";
-import { listActiveOffers } from "../controllers/offer.controller";
+import {
+  Router,
+} from "express";
 
-const router = Router();
+import {
+  getFeaturedBuyGetOffer,
+  getStorefrontOfferBySlug,
+  listActiveOffers,
+} from "../controllers/offer.controller";
 
-router.get("/", listActiveOffers);
+const router =
+  Router();
+
+/* =========================================================
+   ALL ACTIVE OFFERS
+========================================================= */
+
+router.get(
+  "/",
+  listActiveOffers
+);
+
+/* =========================================================
+   HEADER / FEATURED BUY GET OFFER
+
+   IMPORTANT:
+   Isko /:slug se PEHLE rakhna.
+========================================================= */
+
+router.get(
+  "/featured/buy-get",
+  getFeaturedBuyGetOffer
+);
+
+/* =========================================================
+   OFFER DETAIL BY ADMIN SLUG
+========================================================= */
+
+router.get(
+  "/:slug",
+  getStorefrontOfferBySlug
+);
 
 export default router;

@@ -1087,34 +1087,56 @@ export const deleteCategory =
    CATEGORY TREE
 ========================================================= */
 
+/* =========================================================
+   CATEGORY TREE
+
+   RULES:
+
+   activeOnly = true
+
+   1. Sirf active categories storefront me aayengi.
+   2. Parent inactive hua to uske children bhi nahi aayenge.
+   3. Child ko automatically root category nahi banaya jayega.
+   4. Subcategory / sub-subcategory hierarchy same rahegi.
+   5. sortOrder ke according header order rahega.
+========================================================= */
+
 export const getCategoryTree =
   async (
-    activeOnly =
-      false
+    activeOnly = false
   ): Promise<
     CategoryTreeNode[]
   > => {
+    /* =====================================================
+       DATABASE FILTER
+    ===================================================== */
+
     const filter =
       activeOnly
         ? {
-            isActive:
-              true,
+            isActive: true,
           }
         : {};
+
+    /* =====================================================
+       LOAD CATEGORIES
+    ===================================================== */
 
     const categories =
       await Category.find(
         filter
-      ).sort({
-        level:
-          1,
+      )
+        .sort({
+          level: 1,
+          sortOrder: 1,
+          name: 1,
+        });
 
-        sortOrder:
-          1,
+    /* =====================================================
+       NODE MAP
 
-        name:
-          1,
-      });
+       category id -> tree node
+    ===================================================== */
 
     const map =
       new Map<
@@ -1126,6 +1148,12 @@ export const getCategoryTree =
       CategoryTreeNode[] =
       [];
 
+    /* =====================================================
+       FIRST PASS
+
+       Har active category ko tree node me convert karo.
+    ===================================================== */
+
     for (
       const category
       of categories
@@ -1135,9 +1163,8 @@ export const getCategoryTree =
           category._id
         );
 
-      map.set(
-        id,
-        {
+      const node:
+        CategoryTreeNode = {
           id,
 
           name:
@@ -1158,45 +1185,66 @@ export const getCategoryTree =
               : null,
 
           ancestors:
-            category.ancestors.map(
-              (
-                ancestor
-              ) =>
-                String(
-                  ancestor
+            Array.isArray(
+              category.ancestors
+            )
+              ? category.ancestors.map(
+                  (
+                    ancestor
+                  ) =>
+                    String(
+                      ancestor
+                    )
                 )
-            ),
+              : [],
 
           level:
-            category.level,
+            Number(
+              category.level
+            ) || 0,
 
           images:
-            category.images.map(
-              (
-                image
-              ) => ({
-                url:
-                  image.url,
+            Array.isArray(
+              category.images
+            )
+              ? category.images.map(
+                  (
+                    image
+                  ) => ({
+                    url:
+                      image.url,
 
-                publicId:
-                  image.publicId,
+                    publicId:
+                      image.publicId,
 
-                alt:
-                  image.alt,
-              })
-            ),
+                    alt:
+                      image.alt,
+                  })
+                )
+              : [],
 
           isActive:
             category.isActive,
 
           sortOrder:
-            category.sortOrder,
+            Number(
+              category.sortOrder
+            ) || 0,
 
-          children:
-            [],
-        }
+          children: [],
+        };
+
+      map.set(
+        id,
+        node
       );
     }
+
+    /* =====================================================
+       SECOND PASS
+
+       Parent / child hierarchy build karo.
+    ===================================================== */
 
     for (
       const category
@@ -1212,21 +1260,32 @@ export const getCategoryTree =
           id
         );
 
-      if (
-        !node
-      ) {
+      if (!node) {
         continue;
       }
+
+      /* ===================================================
+         CATEGORY HAS PARENT
+      =================================================== */
 
       if (
         category.parent
       ) {
+        const parentId =
+          String(
+            category.parent
+          );
+
         const parentNode =
           map.get(
-            String(
-              category.parent
-            )
+            parentId
           );
+
+        /* ===============================================
+           Parent active tree me available hai.
+
+           Child ko parent ke andar add karo.
+        =============================================== */
 
         if (
           parentNode
@@ -1234,15 +1293,92 @@ export const getCategoryTree =
           parentNode.children.push(
             node
           );
-
-          continue;
         }
+
+        /* ===============================================
+           IMPORTANT
+
+           Parent missing hai:
+           activeOnly=true me iska matlab ho sakta hai
+           parent inactive hai.
+
+           Child ko ROOT mat banao.
+
+           Example:
+
+           Men = inactive
+           ├── Brief = active
+           └── Trunks = active
+
+           Header:
+           Men ❌
+           Brief ❌
+           Trunks ❌
+        =============================================== */
+
+        continue;
       }
+
+      /* ===================================================
+         REAL ROOT CATEGORY
+
+         parent === null only
+      =================================================== */
 
       roots.push(
         node
       );
     }
+
+    /* =====================================================
+       RECURSIVE SORT
+
+       Root / child / sub-child sab sortOrder se sort.
+    ===================================================== */
+
+    const sortTree = (
+      nodes:
+        CategoryTreeNode[]
+    ) => {
+      nodes.sort(
+        (
+          first,
+          second
+        ) => {
+          const order =
+            first.sortOrder -
+            second.sortOrder;
+
+          if (
+            order !== 0
+          ) {
+            return order;
+          }
+
+          return first.name.localeCompare(
+            second.name
+          );
+        }
+      );
+
+      for (
+        const node
+        of nodes
+      ) {
+        if (
+          node.children.length >
+          0
+        ) {
+          sortTree(
+            node.children
+          );
+        }
+      }
+    };
+
+    sortTree(
+      roots
+    );
 
     return roots;
   };

@@ -47,10 +47,12 @@ type AddressType =
 
 type Address = {
   id: string;
+
   userId?: string;
 
   fullName: string;
   phone: string;
+
   alternatePhone?: string;
 
   homeNumber?: string;
@@ -146,25 +148,30 @@ const emptyForm: AddressForm = {
 ========================================================= */
 
 function useWindowWidth() {
-  const [width, setWidth] =
-    useState(1440);
+  const [
+    width,
+    setWidth,
+  ] = useState(1440);
 
   useEffect(() => {
-    const updateWidth = () => {
-      setWidth(window.innerWidth);
-    };
+    const updateWidth =
+      () => {
+        setWidth(
+          window.innerWidth,
+        );
+      };
 
     updateWidth();
 
     window.addEventListener(
       "resize",
-      updateWidth
+      updateWidth,
     );
 
     return () => {
       window.removeEventListener(
         "resize",
-        updateWidth
+        updateWidth,
       );
     };
   }, []);
@@ -177,7 +184,8 @@ function useWindowWidth() {
 ========================================================= */
 
 export default function AddressesPage() {
-  const width = useWindowWidth();
+  const width =
+    useWindowWidth();
 
   const isMobile =
     width <= 700;
@@ -188,14 +196,13 @@ export default function AddressesPage() {
   const isSmallDesktop =
     width <= 1250;
 
-  /* =======================================================
-     STATE
-  ======================================================= */
-
   const [
     addresses,
     setAddresses,
-  ] = useState<Address[]>([]);
+  ] =
+    useState<Address[]>(
+      [],
+    );
 
   const [
     loading,
@@ -225,16 +232,18 @@ export default function AddressesPage() {
   const [
     editingAddress,
     setEditingAddress,
-  ] = useState<Address | null>(
-    null
-  );
+  ] =
+    useState<Address | null>(
+      null,
+    );
 
   const [
     form,
     setForm,
-  ] = useState<AddressForm>(
-    emptyForm
-  );
+  ] =
+    useState<AddressForm>(
+      emptyForm,
+    );
 
   /* =======================================================
      FETCH ALL
@@ -250,34 +259,41 @@ export default function AddressesPage() {
           await fetch(
             `${API_URL}/api/address/`,
             {
-              method: "GET",
-              credentials: "include",
-              cache: "no-store",
-            }
+              method:
+                "GET",
+
+              credentials:
+                "include",
+
+              cache:
+                "no-store",
+            },
           );
 
         const data =
           await response.json();
 
-        if (!response.ok) {
+        if (
+          !response.ok
+        ) {
           throw new Error(
             data?.message ||
-              "Unable to fetch addresses."
+              "Unable to fetch addresses.",
           );
         }
 
         setAddresses(
           Array.isArray(
-            data?.addresses
+            data?.addresses,
           )
             ? data.addresses
-            : []
+            : [],
         );
       } catch (err) {
         setError(
           err instanceof Error
             ? err.message
-            : "Unable to fetch addresses."
+            : "Unable to fetch addresses.",
         );
       } finally {
         setLoading(false);
@@ -296,54 +312,63 @@ export default function AddressesPage() {
     useMemo(() => {
       return [
         ...addresses,
-      ].sort((a, b) => {
-        if (
-          a.isDefault ===
-          b.isDefault
-        ) {
-          return 0;
-        }
+      ].sort(
+        (a, b) => {
+          if (
+            a.isDefault ===
+            b.isDefault
+          ) {
+            return 0;
+          }
 
-        return a.isDefault
-          ? -1
-          : 1;
-      });
+          return a.isDefault
+            ? -1
+            : 1;
+        },
+      );
     }, [addresses]);
 
   /* =======================================================
      OPEN ADD
   ======================================================= */
 
-  const openAddModal = () => {
-    setEditingAddress(null);
+  const openAddModal =
+    () => {
+      setEditingAddress(
+        null,
+      );
 
-    setForm({
-      ...emptyForm,
-    });
+      setForm({
+        ...emptyForm,
+      });
 
-    setError("");
-    setSuccessMessage("");
+      setError("");
+      setSuccessMessage(
+        "",
+      );
 
-    setModalOpen(true);
-  };
+      setModalOpen(true);
+    };
 
   /* =======================================================
      OPEN EDIT
   ======================================================= */
 
   const openEditModal = (
-    address: Address
+    address: Address,
   ) => {
     setEditingAddress(
-      address
+      address,
     );
 
     setForm({
       fullName:
-        address.fullName || "",
+        address.fullName ||
+        "",
 
       phone:
-        address.phone || "",
+        address.phone ||
+        "",
 
       alternatePhone:
         address.alternatePhone ||
@@ -366,16 +391,20 @@ export default function AddressesPage() {
         "",
 
       landmark:
-        address.landmark || "",
+        address.landmark ||
+        "",
 
       city:
-        address.city || "",
+        address.city ||
+        "",
 
       district:
-        address.district || "",
+        address.district ||
+        "",
 
       state:
-        address.state || "",
+        address.state ||
+        "",
 
       postalCode:
         address.postalCode ||
@@ -407,7 +436,9 @@ export default function AddressesPage() {
     });
 
     setError("");
-    setSuccessMessage("");
+    setSuccessMessage(
+      "",
+    );
 
     setModalOpen(true);
   };
@@ -416,19 +447,24 @@ export default function AddressesPage() {
      CLOSE MODAL
   ======================================================= */
 
-  const closeModal = () => {
-    if (submitting) {
-      return;
-    }
+  const closeModal =
+    () => {
+      if (
+        submitting
+      ) {
+        return;
+      }
 
-    setModalOpen(false);
+      setModalOpen(false);
 
-    setEditingAddress(null);
+      setEditingAddress(
+        null,
+      );
 
-    setForm({
-      ...emptyForm,
-    });
-  };
+      setForm({
+        ...emptyForm,
+      });
+    };
 
   /* =======================================================
      INPUT
@@ -438,144 +474,169 @@ export default function AddressesPage() {
     K extends keyof AddressForm,
   >(
     key: K,
-    value: AddressForm[K]
+    value: AddressForm[K],
   ) => {
-    setForm((current) => ({
-      ...current,
-      [key]: value,
-    }));
+    setForm(
+      (current) => ({
+        ...current,
+        [key]:
+          value,
+      }),
+    );
   };
 
   /* =======================================================
      CREATE / UPDATE
   ======================================================= */
 
-  const handleSubmit = async (
-    event: FormEvent
-  ) => {
-    event.preventDefault();
+  const handleSubmit =
+    async (
+      event: FormEvent,
+    ) => {
+      event.preventDefault();
 
-    try {
-      setSubmitting(true);
-
-      setError("");
-      setSuccessMessage("");
-
-      const isEditing =
-        Boolean(
-          editingAddress?.id
+      try {
+        setSubmitting(
+          true,
         );
 
-      const url = isEditing
-        ? `${API_URL}/api/address/${editingAddress?.id}`
-        : `${API_URL}/api/address/`;
+        setError("");
 
-      const response =
-        await fetch(url, {
-          method: isEditing
-            ? "PUT"
-            : "POST",
+        setSuccessMessage(
+          "",
+        );
 
-          credentials:
-            "include",
+        const isEditing =
+          Boolean(
+            editingAddress?.id,
+          );
 
-          headers: {
-            "Content-Type":
-              "application/json",
-          },
+        const url =
+          isEditing
+            ? `${API_URL}/api/address/${editingAddress?.id}`
+            : `${API_URL}/api/address/`;
 
-          body: JSON.stringify({
-            fullName:
-              form.fullName,
+        const response =
+          await fetch(
+            url,
+            {
+              method:
+                isEditing
+                  ? "PUT"
+                  : "POST",
 
-            phone:
-              form.phone,
+              credentials:
+                "include",
 
-            alternatePhone:
-              form.alternatePhone,
+              headers: {
+                "Content-Type":
+                  "application/json",
+              },
 
-            homeNumber:
-              form.homeNumber,
+              body:
+                JSON.stringify(
+                  {
+                    fullName:
+                      form.fullName,
 
-            officeNumber:
-              form.officeNumber,
+                    phone:
+                      form.phone,
 
-            addressLine1:
-              form.addressLine1,
+                    alternatePhone:
+                      form.alternatePhone,
 
-            addressLine2:
-              form.addressLine2,
+                    homeNumber:
+                      form.homeNumber,
 
-            landmark:
-              form.landmark,
+                    officeNumber:
+                      form.officeNumber,
 
-            city:
-              form.city,
+                    addressLine1:
+                      form.addressLine1,
 
-            district:
-              form.district,
+                    addressLine2:
+                      form.addressLine2,
 
-            state:
-              form.state,
+                    landmark:
+                      form.landmark,
 
-            postalCode:
-              form.postalCode,
+                    city:
+                      form.city,
 
-            country:
-              form.country,
+                    district:
+                      form.district,
 
-            countryCode:
-              form.countryCode,
+                    state:
+                      form.state,
 
-            addressType:
-              form.addressType,
+                    postalCode:
+                      form.postalCode,
 
-            isShippingAddress:
-              form.isShippingAddress,
+                    country:
+                      form.country,
 
-            isBillingAddress:
-              form.isBillingAddress,
+                    countryCode:
+                      form.countryCode,
 
-            instructions:
-              form.instructions,
-          }),
+                    addressType:
+                      form.addressType,
+
+                    isShippingAddress:
+                      form.isShippingAddress,
+
+                    isBillingAddress:
+                      form.isBillingAddress,
+
+                    instructions:
+                      form.instructions,
+                  },
+                ),
+            },
+          );
+
+        const data =
+          await response.json();
+
+        if (
+          !response.ok
+        ) {
+          throw new Error(
+            data?.message ||
+              "Unable to save address.",
+          );
+        }
+
+        setSuccessMessage(
+          isEditing
+            ? "Address updated successfully."
+            : "Address added successfully.",
+        );
+
+        setModalOpen(
+          false,
+        );
+
+        setEditingAddress(
+          null,
+        );
+
+        setForm({
+          ...emptyForm,
         });
 
-      const data =
-        await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data?.message ||
-            "Unable to save address."
+        await fetchAddresses();
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Unable to save address.",
+        );
+      } finally {
+        setSubmitting(
+          false,
         );
       }
-
-      setSuccessMessage(
-        isEditing
-          ? "Address updated successfully."
-          : "Address added successfully."
-      );
-
-      setModalOpen(false);
-
-      setEditingAddress(null);
-
-      setForm({
-        ...emptyForm,
-      });
-
-      await fetchAddresses();
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Unable to save address."
-      );
-    } finally {
-      setSubmitting(false);
-    }
-  };
+    };
 
   /* =======================================================
      SET DEFAULT
@@ -583,34 +644,41 @@ export default function AddressesPage() {
 
   const handleSetDefault =
     async (
-      addressId: string
+      addressId: string,
     ) => {
       try {
         setError("");
-        setSuccessMessage("");
+
+        setSuccessMessage(
+          "",
+        );
 
         const response =
           await fetch(
             `${API_URL}/api/address/${addressId}/default`,
             {
-              method: "PATCH",
+              method:
+                "PATCH",
+
               credentials:
                 "include",
-            }
+            },
           );
 
         const data =
           await response.json();
 
-        if (!response.ok) {
+        if (
+          !response.ok
+        ) {
           throw new Error(
             data?.message ||
-              "Unable to set default address."
+              "Unable to set default address.",
           );
         }
 
         setSuccessMessage(
-          "Default address updated successfully."
+          "Default address updated successfully.",
         );
 
         await fetchAddresses();
@@ -618,7 +686,7 @@ export default function AddressesPage() {
         setError(
           err instanceof Error
             ? err.message
-            : "Unable to set default address."
+            : "Unable to set default address.",
         );
       }
     };
@@ -629,11 +697,11 @@ export default function AddressesPage() {
 
   const handleDelete =
     async (
-      address: Address
+      address: Address,
     ) => {
       const confirmed =
         window.confirm(
-          `Remove ${address.addressType} address?`
+          `Remove ${address.addressType} address?`,
         );
 
       if (!confirmed) {
@@ -642,30 +710,37 @@ export default function AddressesPage() {
 
       try {
         setError("");
-        setSuccessMessage("");
+
+        setSuccessMessage(
+          "",
+        );
 
         const response =
           await fetch(
             `${API_URL}/api/address/${address.id}`,
             {
-              method: "DELETE",
+              method:
+                "DELETE",
+
               credentials:
                 "include",
-            }
+            },
           );
 
         const data =
           await response.json();
 
-        if (!response.ok) {
+        if (
+          !response.ok
+        ) {
           throw new Error(
             data?.message ||
-              "Unable to delete address."
+              "Unable to delete address.",
           );
         }
 
         setSuccessMessage(
-          "Address removed successfully."
+          "Address removed successfully.",
         );
 
         await fetchAddresses();
@@ -673,7 +748,7 @@ export default function AddressesPage() {
         setError(
           err instanceof Error
             ? err.message
-            : "Unable to delete address."
+            : "Unable to delete address.",
         );
       }
     };
@@ -685,36 +760,44 @@ export default function AddressesPage() {
   const pageStyle:
     CSSProperties = {
     width: "100%",
+
     minHeight:
       "calc(100vh - 105px)",
 
     display: "flex",
-    flexDirection: "column",
+
+    flexDirection:
+      "column",
 
     background:
       "#FDFCFB",
 
-    color: "#2A2321",
+    color:
+      "#2A2321",
 
     fontFamily:
       "Arial, Helvetica, sans-serif",
-
-    overflowX: "hidden",
   };
 
   const layoutStyle:
     CSSProperties = {
     width: "100%",
 
-    maxWidth: "1600px",
+    maxWidth:
+      "1600px",
 
-    margin: "0 auto",
+    margin:
+      "0 auto",
 
-    display: isTablet
-      ? "block"
-      : "flex",
+    display:
+      isTablet
+        ? "block"
+        : "flex",
 
-    alignItems: "stretch",
+    alignItems:
+      isTablet
+        ? "stretch"
+        : "flex-start",
 
     flex: 1,
   };
@@ -725,59 +808,76 @@ export default function AddressesPage() {
 
     flex: 1,
 
-    width: "100%",
+    width:
+      "100%",
 
-    padding: isMobile
-      ? "14px 12px 30px"
-      : isSmallDesktop
-        ? "18px 20px 35px"
-        : "20px 28px 40px",
+    maxWidth:
+      "100%",
 
-    boxSizing: "border-box",
+    overflowX:
+      "hidden",
+
+    padding:
+      isMobile
+        ? "14px 12px 30px"
+        : isSmallDesktop
+          ? "18px 20px 35px"
+          : "20px 28px 40px",
+
+    boxSizing:
+      "border-box",
   };
 
   const heroStyle:
     CSSProperties = {
-    position: "relative",
+    position:
+      "relative",
 
-    width: "100%",
+    width:
+      "100%",
 
-    minHeight: isMobile
-      ? "170px"
-      : "180px",
+    minHeight:
+      isMobile
+        ? "170px"
+        : "180px",
 
-    padding: isMobile
-      ? "24px 20px"
-      : "30px 34px",
+    padding:
+      isMobile
+        ? "24px 20px"
+        : "30px 34px",
 
-    boxSizing: "border-box",
+    boxSizing:
+      "border-box",
 
-    overflow: "hidden",
+    overflow:
+      "hidden",
 
     borderRadius:
       "12px",
 
-    background: isMobile
-      ? "#F7EAE6"
-      : `
-        linear-gradient(
-          90deg,
-          rgba(249, 236, 232, 1) 0%,
-          rgba(249, 236, 232, 0.96) 42%,
-          rgba(249, 236, 232, 0.55) 64%,
-          rgba(249, 236, 232, 0.10) 100%
-        ),
-        url(
-          "https://images.unsplash.com/photo-1598301257982-0cf014dabbcd?auto=format&fit=crop&w=1600&q=85"
-        )
-        right center / 54% 100%
-        no-repeat
-      `,
+    background:
+      isMobile
+        ? "#F7EAE6"
+        : `
+          linear-gradient(
+            90deg,
+            rgba(249, 236, 232, 1) 0%,
+            rgba(249, 236, 232, 0.96) 42%,
+            rgba(249, 236, 232, 0.55) 64%,
+            rgba(249, 236, 232, 0.10) 100%
+          ),
+          url(
+            "https://images.unsplash.com/photo-1598301257982-0cf014dabbcd?auto=format&fit=crop&w=1600&q=85"
+          )
+          right center / 54% 100%
+          no-repeat
+        `,
   };
 
   const breadcrumbStyle:
     CSSProperties = {
-    fontSize: "11px",
+    fontSize:
+      "11px",
 
     textTransform:
       "uppercase",
@@ -785,32 +885,38 @@ export default function AddressesPage() {
     letterSpacing:
       "0.22em",
 
-    color: "#8A7C77",
+    color:
+      "#8A7C77",
   };
 
   const heroTitleStyle:
     CSSProperties = {
-    margin: "16px 0 0",
+    margin:
+      "16px 0 0",
 
     fontFamily:
       'Georgia, "Times New Roman", serif',
 
-    fontSize: isMobile
-      ? "39px"
-      : "50px",
+    fontSize:
+      isMobile
+        ? "39px"
+        : "50px",
 
     lineHeight: 1,
 
     fontWeight: 400,
 
-    color: "#261F1D",
+    color:
+      "#261F1D",
   };
 
   const heartStyle:
     CSSProperties = {
-    marginLeft: "8px",
+    marginLeft:
+      "8px",
 
-    color: "#C97078",
+    color:
+      "#C97078",
 
     verticalAlign:
       "middle",
@@ -818,31 +924,39 @@ export default function AddressesPage() {
 
   const heroSubtitleStyle:
     CSSProperties = {
-    margin: "14px 0 0",
+    margin:
+      "14px 0 0",
 
-    fontSize: isMobile
-      ? "12px"
-      : "14px",
+    fontSize:
+      isMobile
+        ? "12px"
+        : "14px",
 
-    lineHeight: 1.6,
+    lineHeight:
+      1.6,
 
-    color: "#6F6662",
+    color:
+      "#6F6662",
   };
 
   const bodyGridStyle:
     CSSProperties = {
-    width: "100%",
+    width:
+      "100%",
 
-    marginTop: "16px",
+    marginTop:
+      "16px",
 
-    display: isSmallDesktop
-      ? "block"
-      : "grid",
+    display:
+      isSmallDesktop
+        ? "block"
+        : "grid",
 
     gridTemplateColumns:
       "minmax(0, 1fr) 320px",
 
-    gap: "18px",
+    gap:
+      "18px",
   };
 
   const leftStyle:
@@ -852,24 +966,30 @@ export default function AddressesPage() {
 
   const sectionHeaderStyle:
     CSSProperties = {
-    width: "100%",
+    width:
+      "100%",
 
-    display: "flex",
+    display:
+      "flex",
 
-    flexDirection: isMobile
-      ? "column"
-      : "row",
+    flexDirection:
+      isMobile
+        ? "column"
+        : "row",
 
-    alignItems: isMobile
-      ? "stretch"
-      : "center",
+    alignItems:
+      isMobile
+        ? "stretch"
+        : "center",
 
     justifyContent:
       "space-between",
 
-    gap: "14px",
+    gap:
+      "14px",
 
-    marginBottom: "12px",
+    marginBottom:
+      "12px",
   };
 
   const sectionTitleStyle:
@@ -879,44 +999,57 @@ export default function AddressesPage() {
     fontFamily:
       'Georgia, "Times New Roman", serif',
 
-    fontSize: isMobile
-      ? "26px"
-      : "29px",
+    fontSize:
+      isMobile
+        ? "26px"
+        : "29px",
 
-    fontWeight: 400,
+    fontWeight:
+      400,
 
-    color: "#2A2321",
+    color:
+      "#2A2321",
   };
 
   const addButtonStyle:
     CSSProperties = {
-    minWidth: isMobile
-      ? "100%"
-      : "255px",
+    minWidth:
+      isMobile
+        ? "100%"
+        : "255px",
 
-    height: "48px",
+    height:
+      "48px",
 
-    border: "none",
+    border:
+      "none",
 
-    borderRadius: "10px",
+    borderRadius:
+      "10px",
 
     background:
       "linear-gradient(90deg, #D9858D 0%, #CF727B 100%)",
 
-    color: "#FFFFFF",
+    color:
+      "#FFFFFF",
 
-    display: "flex",
+    display:
+      "flex",
 
-    alignItems: "center",
+    alignItems:
+      "center",
 
     justifyContent:
       "center",
 
-    gap: "10px",
+    gap:
+      "10px",
 
-    fontSize: "15px",
+    fontSize:
+      "15px",
 
-    cursor: "pointer",
+    cursor:
+      "pointer",
 
     boxShadow:
       "0 7px 20px rgba(181, 91, 103, 0.14)",
@@ -924,24 +1057,31 @@ export default function AddressesPage() {
 
   const listStyle:
     CSSProperties = {
-    display: "flex",
+    display:
+      "flex",
 
-    flexDirection: "column",
+    flexDirection:
+      "column",
 
-    gap: "12px",
+    gap:
+      "12px",
   };
 
   const sidePanelStyle:
     CSSProperties = {
-    display: isSmallDesktop
-      ? "none"
-      : "flex",
+    display:
+      isSmallDesktop
+        ? "none"
+        : "flex",
 
-    minHeight: "470px",
+    minHeight:
+      "470px",
 
-    padding: "28px 24px",
+    padding:
+      "28px 24px",
 
-    boxSizing: "border-box",
+    boxSizing:
+      "border-box",
 
     borderRadius:
       "12px",
@@ -952,28 +1092,35 @@ export default function AddressesPage() {
     flexDirection:
       "column",
 
-    alignItems: "center",
+    alignItems:
+      "center",
 
-    textAlign: "center",
+    textAlign:
+      "center",
 
-    color: "#5E3F3C",
+    color:
+      "#5E3F3C",
   };
 
   const emptyStyle:
     CSSProperties = {
-    minHeight: "260px",
+    minHeight:
+      "260px",
 
-    display: "flex",
+    display:
+      "flex",
 
     flexDirection:
       "column",
 
-    alignItems: "center",
+    alignItems:
+      "center",
 
     justifyContent:
       "center",
 
-    padding: "30px",
+    padding:
+      "30px",
 
     border:
       "1px solid #EBE4E0",
@@ -984,18 +1131,22 @@ export default function AddressesPage() {
     background:
       "#FFFFFF",
 
-    color: "#8E7F79",
+    color:
+      "#8E7F79",
 
-    textAlign: "center",
+    textAlign:
+      "center",
   };
 
   const footerStyle:
     CSSProperties = {
-    width: "100%",
+    width:
+      "100%",
 
-    display: isMobile
-      ? "none"
-      : "grid",
+    display:
+      isMobile
+        ? "none"
+        : "grid",
 
     gridTemplateColumns:
       isTablet
@@ -1011,46 +1162,56 @@ export default function AddressesPage() {
 
   const footerItemStyle:
     CSSProperties = {
-    minHeight: "72px",
+    minHeight:
+      "72px",
 
-    display: "flex",
+    display:
+      "flex",
 
-    alignItems: "center",
+    alignItems:
+      "center",
 
     justifyContent:
       "center",
 
-    gap: "12px",
+    gap:
+      "12px",
 
-    padding: "12px 18px",
+    padding:
+      "12px 18px",
 
-    boxSizing: "border-box",
+    boxSizing:
+      "border-box",
 
     borderRight:
       "1px solid #EEE8E5",
   };
 
-  /* =======================================================
-     RETURN
-  ======================================================= */
-
   return (
     <>
       <Header />
 
-      <div style={pageStyle}>
-        <main style={layoutStyle}>
+      <div
+        style={
+          pageStyle
+        }
+      >
+        <main
+          style={
+            layoutStyle
+          }
+        >
           <AccountSidebar />
 
           <section
-            style={contentStyle}
+            style={
+              contentStyle
+            }
           >
-            {/* =========================================
-                HERO
-            ========================================== */}
-
             <section
-              style={heroStyle}
+              style={
+                heroStyle
+              }
             >
               <div
                 style={
@@ -1093,10 +1254,6 @@ export default function AddressesPage() {
                 checkout.
               </p>
             </section>
-
-            {/* =========================================
-                MESSAGE
-            ========================================== */}
 
             {error && (
               <div
@@ -1158,10 +1315,6 @@ export default function AddressesPage() {
               </div>
             )}
 
-            {/* =========================================
-                CONTENT
-            ========================================== */}
-
             <div
               style={
                 bodyGridStyle
@@ -1204,14 +1357,9 @@ export default function AddressesPage() {
                         1.7
                       }
                     />
-
                     Add New Address
                   </button>
                 </div>
-
-                {/* =====================================
-                    LOADING
-                ====================================== */}
 
                 {loading && (
                   <div
@@ -1240,10 +1388,6 @@ export default function AddressesPage() {
                     </p>
                   </div>
                 )}
-
-                {/* =====================================
-                    EMPTY
-                ====================================== */}
 
                 {!loading &&
                   sortedAddresses.length ===
@@ -1284,7 +1428,8 @@ export default function AddressesPage() {
 
                       <p
                         style={{
-                          margin: 0,
+                          margin:
+                            0,
 
                           maxWidth:
                             "320px",
@@ -1297,16 +1442,13 @@ export default function AddressesPage() {
                         }}
                       >
                         Add your first
-                        delivery address
-                        for faster
+                        delivery
+                        address for
+                        faster
                         checkout.
                       </p>
                     </div>
                   )}
-
-                {/* =====================================
-                    ADDRESS LIST
-                ====================================== */}
 
                 {!loading && (
                   <div
@@ -1315,7 +1457,9 @@ export default function AddressesPage() {
                     }
                   >
                     {sortedAddresses.map(
-                      (address) => (
+                      (
+                        address,
+                      ) => (
                         <AddressCard
                           key={
                             address.id
@@ -1328,29 +1472,25 @@ export default function AddressesPage() {
                           }
                           onEdit={() =>
                             openEditModal(
-                              address
+                              address,
                             )
                           }
                           onDelete={() =>
                             handleDelete(
-                              address
+                              address,
                             )
                           }
                           onSetDefault={() =>
                             handleSetDefault(
-                              address.id
+                              address.id,
                             )
                           }
                         />
-                      )
+                      ),
                     )}
                   </div>
                 )}
               </div>
-
-              {/* =======================================
-                  RIGHT PANEL
-              ======================================== */}
 
               <aside
                 style={
@@ -1359,8 +1499,11 @@ export default function AddressesPage() {
               >
                 <div
                   style={{
-                    width: "88px",
-                    height: "70px",
+                    width:
+                      "88px",
+
+                    height:
+                      "70px",
 
                     display:
                       "flex",
@@ -1413,9 +1556,11 @@ export default function AddressesPage() {
 
                 <div
                   style={{
-                    width: "100%",
+                    width:
+                      "100%",
 
-                    height: "1px",
+                    height:
+                      "1px",
 
                     margin:
                       "24px 0",
@@ -1459,12 +1604,10 @@ export default function AddressesPage() {
           </section>
         </main>
 
-        {/* ===========================================
-            BENEFITS FOOTER
-        ============================================ */}
-
         <footer
-          style={footerStyle}
+          style={
+            footerStyle
+          }
         >
           <FooterBenefit
             style={
@@ -1553,20 +1696,19 @@ export default function AddressesPage() {
         </footer>
       </div>
 
-      {/* =============================================
-          MODAL
-      ============================================== */}
-
       {modalOpen && (
         <div
           style={{
-            position: "fixed",
+            position:
+              "fixed",
 
             inset: 0,
 
-            zIndex: 9999,
+            zIndex:
+              9999,
 
-            display: "flex",
+            display:
+              "flex",
 
             alignItems:
               "center",
@@ -1574,7 +1716,8 @@ export default function AddressesPage() {
             justifyContent:
               "center",
 
-            padding: "18px",
+            padding:
+              "18px",
 
             background:
               "rgba(33,26,24,0.48)",
@@ -1588,7 +1731,8 @@ export default function AddressesPage() {
               handleSubmit
             }
             style={{
-              width: "100%",
+              width:
+                "100%",
 
               maxWidth:
                 "720px",
@@ -1599,9 +1743,10 @@ export default function AddressesPage() {
               overflowY:
                 "auto",
 
-              padding: isMobile
-                ? "20px 16px"
-                : "25px",
+              padding:
+                isMobile
+                  ? "20px 16px"
+                  : "25px",
 
               boxSizing:
                 "border-box",
@@ -1618,7 +1763,8 @@ export default function AddressesPage() {
           >
             <div
               style={{
-                display: "flex",
+                display:
+                  "flex",
 
                 alignItems:
                   "center",
@@ -1626,7 +1772,8 @@ export default function AddressesPage() {
                 justifyContent:
                   "space-between",
 
-                gap: "15px",
+                gap:
+                  "15px",
 
                 marginBottom:
                   "20px",
@@ -1635,7 +1782,8 @@ export default function AddressesPage() {
               <div>
                 <h2
                   style={{
-                    margin: 0,
+                    margin:
+                      0,
 
                     fontFamily:
                       "Georgia, serif",
@@ -1676,11 +1824,14 @@ export default function AddressesPage() {
                   closeModal
                 }
                 style={{
-                  width: "40px",
+                  width:
+                    "40px",
 
-                  height: "40px",
+                  height:
+                    "40px",
 
-                  flexShrink: 0,
+                  flexShrink:
+                    0,
 
                   display:
                     "grid",
@@ -1720,7 +1871,8 @@ export default function AddressesPage() {
                     ? "1fr"
                     : "repeat(2, minmax(0, 1fr))",
 
-                gap: "14px",
+                gap:
+                  "14px",
               }}
             >
               <Field
@@ -1730,11 +1882,11 @@ export default function AddressesPage() {
                   form.fullName
                 }
                 onChange={(
-                  value
+                  value,
                 ) =>
                   updateField(
                     "fullName",
-                    value
+                    value,
                   )
                 }
               />
@@ -1746,11 +1898,11 @@ export default function AddressesPage() {
                   form.phone
                 }
                 onChange={(
-                  value
+                  value,
                 ) =>
                   updateField(
                     "phone",
-                    value
+                    value,
                   )
                 }
               />
@@ -1761,11 +1913,11 @@ export default function AddressesPage() {
                   form.alternatePhone
                 }
                 onChange={(
-                  value
+                  value,
                 ) =>
                   updateField(
                     "alternatePhone",
-                    value
+                    value,
                   )
                 }
               />
@@ -1776,11 +1928,11 @@ export default function AddressesPage() {
                   form.addressType
                 }
                 onChange={(
-                  value
+                  value,
                 ) =>
                   updateField(
                     "addressType",
-                    value as AddressType
+                    value as AddressType,
                   )
                 }
               />
@@ -1791,11 +1943,11 @@ export default function AddressesPage() {
                   form.homeNumber
                 }
                 onChange={(
-                  value
+                  value,
                 ) =>
                   updateField(
                     "homeNumber",
-                    value
+                    value,
                   )
                 }
               />
@@ -1806,11 +1958,11 @@ export default function AddressesPage() {
                   form.officeNumber
                 }
                 onChange={(
-                  value
+                  value,
                 ) =>
                   updateField(
                     "officeNumber",
-                    value
+                    value,
                   )
                 }
               />
@@ -1822,11 +1974,11 @@ export default function AddressesPage() {
                   form.addressLine1
                 }
                 onChange={(
-                  value
+                  value,
                 ) =>
                   updateField(
                     "addressLine1",
-                    value
+                    value,
                   )
                 }
               />
@@ -1837,11 +1989,11 @@ export default function AddressesPage() {
                   form.addressLine2
                 }
                 onChange={(
-                  value
+                  value,
                 ) =>
                   updateField(
                     "addressLine2",
-                    value
+                    value,
                   )
                 }
               />
@@ -1852,11 +2004,11 @@ export default function AddressesPage() {
                   form.landmark
                 }
                 onChange={(
-                  value
+                  value,
                 ) =>
                   updateField(
                     "landmark",
-                    value
+                    value,
                   )
                 }
               />
@@ -1868,11 +2020,11 @@ export default function AddressesPage() {
                   form.city
                 }
                 onChange={(
-                  value
+                  value,
                 ) =>
                   updateField(
                     "city",
-                    value
+                    value,
                   )
                 }
               />
@@ -1883,11 +2035,11 @@ export default function AddressesPage() {
                   form.district
                 }
                 onChange={(
-                  value
+                  value,
                 ) =>
                   updateField(
                     "district",
-                    value
+                    value,
                   )
                 }
               />
@@ -1899,11 +2051,11 @@ export default function AddressesPage() {
                   form.state
                 }
                 onChange={(
-                  value
+                  value,
                 ) =>
                   updateField(
                     "state",
-                    value
+                    value,
                   )
                 }
               />
@@ -1915,11 +2067,11 @@ export default function AddressesPage() {
                   form.postalCode
                 }
                 onChange={(
-                  value
+                  value,
                 ) =>
                   updateField(
                     "postalCode",
-                    value
+                    value,
                   )
                 }
               />
@@ -1931,11 +2083,11 @@ export default function AddressesPage() {
                   form.country
                 }
                 onChange={(
-                  value
+                  value,
                 ) =>
                   updateField(
                     "country",
-                    value
+                    value,
                   )
                 }
               />
@@ -1946,12 +2098,11 @@ export default function AddressesPage() {
                   form.countryCode
                 }
                 onChange={(
-                  value
+                  value,
                 ) =>
                   updateField(
                     "countryCode",
-                    value
-                      .toUpperCase()
+                    value.toUpperCase(),
                   )
                 }
               />
@@ -1962,11 +2113,11 @@ export default function AddressesPage() {
                   form.instructions
                 }
                 onChange={(
-                  value
+                  value,
                 ) =>
                   updateField(
                     "instructions",
-                    value
+                    value,
                   )
                 }
               />
@@ -1985,7 +2136,8 @@ export default function AddressesPage() {
                     ? "column"
                     : "row",
 
-                gap: "14px",
+                gap:
+                  "14px",
               }}
             >
               <CheckboxField
@@ -1994,11 +2146,11 @@ export default function AddressesPage() {
                   form.isShippingAddress
                 }
                 onChange={(
-                  checked
+                  checked,
                 ) =>
                   updateField(
                     "isShippingAddress",
-                    checked
+                    checked,
                   )
                 }
               />
@@ -2009,11 +2161,11 @@ export default function AddressesPage() {
                   form.isBillingAddress
                 }
                 onChange={(
-                  checked
+                  checked,
                 ) =>
                   updateField(
                     "isBillingAddress",
-                    checked
+                    checked,
                   )
                 }
               />
@@ -2035,7 +2187,8 @@ export default function AddressesPage() {
                 justifyContent:
                   "flex-end",
 
-                gap: "10px",
+                gap:
+                  "10px",
               }}
             >
               <button
@@ -2137,18 +2290,24 @@ function AddressCard({
     "home" ? (
       <Home
         size={29}
-        strokeWidth={1.4}
+        strokeWidth={
+          1.4
+        }
       />
     ) : address.addressType ===
       "work" ? (
       <BriefcaseBusiness
         size={28}
-        strokeWidth={1.4}
+        strokeWidth={
+          1.4
+        }
       />
     ) : (
       <MapPin
         size={29}
-        strokeWidth={1.4}
+        strokeWidth={
+          1.4
+        }
       />
     );
 
@@ -2157,17 +2316,19 @@ function AddressCard({
       .charAt(0)
       .toUpperCase() +
     address.addressType.slice(
-      1
+      1,
     );
 
   const addressNumber =
-    address.addressType === "work"
+    address.addressType ===
+    "work"
       ? address.officeNumber
         ? `Office No. ${address.officeNumber}`
         : address.homeNumber
           ? `Home No. ${address.homeNumber}`
           : ""
-      : address.addressType === "home"
+      : address.addressType ===
+          "home"
         ? address.homeNumber
           ? `Home No. ${address.homeNumber}`
           : address.officeNumber
@@ -2196,25 +2357,27 @@ function AddressCard({
   return (
     <article
       style={{
-        width: "100%",
+        width:
+          "100%",
 
-        padding: mobile
-          ? "16px"
-          : "14px 16px",
+        padding:
+          mobile
+            ? "16px"
+            : "14px 16px",
 
         boxSizing:
           "border-box",
 
-        display: "grid",
+        display:
+          "grid",
 
         gridTemplateColumns:
           mobile
             ? "1fr"
             : "80px 180px minmax(0,1fr) 210px",
 
-        gap: mobile
-          ? "14px"
-          : "14px",
+        gap:
+          "14px",
 
         alignItems:
           "center",
@@ -2234,11 +2397,14 @@ function AddressCard({
     >
       <div
         style={{
-          width: "66px",
+          width:
+            "66px",
 
-          height: "66px",
+          height:
+            "66px",
 
-          display: "grid",
+          display:
+            "grid",
 
           placeItems:
             "center",
@@ -2258,17 +2424,20 @@ function AddressCard({
 
       <div
         style={{
-          minWidth: 0,
+          minWidth:
+            0,
         }}
       >
         <div
           style={{
-            display: "flex",
+            display:
+              "flex",
 
             alignItems:
               "center",
 
-            gap: "8px",
+            gap:
+              "8px",
 
             flexWrap:
               "wrap",
@@ -2289,7 +2458,9 @@ function AddressCard({
                 "#2F2623",
             }}
           >
-            {address.fullName}
+            {
+              address.fullName
+            }
           </strong>
 
           {address.isDefault && (
@@ -2345,7 +2516,8 @@ function AddressCard({
 
         <div
           style={{
-            marginTop: "5px",
+            marginTop:
+              "5px",
 
             fontSize:
               "12px",
@@ -2360,12 +2532,17 @@ function AddressCard({
 
       <div
         style={{
-          minWidth: 0,
+          minWidth:
+            0,
+
+          overflowWrap:
+            "anywhere",
 
           fontSize:
             "12px",
 
-          lineHeight: 1.55,
+          lineHeight:
+            1.55,
 
           color:
             "#756B67",
@@ -2376,31 +2553,42 @@ function AddressCard({
 
       <div
         style={{
-          display: "flex",
+          display:
+            "flex",
 
           flexDirection:
             "column",
 
-          gap: "11px",
+          gap:
+            "11px",
         }}
       >
         <div
           style={{
-            display: "flex",
+            display:
+              "flex",
 
             alignItems:
               "center",
 
-            gap: "16px",
+            gap:
+              "16px",
+
+            flexWrap:
+              "wrap",
           }}
         >
           <button
             type="button"
-            onClick={onEdit}
+            onClick={
+              onEdit
+            }
             style={{
-              border: "none",
+              border:
+                "none",
 
-              padding: 0,
+              padding:
+                0,
 
               display:
                 "flex",
@@ -2408,7 +2596,8 @@ function AddressCard({
               alignItems:
                 "center",
 
-              gap: "7px",
+              gap:
+                "7px",
 
               background:
                 "transparent",
@@ -2429,7 +2618,6 @@ function AddressCard({
                 1.7
               }
             />
-
             Edit
           </button>
 
@@ -2439,9 +2627,11 @@ function AddressCard({
               onDelete
             }
             style={{
-              border: "none",
+              border:
+                "none",
 
-              padding: 0,
+              padding:
+                0,
 
               display:
                 "flex",
@@ -2449,7 +2639,8 @@ function AddressCard({
               alignItems:
                 "center",
 
-              gap: "7px",
+              gap:
+                "7px",
 
               background:
                 "transparent",
@@ -2470,7 +2661,6 @@ function AddressCard({
                 1.7
               }
             />
-
             Remove
           </button>
         </div>
@@ -2482,9 +2672,16 @@ function AddressCard({
               onSetDefault
             }
             style={{
-              width: "155px",
+              width:
+                mobile
+                  ? "100%"
+                  : "155px",
 
-              height: "37px",
+              maxWidth:
+                "100%",
+
+              height:
+                "37px",
 
               border:
                 "1px solid #C8757D",
@@ -2522,37 +2719,48 @@ function InfoRow({
   title,
   text,
 }: {
-  icon: React.ReactNode;
+  icon:
+    React.ReactNode;
+
   title: string;
+
   text: string;
 }) {
   return (
     <div
       style={{
-        width: "100%",
+        width:
+          "100%",
 
-        display: "flex",
+        display:
+          "flex",
 
         alignItems:
           "center",
 
-        gap: "12px",
+        gap:
+          "12px",
 
         marginBottom:
           "18px",
 
-        textAlign: "left",
+        textAlign:
+          "left",
       }}
     >
       <div
         style={{
-          width: "43px",
+          width:
+            "43px",
 
-          height: "43px",
+          height:
+            "43px",
 
-          flexShrink: 0,
+          flexShrink:
+            0,
 
-          display: "grid",
+          display:
+            "grid",
 
           placeItems:
             "center",
@@ -2618,13 +2826,22 @@ function FooterBenefit({
   text,
   style,
 }: {
-  icon: React.ReactNode;
+  icon:
+    React.ReactNode;
+
   title: string;
+
   text: string;
-  style: CSSProperties;
+
+  style:
+    CSSProperties;
 }) {
   return (
-    <div style={style}>
+    <div
+      style={
+        style
+      }
+    >
       <div
         style={{
           color:
@@ -2689,21 +2906,29 @@ function Field({
   required = false,
 }: {
   label: string;
+
   value: string;
+
   required?: boolean;
+
   onChange: (
-    value: string
+    value: string,
   ) => void;
 }) {
   return (
     <label
       style={{
-        display: "flex",
+        display:
+          "flex",
 
         flexDirection:
           "column",
 
-        gap: "7px",
+        gap:
+          "7px",
+
+        minWidth:
+          0,
       }}
     >
       <span
@@ -2736,17 +2961,31 @@ function Field({
       </span>
 
       <input
-        value={value}
-        required={required}
-        onChange={(event) =>
+        value={
+          value
+        }
+        required={
+          required
+        }
+        onChange={(
+          event,
+        ) =>
           onChange(
-            event.target.value
+            event.target.value,
           )
         }
         style={{
-          width: "100%",
+          width:
+            "100%",
 
-          height: "43px",
+          maxWidth:
+            "100%",
+
+          minWidth:
+            0,
+
+          height:
+            "43px",
 
           padding:
             "0 12px",
@@ -2787,20 +3026,27 @@ function SelectField({
   onChange,
 }: {
   label: string;
+
   value: string;
+
   onChange: (
-    value: string
+    value: string,
   ) => void;
 }) {
   return (
     <label
       style={{
-        display: "flex",
+        display:
+          "flex",
 
         flexDirection:
           "column",
 
-        gap: "7px",
+        gap:
+          "7px",
+
+        minWidth:
+          0,
       }}
     >
       <span
@@ -2819,16 +3065,28 @@ function SelectField({
       </span>
 
       <select
-        value={value}
-        onChange={(event) =>
+        value={
+          value
+        }
+        onChange={(
+          event,
+        ) =>
           onChange(
-            event.target.value
+            event.target.value,
           )
         }
         style={{
-          width: "100%",
+          width:
+            "100%",
 
-          height: "43px",
+          maxWidth:
+            "100%",
+
+          minWidth:
+            0,
+
+          height:
+            "43px",
 
           padding:
             "0 12px",
@@ -2855,15 +3113,21 @@ function SelectField({
             "12px",
         }}
       >
-        <option value="home">
+        <option
+          value="home"
+        >
           Home
         </option>
 
-        <option value="work">
+        <option
+          value="work"
+        >
           Work
         </option>
 
-        <option value="other">
+        <option
+          value="other"
+        >
           Other
         </option>
       </select>
@@ -2881,20 +3145,24 @@ function CheckboxField({
   onChange,
 }: {
   label: string;
+
   checked: boolean;
+
   onChange: (
-    checked: boolean
+    checked: boolean,
   ) => void;
 }) {
   return (
     <label
       style={{
-        display: "flex",
+        display:
+          "flex",
 
         alignItems:
           "center",
 
-        gap: "9px",
+        gap:
+          "9px",
 
         fontSize:
           "11px",
@@ -2908,15 +3176,22 @@ function CheckboxField({
     >
       <input
         type="checkbox"
-        checked={checked}
-        onChange={(event) =>
+        checked={
+          checked
+        }
+        onChange={(
+          event,
+        ) =>
           onChange(
-            event.target.checked
+            event.target.checked,
           )
         }
         style={{
-          width: "16px",
-          height: "16px",
+          width:
+            "16px",
+
+          height:
+            "16px",
 
           accentColor:
             "#B95F68",

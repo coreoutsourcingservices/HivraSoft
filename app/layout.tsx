@@ -4,6 +4,9 @@ import type {
 
 import "./globals.css";
 
+import Footer from "@/src/components/Footer/Footer";
+import StorefrontFooter from "@/src/components/Footer/StorefrontFooter";
+
 import {
   StorefrontCommerceProvider,
 } from "@/src/components/Storefront/StorefrontCommerceProvider";
@@ -37,6 +40,8 @@ export default function RootLayout({
         <StorefrontCommerceProvider>
           <TrafficSourceCapture />
           {children}
+
+          <StorefrontFooter><Footer /></StorefrontFooter>
         </StorefrontCommerceProvider>
       </body>
     </html>
