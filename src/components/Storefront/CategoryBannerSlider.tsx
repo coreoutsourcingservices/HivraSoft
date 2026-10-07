@@ -27,32 +27,25 @@ export default function CategoryBannerSlider({
     useMemo(
       () =>
         banners.filter(
-          (
-            banner
-          ) =>
+          (banner) =>
             Boolean(
               banner.image
             )
         ),
-      [
-        banners,
-      ]
+      [banners]
     );
 
   const [
     activeIndex,
     setActiveIndex,
-  ] =
-    useState(0);
+  ] = useState(0);
 
   /* =========================================================
      RESET INDEX
   ========================================================= */
 
   useEffect(() => {
-    setActiveIndex(
-      0
-    );
+    setActiveIndex(0);
   }, [
     validBanners.length,
   ]);
@@ -73,9 +66,7 @@ export default function CategoryBannerSlider({
       window.setInterval(
         () => {
           setActiveIndex(
-            (
-              current
-            ) =>
+            (current) =>
               (
                 current +
                 1
@@ -107,29 +98,32 @@ export default function CategoryBannerSlider({
     return null;
   }
 
+  /* =========================================================
+     PREVIOUS
+  ========================================================= */
+
   const previousBanner =
     () => {
       setActiveIndex(
-        (
-          current
-        ) =>
+        (current) =>
           current === 0
             ? validBanners.length -
               1
-            : current -
-              1
+            : current - 1
       );
     };
+
+  /* =========================================================
+     NEXT
+  ========================================================= */
 
   const nextBanner =
     () => {
       setActiveIndex(
-        (
-          current
-        ) =>
+        (current) =>
           (
             current +
-            1
+              1
           ) %
           validBanners.length
       );
@@ -145,7 +139,11 @@ export default function CategoryBannerSlider({
       "
     >
       {/* ===================================================
-          EXACT 1600 × 389 RATIO
+          BANNER AREA
+
+          Desktop ratio remains same.
+          Image is aligned from TOP so faces / heads
+          are not cropped from the upper edge.
       =================================================== */}
 
       <div
@@ -169,7 +167,11 @@ export default function CategoryBannerSlider({
               className={`
                 absolute
                 inset-0
+
                 block
+                h-full
+                w-full
+
                 cursor-pointer
 
                 transition-opacity
@@ -195,11 +197,13 @@ export default function CategoryBannerSlider({
                   absolute
                   inset-0
 
+                  block
+
                   h-full
                   w-full
 
                   object-cover
-                  object-center
+                  object-top
                 "
               />
             </Link>
@@ -230,6 +234,7 @@ export default function CategoryBannerSlider({
                 flex
                 h-8
                 w-8
+
                 -translate-y-1/2
 
                 cursor-pointer
@@ -242,7 +247,6 @@ export default function CategoryBannerSlider({
                 bg-white/90
 
                 text-xl
-
                 text-black
 
                 shadow-md
@@ -277,6 +281,7 @@ export default function CategoryBannerSlider({
                 flex
                 h-8
                 w-8
+
                 -translate-y-1/2
 
                 cursor-pointer
@@ -289,7 +294,6 @@ export default function CategoryBannerSlider({
                 bg-white/90
 
                 text-xl
-
                 text-black
 
                 shadow-md
@@ -317,6 +321,7 @@ export default function CategoryBannerSlider({
                 z-20
 
                 flex
+
                 -translate-x-1/2
 
                 items-center

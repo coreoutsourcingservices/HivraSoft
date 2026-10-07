@@ -24,19 +24,19 @@ export default function StorefrontProductCard({
 
   const wished =
     commerce.isWishlisted(
-      product
+      product,
     );
 
   const wishlistBusy =
     commerce.isWishlistBusy(
-      product
+      product,
     );
 
   const hasSecondImage =
     Boolean(
       product.image2 &&
         product.image2 !==
-          product.image1
+          product.image1,
     );
 
   const hasDiscount =
@@ -75,7 +75,7 @@ export default function StorefrontProductCard({
       >
         <Link
           href={`/product/${encodeURIComponent(
-            product.slug
+            product.slug,
           )}`}
           className="
             group/image
@@ -89,8 +89,12 @@ export default function StorefrontProductCard({
           {product.image1 ? (
             <>
               <img
-                src={product.image1}
-                alt={product.name}
+                src={
+                  product.image1
+                }
+                alt={
+                  product.name
+                }
                 className={`
                   absolute
                   inset-0
@@ -108,9 +112,11 @@ export default function StorefrontProductCard({
                 `}
               />
 
-              {hasSecondImage && (
+              {hasSecondImage ? (
                 <img
-                  src={product.image2}
+                  src={
+                    product.image2
+                  }
                   alt={`${product.name} alternate`}
                   className="
                     absolute
@@ -124,7 +130,7 @@ export default function StorefrontProductCard({
                     md:group-hover/image:opacity-100
                   "
                 />
-              )}
+              ) : null}
             </>
           ) : (
             <div
@@ -143,31 +149,24 @@ export default function StorefrontProductCard({
           )}
         </Link>
 
-        {/* DISCOUNT LEFT */}
+        {/* DISCOUNT */}
 
         {product.discountPercent >
-          0 && (
+        0 ? (
           <span
             className="
               absolute
               left-0
               top-3
               z-10
-
               rounded-r-[6px]
-
               bg-[#FF7545]
-
               px-2
               py-1.5
-
               text-[8px]
               font-bold
-
               whitespace-nowrap
-
               text-white
-
               sm:text-[9px]
               lg:px-2.5
               lg:text-[10px]
@@ -178,9 +177,9 @@ export default function StorefrontProductCard({
             }
             % off
           </span>
-        )}
+        ) : null}
 
-        {/* WISHLIST TOP RIGHT */}
+        {/* WISHLIST */}
 
         <button
           type="button"
@@ -189,17 +188,25 @@ export default function StorefrontProductCard({
               ? "Remove from wishlist"
               : "Add to wishlist"
           }
+          aria-busy={
+            wishlistBusy
+          }
           disabled={
             wishlistBusy
           }
           onClick={(
-            event
+            event,
           ) => {
             event.preventDefault();
             event.stopPropagation();
 
+            /*
+             * Provider optimistic update karta hai.
+             * Heart instantly change hoga.
+             * API ke response ka visual wait nahi.
+             */
             void commerce.toggleWishlist(
-              product
+              product,
             );
           }}
           className="
@@ -213,7 +220,6 @@ export default function StorefrontProductCard({
             w-[32px]
 
             cursor-pointer
-
             items-center
             justify-center
 
@@ -233,8 +239,7 @@ export default function StorefrontProductCard({
             hover:scale-105
             hover:bg-white
 
-            disabled:cursor-not-allowed
-            disabled:opacity-50
+            disabled:cursor-default
 
             sm:right-3
             sm:top-3
@@ -256,154 +261,164 @@ export default function StorefrontProductCard({
         className="
           min-w-0
           px-2.5
-          pb-3
+          pb-2.5
           pt-2.5
-
           sm:px-3
           sm:pt-3
         "
       >
+        {/* PRODUCT NAME */}
+
         <Link
           href={`/product/${encodeURIComponent(
-            product.slug
+            product.slug,
           )}`}
-          title={product.name}
+          title={
+            product.name
+          }
           className="
             block
             w-full
             min-w-0
             cursor-pointer
             truncate
-
             text-[10px]
             font-medium
-
             text-[#111111]
-
             min-[360px]:text-[11px]
             sm:text-[12px]
             lg:text-[13px]
           "
         >
-          {product.name}
+          {
+            product.name
+          }
         </Link>
 
-        {/* PRICE */}
+        {/* PRICE + ADD TO BAG */}
 
         <div
           className="
             mt-2
             flex
-            min-h-[25px]
+            w-full
             min-w-0
             items-center
-            gap-1
+            gap-2
           "
         >
-          <strong
+          {/* PRICE */}
+
+          <div
             className="
-              shrink-0
-
-              text-[14px]
-              font-bold
-              text-black
-
-              min-[360px]:text-[15px]
-              sm:text-[16px]
-              lg:text-[17px]
+              flex
+              min-w-0
+              flex-1
+              items-center
+              gap-1
             "
           >
-            ₹
-            {product.showPrice.toLocaleString(
-              "en-IN",
-              {
-                maximumFractionDigits:
-                  2,
-              }
-            )}
-          </strong>
-
-          {hasDiscount && (
-            <span
+            <strong
               className="
-                min-w-0
-                truncate
-
-                text-[8px]
-
-                text-black/35
-
-                line-through
-
-                min-[390px]:text-[9px]
-                sm:text-[10px]
+                shrink-0
+                text-[14px]
+                font-bold
+                text-black
+                min-[360px]:text-[15px]
+                sm:text-[16px]
+                lg:text-[17px]
               "
             >
               ₹
-              {product.originalPrice.toLocaleString(
+              {product.showPrice.toLocaleString(
                 "en-IN",
                 {
                   maximumFractionDigits:
                     2,
-                }
+                },
               )}
-            </span>
-          )}
+            </strong>
+
+            {hasDiscount ? (
+              <span
+                className="
+                  min-w-0
+                  truncate
+                  text-[8px]
+                  text-black/35
+                  line-through
+                  min-[390px]:text-[9px]
+                  sm:text-[10px]
+                "
+              >
+                ₹
+                {product.originalPrice.toLocaleString(
+                  "en-IN",
+                  {
+                    maximumFractionDigits:
+                      2,
+                  },
+                )}
+              </span>
+            ) : null}
+          </div>
+
+          {/* ADD TO BAG */}
+
+          <button
+            type="button"
+            onClick={(
+              event,
+            ) => {
+              /*
+               * Safe against accidental form/navigation submit.
+               * No router.refresh / no reload.
+               */
+              event.preventDefault();
+              event.stopPropagation();
+
+              void commerce.openAddToBag(
+                product,
+              );
+            }}
+            className="
+              flex
+              h-[38px]
+              w-[48%]
+              shrink-0
+              cursor-pointer
+              items-center
+              justify-center
+              rounded-[5px]
+              bg-[#EC4F83]
+              px-2
+              text-[8px]
+              font-bold
+              uppercase
+              tracking-[0.02em]
+              whitespace-nowrap
+              text-white
+              transition-colors
+              hover:bg-[#B31345]
+              min-[360px]:h-[40px]
+              min-[360px]:text-[9px]
+              sm:h-[42px]
+              sm:text-[10px]
+              lg:h-[44px]
+              lg:text-[11px]
+            "
+          >
+            Add To Bag
+          </button>
         </div>
-
-        {/* FULL WIDTH ADD TO BAG */}
-
-        <button
-          type="button"
-          onClick={() => {
-            void commerce.openAddToBag(
-              product
-            );
-          }}
-          className="
-            mt-3
-
-            h-[38px]
-            w-full
-
-            cursor-pointer
-
-            rounded-[5px]
-
-            bg-[#EC4F83]
-
-            px-2
-
-            text-[8px]
-            font-bold
-            uppercase
-
-            tracking-[0.02em]
-
-            whitespace-nowrap
-
-            text-white
-
-            transition-colors
-
-            hover:bg-[#B31345]
-
-            min-[360px]:h-[40px]
-            min-[360px]:text-[9px]
-
-            sm:h-[42px]
-            sm:text-[10px]
-
-            lg:h-[44px]
-            lg:text-[11px]
-          "
-        >
-          Add To Bag
-        </button>
       </div>
     </article>
   );
 }
+
+/* =========================================================
+   HEART ICON
+========================================================= */
 
 function HeartIcon({
   filled,

@@ -502,22 +502,52 @@ exports.deleteCategory = deleteCategory;
 /* =========================================================
    CATEGORY TREE
 ========================================================= */
+/* =========================================================
+   CATEGORY TREE
+
+   RULES:
+
+   activeOnly = true
+
+   1. Sirf active categories storefront me aayengi.
+   2. Parent inactive hua to uske children bhi nahi aayenge.
+   3. Child ko automatically root category nahi banaya jayega.
+   4. Subcategory / sub-subcategory hierarchy same rahegi.
+   5. sortOrder ke according header order rahega.
+========================================================= */
 const getCategoryTree = async (activeOnly = false) => {
+    /* =====================================================
+       DATABASE FILTER
+    ===================================================== */
     const filter = activeOnly
         ? {
             isActive: true,
         }
         : {};
-    const categories = await Category_model_1.default.find(filter).sort({
+    /* =====================================================
+       LOAD CATEGORIES
+    ===================================================== */
+    const categories = await Category_model_1.default.find(filter)
+        .sort({
         level: 1,
         sortOrder: 1,
         name: 1,
     });
+    /* =====================================================
+       NODE MAP
+
+       category id -> tree node
+    ===================================================== */
     const map = new Map();
     const roots = [];
+    /* =====================================================
+       FIRST PASS
+
+       Har active category ko tree node me convert karo.
+    ===================================================== */
     for (const category of categories) {
         const id = String(category._id);
-        map.set(id, {
+        const node = {
             id,
             name: category.name,
             slug: category.slug,
@@ -526,33 +556,99 @@ const getCategoryTree = async (activeOnly = false) => {
             parent: category.parent
                 ? String(category.parent)
                 : null,
-            ancestors: category.ancestors.map((ancestor) => String(ancestor)),
-            level: category.level,
-            images: category.images.map((image) => ({
-                url: image.url,
-                publicId: image.publicId,
-                alt: image.alt,
-            })),
+            ancestors: Array.isArray(category.ancestors)
+                ? category.ancestors.map((ancestor) => String(ancestor))
+                : [],
+            level: Number(category.level) || 0,
+            images: Array.isArray(category.images)
+                ? category.images.map((image) => ({
+                    url: image.url,
+                    publicId: image.publicId,
+                    alt: image.alt,
+                }))
+                : [],
             isActive: category.isActive,
-            sortOrder: category.sortOrder,
+            sortOrder: Number(category.sortOrder) || 0,
             children: [],
-        });
+        };
+        map.set(id, node);
     }
+    /* =====================================================
+       SECOND PASS
+
+       Parent / child hierarchy build karo.
+    ===================================================== */
     for (const category of categories) {
         const id = String(category._id);
         const node = map.get(id);
         if (!node) {
             continue;
         }
+        /* ===================================================
+           CATEGORY HAS PARENT
+        =================================================== */
         if (category.parent) {
-            const parentNode = map.get(String(category.parent));
+            const parentId = String(category.parent);
+            const parentNode = map.get(parentId);
+            /* ===============================================
+               Parent active tree me available hai.
+
+               Child ko parent ke andar add karo.
+            =============================================== */
             if (parentNode) {
                 parentNode.children.push(node);
-                continue;
             }
+            /* ===============================================
+               IMPORTANT
+
+               Parent missing hai:
+               activeOnly=true me iska matlab ho sakta hai
+               parent inactive hai.
+
+               Child ko ROOT mat banao.
+
+               Example:
+
+               Men = inactive
+               ├── Brief = active
+               └── Trunks = active
+
+               Header:
+               Men ❌
+               Brief ❌
+               Trunks ❌
+            =============================================== */
+            continue;
         }
+        /* ===================================================
+           REAL ROOT CATEGORY
+
+           parent === null only
+        =================================================== */
         roots.push(node);
     }
+    /* =====================================================
+       RECURSIVE SORT
+
+       Root / child / sub-child sab sortOrder se sort.
+    ===================================================== */
+    const sortTree = (nodes) => {
+        nodes.sort((first, second) => {
+            const order = first.sortOrder -
+                second.sortOrder;
+            if (order !== 0) {
+                return order;
+            }
+            return first.name.localeCompare(second.name);
+        });
+        for (const node of nodes) {
+            if (node.children.length >
+                0) {
+                sortTree(node.children);
+            }
+        }
+    };
+    sortTree(roots);
     return roots;
 };
 exports.getCategoryTree = getCategoryTree;

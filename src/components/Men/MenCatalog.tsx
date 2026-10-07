@@ -1,6 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import ResponsiveCatalog from "@/src/components/Storefront/ResponsiveCatalog";
+import CategoryOfferStrip from "@/src/components/Offers/CategoryOfferStrip";
+import type { StorefrontOffer } from "@/src/services/offers";
 
 import {
   useMemo,
@@ -21,6 +24,7 @@ import type {
 } from "@/types/catalog";
 
 type Props = {
+  fixedPriceOffer?: StorefrontOffer | null;
   products: CatalogProduct[];
 
   banners: CatalogBanner[];
@@ -391,6 +395,7 @@ export default function MenCatalog({
   description,
   categoryRoot,
   categoryPath,
+  fixedPriceOffer,
 }: Props) {
   const [
     sort,
@@ -461,8 +466,14 @@ export default function MenCatalog({
     ]);
 
   return (
+    <>
+    <CategoryOfferStrip offer={fixedPriceOffer || null} />
+    <div className="lg:hidden">
+      <ResponsiveCatalog basePath="/men" allLabel="All Men" products={products} banners={banners} title={title} description={description} categoryRoot={categoryRoot} categoryPath={categoryPath} />
+    </div>
     <main
       className="
+        hidden lg:block
         min-h-screen
 
         bg-[#FAF8F6]
@@ -662,5 +673,6 @@ export default function MenCatalog({
         </div>
       </section>
     </main>
+    </>
   );
 }

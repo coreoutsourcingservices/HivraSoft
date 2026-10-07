@@ -3,64 +3,778 @@
 import Link from "next/link";
 import {
   useEffect,
+  useMemo,
   useRef,
   useState,
+  type ReactNode,
 } from "react";
-
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 import Header from "@/src/components/Header/Header";
 
 import {
-  bannerImages,
-  favouriteCards,
-  everyWomanProducts,
-  menWomenProducts,
-  styleComfortConfidence,
-  findYourFit,
-} from "@/src/data/home";
+  useStorefrontCommerce,
+} from "@/src/components/Storefront/StorefrontCommerceProvider";
 
+import {
+  getProductCategorySlugs,
+  type ApiColor,
+  type ApiImage,
+  type ApiProduct,
+} from "@/src/services/products";
+
+import {
+  mapProductToColorCards,
+} from "@/src/services/storefront-catalog";
+
+import type {
+  CatalogProduct,
+} from "@/types/catalog";
 
 /* =========================================================
-   MAIN BANNER SLIDER
-
-   IMPORTANT:
-   ALL BANNERS = 1600 x 558 PX
+   API
 ========================================================= */
 
-function BannerSlider() {
-  const [active, setActive] = useState(0);
+const API_URL = (
+  process.env.NEXT_PUBLIC_API_URL ||
+  "http://localhost:5000"
+).replace(/\/$/, "");
+
+/* =========================================================
+   TYPES
+========================================================= */
+
+type Category = {
+  _id?: string;
+  id?: string;
+  name?: string;
+  slug?: string;
+  level?: number;
+};
+
+type BannerItem = {
+  url?: string;
+  publicId?: string;
+  alt?: string;
+
+  title?: string;
+  subtitle?: string;
+  description?: string;
+  buttonText?: string;
+
+  linkType?:
+    | "none"
+    | "custom"
+    | "category"
+    | "product";
+
+  customLink?: string;
+
+  category?:
+    | Category
+    | string
+    | null;
+
+  product?:
+    | ApiProduct
+    | string
+    | null;
+
+  openInNewTab?: boolean;
+};
+
+type BannerGroup = {
+  _id?: string;
+
+  title?: string;
+  slug?: string;
+  description?: string;
+
+  mediaType?:
+    | "image"
+    | "video";
+
+  images?: BannerItem[];
+
+  position?: string;
+  device?: string;
+
+  sortOrder?: number;
+
+  isActive?: boolean;
+};
+
+type OnTrendItem = {
+  _id?: string;
+
+  image?: ApiImage;
+
+  link?: string;
+
+  productId?:
+    | ApiProduct
+    | string
+    | null;
+
+  categoryId?:
+    | Category
+    | string
+    | null;
+
+  order?: number;
+};
+
+type AlwaysInItItem = {
+  _id?: string;
+
+  gender?:
+    | "men"
+    | "women";
+
+  mainImage?: ApiImage;
+
+  productIds?: ApiProduct[];
+
+  isActive?: boolean;
+};
+
+/* =========================================================
+   HELPERS
+========================================================= */
+
+const asArray = <T,>(
+  value: unknown,
+): T[] =>
+  Array.isArray(value)
+    ? (value as T[])
+    : [];
+
+function firstString(
+  ...values: unknown[]
+) {
+  for (
+    const value of values
+  ) {
+    if (
+      typeof value ===
+        "string" &&
+      value.trim()
+    ) {
+      return value.trim();
+    }
+  }
+
+  return "";
+}
+
+function numberValue(
+  value: unknown,
+  fallback = 0,
+) {
+  const parsed =
+    Number(value);
+
+  return Number.isFinite(
+    parsed,
+  )
+    ? parsed
+    : fallback;
+}
+
+function money(
+  value: number,
+) {
+  return `₹${Math.max(
+    0,
+    Number(value || 0),
+  ).toLocaleString(
+    "en-IN",
+    {
+      maximumFractionDigits:
+        2,
+    },
+  )}`;
+}
+
+function readId(
+  value: unknown,
+) {
+  if (
+    typeof value ===
+    "string"
+  ) {
+    return value.trim();
+  }
+
+  if (
+    !value ||
+    typeof value !==
+      "object"
+  ) {
+    return "";
+  }
+
+  const row =
+    value as Record<
+      string,
+      unknown
+    >;
+
+  return firstString(
+    row._id,
+    row.id,
+  );
+}
+
+function normalizeHex(
+  value: unknown,
+) {
+  const hex =
+    firstString(
+      value,
+    ).toLowerCase();
+
+  if (
+    /^#[0-9a-f]{6}$/.test(
+      hex,
+    )
+  ) {
+    return hex;
+  }
+
+  if (
+    /^#[0-9a-f]{3}$/.test(
+      hex,
+    )
+  ) {
+    return `#${hex
+      .slice(1)
+      .split("")
+      .map(
+        (item) =>
+          item + item,
+      )
+      .join("")}`;
+  }
+
+  return "";
+}
+
+/* =========================================================
+   STRICT GENDER
+========================================================= */
+
+function belongsToGender(
+  product: ApiProduct,
+  gender:
+    | "men"
+    | "women",
+) {
+  return getProductCategorySlugs(
+    product,
+  ).includes(gender);
+}
+
+/* =========================================================
+   DEFAULT PRODUCT COLOR CARD
+========================================================= */
+
+function defaultCatalogCard(
+  product: ApiProduct,
+): CatalogProduct | null {
+  const cards =
+    mapProductToColorCards(
+      product,
+    );
+
+  if (!cards.length) {
+    return null;
+  }
+
+  const colors =
+    asArray<ApiColor>(
+      product.colors,
+    );
+
+  const defaultColor =
+    colors.find(
+      (color) =>
+        color.isDefault ===
+        true,
+    ) ||
+    colors[0];
+
+  const defaultId =
+    readId(
+      defaultColor,
+    );
+
+  if (defaultId) {
+    const exact =
+      cards.find(
+        (card) =>
+          card.colorId ===
+          defaultId,
+      );
+
+    if (exact) {
+      return exact;
+    }
+  }
+
+  return cards[0];
+}
+
+function strictGenderCards(
+  products: ApiProduct[],
+  gender:
+    | "men"
+    | "women",
+  limit: number,
+) {
+  return products
+    .filter(
+      (product) =>
+        belongsToGender(
+          product,
+          gender,
+        ),
+    )
+    .slice(
+      0,
+      limit,
+    )
+    .map(
+      defaultCatalogCard,
+    )
+    .filter(
+      (
+        product,
+      ): product is CatalogProduct =>
+        Boolean(product),
+    );
+}
+
+/* =========================================================
+   ROUTES
+========================================================= */
+
+function categoryHref(
+  category?:
+    | Category
+    | string
+    | null,
+) {
+  if (
+    !category ||
+    typeof category ===
+      "string"
+  ) {
+    return "/";
+  }
+
+  const slug =
+    firstString(
+      category.slug,
+    );
+
+  if (!slug) {
+    return "/";
+  }
+
+  const all =
+    `${category.name || ""} ${slug}`
+      .toLowerCase();
+
+  if (
+    slug === "women"
+  ) {
+    return "/women";
+  }
+
+  if (
+    slug === "men"
+  ) {
+    return "/men";
+  }
+
+  if (
+    /\b(women|woman|female|ladies)\b/.test(
+      all,
+    )
+  ) {
+    return `/women/${slug}`;
+  }
+
+  if (
+    /\b(men|man|male|mens)\b/.test(
+      all,
+    )
+  ) {
+    return `/men/${slug}`;
+  }
+
+  return `/search?q=${encodeURIComponent(
+    slug,
+  )}`;
+}
+
+function rawProductHref(
+  product?:
+    | ApiProduct
+    | string
+    | null,
+) {
+  if (
+    !product ||
+    typeof product ===
+      "string"
+  ) {
+    return "/";
+  }
+
+  const card =
+    defaultCatalogCard(
+      product,
+    );
+
+  return card
+    ? `/product/${card.slug}`
+    : "/";
+}
+
+function bannerHref(
+  item: BannerItem,
+) {
+  if (
+    item.linkType ===
+      "custom" &&
+    item.customLink
+  ) {
+    return item.customLink;
+  }
+
+  if (
+    item.linkType ===
+    "category"
+  ) {
+    return categoryHref(
+      item.category,
+    );
+  }
+
+  if (
+    item.linkType ===
+    "product"
+  ) {
+    return rawProductHref(
+      item.product,
+    );
+  }
+
+  return "/";
+}
+
+function trendHref(
+  item: OnTrendItem,
+) {
+  if (
+    item.link?.trim()
+  ) {
+    return item.link.trim();
+  }
+
+  if (
+    item.productId &&
+    typeof item.productId !==
+      "string"
+  ) {
+    return rawProductHref(
+      item.productId,
+    );
+  }
+
+  if (
+    item.categoryId &&
+    typeof item.categoryId !==
+      "string"
+  ) {
+    return categoryHref(
+      item.categoryId,
+    );
+  }
+
+  return "/";
+}
+
+/* =========================================================
+   API FETCH
+========================================================= */
+
+async function safeJson(
+  path: string,
+) {
+  try {
+    const response =
+      await fetch(
+        `${API_URL}${path}`,
+        {
+          method:
+            "GET",
+
+          credentials:
+            "include",
+
+          cache:
+            "no-store",
+
+          headers: {
+            Accept:
+              "application/json",
+          },
+        },
+      );
+
+    if (!response.ok) {
+      throw new Error(
+        `${path} failed (${response.status})`,
+      );
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error(
+      "HOME API ERROR:",
+      path,
+      error,
+    );
+
+    return null;
+  }
+}
+
+/* =========================================================
+   SMART LINK
+========================================================= */
+
+function SmartLink({
+  href,
+  newTab = false,
+  className = "",
+  children,
+}: {
+  href: string;
+  newTab?: boolean;
+  className?: string;
+  children: ReactNode;
+}) {
+  if (
+    /^https?:\/\//i.test(
+      href,
+    )
+  ) {
+    return (
+      <a
+        href={href}
+        target={
+          newTab
+            ? "_blank"
+            : undefined
+        }
+        rel={
+          newTab
+            ? "noreferrer"
+            : undefined
+        }
+        className={
+          className
+        }
+      >
+        {children}
+      </a>
+    );
+  }
+
+  return (
+    <Link
+      href={
+        href || "/"
+      }
+      target={
+        newTab
+          ? "_blank"
+          : undefined
+      }
+      className={
+        className
+      }
+    >
+      {children}
+    </Link>
+  );
+}
+
+/* =========================================================
+   BANNER HELPERS
+========================================================= */
+
+function usableBanners(
+  banners: BannerGroup[],
+  mobile: boolean,
+) {
+  return banners
+    .filter(
+      (banner) =>
+        banner.isActive !==
+        false,
+    )
+    .filter(
+      (banner) => {
+        const device =
+          firstString(
+            banner.device,
+            "all",
+          ).toLowerCase();
+
+        if (
+          !device ||
+          device === "all"
+        ) {
+          return true;
+        }
+
+        return mobile
+          ? device ===
+              "mobile"
+          : device ===
+              "desktop";
+      },
+    )
+    .sort(
+      (first, second) =>
+        numberValue(
+          first.sortOrder,
+        ) -
+        numberValue(
+          second.sortOrder,
+        ),
+    );
+}
+
+function bannerImages(
+  groups: BannerGroup[],
+) {
+  return groups.flatMap(
+    (group) =>
+      group.mediaType ===
+        "video"
+        ? []
+        : asArray<BannerItem>(
+            group.images,
+          ),
+  );
+}
+
+function purposeBannerImages(
+  groups: BannerGroup[],
+  words: string[],
+  fallbackPosition: string,
+) {
+  const named =
+    groups.filter(
+      (group) => {
+        const search =
+          `${group.title || ""} ${group.slug || ""} ${group.description || ""}`
+            .toLowerCase();
+
+        return words.some(
+          (word) =>
+            search.includes(
+              word,
+            ),
+        );
+      },
+    );
+
+  if (named.length) {
+    return bannerImages(
+      named,
+    );
+  }
+
+  return bannerImages(
+    groups.filter(
+      (group) =>
+        group.position ===
+        fallbackPosition,
+    ),
+  );
+}
+
+/* =========================================================
+   HERO BANNER
+
+   TABLET/MOBILE 1537 x 536
+   DESKTOP       1600 x 386
+========================================================= */
+
+function HeroBanner({
+  items,
+}: {
+  items: BannerItem[];
+}) {
+  const [
+    active,
+    setActive,
+  ] =
+    useState(0);
 
   useEffect(() => {
-    if (bannerImages.length <= 1) return;
+    if (
+      items.length <= 1
+    ) {
+      return;
+    }
 
-    const timer = window.setInterval(() => {
-      setActive(
-        (current) =>
-          (current + 1) % bannerImages.length
+    const timer =
+      window.setInterval(
+        () => {
+          setActive(
+            (current) =>
+              (
+                current +
+                1
+              ) %
+              items.length,
+          );
+        },
+        4500,
       );
-    }, 3500);
 
-    return () => {
-      window.clearInterval(timer);
-    };
-  }, []);
+    return () =>
+      window.clearInterval(
+        timer,
+      );
+  }, [
+    items.length,
+  ]);
 
-  const previous = () => {
-    setActive((current) =>
-      current === 0
-        ? bannerImages.length - 1
-        : current - 1
-    );
-  };
+  useEffect(() => {
+    if (
+      active >=
+      items.length
+    ) {
+      setActive(0);
+    }
+  }, [
+    active,
+    items.length,
+  ]);
 
-  const next = () => {
-    setActive(
-      (current) =>
-        (current + 1) % bannerImages.length
-    );
-  };
+  if (
+    !items.length
+  ) {
+    return null;
+  }
 
   return (
     <section
@@ -68,601 +782,4090 @@ function BannerSlider() {
         relative
         w-full
         overflow-hidden
-        bg-[#F7F3EF]
+        bg-[#EFE7E1]
       "
-      style={{
-        aspectRatio: "1600 / 558",
-      }}
     >
-      {/* BANNERS */}
+      <div
+        className="
+          relative
+          w-full
+          aspect-[1537/536]
 
-      {bannerImages.map((slide, index) => (
-        <Link
-          key={`${slide.image}-${index}`}
-          href={slide.redirect || "#"}
-          aria-label={slide.alt || `Banner ${index + 1}`}
-          className={`
-            absolute
-            inset-0
-            block
-            h-full
-            w-full
-            transition-transform
-            duration-1000
-            ease-[cubic-bezier(.22,1,.36,1)]
-
-            ${
-              active === index
-                ? "translate-x-0"
-                : index < active
-                  ? "-translate-x-full"
-                  : "translate-x-full"
-            }
-          `}
-        >
-          <img
-            src={slide.image}
-            alt={slide.alt || `Hivra Soft banner ${index + 1}`}
-            className="
-              block
-              h-full
-              w-full
-              object-cover
-              object-center
-            "
-          />
-        </Link>
-      ))}
-
-      {/* PREVIOUS */}
-
-      {bannerImages.length > 1 && (
-        <button
-          type="button"
-          aria-label="Previous banner"
-          onClick={previous}
-          className="
-            absolute
-            left-3
-            top-1/2
-            z-30
-            flex
-            h-9
-            w-9
-            -translate-y-1/2
-            items-center
-            justify-center
-            rounded-full
-            bg-white/85
-            text-[22px]
-            text-[#211A18]
-            shadow-lg
-            backdrop-blur-md
-            transition
-            duration-300
-            hover:scale-110
-            hover:bg-white
-
-            sm:left-5
-            sm:h-11
-            sm:w-11
-            sm:text-2xl
-          "
-        >
-          ‹
-        </button>
-      )}
-
-      {/* NEXT */}
-
-      {bannerImages.length > 1 && (
-        <button
-          type="button"
-          aria-label="Next banner"
-          onClick={next}
-          className="
-            absolute
-            right-3
-            top-1/2
-            z-30
-            flex
-            h-9
-            w-9
-            -translate-y-1/2
-            items-center
-            justify-center
-            rounded-full
-            bg-white/85
-            text-[22px]
-            text-[#211A18]
-            shadow-lg
-            backdrop-blur-md
-            transition
-            duration-300
-            hover:scale-110
-            hover:bg-white
-
-            sm:right-5
-            sm:h-11
-            sm:w-11
-            sm:text-2xl
-          "
-        >
-          ›
-        </button>
-      )}
-
-      {/* DOTS */}
-
-      {bannerImages.length > 1 && (
-        <div
-          className="
-            absolute
-            bottom-2
-            left-1/2
-            z-30
-            flex
-            -translate-x-1/2
-            items-center
-            gap-2
-            sm:bottom-4
-          "
-        >
-          {bannerImages.map((_, index) => (
-            <button
-              key={index}
-              type="button"
-              aria-label={`Banner ${index + 1}`}
-              onClick={() => setActive(index)}
+          lg:aspect-[1537/536]
+        "
+      >
+        {items.map(
+          (
+            item,
+            index,
+          ) => (
+            <SmartLink
+              key={`${item.publicId || item.url}-${index}`}
+              href={
+                bannerHref(
+                  item,
+                )
+              }
+              newTab={
+                item.openInNewTab
+              }
               className={`
-                h-[5px]
-                rounded-full
+                absolute
+                inset-0
+                block
                 transition-all
-                duration-300
+                duration-700
 
                 ${
-                  active === index
-                    ? "w-8 bg-[#8C1839]"
-                    : "w-[5px] bg-white/90"
+                  index ===
+                  active
+                    ? `
+                      z-10
+                      translate-x-0
+                      opacity-100
+                    `
+                    : `
+                      translate-x-full
+                      opacity-0
+                    `
                 }
               `}
-            />
-          ))}
-        </div>
-      )}
+            >
+              {item.url ? (
+                <img
+                  src={
+                    item.url
+                  }
+                  alt={
+                    item.alt ||
+                    "Hivra Soft Banner"
+                  }
+                  className="
+                    h-full
+                    w-full
+                    object-fill
+                  "
+                />
+              ) : null}
+            </SmartLink>
+          ),
+        )}
+
+        {items.length >
+        1 ? (
+          <>
+            <button
+              type="button"
+              aria-label="Previous banner"
+              onClick={() =>
+                setActive(
+                  (
+                    current,
+                  ) =>
+                    current ===
+                    0
+                      ? items.length -
+                        1
+                      : current -
+                        1,
+                )
+              }
+              className="
+                absolute
+                left-2
+                top-1/2
+                z-30
+                grid
+                h-8
+                w-8
+                -translate-y-1/2
+                place-items-center
+                rounded-full
+                bg-white/95
+                text-[19px]
+                shadow-md
+
+                sm:left-4
+                sm:h-10
+                sm:w-10
+              "
+            >
+              ‹
+            </button>
+
+            <button
+              type="button"
+              aria-label="Next banner"
+              onClick={() =>
+                setActive(
+                  (
+                    current,
+                  ) =>
+                    (
+                      current +
+                      1
+                    ) %
+                    items.length,
+                )
+              }
+              className="
+                absolute
+                right-2
+                top-1/2
+                z-30
+                grid
+                h-8
+                w-8
+                -translate-y-1/2
+                place-items-center
+                rounded-full
+                bg-white/95
+                text-[19px]
+                shadow-md
+
+                sm:right-4
+                sm:h-10
+                sm:w-10
+              "
+            >
+              ›
+            </button>
+
+            <div
+              className="
+                absolute
+                bottom-2
+                left-1/2
+                z-30
+                flex
+                -translate-x-1/2
+                gap-1.5
+
+                sm:bottom-3
+              "
+            >
+              {items.map(
+                (
+                  _,
+                  index,
+                ) => (
+                  <button
+                    key={
+                      index
+                    }
+                    type="button"
+                    aria-label={`Banner ${
+                      index +
+                      1
+                    }`}
+                    onClick={() =>
+                      setActive(
+                        index,
+                      )
+                    }
+                    className={`
+                      h-1.5
+                      rounded-full
+                      transition-all
+
+                      ${
+                        index ===
+                        active
+                          ? `
+                            w-6
+                            bg-[#B5194B]
+                          `
+                          : `
+                            w-1.5
+                            bg-white/80
+                          `
+                      }
+                    `}
+                  />
+                ),
+              )}
+            </div>
+          </>
+        ) : null}
+      </div>
     </section>
   );
 }
 
-
 /* =========================================================
-   FAVOURITE CARD
+   ON TREND PICKS
 ========================================================= */
 
-function FavouriteCard({
-  card,
-  delay = 0,
-}: { card: (typeof favouriteCards)[number]; delay?: number }) {
-  const [active, setActive] = useState(0);
+function OnTrendPicks({
+  items,
+}: {
+  items: OnTrendItem[];
+}) {
+  const [
+    active,
+    setActive,
+  ] = useState(0);
 
-  useEffect(() => {
-    if (!card?.slides?.length || card.slides.length <= 1) {
+  const [
+    paused,
+    setPaused,
+  ] = useState(false);
+
+  const [
+    animating,
+    setAnimating,
+  ] = useState(false);
+
+  /* =========================================================
+     NORMALIZE INDEX
+
+     Example:
+     -1 => last image
+     4  => first image
+  ========================================================= */
+
+  function normalizeIndex(
+    index: number,
+  ) {
+    if (!items.length) {
+      return 0;
+    }
+
+    return (
+      (
+        index %
+        items.length
+      ) +
+      items.length
+    ) % items.length;
+  }
+
+  /* =========================================================
+     CARD POSITION
+
+     -1 = LEFT
+      0 = CENTER
+      1 = RIGHT
+
+     Remaining cards stay hidden outside.
+  ========================================================= */
+
+  function getCardPosition(
+    index: number,
+  ) {
+    if (!items.length) {
+      return 0;
+    }
+
+    const previousIndex =
+      normalizeIndex(
+        active - 1,
+      );
+
+    const nextIndex =
+      normalizeIndex(
+        active + 1,
+      );
+
+    if (
+      index === active
+    ) {
+      return 0;
+    }
+
+    if (
+      index ===
+      previousIndex
+    ) {
+      return -1;
+    }
+
+    if (
+      index === nextIndex
+    ) {
+      return 1;
+    }
+
+    /*
+     * Remaining image kis side
+     * wait karegi.
+     */
+
+    let difference =
+      index - active;
+
+    if (
+      difference >
+      items.length / 2
+    ) {
+      difference -=
+        items.length;
+    }
+
+    if (
+      difference <
+      -items.length / 2
+    ) {
+      difference +=
+        items.length;
+    }
+
+    return difference < 0
+      ? -2
+      : 2;
+  }
+
+  /* =========================================================
+     NEXT
+  ========================================================= */
+
+  function next() {
+    if (
+      animating ||
+      items.length <= 1
+    ) {
       return;
     }
 
-    const timer = window.setInterval(() => {
-      setActive(
-        (current) =>
-          (current + 1) % card.slides.length
+    setAnimating(true);
+
+    setActive(
+      (current) =>
+        normalizeIndex(
+          current + 1,
+        ),
+    );
+
+    window.setTimeout(
+      () => {
+        setAnimating(false);
+      },
+      850,
+    );
+  }
+
+  /* =========================================================
+     PREVIOUS
+  ========================================================= */
+
+  function previous() {
+    if (
+      animating ||
+      items.length <= 1
+    ) {
+      return;
+    }
+
+    setAnimating(true);
+
+    setActive(
+      (current) =>
+        normalizeIndex(
+          current - 1,
+        ),
+    );
+
+    window.setTimeout(
+      () => {
+        setAnimating(false);
+      },
+      850,
+    );
+  }
+
+  /* =========================================================
+     DOT CLICK
+  ========================================================= */
+
+  function goTo(
+    index: number,
+  ) {
+    if (
+      animating ||
+      index === active
+    ) {
+      return;
+    }
+
+    setAnimating(true);
+
+    setActive(
+      normalizeIndex(
+        index,
+      ),
+    );
+
+    window.setTimeout(
+      () => {
+        setAnimating(false);
+      },
+      850,
+    );
+  }
+
+  /* =========================================================
+     AUTO SLIDE
+  ========================================================= */
+
+  useEffect(() => {
+    if (
+      items.length <= 1 ||
+      paused ||
+      animating
+    ) {
+      return;
+    }
+
+    const timer =
+      window.setInterval(
+        () => {
+          setActive(
+            (current) =>
+              normalizeIndex(
+                current + 1,
+              ),
+          );
+        },
+        4500,
       );
-    }, 3800 + delay);
 
     return () => {
-      window.clearInterval(timer);
+      window.clearInterval(
+        timer,
+      );
     };
-  }, [card, delay]);
+  }, [
+    items.length,
+    paused,
+    animating,
+  ]);
 
-  if (!card?.slides?.length) {
+  /* =========================================================
+     INDEX SAFETY
+  ========================================================= */
+
+  useEffect(() => {
+    if (
+      active >=
+      items.length
+    ) {
+      setActive(0);
+    }
+  }, [
+    active,
+    items.length,
+  ]);
+
+  /* =========================================================
+     EMPTY
+  ========================================================= */
+
+  if (!items.length) {
     return null;
   }
 
   return (
-    <div
-      data-reveal
+    <section
       className="
-        group
-        relative
-        h-[480px]
+        w-full
         overflow-hidden
-        bg-[#EADFD5]
-        md:h-[610px]
-        lg:h-[660px]
+        bg-white
+
+        px-3
+        py-8
+
+        sm:px-5
+        sm:py-10
+
+        lg:px-6
+        lg:py-14
       "
+      onMouseEnter={() =>
+        setPaused(true)
+      }
+      onMouseLeave={() =>
+        setPaused(false)
+      }
     >
-      {card.slides.map((slide, index) => (
-        <Link
-          key={`${slide.image}-${index}`}
-          href={slide.redirect || "#"}
-          className={`
-            absolute
-            inset-0
-            block
-            transition-all
-            duration-1000
-            ease-[cubic-bezier(.22,1,.36,1)]
+      <div
+        className="
+          mx-auto
+          w-full
+          max-w-[1450px]
+        "
+      >
+        {/* ===================================================
+            TITLE
+        =================================================== */}
 
-            ${
-              active === index
-                ? "translate-x-0 opacity-100"
-                : index < active
-                  ? "-translate-x-full opacity-0"
-                  : "translate-x-full opacity-0"
-            }
-          `}
+        <div
+          className="
+            mb-8
+            text-center
+
+            lg:mb-10
+          "
         >
-          <img
-            src={slide.image}
-            alt={`${card.name} ${index + 1}`}
+          <h2
             className="
-              h-full
-              w-full
-              object-cover
-              transition-transform
-              duration-[1600ms]
-              ease-out
-              group-hover:scale-105
+              text-[26px]
+              font-bold
+              uppercase
+              leading-none
+              tracking-[-0.02em]
+
+              sm:text-[32px]
+
+              lg:text-[48px]
             "
-          />
-        </Link>
-      ))}
+          >
+            <span
+              className="
+                font-light
+                text-[#5C5957]
+              "
+            >
+              On-Trend
+            </span>{" "}
+            Picks
+          </h2>
 
-      <div
-        className="
-          pointer-events-none
-          absolute
-          inset-0
-          z-10
-          bg-gradient-to-t
-          from-black/70
-          via-black/10
-          to-transparent
-        "
-      />
+          <p
+            className="
+              mt-2
 
-      <div
-        className="
-          pointer-events-none
-          absolute
-          bottom-7
-          left-7
-          z-20
-        "
-      >
-        <p
+              text-[9px]
+              tracking-[0.03em]
+              text-black/55
+
+              sm:text-[11px]
+
+              lg:text-[14px]
+            "
+          >
+            Explore Our Promising
+            Line-up
+          </p>
+        </div>
+
+        {/* ===================================================
+            DESKTOP / TABLET
+
+            IMPORTANT:
+            Container NEVER MOVES.
+
+            Only individual cards move.
+        =================================================== */}
+
+        <div
           className="
-            mb-3
-            text-[8px]
-            uppercase
-            tracking-[0.3em]
-            text-white/65
+            relative
+
+            hidden
+
+            h-[390px]
+            w-full
+
+            overflow-hidden
+
+            md:block
+
+            [--side-x:280px]
+
+            lg:[--side-x:350px]
+
+            xl:[--side-x:390px]
           "
         >
-          Hivra Soft
-        </p>
+          {items.map(
+            (
+              item,
+              index,
+            ) => {
+              const position =
+                getCardPosition(
+                  index,
+                );
 
-        <h3
-          className="
-            text-[30px]
-            font-medium
-            tracking-[-0.04em]
-            text-white
-            md:text-[42px]
-          "
-        >
-          {card.name}
-        </h3>
-      </div>
+              const isCenter =
+                position === 0;
 
-      <div
-        className="
-          absolute
-          bottom-7
-          right-7
-          z-30
-          flex
-          gap-1
-        "
-      >
-        {card.slides.map((_, index) => (
-          <button
-            key={index}
-            type="button"
-            aria-label={`${card.name} slide ${index + 1}`}
-            onClick={() => setActive(index)}
-            className={`
-              h-[3px]
-              transition-all
-              duration-300
+              const isLeft =
+                position === -1;
 
-              ${
-                active === index
-                  ? "w-9 bg-white"
-                  : "w-5 bg-white/35"
+              const isRight =
+                position === 1;
+
+              const isVisible =
+                isCenter ||
+                isLeft ||
+                isRight;
+
+              /* =============================================
+                 X POSITION
+
+                 CENTER = 0
+                 LEFT   = -side
+                 RIGHT  = +side
+
+                 Hidden cards stay outside.
+              ============================================= */
+
+              let translateX =
+                "0px";
+
+              if (position === -1) {
+                translateX =
+                  "calc(-1 * var(--side-x))";
               }
-            `}
-          />
-        ))}
+
+              if (position === 1) {
+                translateX =
+                  "var(--side-x)";
+              }
+
+              if (position <= -2) {
+                translateX =
+                  "calc(-2 * var(--side-x))";
+              }
+
+              if (position >= 2) {
+                translateX =
+                  "calc(2 * var(--side-x))";
+              }
+
+              return (
+                <div
+                  key={
+                    item._id ||
+                    `${index}`
+                  }
+                  className="
+                    absolute
+
+                    left-1/2
+                    top-1/2
+
+                    transition-all
+                    duration-[850ms]
+
+                    ease-[cubic-bezier(0.22,1,0.36,1)]
+
+                    will-change-transform
+                  "
+                  style={{
+                    transform: `
+                      translate(-50%, -50%)
+                      translateX(${translateX})
+                      scale(${
+                        isCenter
+                          ? 1
+                          : isVisible
+                            ? 0.82
+                            : 0.7
+                      })
+                    `,
+
+                    opacity:
+                      isVisible
+                        ? 1
+                        : 0,
+
+                    zIndex:
+                      isCenter
+                        ? 30
+                        : isVisible
+                          ? 20
+                          : 1,
+
+                    pointerEvents:
+                      isVisible
+                        ? "auto"
+                        : "none",
+                  }}
+                >
+                  <SmartLink
+                    href={
+                      trendHref(
+                        item,
+                      )
+                    }
+                    className="
+                      group
+
+                      relative
+                      block
+
+                      h-[290px]
+                      w-[390px]
+
+                      overflow-hidden
+
+                      rounded-[20px]
+
+                      bg-[#EFECE9]
+
+                      shadow-[0_15px_35px_rgba(0,0,0,0.12)]
+
+                      lg:h-[338px]
+                      lg:w-[455px]
+                    "
+                  >
+                    {item
+                      ?.image
+                      ?.url ? (
+                      <img
+                        src={
+                          item
+                            .image
+                            .url
+                        }
+                        alt="On Trend"
+                        className="
+                          h-full
+                          w-full
+
+                          object-cover
+
+                          transition-transform
+                          duration-[850ms]
+
+                          ease-[cubic-bezier(0.22,1,0.36,1)]
+
+                          group-hover:scale-[1.01]
+                        "
+                      />
+                    ) : (
+                      <div
+                        className="
+                          grid
+                          h-full
+                          w-full
+
+                          place-items-center
+
+                          bg-[#EFECE9]
+
+                          text-[11px]
+                          text-black/30
+                        "
+                      >
+                        Hivra Soft
+                      </div>
+                    )}
+                  </SmartLink>
+                </div>
+              );
+            },
+          )}
+
+          {/* =================================================
+              LEFT ARROW
+          ================================================= */}
+
+          {items.length >
+          1 ? (
+            <button
+              type="button"
+              aria-label="Previous On Trend"
+              onClick={
+                previous
+              }
+              disabled={
+                animating
+              }
+              className="
+                absolute
+
+                left-3
+                top-1/2
+                z-[80]
+
+                grid
+
+                h-10
+                w-10
+
+                -translate-y-1/2
+
+                cursor-pointer
+
+                place-items-center
+
+                rounded-full
+
+                border
+                border-[#211A18]/70
+
+                bg-white/95
+
+                text-[22px]
+                leading-none
+                text-[#211A18]
+
+                shadow-sm
+
+                transition-all
+                duration-300
+
+                hover:scale-105
+                hover:bg-[#292725]
+                hover:text-white
+
+                active:scale-95
+
+                disabled:cursor-default
+                disabled:opacity-70
+
+                lg:h-11
+                lg:w-11
+              "
+            >
+              ‹
+            </button>
+          ) : null}
+
+          {/* =================================================
+              RIGHT ARROW
+          ================================================= */}
+
+          {items.length >
+          1 ? (
+            <button
+              type="button"
+              aria-label="Next On Trend"
+              onClick={next}
+              disabled={
+                animating
+              }
+              className="
+                absolute
+
+                right-3
+                top-1/2
+                z-[80]
+
+                grid
+
+                h-10
+                w-10
+
+                -translate-y-1/2
+
+                cursor-pointer
+
+                place-items-center
+
+                rounded-full
+
+                border
+                border-[#211A18]/70
+
+                bg-white/95
+
+                text-[22px]
+                leading-none
+                text-[#211A18]
+
+                shadow-sm
+
+                transition-all
+                duration-300
+
+                hover:scale-105
+                hover:bg-[#292725]
+                hover:text-white
+
+                active:scale-95
+
+                disabled:cursor-default
+                disabled:opacity-70
+
+                lg:h-11
+                lg:w-11
+              "
+            >
+              ›
+            </button>
+          ) : null}
+        </div>
+
+        {/* ===================================================
+            MOBILE
+
+            Same concept:
+            center never moves from middle.
+        =================================================== */}
+
+        <div
+          className="
+            relative
+
+            mx-auto
+
+            h-[245px]
+            w-full
+            max-w-[350px]
+
+            overflow-hidden
+
+            md:hidden
+          "
+        >
+          {items.map(
+            (
+              item,
+              index,
+            ) => {
+              const position =
+                getCardPosition(
+                  index,
+                );
+
+              const isCenter =
+                position === 0;
+
+              const isVisible =
+                Math.abs(
+                  position,
+                ) <= 1;
+
+              let x = 0;
+
+              if (position === -1) {
+                x = -92;
+              }
+
+              if (position === 1) {
+                x = 92;
+              }
+
+              if (position <= -2) {
+                x = -190;
+              }
+
+              if (position >= 2) {
+                x = 190;
+              }
+
+              return (
+                <div
+                  key={
+                    item._id ||
+                    `${index}`
+                  }
+                  className="
+                    absolute
+
+                    left-1/2
+                    top-1/2
+
+                    w-[86%]
+
+                    transition-all
+                    duration-[750ms]
+
+                    ease-[cubic-bezier(0.22,1,0.36,1)]
+
+                    will-change-transform
+                  "
+                  style={{
+                    transform: `
+                      translate(-50%, -50%)
+                      translateX(${x}%)
+                      scale(${
+                        isCenter
+                          ? 1
+                          : 0.86
+                      })
+                    `,
+
+                    opacity:
+                      isVisible
+                        ? 1
+                        : 0,
+
+                    zIndex:
+                      isCenter
+                        ? 30
+                        : isVisible
+                          ? 20
+                          : 1,
+
+                    pointerEvents:
+                      isVisible
+                        ? "auto"
+                        : "none",
+                  }}
+                >
+                  <SmartLink
+                    href={
+                      trendHref(
+                        item,
+                      )
+                    }
+                    className="
+                      block
+
+                      aspect-[1.28/1]
+
+                      w-full
+
+                      overflow-hidden
+
+                      rounded-[13px]
+
+                      bg-[#EFECE9]
+
+                      shadow-[0_10px_25px_rgba(0,0,0,0.12)]
+                    "
+                  >
+                    {item
+                      ?.image
+                      ?.url ? (
+                      <img
+                        src={
+                          item
+                            .image
+                            .url
+                        }
+                        alt="On Trend"
+                        className="
+                          h-full
+                          w-full
+                          object-cover
+                        "
+                      />
+                    ) : null}
+                  </SmartLink>
+                </div>
+              );
+            },
+          )}
+
+          {items.length >
+          1 ? (
+            <>
+              <button
+                type="button"
+                aria-label="Previous On Trend"
+                onClick={
+                  previous
+                }
+                disabled={
+                  animating
+                }
+                className="
+                  absolute
+
+                  left-1
+                  top-1/2
+                  z-[80]
+
+                  grid
+
+                  h-8
+                  w-8
+
+                  -translate-y-1/2
+
+                  place-items-center
+
+                  rounded-full
+
+                  border
+                  border-black/25
+
+                  bg-white/95
+
+                  text-[18px]
+
+                  shadow-md
+
+                  active:scale-95
+                "
+              >
+                ‹
+              </button>
+
+              <button
+                type="button"
+                aria-label="Next On Trend"
+                onClick={next}
+                disabled={
+                  animating
+                }
+                className="
+                  absolute
+
+                  right-1
+                  top-1/2
+                  z-[80]
+
+                  grid
+
+                  h-8
+                  w-8
+
+                  -translate-y-1/2
+
+                  place-items-center
+
+                  rounded-full
+
+                  border
+                  border-black/25
+
+                  bg-white/95
+
+                  text-[18px]
+
+                  shadow-md
+
+                  active:scale-95
+                "
+              >
+                ›
+              </button>
+            </>
+          ) : null}
+        </div>
+
+        {/* ===================================================
+            DOTS
+        =================================================== */}
+
+        {items.length >
+        1 ? (
+          <div
+            className="
+              mt-5
+
+              flex
+
+              items-center
+              justify-center
+
+              gap-2
+            "
+          >
+            {items.map(
+              (
+                _,
+                index,
+              ) => (
+                <button
+                  key={index}
+                  type="button"
+                  aria-label={`Go to item ${
+                    index +
+                    1
+                  }`}
+                  onClick={() =>
+                    goTo(
+                      index,
+                    )
+                  }
+                  className={`
+                    cursor-pointer
+
+                    rounded-full
+
+                    transition-all
+                    duration-300
+
+                    ${
+                      active ===
+                      index
+                        ? `
+                          h-2.5
+                          w-2.5
+
+                          bg-black
+
+                          ring-1
+                          ring-black
+                          ring-offset-2
+                        `
+                        : `
+                          h-1.5
+                          w-1.5
+
+                          bg-black/15
+                        `
+                    }
+                  `}
+                />
+              ),
+            )}
+          </div>
+        ) : null}
       </div>
-    </div>
+    </section>
   );
 }
 
+/* =========================================================
+   GENDER TOGGLE
+========================================================= */
+
+function GenderToggle({
+  value,
+  onChange,
+  dark = false,
+  compact = false,
+}: {
+  value:
+    | "men"
+    | "women";
+
+  onChange: (
+    value:
+      | "men"
+      | "women",
+  ) => void;
+
+  dark?: boolean;
+  compact?: boolean;
+}) {
+  return (
+    <div
+      className={`
+        inline-flex
+        rounded-[12px]
+        border
+        p-1
+
+        ${
+          dark
+            ? `
+              border-white/40
+              bg-white/5
+            `
+            : `
+              border-black/20
+              bg-white
+            `
+        }
+      `}
+    >
+      {(
+        [
+          "men",
+          "women",
+        ] as const
+      ).map(
+        (gender) => (
+          <button
+            key={
+              gender
+            }
+            type="button"
+            onClick={() =>
+              onChange(
+                gender,
+              )
+            }
+            className={`
+              rounded-[9px]
+              font-semibold
+              capitalize
+              transition
+
+              ${
+                compact
+                  ? `
+                    min-w-[72px]
+                    px-3
+                    py-2
+                    text-[10px]
+
+                    sm:min-w-[80px]
+                    sm:px-4
+                    sm:text-[11px]
+                  `
+                  : `
+                    min-w-[95px]
+                    px-4
+                    py-2.5
+                    text-[12px]
+
+                    sm:min-w-[105px]
+                    sm:px-5
+                    sm:py-3
+                    sm:text-[13px]
+                  `
+              }
+
+              ${
+                value ===
+                gender
+                  ? `
+                    bg-[#292725]
+                    text-white
+                  `
+                  : dark
+                    ? `
+                      text-white
+                    `
+                    : `
+                      text-[#211A18]
+                    `
+              }
+            `}
+          >
+            {gender}
+          </button>
+        ),
+      )}
+    </div>
+  );
+}
 
 /* =========================================================
    PRODUCT CARD
 ========================================================= */
 
-function ProductCard({
+function CommerceProductCard({
   product,
-}: { product: (typeof everyWomanProducts)[number] }) {
-  const [hovered, setHovered] = useState(false);
-  const [clicked, setClicked] = useState(false);
+  compact = false,
+}: {
+  product: CatalogProduct;
+  compact?: boolean;
+}) {
+  const {
+    openAddToBag,
+    toggleWishlist,
+    isWishlisted,
+    isWishlistBusy,
+  } =
+    useStorefrontCommerce();
 
-  const showSecond = hovered || clicked;
+  const liked =
+    isWishlisted(
+      product,
+    );
 
-  const productUrl =
-    `/product/${product.slug}/`;
+  const busy =
+    isWishlistBusy(
+      product,
+    );
 
   return (
     <article
-      data-product-card
       className="
         group
+        min-w-0
         overflow-hidden
-        rounded-[18px]
+        rounded-[15px]
         border
         border-[#211A18]/10
         bg-white
-        shadow-[0_10px_35px_rgba(33,26,24,0.04)]
+        text-[#211A18]
         transition-all
-        duration-500
-        hover:-translate-y-2
-        hover:shadow-[0_24px_60px_rgba(33,26,24,0.12)]
+        duration-300
+
+        hover:-translate-y-0.5
+        hover:shadow-[0_16px_40px_rgba(33,26,24,0.10)]
       "
     >
-      {/* PRODUCT IMAGE */}
-
       <div
         className="
           relative
-          aspect-[4/5]
-          cursor-pointer
-          overflow-hidden
-          bg-[#EFE6DC]
         "
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
-        onClick={() =>
-          setClicked((value) => !value)
-        }
       >
-        {/* FIRST IMAGE */}
-
-        <img
-          src={product.image1}
-          alt={product.name}
-          className={`
-            absolute
-            inset-0
-            h-full
-            w-full
-            object-cover
-            transition-all
-            duration-700
-            ease-out
-
-            ${
-              showSecond
-                ? "scale-105 opacity-0"
-                : "scale-100 opacity-100"
-            }
-          `}
-        />
-
-        {/* SECOND IMAGE */}
-
-        <img
-          src={product.image2 || product.image1}
-          alt={`${product.name} alternate view`}
-          className={`
-            absolute
-            inset-0
-            h-full
-            w-full
-            object-cover
-            transition-all
-            duration-700
-            ease-out
-
-            ${
-              showSecond
-                ? "scale-100 opacity-100"
-                : "scale-105 opacity-0"
-            }
-          `}
-        />
-
-        {/* WISHLIST */}
-
-        <span
+        <Link
+          href={`/product/${product.slug}`}
           className="
-            absolute
-            right-3
-            top-3
-            z-20
-            flex
-            h-9
-            w-9
-            items-center
-            justify-center
-            rounded-full
-            bg-white/90
-            text-[18px]
-            text-[#8C1839]
-            shadow-sm
+            relative
+            block
+            aspect-[4/5]
+            overflow-hidden
+            bg-[#F0EEEC]
           "
         >
-          ♡
-        </span>
+          {product.image1 ? (
+            <>
+              <img
+                src={
+                  product.image1
+                }
+                alt={
+                  product.name
+                }
+                className="
+                  absolute
+                  inset-0
+                  h-full
+                  w-full
+                  object-cover
+                  transition-all
+                  duration-500
 
-        {/* HOVER HINT */}
+                  group-hover:scale-[1.025]
+                  group-hover:opacity-0
+                "
+              />
 
-        <span
-          className="
+              <img
+                src={
+                  product.image2 ||
+                  product.image1
+                }
+                alt={`${product.name} alternate`}
+                className="
+                  absolute
+                  inset-0
+                  h-full
+                  w-full
+                  scale-[1.02]
+                  object-cover
+                  opacity-0
+                  transition-all
+                  duration-500
+
+                  group-hover:scale-100
+                  group-hover:opacity-100
+                "
+              />
+            </>
+          ) : (
+            <div
+              className="
+                grid
+                h-full
+                place-items-center
+                text-[11px]
+                text-black/40
+              "
+            >
+              Hivra Soft
+            </div>
+          )}
+        </Link>
+
+        {product.discountPercent >
+        0 ? (
+          <span
+            className="
+              absolute
+              left-0
+              top-3
+              z-10
+              rounded-r-[7px]
+              bg-[#FF704D]
+              px-2.5
+              py-1.5
+              text-[9px]
+              font-bold
+              text-white
+              shadow-sm
+            "
+          >
+            {
+              product.discountPercent
+            }
+            % off
+          </span>
+        ) : null}
+
+        <button
+          type="button"
+          aria-label={
+            liked
+              ? "Remove from wishlist"
+              : "Add to wishlist"
+          }
+          disabled={
+            busy
+          }
+          onClick={() => {
+            void toggleWishlist(
+              product,
+            );
+          }}
+          className={`
             absolute
-            bottom-3
-            left-1/2
-            z-20
-            -translate-x-1/2
-            whitespace-nowrap
+            right-2.5
+            top-2.5
+            z-10
+            grid
+            h-8
+            w-8
+            place-items-center
             rounded-full
-            bg-[#211A18]/80
-            px-4
-            py-2
-            text-[7px]
-            uppercase
-            tracking-[0.15em]
-            text-white
-            opacity-0
-            backdrop-blur-md
-            transition-opacity
-            duration-300
-            group-hover:opacity-100
-          "
+            bg-white/95
+            text-[17px]
+            shadow-[0_3px_12px_rgba(0,0,0,0.10)]
+            transition
+
+            disabled:cursor-wait
+            disabled:opacity-50
+
+            ${
+              liked
+                ? `
+                  text-[#EC477C]
+                `
+                : `
+                  text-[#C51F52]
+                  hover:bg-[#FFF3F7]
+                `
+            }
+          `}
         >
-          Hover / Tap
-        </span>
+          {liked
+            ? "♥"
+            : "♡"}
+        </button>
       </div>
 
-      {/* PRODUCT DETAILS */}
-
-      <div className="p-4">
+      <div
+        className={
+          compact
+            ? "p-3"
+            : "p-3.5"
+        }
+      >
         <p
           className="
-            mb-2
+            truncate
             text-[8px]
             uppercase
-            tracking-[0.22em]
-            text-[#9C765D]
+            tracking-[0.14em]
+            text-[#8B7468]
           "
         >
-          Hivra Soft
+          {product.colorName ||
+            "Default"}
         </p>
 
         <Link
-          href={productUrl}
-          className="
+          href={`/product/${product.slug}`}
+          className={`
+            mt-1.5
             block
-            min-h-[44px]
-            text-[13px]
+            line-clamp-2
             font-medium
-            leading-5
-            text-[#211A18]
-            transition-colors
-            duration-300
-            hover:text-[#8C1839]
-          "
+            leading-[1.35]
+
+            ${
+              compact
+                ? `
+                  min-h-[31px]
+                  text-[10.5px]
+                `
+                : `
+                  min-h-[38px]
+                  text-[12px]
+                `
+            }
+          `}
         >
           {product.name}
         </Link>
 
         <div
           className="
-            mt-3
+            mt-2
             flex
+            flex-wrap
             items-center
             gap-2
           "
         >
-          {/* DISCOUNTED PRICE */}
-
-          <span
+          <strong
             className="
-              text-[15px]
-              font-bold
-              text-[#8C1839]
+              text-[13px]
+              text-[#111]
             "
           >
-            ₹{product.discountedPrice}
-          </span>
+            {money(
+              product.showPrice,
+            )}
+          </strong>
 
-          {/* ACTUAL PRICE */}
-
-          <span
-            className="
-              text-[11px]
-              text-black/35
-              line-through
-            "
-          >
-            ₹{product.actualPrice}
-          </span>
+          {product.originalPrice >
+            product.showPrice ? (
+            <span
+              className="
+                text-[9px]
+                text-black/35
+                line-through
+              "
+            >
+              {money(
+                product.originalPrice,
+              )}
+            </span>
+          ) : null}
         </div>
 
-        <Link
-          href={productUrl}
+        <button
+          type="button"
+          onClick={() => {
+            void openAddToBag(
+              product,
+            );
+          }}
           className="
-            mt-4
+            mt-3
             flex
+            h-10
             w-full
             items-center
             justify-center
-            rounded-full
-            bg-[#F2E9E2]
-            px-4
-            py-3
-            text-[8px]
-            font-semibold
+            rounded-[6px]
+            bg-[#EC477C]
+            px-3
+            text-[9px]
+            font-bold
             uppercase
-            tracking-[0.17em]
-            text-[#211A18]
-            transition-all
-            duration-300
-            hover:bg-[#211A18]
-            hover:text-white
+            tracking-[0.08em]
+            text-white
+            transition
+
+            hover:bg-[#D8396D]
           "
         >
-          View Product
-        </Link>
+          Add to Bag
+        </button>
       </div>
     </article>
   );
 }
 
-
 /* =========================================================
-   PRODUCT SECTION
+   ALWAYS IN IT
+
+   DESKTOP:
+   FULL BACKGROUND IMAGE
+   PRODUCTS HALF SCREEN SE START
+   NEXT PAR LEFT SIDE TAK SLIDE
+
+   MOBILE:
+   BACKGROUND + ONE LARGE CARD
 ========================================================= */
 
-function ProductSection({
-  eyebrow,
-  title,
-  accent,
+function AlwaysInItSection({
+  records,
+}: {
+  records: AlwaysInItItem[];
+}) {
+  const [gender, setGender] =
+    useState<"men" | "women">("women");
+
+  /* =========================================================
+     DESKTOP STATE
+  ========================================================= */
+
+  const [slideIndex, setSlideIndex] =
+    useState(0);
+
+  const [cardStep, setCardStep] =
+    useState(230);
+
+  const firstCardRef =
+    useRef<HTMLDivElement | null>(
+      null,
+    );
+
+  /* =========================================================
+     MOBILE STATE
+  ========================================================= */
+
+  const [
+    mobileIndex,
+    setMobileIndex,
+  ] = useState(0);
+
+  const [
+    mobileCardStep,
+    setMobileCardStep,
+  ] = useState(220);
+
+  const mobileFirstCardRef =
+    useRef<HTMLDivElement | null>(
+      null,
+    );
+
+  /* =========================================================
+     CURRENT GENDER RECORD
+  ========================================================= */
+
+  const current =
+    records.find(
+      (record) =>
+        record.gender === gender,
+    ) || records[0];
+
+  /* =========================================================
+     PRODUCTS
+  ========================================================= */
+
+  const products =
+    asArray<ApiProduct>(
+      current?.productIds,
+    )
+      .map(defaultCatalogCard)
+      .filter(
+        (
+          product,
+        ): product is CatalogProduct =>
+          Boolean(product),
+      )
+      .slice(0, 5);
+
+  /* =========================================================
+     RESET ON GENDER CHANGE
+  ========================================================= */
+
+  useEffect(() => {
+    setSlideIndex(0);
+    setMobileIndex(0);
+  }, [gender]);
+
+  /* =========================================================
+     DESKTOP CARD MEASURE
+  ========================================================= */
+
+  useEffect(() => {
+    function measureDesktopCard() {
+      if (
+        !firstCardRef.current
+      ) {
+        return;
+      }
+
+      setCardStep(
+        firstCardRef.current
+          .offsetWidth + 14,
+      );
+    }
+
+    const timer =
+      window.setTimeout(
+        measureDesktopCard,
+        100,
+      );
+
+    window.addEventListener(
+      "resize",
+      measureDesktopCard,
+    );
+
+    return () => {
+      window.clearTimeout(
+        timer,
+      );
+
+      window.removeEventListener(
+        "resize",
+        measureDesktopCard,
+      );
+    };
+  }, [
+    gender,
+    products.length,
+  ]);
+
+  /* =========================================================
+     MOBILE CARD MEASURE
+  ========================================================= */
+
+  useEffect(() => {
+    function measureMobileCard() {
+      if (
+        !mobileFirstCardRef.current
+      ) {
+        return;
+      }
+
+      setMobileCardStep(
+        mobileFirstCardRef.current
+          .offsetWidth + 10,
+      );
+    }
+
+    const timer =
+      window.setTimeout(
+        measureMobileCard,
+        120,
+      );
+
+    window.addEventListener(
+      "resize",
+      measureMobileCard,
+    );
+
+    return () => {
+      window.clearTimeout(
+        timer,
+      );
+
+      window.removeEventListener(
+        "resize",
+        measureMobileCard,
+      );
+    };
+  }, [
+    gender,
+    products.length,
+  ]);
+
+  if (!records.length) {
+    return null;
+  }
+
+  /* =========================================================
+     DESKTOP PREVIOUS / NEXT
+  ========================================================= */
+
+  function previous() {
+    if (
+      products.length <= 1
+    ) {
+      return;
+    }
+
+    setSlideIndex(
+      (currentIndex) =>
+        Math.max(
+          0,
+          currentIndex - 1,
+        ),
+    );
+  }
+
+  function next() {
+    if (
+      products.length <= 1
+    ) {
+      return;
+    }
+
+    setSlideIndex(
+      (currentIndex) =>
+        Math.min(
+          products.length - 1,
+          currentIndex + 1,
+        ),
+    );
+  }
+
+  /* =========================================================
+     MOBILE PREVIOUS / NEXT
+  ========================================================= */
+
+  function mobilePrevious() {
+    if (
+      products.length <= 1
+    ) {
+      return;
+    }
+
+    setMobileIndex(
+      (currentIndex) =>
+        Math.max(
+          0,
+          currentIndex - 1,
+        ),
+    );
+  }
+
+  function mobileNext() {
+    if (
+      products.length <= 1
+    ) {
+      return;
+    }
+
+    setMobileIndex(
+      (currentIndex) =>
+        Math.min(
+          products.length - 1,
+          currentIndex + 1,
+        ),
+    );
+  }
+
+  return (
+    <section
+      className="
+        relative
+        w-full
+        overflow-hidden
+        bg-[#BDA681]
+
+        h-[620px]
+
+        sm:h-[670px]
+
+        lg:h-[calc(100svh-112px)]
+        lg:min-h-[555px]
+        lg:max-h-[720px]
+      "
+    >
+      {/* ===================================================
+          BACKGROUND
+      =================================================== */}
+
+      <div
+        className="
+          absolute
+          inset-0
+          z-0
+          h-full
+          w-full
+          overflow-hidden
+        "
+      >
+        {current
+          ?.mainImage?.url ? (
+          <img
+            src={
+              current.mainImage.url
+            }
+            alt={`Always in it ${gender}`}
+            className="
+              h-full
+              w-full
+              object-cover
+
+              object-[30%_center]
+              sm:object-[32%_center]
+              lg:object-center
+            "
+          />
+        ) : (
+          <div
+            className="
+              h-full
+              w-full
+              bg-[#A88E65]
+            "
+          />
+        )}
+
+        <div
+          className="
+            absolute
+            inset-0
+            bg-black/[0.02]
+          "
+        />
+      </div>
+
+      {/* ===================================================
+          MEN / WOMEN TOGGLE
+
+          Dedicated top layer.
+          Cards iske neeche se start honge.
+      =================================================== */}
+
+      <div
+        className="
+          absolute
+
+          right-3
+          top-3
+
+          z-[100]
+
+          sm:right-4
+          sm:top-4
+
+          lg:right-8
+          lg:top-4
+        "
+      >
+        <div
+          className="
+            rounded-[12px]
+
+            bg-white/95
+
+            p-1
+
+            shadow-[0_5px_20px_rgba(0,0,0,0.10)]
+
+            backdrop-blur-sm
+          "
+        >
+          <GenderToggle
+            value={gender}
+            onChange={
+              setGender
+            }
+            compact
+          />
+        </div>
+      </div>
+
+      {/* ===================================================
+          MOBILE / TABLET
+      =================================================== */}
+
+      <div
+        className="
+          absolute
+          inset-0
+          z-20
+
+          lg:hidden
+        "
+      >
+        {products.length >
+        0 ? (
+          <>
+            {/* =============================================
+                PRODUCT TRACK
+
+                Toggle ke neeche enough spacing.
+            ============================================= */}
+
+            <div
+              className="
+                absolute
+
+                left-0
+                right-0
+
+                top-[175px]
+
+                overflow-hidden
+
+                sm:top-[195px]
+              "
+            >
+              <div
+                className="
+                  flex
+                  w-max
+
+                  gap-2.5
+
+                  pl-3
+                  pr-8
+
+                  transition-transform
+                  duration-700
+
+                  ease-[cubic-bezier(0.22,1,0.36,1)]
+
+                  will-change-transform
+                "
+                style={{
+                  transform: `translate3d(-${
+                    mobileIndex *
+                    mobileCardStep
+                  }px, 0, 0)`,
+                }}
+              >
+                {products.map(
+                  (
+                    product,
+                    index,
+                  ) => (
+                    <div
+                      key={
+                        product.variantKey
+                      }
+                      ref={
+                        index === 0
+                          ? mobileFirstCardRef
+                          : undefined
+                      }
+                      className="
+                        w-[64vw]
+                        max-w-[218px]
+
+                        shrink-0
+
+                        sm:w-[42vw]
+                        sm:max-w-[235px]
+                      "
+                    >
+                      <CommerceProductCard
+                        product={
+                          product
+                        }
+                        compact
+                      />
+                    </div>
+                  ),
+                )}
+              </div>
+            </div>
+
+            {/* MOBILE ARROWS */}
+
+            {products.length >
+            1 ? (
+              <>
+                <button
+                  type="button"
+                  aria-label="Previous Always In It product"
+                  onClick={
+                    mobilePrevious
+                  }
+                  disabled={
+                    mobileIndex === 0
+                  }
+                  className="
+                    absolute
+
+                    left-1.5
+                    top-[365px]
+
+                    z-50
+
+                    grid
+                    h-8
+                    w-8
+
+                    place-items-center
+
+                    rounded-full
+
+                    border
+                    border-black/10
+
+                    bg-white/90
+
+                    text-[18px]
+                    text-[#211A18]
+
+                    shadow-[0_4px_14px_rgba(0,0,0,0.16)]
+
+                    disabled:opacity-35
+
+                    sm:left-3
+                    sm:top-[400px]
+                  "
+                >
+                  ‹
+                </button>
+
+                <button
+                  type="button"
+                  aria-label="Next Always In It product"
+                  onClick={
+                    mobileNext
+                  }
+                  disabled={
+                    mobileIndex ===
+                    products.length -
+                      1
+                  }
+                  className="
+                    absolute
+
+                    right-1.5
+                    top-[365px]
+
+                    z-50
+
+                    grid
+                    h-8
+                    w-8
+
+                    place-items-center
+
+                    rounded-full
+
+                    bg-[#292725]
+
+                    text-[18px]
+                    text-white
+
+                    shadow-[0_4px_14px_rgba(0,0,0,0.18)]
+
+                    disabled:opacity-35
+
+                    sm:right-3
+                    sm:top-[400px]
+                  "
+                >
+                  ›
+                </button>
+              </>
+            ) : null}
+
+            {/* MOBILE DOTS */}
+
+            {products.length >
+            1 ? (
+              <div
+                className="
+                  absolute
+
+                  bottom-3
+                  left-1/2
+
+                  z-50
+
+                  flex
+                  -translate-x-1/2
+
+                  items-center
+                  gap-1.5
+
+                  sm:bottom-4
+                "
+              >
+                {products.map(
+                  (
+                    _,
+                    index,
+                  ) => (
+                    <button
+                      key={index}
+                      type="button"
+                      aria-label={`Go to product ${
+                        index + 1
+                      }`}
+                      onClick={() =>
+                        setMobileIndex(
+                          index,
+                        )
+                      }
+                      className={`
+                        rounded-full
+
+                        transition-all
+                        duration-300
+
+                        ${
+                          mobileIndex ===
+                          index
+                            ? `
+                              h-2.5
+                              w-2.5
+
+                              bg-white
+
+                              ring-1
+                              ring-white
+                            `
+                            : `
+                              h-1.5
+                              w-1.5
+
+                              bg-white/60
+                            `
+                        }
+                      `}
+                    />
+                  ),
+                )}
+              </div>
+            ) : null}
+          </>
+        ) : (
+          <div
+            className="
+              absolute
+
+              left-4
+              right-4
+              top-1/2
+
+              -translate-y-1/2
+
+              rounded-[16px]
+
+              bg-white/90
+
+              px-5
+              py-8
+
+              text-center
+              text-[12px]
+
+              text-[#211A18]
+
+              shadow-lg
+            "
+          >
+            No products added
+            for{" "}
+            <b>{gender}</b>
+          </div>
+        )}
+      </div>
+
+      {/* ===================================================
+          DESKTOP
+      =================================================== */}
+
+      <div
+        className="
+          relative
+
+          z-20
+
+          hidden
+
+          h-full
+          w-full
+
+          overflow-hidden
+
+          lg:block
+        "
+      >
+        {products.length >
+        0 ? (
+          <div
+            className="
+              absolute
+              inset-0
+
+              flex
+
+              items-center
+
+              overflow-hidden
+
+              pb-10
+
+              pt-[82px]
+            "
+          >
+            {/* =============================================
+                PRODUCT TRACK
+
+                Important:
+                top padding increased so toggle ke saath
+                overlap nahi hoga.
+            ============================================= */}
+
+            <div
+              className="
+                flex
+                w-max
+
+                shrink-0
+
+                gap-[14px]
+
+                pl-[46vw]
+                pr-8
+
+                transition-transform
+                duration-[950ms]
+
+                ease-[cubic-bezier(0.22,1,0.36,1)]
+
+                will-change-transform
+              "
+              style={{
+                transform: `translate3d(-${
+                  slideIndex *
+                  cardStep
+                }px, 0, 0)`,
+              }}
+            >
+              {products.map(
+                (
+                  product,
+                  index,
+                ) => (
+                  <div
+                    key={
+                      product.variantKey
+                    }
+                    ref={
+                      index === 0
+                        ? firstCardRef
+                        : undefined
+                    }
+                    className="
+                      w-[210px]
+
+                      shrink-0
+
+                      xl:w-[220px]
+
+                      2xl:w-[230px]
+                    "
+                  >
+                    <CommerceProductCard
+                      product={
+                        product
+                      }
+                      compact
+                    />
+                  </div>
+                ),
+              )}
+            </div>
+          </div>
+        ) : (
+          <div
+            className="
+              absolute
+
+              left-1/2
+              top-1/2
+
+              -translate-x-1/2
+              -translate-y-1/2
+
+              rounded-[18px]
+
+              bg-white/85
+
+              px-8
+              py-10
+
+              text-center
+              text-[12px]
+            "
+          >
+            No products added
+            for{" "}
+            <b>{gender}</b>
+          </div>
+        )}
+
+        {/* DESKTOP DOTS */}
+
+        {products.length >
+        1 ? (
+          <div
+            className="
+              absolute
+
+              bottom-4
+              left-[72%]
+
+              z-50
+
+              flex
+
+              -translate-x-1/2
+
+              items-center
+              gap-1.5
+            "
+          >
+            {products.map(
+              (
+                _,
+                index,
+              ) => (
+                <button
+                  key={index}
+                  type="button"
+                  aria-label={`Always In It product ${
+                    index + 1
+                  }`}
+                  onClick={() =>
+                    setSlideIndex(
+                      index,
+                    )
+                  }
+                  className={`
+                    rounded-full
+
+                    transition-all
+                    duration-300
+
+                    ${
+                      slideIndex ===
+                      index
+                        ? `
+                          h-2.5
+                          w-2.5
+
+                          bg-white
+
+                          ring-1
+                          ring-white
+                        `
+                        : `
+                          h-1.5
+                          w-1.5
+
+                          bg-white/60
+                        `
+                    }
+                  `}
+                />
+              ),
+            )}
+          </div>
+        ) : null}
+
+        {/* DESKTOP ARROWS */}
+
+        {products.length >
+        1 ? (
+          <div
+            className="
+              absolute
+
+              bottom-4
+              right-5
+
+              z-50
+
+              flex
+              gap-2
+            "
+          >
+            <button
+              type="button"
+              aria-label="Previous product"
+              onClick={
+                previous
+              }
+              disabled={
+                slideIndex === 0
+              }
+              className="
+                grid
+
+                h-9
+                w-9
+
+                place-items-center
+
+                rounded-full
+
+                border
+                border-black/10
+
+                bg-white
+
+                text-[19px]
+                text-[#211A18]
+
+                shadow-md
+
+                transition
+
+                hover:scale-105
+
+                disabled:opacity-40
+              "
+            >
+              ‹
+            </button>
+
+            <button
+              type="button"
+              aria-label="Next product"
+              onClick={next}
+              disabled={
+                slideIndex ===
+                products.length -
+                  1
+              }
+              className="
+                grid
+
+                h-9
+                w-9
+
+                place-items-center
+
+                rounded-full
+
+                bg-[#292725]
+
+                text-[19px]
+                text-white
+
+                shadow-md
+
+                transition
+
+                hover:scale-105
+
+                disabled:opacity-40
+              "
+            >
+              ›
+            </button>
+          </div>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
+/* =========================================================
+   NEW ARRIVALS
+========================================================= */
+
+function NewArrivalsSection({
   products,
-  alternate = false,
-}: { eyebrow: string; title: string; accent: string; products: typeof everyWomanProducts; alternate?: boolean }) {
+}: {
+  products: ApiProduct[];
+}) {
+  const {
+    openAddToBag,
+    toggleWishlist,
+    isWishlisted,
+    isWishlistBusy,
+  } = useStorefrontCommerce();
+
+  const [gender, setGender] =
+    useState<"men" | "women">(
+      "men",
+    );
+
+  const [
+    activeIndex,
+    setActiveIndex,
+  ] = useState(0);
+
+  const [
+    displayImage,
+    setDisplayImage,
+  ] = useState("");
+
+  /* =========================================================
+     PRODUCTS
+  ========================================================= */
+
+  const cards =
+    useMemo(
+      () =>
+        strictGenderCards(
+          products,
+          gender,
+          5,
+        ),
+      [
+        products,
+        gender,
+      ],
+    );
+
+  const selected =
+    cards[activeIndex] ||
+    cards[0] ||
+    null;
+
+  /* =========================================================
+     RESET ON GENDER CHANGE
+  ========================================================= */
+
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [gender]);
+
+  /* =========================================================
+     INDEX SAFETY
+  ========================================================= */
+
+  useEffect(() => {
+    if (
+      cards.length > 0 &&
+      activeIndex >=
+        cards.length
+    ) {
+      setActiveIndex(0);
+    }
+  }, [
+    activeIndex,
+    cards.length,
+  ]);
+
+  /* =========================================================
+     RAW PRODUCT
+  ========================================================= */
+
+  const selectedRawProduct =
+    useMemo(() => {
+      if (!selected) {
+        return null;
+      }
+
+      return (
+        products.find(
+          (product) =>
+            readId(product) ===
+            selected.productId,
+        ) || null
+      );
+    }, [
+      products,
+      selected?.productId,
+    ]);
+
+  /* =========================================================
+     PRODUCT IMAGES
+  ========================================================= */
+
+  const selectedImages =
+    useMemo(() => {
+      if (!selected) {
+        return [];
+      }
+
+      const rawColor =
+        asArray<ApiColor>(
+          selectedRawProduct
+            ?.colors,
+        ).find(
+          (color) =>
+            readId(color) ===
+            selected.colorId,
+        );
+
+      const colorImages =
+        asArray<ApiImage>(
+          rawColor?.images,
+        )
+          .sort(
+            (
+              first,
+              second,
+            ) =>
+              Number(
+                Boolean(
+                  second.isDefault,
+                ),
+              ) -
+              Number(
+                Boolean(
+                  first.isDefault,
+                ),
+              ),
+          )
+          .map(
+            (image) =>
+              firstString(
+                image.url,
+              ),
+          )
+          .filter(Boolean);
+
+      const mainImages =
+        asArray<ApiImage>(
+          selectedRawProduct
+            ?.mainImages,
+        )
+          .sort(
+            (
+              first,
+              second,
+            ) =>
+              Number(
+                Boolean(
+                  second.isDefault,
+                ),
+              ) -
+              Number(
+                Boolean(
+                  first.isDefault,
+                ),
+              ),
+          )
+          .map(
+            (image) =>
+              firstString(
+                image.url,
+              ),
+          )
+          .filter(Boolean);
+
+      return Array.from(
+        new Set(
+          [
+            ...colorImages,
+            ...mainImages,
+            selected.image1,
+            selected.image2,
+          ].filter(Boolean),
+        ),
+      ).slice(
+        0,
+        4,
+      );
+    }, [
+      selectedRawProduct,
+      selected?.colorId,
+      selected?.image1,
+      selected?.image2,
+    ]);
+
+  /* =========================================================
+     DEFAULT MAIN IMAGE
+  ========================================================= */
+
+  const primaryImage =
+    selectedImages[0] ||
+    selected?.image1 ||
+    "";
+
+  useEffect(() => {
+    setDisplayImage(
+      primaryImage,
+    );
+  }, [
+    selected?.variantKey,
+    primaryImage,
+  ]);
+
+  /* =========================================================
+     EMPTY
+  ========================================================= */
+
+  if (
+    !products.length ||
+    !selected
+  ) {
+    return null;
+  }
+
+  const liked =
+    isWishlisted(
+      selected,
+    );
+
+  const busy =
+    isWishlistBusy(
+      selected,
+    );
+
+  /* =========================================================
+     PREVIOUS / NEXT
+  ========================================================= */
+
+  function previousProduct() {
+    if (
+      cards.length <= 1
+    ) {
+      return;
+    }
+
+    setActiveIndex(
+      (current) =>
+        current === 0
+          ? cards.length -
+            1
+          : current - 1,
+    );
+  }
+
+  function nextProduct() {
+    if (
+      cards.length <= 1
+    ) {
+      return;
+    }
+
+    setActiveIndex(
+      (current) =>
+        (
+          current + 1
+        ) % cards.length,
+    );
+  }
+
+  /* =========================================================
+     DESKTOP THUMBNAIL WINDOW
+
+     Maximum 4 product thumbnails visible.
+  ========================================================= */
+
+  const desktopThumbStart =
+    useMemo(() => {
+      if (
+        cards.length <= 4
+      ) {
+        return 0;
+      }
+
+      if (
+        activeIndex <= 3
+      ) {
+        return 0;
+      }
+
+      return Math.min(
+        activeIndex - 3,
+        cards.length - 4,
+      );
+    }, [
+      activeIndex,
+      cards.length,
+    ]);
+
+  const desktopVisibleCards =
+    cards.slice(
+      desktopThumbStart,
+      desktopThumbStart +
+        4,
+    );
+
+  return (
+    <section
+      className="
+        w-full
+        overflow-hidden
+
+        bg-[#F3F3F3]
+
+        px-3
+        py-6
+
+        sm:px-5
+        sm:py-8
+
+        lg:h-[100svh]
+        lg:min-h-[650px]
+        lg:max-h-[780px]
+
+        lg:px-6
+        lg:py-5
+
+        xl:px-8
+      "
+    >
+      <div
+        className="
+          mx-auto
+
+          flex
+          h-full
+          w-full
+          max-w-[1500px]
+
+          flex-col
+        "
+      >
+        {/* ===================================================
+            HEADER
+        =================================================== */}
+
+        <div
+          className="
+            mb-5
+            shrink-0
+
+            text-center
+
+            lg:flex
+            lg:items-start
+            lg:justify-between
+            lg:text-left
+          "
+        >
+          <div>
+            <p
+              className="
+                mb-1.5
+
+                text-[7px]
+                uppercase
+
+                tracking-[0.35em]
+
+                text-[#8B7468]
+
+                sm:text-[8px]
+              "
+            >
+              Just Dropped
+            </p>
+
+            <h2
+              className="
+                text-[38px]
+                font-black
+                uppercase
+                leading-none
+
+                sm:text-[48px]
+
+                lg:text-[58px]
+
+                xl:text-[64px]
+              "
+            >
+              New{" "}
+
+              <span
+                className="
+                  font-light
+                  text-[#595757]
+                "
+              >
+                Arrivals
+              </span>
+            </h2>
+          </div>
+
+          {/* MEN / WOMEN */}
+
+          <div
+            className="
+              mt-4
+
+              flex
+              justify-center
+
+              lg:mt-4
+              lg:justify-end
+            "
+          >
+            <GenderToggle
+              value={gender}
+              onChange={
+                setGender
+              }
+            />
+          </div>
+        </div>
+
+        {/* ===================================================
+            MOBILE
+        =================================================== */}
+
+        <div
+          className="
+            lg:hidden
+          "
+        >
+          <div
+            className="
+              grid
+
+              grid-cols-[60px_minmax(0,1fr)]
+
+              items-center
+
+              gap-2
+
+              sm:grid-cols-[78px_minmax(0,1fr)]
+              sm:gap-3
+            "
+          >
+            {/* OTHER IMAGES */}
+
+            <div
+              className="
+                flex
+
+                h-[350px]
+
+                flex-col
+                justify-center
+
+                sm:h-[410px]
+              "
+            >
+              <h3
+                className="
+                  mb-2
+
+                  text-[9px]
+                  font-medium
+                  leading-tight
+
+                  sm:text-[11px]
+                "
+              >
+                Other
+                <br />
+                Images
+              </h3>
+
+              <div
+                className="
+                  flex
+                  flex-col
+
+                  gap-1.5
+                "
+              >
+                {selectedImages.map(
+                  (
+                    image,
+                    index,
+                  ) => (
+                    <button
+                      key={`${image}-${index}`}
+                      type="button"
+                      onClick={() =>
+                        setDisplayImage(
+                          image,
+                        )
+                      }
+                      className={`
+                        aspect-[3/4]
+
+                        w-full
+
+                        overflow-hidden
+
+                        rounded-[7px]
+
+                        border-2
+
+                        bg-white
+
+                        ${
+                          displayImage ===
+                          image
+                            ? `
+                              border-[#292725]
+                            `
+                            : `
+                              border-transparent
+                            `
+                        }
+                      `}
+                    >
+                      <img
+                        src={
+                          image
+                        }
+                        alt=""
+                        className="
+                          h-full
+                          w-full
+
+                          object-contain
+                          object-center
+                        "
+                      />
+                    </button>
+                  ),
+                )}
+              </div>
+            </div>
+
+            {/* =================================================
+                MOBILE MAIN IMAGE
+
+                IMPORTANT:
+                object-contain = image kabhi crop nahi hogi
+            ================================================= */}
+
+            <Link
+              href={`/product/${selected.slug}`}
+              className="
+                relative
+
+                flex
+
+                h-[350px]
+                min-w-0
+
+                items-center
+                justify-center
+
+                overflow-hidden
+
+                bg-white
+
+                sm:h-[410px]
+              "
+            >
+              {displayImage ? (
+                <img
+                  key={
+                    displayImage
+                  }
+                  src={
+                    displayImage
+                  }
+                  alt={
+                    selected.name
+                  }
+                  className="
+                    h-full
+                    w-full
+
+                    object-contain
+                    object-center
+                  "
+                />
+              ) : null}
+            </Link>
+          </div>
+
+          {/* =================================================
+              MOBILE PRODUCTS
+          ================================================= */}
+
+          <div
+            className="
+              -mx-3
+              mt-2
+
+              flex
+
+              snap-x
+              snap-mandatory
+
+              gap-2
+
+              overflow-x-auto
+
+              px-3
+              pb-2
+
+              [scrollbar-width:none]
+
+              [&::-webkit-scrollbar]:hidden
+            "
+          >
+            {cards.map(
+              (
+                product,
+                index,
+              ) => (
+                <button
+                  key={
+                    product.variantKey
+                  }
+                  type="button"
+                  onClick={() =>
+                    setActiveIndex(
+                      index,
+                    )
+                  }
+                  className={`
+                    aspect-square
+
+                    w-[26vw]
+                    max-w-[95px]
+
+                    shrink-0
+                    snap-center
+
+                    overflow-hidden
+
+                    rounded-[9px]
+
+                    border
+
+                    bg-white
+
+                    ${
+                      activeIndex ===
+                      index
+                        ? `
+                          border-[#292725]
+                        `
+                        : `
+                          border-black/10
+                        `
+                    }
+                  `}
+                >
+                  <img
+                    src={
+                      product.image1
+                    }
+                    alt={
+                      product.name
+                    }
+                    className="
+                      h-full
+                      w-full
+
+                      object-contain
+                      object-center
+                    "
+                  />
+                </button>
+              ),
+            )}
+          </div>
+
+          {/* =================================================
+              MOBILE DETAIL
+          ================================================= */}
+
+          <div
+            className="
+              mt-2
+
+              overflow-hidden
+
+              rounded-[12px]
+
+              bg-white
+
+              shadow-sm
+            "
+          >
+            <div
+              className="
+                bg-[#292725]
+
+                px-3
+                py-3
+
+                text-white
+              "
+            >
+              <h3
+                className="
+                  line-clamp-2
+
+                  text-[12px]
+                  font-semibold
+                "
+              >
+                {selected.name}
+              </h3>
+            </div>
+
+            <div
+              className="
+                flex
+
+                items-center
+                justify-between
+
+                gap-2
+
+                p-3
+              "
+            >
+              <strong>
+                {money(
+                  selected.showPrice,
+                )}
+              </strong>
+
+              <div
+                className="
+                  flex
+                  gap-1.5
+                "
+              >
+                <button
+                  type="button"
+                  disabled={
+                    busy
+                  }
+                  onClick={() => {
+                    void toggleWishlist(
+                      selected,
+                    );
+                  }}
+                  className="
+                    grid
+
+                    h-9
+                    w-9
+
+                    place-items-center
+
+                    rounded-[6px]
+
+                    bg-[#292725]
+
+                    text-white
+                  "
+                >
+                  {liked
+                    ? "♥"
+                    : "♡"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    void openAddToBag(
+                      selected,
+                    );
+                  }}
+                  className="
+                    h-9
+
+                    rounded-[6px]
+
+                    bg-[#EC477C]
+
+                    px-3
+
+                    text-[8px]
+                    font-bold
+                    uppercase
+
+                    text-white
+                  "
+                >
+                  Add to Bag
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ===================================================
+            DESKTOP
+        =================================================== */}
+
+        <div
+          className="
+            hidden
+
+            min-h-0
+            flex-1
+
+            items-center
+
+            gap-5
+
+            lg:grid
+
+            lg:grid-cols-[195px_minmax(430px,520px)_minmax(0,1fr)]
+
+            xl:grid-cols-[210px_minmax(470px,570px)_minmax(0,1fr)]
+
+            xl:gap-6
+          "
+        >
+          {/* =================================================
+              OTHER IMAGES
+          ================================================= */}
+
+          <div
+            className="
+              flex
+
+              h-full
+              min-h-0
+
+              flex-col
+              justify-center
+            "
+          >
+            <div
+              className="
+                w-full
+              "
+            >
+              <h3
+                className="
+                  mb-4
+
+                  text-[14px]
+                  font-medium
+                "
+              >
+                Other Images
+              </h3>
+
+              <div
+                className="
+                  grid
+                  grid-cols-2
+
+                  gap-3
+                "
+              >
+                {selectedImages
+                  .slice(0, 2)
+                  .map(
+                    (
+                      image,
+                      index,
+                    ) => (
+                      <button
+                        key={`${image}-${index}`}
+                        type="button"
+                        onClick={() =>
+                          setDisplayImage(
+                            image,
+                          )
+                        }
+                        className={`
+                          aspect-[3/4]
+
+                          overflow-hidden
+
+                          rounded-[11px]
+
+                          border-2
+
+                          bg-white
+
+                          ${
+                            displayImage ===
+                            image
+                              ? `
+                                border-[#292725]
+                              `
+                              : `
+                                border-transparent
+                              `
+                          }
+                        `}
+                      >
+                        <img
+                          src={
+                            image
+                          }
+                          alt=""
+                          className="
+                            h-full
+                            w-full
+
+                            object-contain
+                            object-center
+                          "
+                        />
+                      </button>
+                    ),
+                  )}
+              </div>
+            </div>
+          </div>
+
+          {/* =================================================
+              LARGE MAIN IMAGE
+
+              MAIN FIX:
+              object-contain
+              object-center
+
+              Poora product visible hoga.
+              Image crop nahi hogi.
+          ================================================= */}
+
+          <Link
+            href={`/product/${selected.slug}`}
+            className="
+              relative
+
+              flex
+
+              h-[min(68vh,570px)]
+
+              min-h-[430px]
+              min-w-0
+
+              items-center
+              justify-center
+
+              overflow-hidden
+
+              bg-white
+            "
+          >
+            {displayImage ? (
+              <img
+                key={
+                  displayImage
+                }
+                src={
+                  displayImage
+                }
+                alt={
+                  selected.name
+                }
+                className="
+                  h-full
+                  w-full
+
+                  object-contain
+                  object-center
+                "
+              />
+            ) : (
+              <div
+                className="
+                  flex
+
+                  h-full
+                  w-full
+
+                  items-center
+                  justify-center
+
+                  text-[11px]
+                  text-black/40
+                "
+              >
+                Loading image...
+              </div>
+            )}
+          </Link>
+
+          {/* =================================================
+              RIGHT SIDE
+          ================================================= */}
+
+          <div
+            className="
+              flex
+
+              min-h-0
+              min-w-0
+
+              flex-col
+              justify-center
+            "
+          >
+            {/* =================================================
+                4 PRODUCT THUMBNAILS
+            ================================================= */}
+
+            <div
+              className="
+                grid
+
+                grid-cols-4
+
+                gap-3
+              "
+            >
+              {desktopVisibleCards.map(
+                (
+                  product,
+                  visibleIndex,
+                ) => {
+                  const realIndex =
+                    desktopThumbStart +
+                    visibleIndex;
+
+                  return (
+                    <button
+                      key={
+                        product.variantKey
+                      }
+                      type="button"
+                      onClick={() =>
+                        setActiveIndex(
+                          realIndex,
+                        )
+                      }
+                      className={`
+                        aspect-square
+
+                        min-w-0
+
+                        overflow-hidden
+
+                        rounded-[13px]
+
+                        border
+
+                        bg-white
+
+                        ${
+                          activeIndex ===
+                          realIndex
+                            ? `
+                              border-[#292725]
+                            `
+                            : `
+                              border-black/10
+                            `
+                        }
+                      `}
+                    >
+                      <img
+                        src={
+                          product.image1
+                        }
+                        alt={
+                          product.name
+                        }
+                        className="
+                          h-full
+                          w-full
+
+                          object-contain
+                          object-center
+                        "
+                      />
+                    </button>
+                  );
+                },
+              )}
+            </div>
+
+            {/* =================================================
+                ARROWS
+            ================================================= */}
+
+            {cards.length >
+            1 ? (
+              <div
+                className="
+                  mt-3
+
+                  flex
+                  justify-end
+
+                  gap-2
+                "
+              >
+                <button
+                  type="button"
+                  aria-label="Previous product"
+                  onClick={
+                    previousProduct
+                  }
+                  className="
+                    grid
+
+                    h-9
+                    w-9
+
+                    place-items-center
+
+                    rounded-[5px]
+
+                    bg-[#292725]
+
+                    text-white
+
+                    transition
+
+                    hover:scale-105
+                  "
+                >
+                  ‹
+                </button>
+
+                <button
+                  type="button"
+                  aria-label="Next product"
+                  onClick={
+                    nextProduct
+                  }
+                  className="
+                    grid
+
+                    h-9
+                    w-9
+
+                    place-items-center
+
+                    rounded-[5px]
+
+                    bg-[#292725]
+
+                    text-white
+
+                    transition
+
+                    hover:scale-105
+                  "
+                >
+                  ›
+                </button>
+              </div>
+            ) : null}
+
+            {/* =================================================
+                DETAIL CARD
+            ================================================= */}
+
+            <div
+              className="
+                mt-3
+
+                overflow-hidden
+
+                rounded-t-[17px]
+
+                bg-white
+
+                shadow-sm
+              "
+            >
+              {/* DARK AREA */}
+
+              <div
+                className="
+                  bg-[#292725]
+
+                  px-6
+                  py-4
+
+                  text-white
+                "
+              >
+                {selected.isNewLaunch ? (
+                  <span
+                    className="
+                      inline-flex
+
+                      rounded-full
+
+                      bg-white/15
+
+                      px-4
+                      py-2
+
+                      text-[10px]
+                      font-semibold
+                    "
+                  >
+                    New
+                  </span>
+                ) : null}
+
+                <h3
+                  className="
+                    mt-3
+
+                    line-clamp-2
+
+                    text-[19px]
+                    font-bold
+
+                    xl:text-[21px]
+                  "
+                >
+                  {selected.name}
+                </h3>
+
+                <p
+                  className="
+                    mt-1
+
+                    text-[10px]
+                    text-white/90
+
+                    xl:text-[11px]
+                  "
+                >
+                  Color:{" "}
+                  {
+                    selected.colorName
+                  }
+                </p>
+              </div>
+
+              {/* PRICE + ACTIONS */}
+
+              <div
+                className="
+                  flex
+
+                  items-center
+                  justify-between
+
+                  gap-3
+
+                  px-6
+                  py-4
+                "
+              >
+                <div
+                  className="
+                    flex
+                    items-center
+
+                    gap-3
+                  "
+                >
+                  <strong
+                    className="
+                      text-[22px]
+                      font-bold
+                    "
+                  >
+                    {money(
+                      selected.showPrice,
+                    )}
+                  </strong>
+
+                  {selected.originalPrice >
+                  selected.showPrice ? (
+                    <span
+                      className="
+                        text-[11px]
+
+                        text-black/35
+
+                        line-through
+                      "
+                    >
+                      {money(
+                        selected.originalPrice,
+                      )}
+                    </span>
+                  ) : null}
+
+                  {selected.discountPercent >
+                  0 ? (
+                    <span
+                      className="
+                        rounded-full
+
+                        bg-[#FBE5ED]
+
+                        px-3
+                        py-1.5
+
+                        text-[9px]
+                        font-bold
+
+                        text-[#D82462]
+                      "
+                    >
+                      {
+                        selected.discountPercent
+                      }
+                      % OFF
+                    </span>
+                  ) : null}
+                </div>
+
+                <div
+                  className="
+                    flex
+                    gap-2
+                  "
+                >
+                  <Link
+                    href={`/product/${selected.slug}`}
+                    className="
+                      flex
+
+                      h-9
+
+                      items-center
+
+                      rounded-[5px]
+
+                      border
+
+                      px-3
+
+                      text-[8px]
+                      font-bold
+                      uppercase
+                    "
+                  >
+                    Explore
+                  </Link>
+
+                  <button
+                    type="button"
+                    disabled={
+                      busy
+                    }
+                    onClick={() => {
+                      void toggleWishlist(
+                        selected,
+                      );
+                    }}
+                    className="
+                      grid
+
+                      h-9
+                      w-9
+
+                      place-items-center
+
+                      rounded-[5px]
+
+                      bg-[#292725]
+
+                      text-white
+                    "
+                  >
+                    {liked
+                      ? "♥"
+                      : "♡"}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void openAddToBag(
+                        selected,
+                      );
+                    }}
+                    className="
+                      h-9
+
+                      rounded-[5px]
+
+                      bg-[#EC477C]
+
+                      px-3
+
+                      text-[8px]
+                      font-bold
+                      uppercase
+
+                      text-white
+                    "
+                  >
+                    Add to Bag
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* =========================================================
+   WOMEN / MEN LATEST PRODUCTS
+========================================================= */
+
+function LatestProductsSection({
+  gender,
+  products,
+}: {
+  gender:
+    | "men"
+    | "women";
+
+  products: ApiProduct[];
+}) {
+  const cards =
+    strictGenderCards(
+      products,
+      gender,
+      8,
+    );
+
+  const women =
+    gender ===
+    "women";
+
+  if (
+    !products.length
+  ) {
+    return null;
+  }
+
   return (
     <section
       className={`
-        px-4
-        py-20
-        md:px-6
-        lg:px-8
+        px-3
+        py-6
+
+        sm:px-5
+
+        lg:px-6
+        lg:py-8
 
         ${
-          alternate
-            ? "bg-[#F1E9E2]"
-            : "bg-[#F7F3EF]"
+          women
+            ? `
+              bg-[#F8F3EF]
+            `
+            : `
+              bg-[#EEE3DB]
+            `
         }
       `}
     >
@@ -672,914 +4875,1529 @@ function ProductSection({
           max-w-[1450px]
         "
       >
-        {/* TITLE */}
-
         <div
-          data-reveal
           className="
-            mb-10
+            mb-7
             flex
-            flex-col
-            gap-5
-            border-b
-            border-[#211A18]/10
-            pb-6
-            md:flex-row
-            md:items-end
-            md:justify-between
+            items-end
+            justify-between
+            gap-4
+
+            lg:mb-5
           "
         >
           <div>
             <p
               className="
-                mb-3
-                text-[8px]
+                mb-2
+                text-[7px]
                 uppercase
-                tracking-[0.4em]
-                text-[#9C765D]
+                tracking-[0.35em]
+                text-[#9A7463]
+
+                sm:text-[8px]
               "
             >
-              {eyebrow}
+              Latest Collection
             </p>
 
             <h2
               className="
-                text-[36px]
-                font-medium
-                leading-[0.95]
-                tracking-[-0.045em]
-                md:text-[54px]
+                text-[25px]
+                font-semibold
+                leading-none
+                tracking-[-0.035em]
+
+                sm:text-[32px]
+
+                lg:text-[48px]
               "
             >
-              {title}
+              New innerwear for{" "}
 
               <span
                 className="
                   font-serif
                   font-normal
                   italic
-                  text-[#8C1839]
+                  text-[#A41948]
                 "
               >
-                {" "}
-                {accent}
+                {women
+                  ? "women."
+                  : "men."}
               </span>
             </h2>
           </div>
 
+          <Link
+            href={
+              women
+                ? "/women"
+                : "/men"
+            }
+            className="
+              hidden
+              shrink-0
+              rounded-full
+              border
+              border-black/15
+              px-5
+              py-2.5
+              text-[9px]
+              font-bold
+              uppercase
+              tracking-[0.12em]
+
+              sm:inline-flex
+            "
+          >
+            View all
+          </Link>
+        </div>
+
+        {cards.length ? (
           <div
             className="
-              h-[3px]
-              w-[75px]
-              bg-[#8C1839]
+              grid
+              grid-cols-2
+              gap-2.5
+
+              sm:gap-4
+
+              lg:grid-cols-4
             "
+          >
+            {cards.map(
+              (
+                product,
+              ) => (
+                <CommerceProductCard
+                  key={
+                    product.variantKey
+                  }
+                  product={
+                    product
+                  }
+                />
+              ),
+            )}
+          </div>
+        ) : (
+          <EmptyState
+            text={`No ${gender} products found.`}
           />
-        </div>
-
-        {/* PRODUCTS */}
-
-        <div
-          className="
-            grid
-            grid-cols-2
-            gap-4
-            md:grid-cols-4
-          "
-        >
-          {products.map((product) => (
-            <ProductCard
-              key={`${product.slug}-${product.name}`}
-              product={product}
-            />
-          ))}
-        </div>
+        )}
       </div>
     </section>
   );
 }
 
-
 /* =========================================================
-   STYLE, COMFORT & CONFIDENCE
+   COLOR HELPERS
 ========================================================= */
 
-function StyleConfidence() {
-  return (
-    <section
-      className="
-        bg-[#F7F3EF]
-        px-4
-        py-20
-        md:px-6
-        lg:px-8
-      "
-    >
-      <div className="mx-auto max-w-[1450px]">
-        <div
-          data-reveal
-          className="
-            mb-10
-            border-b
-            border-[#211A18]/10
-            pb-6
-          "
-        >
-          <p
-            className="
-              mb-3
-              text-[8px]
-              uppercase
-              tracking-[0.4em]
-              text-[#9C765D]
-            "
-          >
-            Shop the mood
-          </p>
+type ColorCard = {
+  product: CatalogProduct;
+  hex: string;
+};
 
-          <h2
-            className="
-              text-[38px]
-              font-medium
-              tracking-[-0.05em]
-              md:text-[58px]
-            "
-          >
-            Style, comfort &
+function hexRgb(
+  hex: string,
+) {
+  const normalized =
+    normalizeHex(
+      hex,
+    );
 
-            <span
-              className="
-                font-serif
-                font-normal
-                italic
-                text-[#8C1839]
-              "
-            >
-              {" "}
-              confidence.
-            </span>
-          </h2>
-        </div>
+  if (!normalized) {
+    return null;
+  }
 
-        <div
-          className="
-            grid
-            grid-cols-1
-            gap-5
-            md:grid-cols-3
-          "
-        >
-          {styleComfortConfidence.map((item) => (
-            <Link
-              key={item.name}
-              href={item.redirect || "#"}
-              data-reveal
-              className="
-                group
-                relative
-                aspect-[4/3]
-                overflow-hidden
-              "
-            >
-              <img
-                src={item.image}
-                alt={item.name}
-                className="
-                  h-full
-                  w-full
-                  object-cover
-                  transition-transform
-                  duration-[1200ms]
-                  ease-out
-                  group-hover:scale-110
-                "
-              />
+  return {
+    r:
+      parseInt(
+        normalized.slice(
+          1,
+          3,
+        ),
+        16,
+      ),
 
-              <div
-                className="
-                  absolute
-                  inset-0
-                  bg-gradient-to-t
-                  from-black/70
-                  via-transparent
-                  to-transparent
-                "
-              />
+    g:
+      parseInt(
+        normalized.slice(
+          3,
+          5,
+        ),
+        16,
+      ),
 
-              <div
-                className="
-                  absolute
-                  bottom-6
-                  left-6
-                  z-10
-                "
-              >
-                <h3
-                  className="
-                    text-[27px]
-                    text-white
-                    md:text-[31px]
-                  "
-                >
-                  {item.name}
-                </h3>
+    b:
+      parseInt(
+        normalized.slice(
+          5,
+          7,
+        ),
+        16,
+      ),
+  };
+}
 
-                <span
-                  className="
-                    mt-4
-                    inline-flex
-                    rounded-full
-                    bg-white
-                    px-5
-                    py-2
-                    text-[8px]
-                    uppercase
-                    tracking-[0.18em]
-                    text-[#211A18]
-                  "
-                >
-                  Shop Now
-                </span>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </div>
-    </section>
+function colorDistance(
+  first: string,
+  second: string,
+) {
+  const a =
+    hexRgb(
+      first,
+    );
+
+  const b =
+    hexRgb(
+      second,
+    );
+
+  if (
+    !a ||
+    !b
+  ) {
+    return Number.MAX_VALUE;
+  }
+
+  return Math.sqrt(
+    (a.r - b.r) ** 2 +
+      (a.g - b.g) ** 2 +
+      (a.b - b.b) ** 2,
   );
 }
 
-
 /* =========================================================
-   FIND YOUR FIT CARD
+   COLOR SECTION
 ========================================================= */
 
-function FitCard({
-  card,
-  delay = 0,
-}: { card: (typeof findYourFit)[number]; delay?: number }) {
-  const [active, setActive] = useState(0);
+function ColorSection({
+  products,
+}: {
+  products: ApiProduct[];
+}) {
+  const [
+    gender,
+    setGender,
+  ] =
+    useState<
+      "men" | "women"
+    >("men");
+
+  const [
+    colorIndex,
+    setColorIndex,
+  ] =
+    useState(0);
+
+  const [
+    productStart,
+    setProductStart,
+  ] =
+    useState(0);
+
+  const variants =
+    useMemo(() => {
+      const result:
+        ColorCard[] = [];
+
+      products
+        .filter(
+          (product) =>
+            belongsToGender(
+              product,
+              gender,
+            ),
+        )
+        .forEach(
+          (product) => {
+            const cards =
+              mapProductToColorCards(
+                product,
+              );
+
+            const rawColors =
+              asArray<ApiColor>(
+                product.colors,
+              );
+
+            cards.forEach(
+              (card) => {
+                const rawColor =
+                  rawColors.find(
+                    (
+                      color,
+                    ) =>
+                      readId(
+                        color,
+                      ) ===
+                      card.colorId,
+                  ) as
+                    | (
+                        ApiColor & {
+                          hex?: string;
+                        }
+                      )
+                    | undefined;
+
+                const hex =
+                  normalizeHex(
+                    rawColor?.hex,
+                  );
+
+                if (hex) {
+                  result.push({
+                    product:
+                      card,
+                    hex,
+                  });
+                }
+              },
+            );
+          },
+        );
+
+      return result;
+    }, [
+      products,
+      gender,
+    ]);
+
+  const colors =
+    useMemo(
+      () =>
+        Array.from(
+          new Set(
+            variants.map(
+              (
+                variant,
+              ) =>
+                variant.hex,
+            ),
+          ),
+        ).slice(
+          0,
+          20,
+        ),
+      [
+        variants,
+      ],
+    );
 
   useEffect(() => {
-    if (!card?.images?.length || card.images.length <= 1) {
+    setColorIndex(0);
+    setProductStart(0);
+  }, [
+    gender,
+  ]);
+
+  useEffect(() => {
+    if (
+      colorIndex >=
+      colors.length
+    ) {
+      setColorIndex(0);
+    }
+
+    setProductStart(0);
+  }, [
+    colorIndex,
+    colors.length,
+  ]);
+
+  if (
+    !colors.length
+  ) {
+    return null;
+  }
+
+  const selectedColor =
+    colors[
+      colorIndex
+    ] ||
+    colors[0];
+
+  const sorted =
+    [...variants].sort(
+      (
+        first,
+        second,
+      ) =>
+        colorDistance(
+          first.hex,
+          selectedColor,
+        ) -
+        colorDistance(
+          second.hex,
+          selectedColor,
+        ),
+    );
+
+  const visibleCount =
+    Math.min(
+      4,
+      sorted.length,
+    );
+
+  const visible =
+    Array.from(
+      {
+        length:
+          visibleCount,
+      },
+      (
+        _,
+        index,
+      ) =>
+        sorted[
+          (
+            productStart +
+            index
+          ) %
+          sorted.length
+        ],
+    );
+
+  const gradient =
+    colors.length ===
+    1
+      ? colors[0]
+      : `linear-gradient(90deg, ${colors.join(
+          ", ",
+        )})`;
+
+  function move(
+    direction:
+      | -1
+      | 1,
+  ) {
+    if (
+      sorted.length <=
+      visibleCount
+    ) {
       return;
     }
 
-    const timer = window.setInterval(() => {
-      setActive(
-        (current) =>
-          (current + 1) % card.images.length
-      );
-    }, 2700 + delay);
+    setProductStart(
+      (
+        current,
+      ) =>
+        (
+          current +
+          direction +
+          sorted.length
+        ) %
+        sorted.length,
+    );
+  }
 
-    return () => {
-      window.clearInterval(timer);
-    };
-  }, [card, delay]);
+  return (
+    <section
+      className="
+        w-full
+        overflow-hidden
+        bg-[#202834]
+        px-3
+        py-10
+        text-white
 
-  if (!card?.images?.length) {
+        sm:px-5
+
+        lg:px-6
+        lg:py-12
+      "
+    >
+      <div
+        className="
+          mx-auto
+          w-full
+          max-w-[1240px]
+        "
+      >
+        <div
+          className="
+            mb-6
+            flex
+            items-start
+            justify-between
+            gap-3
+
+            sm:items-center
+
+            lg:mb-5
+          "
+        >
+          <h2
+            className="
+              max-w-[62%]
+              text-[22px]
+              font-black
+              uppercase
+              leading-[0.95]
+              tracking-[-0.025em]
+
+              sm:max-w-none
+              sm:text-[31px]
+
+              lg:text-[36px]
+            "
+          >
+            Slide into the
+            colors of Hivra
+          </h2>
+
+          <GenderToggle
+            value={
+              gender
+            }
+            onChange={
+              setGender
+            }
+            dark
+            compact
+          />
+        </div>
+
+        <div
+          className="
+            relative
+          "
+        >
+          <div
+            className="
+              grid
+              grid-cols-2
+              gap-2.5
+
+              sm:gap-4
+
+              lg:grid-cols-4
+            "
+          >
+            {visible.map(
+              (
+                item,
+                index,
+              ) => (
+                <Link
+                  key={`${item.product.variantKey}-${index}`}
+                  href={`/product/${item.product.slug}`}
+                  className="
+                    group
+                    min-w-0
+                    text-center
+                    text-white
+                  "
+                >
+                  <div
+                    className="
+                      aspect-[6/7]
+                      overflow-hidden
+                      rounded-[11px]
+                      border-[2px]
+                      border-white
+                      bg-[#EFEFEF]
+
+                      sm:rounded-[13px]
+                      sm:border-[3px]
+                    "
+                  >
+                    {item.product
+                      .image1 ? (
+                      <img
+                        src={
+                          item
+                            .product
+                            .image1
+                        }
+                        alt={
+                          item
+                            .product
+                            .name
+                        }
+                        className="
+                          h-full
+                          w-full
+                          object-cover
+                          transition-transform
+                          duration-500
+
+                          group-hover:scale-[1.025]
+                        "
+                      />
+                    ) : null}
+                  </div>
+
+                  <p
+                    className="
+                      mx-auto
+                      mt-2
+                      line-clamp-1
+                      max-w-[240px]
+                      text-[8px]
+                      font-semibold
+                      leading-tight
+
+                      sm:text-[10px]
+                    "
+                  >
+                    {
+                      item.product
+                        .name
+                    }
+                  </p>
+
+                  <p
+                    className="
+                      mt-1
+                      text-[7px]
+                      text-white/65
+
+                      sm:text-[9px]
+                    "
+                  >
+                    Color:{" "}
+
+                    {
+                      item.product
+                        .colorName
+                    }
+                  </p>
+                </Link>
+              ),
+            )}
+          </div>
+
+          {sorted.length >
+          visibleCount ? (
+            <>
+              <button
+                type="button"
+                onClick={() =>
+                  move(-1)
+                }
+                className="
+                  absolute
+                  left-1
+                  top-[42%]
+                  z-20
+                  grid
+                  h-8
+                  w-8
+                  -translate-y-1/2
+                  place-items-center
+                  rounded-full
+                  border
+                  border-white/35
+                  bg-[#202834]/95
+                  text-[18px]
+                  text-white
+                  shadow-lg
+
+                  sm:left-0
+                  sm:h-9
+                  sm:w-9
+                  sm:-translate-x-1/2
+                  sm:text-[20px]
+                "
+              >
+                ‹
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  move(1)
+                }
+                className="
+                  absolute
+                  right-1
+                  top-[42%]
+                  z-20
+                  grid
+                  h-8
+                  w-8
+                  -translate-y-1/2
+                  place-items-center
+                  rounded-full
+                  border
+                  border-white/35
+                  bg-[#202834]/95
+                  text-[18px]
+                  text-white
+                  shadow-lg
+
+                  sm:right-0
+                  sm:h-9
+                  sm:w-9
+                  sm:translate-x-1/2
+                  sm:text-[20px]
+                "
+              >
+                ›
+              </button>
+            </>
+          ) : null}
+        </div>
+
+        {/* COLOR SLIDER */}
+
+        <div
+          className="
+            mx-auto
+            mt-7
+            max-w-[650px]
+
+            lg:mt-8
+          "
+        >
+          <div
+            className="
+              relative
+              h-[6px]
+              rounded-full
+            "
+            style={{
+              background:
+                gradient,
+            }}
+          >
+            <input
+              type="range"
+              min={0}
+              max={
+                Math.max(
+                  0,
+                  colors.length -
+                    1,
+                )
+              }
+              value={
+                colorIndex
+              }
+              onChange={
+                (
+                  event,
+                ) =>
+                  setColorIndex(
+                    Number(
+                      event
+                        .target
+                        .value,
+                    ),
+                  )
+              }
+              className="
+                absolute
+                inset-x-0
+                -top-2
+                h-6
+                w-full
+                cursor-pointer
+                opacity-0
+              "
+            />
+
+            <span
+              className="
+                pointer-events-none
+                absolute
+                top-1/2
+                h-5
+                w-5
+                -translate-x-1/2
+                -translate-y-1/2
+                rounded-full
+                border-[4px]
+                border-white
+                shadow-lg
+              "
+              style={{
+                left:
+                  colors.length <=
+                  1
+                    ? "0%"
+                    : `${
+                        (
+                          colorIndex /
+                          (
+                            colors.length -
+                            1
+                          )
+                        ) *
+                        100
+                      }%`,
+
+                background:
+                  selectedColor,
+              }}
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* =========================================================
+   FAVOURITES / FIND YOUR FIT
+========================================================= */
+
+function PromoGrid({
+  items,
+  type,
+}: {
+  items: BannerItem[];
+
+  type:
+    | "favourites"
+    | "fit";
+}) {
+  if (
+    !items.length
+  ) {
+    return null;
+  }
+
+  const fit =
+    type === "fit";
+
+  return (
+    <section
+      className={`
+        px-3
+        py-12
+
+        sm:px-5
+
+        lg:px-6
+        lg:py-20
+
+        ${
+          fit
+            ? `
+              bg-[#1D1311]
+              text-white
+            `
+            : `
+              bg-[#F8F3EF]
+              text-[#211A18]
+            `
+        }
+      `}
+    >
+      <div
+        className="
+          mx-auto
+          max-w-[1450px]
+        "
+      >
+        <p
+          className={`
+            mb-2
+            text-[7px]
+            uppercase
+            tracking-[0.35em]
+
+            sm:text-[8px]
+
+            ${
+              fit
+                ? `
+                  text-white/45
+                `
+                : `
+                  text-[#9A7463]
+                `
+            }
+          `}
+        >
+          {fit
+            ? "Discover"
+            : "Curated for you"}
+        </p>
+
+        <h2
+          className="
+            mb-5
+            text-[27px]
+            font-semibold
+            leading-none
+
+            sm:text-[34px]
+
+            lg:mb-9
+            lg:text-[48px]
+          "
+        >
+          {fit
+            ? "Find your "
+            : "Your favourites for a "}
+
+          <span
+            className="
+              font-serif
+              font-normal
+              italic
+              text-[#A41948]
+            "
+          >
+            {fit
+              ? "fit."
+              : "limited time!"}
+          </span>
+        </h2>
+
+        <div
+          className={`
+            grid
+            gap-3
+
+            sm:gap-4
+
+            ${
+              fit
+                ? `
+                  grid-cols-2
+
+                  lg:grid-cols-4
+                `
+                : `
+                  grid-cols-1
+
+                  md:grid-cols-2
+                `
+            }
+          `}
+        >
+          {items
+            .slice(
+              0,
+              fit
+                ? 4
+                : 2,
+            )
+            .map(
+              (
+                item,
+                index,
+              ) => (
+                <SmartLink
+                  key={`${item.publicId || item.url}-${index}`}
+                  href={
+                    bannerHref(
+                      item,
+                    )
+                  }
+                  newTab={
+                    item.openInNewTab
+                  }
+                  className={`
+                    group
+                    relative
+                    overflow-hidden
+                    bg-[#E8DED7]
+
+                    ${
+                      fit
+                        ? `
+                          aspect-[3/4]
+                          rounded-[14px]
+
+                          sm:rounded-[16px]
+                        `
+                        : `
+                          aspect-[1.25/1]
+                          rounded-[16px]
+
+                          md:aspect-[1.35/1]
+                          md:rounded-[18px]
+                        `
+                    }
+                  `}
+                >
+                  {item.url ? (
+                    <img
+                      src={
+                        item.url
+                      }
+                      alt={
+                        item.alt ||
+                        item.title ||
+                        "Hivra Soft"
+                      }
+                      className="
+                        h-full
+                        w-full
+                        object-cover
+                        transition-transform
+                        duration-700
+
+                        group-hover:scale-105
+                      "
+                    />
+                  ) : null}
+
+                  <div
+                    className="
+                      absolute
+                      inset-0
+                      bg-gradient-to-t
+                      from-black/75
+                      via-transparent
+                      to-transparent
+                    "
+                  />
+
+                  <div
+                    className="
+                      absolute
+                      inset-x-0
+                      bottom-0
+                      p-3
+                      text-white
+
+                      sm:p-6
+                    "
+                  >
+                    <h3
+                      className={`
+                        font-serif
+                        leading-tight
+
+                        ${
+                          fit
+                            ? `
+                              text-[18px]
+
+                              sm:text-[26px]
+                            `
+                            : `
+                              text-[24px]
+
+                              sm:text-[34px]
+                            `
+                        }
+                      `}
+                    >
+                      {item.title ||
+                        (
+                          fit
+                            ? `Collection ${
+                                index +
+                                1
+                              }`
+                            : `Hivra Favourite ${
+                                index +
+                                1
+                              }`
+                        )}
+                    </h3>
+
+                    <span
+                      className="
+                        mt-2
+                        inline-flex
+                        text-[7px]
+                        font-bold
+                        uppercase
+                        tracking-[0.15em]
+
+                        sm:mt-3
+                        sm:text-[8px]
+                      "
+                    >
+                      {item.buttonText ||
+                        "Shop now"}{" "}
+
+                      →
+                    </span>
+                  </div>
+                </SmartLink>
+              ),
+            )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* =========================================================
+   BOTTOM BANNER
+========================================================= */
+
+function BottomBanner({
+  item,
+}: {
+  item?: BannerItem;
+}) {
+  if (!item) {
     return null;
   }
 
   return (
-    <div
-      data-fit-card
+    <SmartLink
+      href={
+        bannerHref(
+          item,
+        )
+      }
+      newTab={
+        item.openInNewTab
+      }
       className="
-        group
         relative
-        h-[500px]
+        block
+        w-full
         overflow-hidden
-        border
-        border-white/15
-        bg-[#291B18]
-        md:h-[570px]
-        xl:h-[620px]
+        bg-[#EADFD7]
+        aspect-[1537/536]
+
+        lg:aspect-[1537/536]
       "
     >
-      {/* IMAGE SLIDES */}
-
-      {card.images.map((slide, index) => (
-        <Link
-          key={`${slide.image}-${index}`}
-          href={slide.redirect || "#"}
-          className={`
-            absolute
-            inset-0
-            block
-            transition-all
-            duration-1000
-            ease-[cubic-bezier(.22,1,.36,1)]
-
-            ${
-              active === index
-                ? "translate-y-0 opacity-100"
-                : index < active
-                  ? "-translate-y-full opacity-0"
-                  : "translate-y-full opacity-0"
-            }
-          `}
-        >
-          <img
-            src={slide.image}
-            alt={`${card.name} ${index + 1}`}
-            className="
-              h-full
-              w-full
-              object-cover
-              transition-transform
-              duration-[1800ms]
-              ease-out
-              group-hover:scale-105
-            "
-          />
-        </Link>
-      ))}
-
-      {/* OVERLAY */}
-
-      <div
-        className="
-          pointer-events-none
-          absolute
-          inset-0
-          z-10
-          bg-gradient-to-t
-          from-[#140B09]
-          via-transparent
-          to-black/5
-        "
-      />
-
-      {/* COUNTER */}
-
-      <div
-        className="
-          pointer-events-none
-          absolute
-          right-5
-          top-5
-          z-20
-          text-[8px]
-          uppercase
-          tracking-[0.25em]
-          text-white/55
-        "
-      >
-        0{active + 1} / 0{card.images.length}
-      </div>
-
-      {/* TITLE */}
-
-      <div
-        className="
-          pointer-events-none
-          absolute
-          bottom-0
-          left-0
-          right-0
-          z-20
-          p-7
-        "
-      >
-        <p
+      {item.url ? (
+        <img
+          src={
+            item.url
+          }
+          alt={
+            item.alt ||
+            "Hivra Soft"
+          }
           className="
-            mb-3
-            text-[8px]
-            uppercase
-            tracking-[0.3em]
-            text-[#D8BDAE]
+            h-full
+            w-full
+            object-fill
           "
-        >
-          Explore
-        </p>
+        />
+      ) : null}
+    </SmartLink>
+  );
+}
 
-        <div
-          className="
-            flex
-            items-end
-            justify-between
-          "
-        >
-          <h3
-            className="
-              text-[31px]
-              font-medium
-              tracking-[-0.04em]
-              text-white
-              md:text-[35px]
-            "
-          >
-            {card.name}
-          </h3>
+/* =========================================================
+   EMPTY STATE
+========================================================= */
 
-          <span
-            className="
-              flex
-              h-11
-              w-11
-              items-center
-              justify-center
-              rounded-full
-              border
-              border-white/30
-              text-xl
-              text-white
-            "
-          >
-            →
-          </span>
-        </div>
-
-        {/* PROGRESS */}
-
-        <div
-          className="
-            mt-6
-            flex
-            gap-1
-          "
-        >
-          {card.images.map((_, index) => (
-            <span
-              key={index}
-              className={`
-                h-[2px]
-                flex-1
-                transition-colors
-                duration-300
-
-                ${
-                  active === index
-                    ? "bg-white"
-                    : "bg-white/25"
-                }
-              `}
-            />
-          ))}
-        </div>
-      </div>
+function EmptyState({
+  text,
+}: {
+  text: string;
+}) {
+  return (
+    <div
+      className="
+        rounded-[16px]
+        border
+        border-dashed
+        border-black/15
+        bg-white/50
+        px-5
+        py-10
+        text-center
+        text-[11px]
+        text-black/50
+      "
+    >
+      {text}
     </div>
   );
 }
 
-
 /* =========================================================
-   FIND YOUR FIT
+   LOADING
 ========================================================= */
 
-function FindYourFit() {
+function LoadingHome() {
   return (
-    <section
-      id="find-your-fit"
+    <main
       className="
-        overflow-hidden
-        bg-[#1D1311]
-        px-5
-        py-28
-        text-[#F7F3EF]
-        md:px-8
-        md:py-32
+        min-h-screen
+        bg-[#F8F3EF]
       "
     >
-      <div className="mx-auto max-w-[1500px]">
-        {/* HEADING */}
+      <div
+        className="
+          w-full
+          animate-pulse
+          bg-[#E5DBD4]
+          aspect-[1537/536]
 
-        <div
-          className="
-            mb-16
-            flex
-            flex-col
-            gap-8
-            lg:flex-row
-            lg:items-end
-            lg:justify-between
-          "
-        >
-          <div>
-            <p
-              className="
-                mb-5
-                text-[8px]
-                uppercase
-                tracking-[0.5em]
-                text-[#C5A997]
-              "
-            >
-              Discover
-            </p>
-
-            <h2
-              className="
-                text-[52px]
-                font-medium
-                leading-[0.9]
-                tracking-[-0.06em]
-                md:text-[78px]
-                lg:text-[92px]
-              "
-            >
-              Find your
-
-              <span
-                className="
-                  font-serif
-                  font-normal
-                  italic
-                  text-[#E6D2C5]
-                "
-              >
-                {" "}
-                fit.
-              </span>
-            </h2>
-          </div>
-
-          <p
-            className="
-              max-w-[390px]
-              text-[13px]
-              leading-7
-              text-white/50
-            "
-          >
-            From everyday essentials to fresh styles,
-            discover collections designed around comfort,
-            confidence and you.
-          </p>
-        </div>
-
-        {/* CARDS */}
-
-        <div
-          className="
-            grid
-            grid-cols-1
-            gap-4
-            sm:grid-cols-2
-            xl:grid-cols-4
-          "
-        >
-          {findYourFit.map((card, index) => (
-            <FitCard
-              key={card.name}
-              card={card}
-              delay={index * 220}
-            />
-          ))}
-        </div>
-      </div>
-    </section>
+          lg:aspect-[1537/536]
+        "
+      />
+    </main>
   );
 }
 
-
 /* =========================================================
-   HOMEPAGE
+   HOME PAGE
 ========================================================= */
 
 export default function HomePage() {
-  const mainRef = useRef(null);
+  const [
+    banners,
+    setBanners,
+  ] =
+    useState<BannerGroup[]>(
+      [],
+    );
+
+  const [
+    trendItems,
+    setTrendItems,
+  ] =
+    useState<OnTrendItem[]>(
+      [],
+    );
+
+  const [
+    alwaysItems,
+    setAlwaysItems,
+  ] =
+    useState<AlwaysInItItem[]>(
+      [],
+    );
+
+  const [
+    newLaunchProducts,
+    setNewLaunchProducts,
+  ] =
+    useState<ApiProduct[]>(
+      [],
+    );
+
+  const [
+    activeProducts,
+    setActiveProducts,
+  ] =
+    useState<ApiProduct[]>(
+      [],
+    );
+
+  const [
+    loading,
+    setLoading,
+  ] =
+    useState(true);
+
+  const [
+    mobile,
+    setMobile,
+  ] =
+    useState(false);
+
+  /* =======================================================
+     DEVICE
+  ======================================================= */
 
   useEffect(() => {
-    gsap.registerPlugin(ScrollTrigger);
-
-    const main = mainRef.current;
-
-    if (!main) {
-      return;
-    }
-
-    const ctx = gsap.context(() => {
-      /* GENERAL REVEALS */
-
-      const reveals =
-        gsap.utils.toArray<HTMLElement>("[data-reveal]");
-
-      reveals.forEach((element) => {
-        gsap.fromTo(
-          element,
-          {
-            y: 55,
-            opacity: 0,
-          },
-          {
-            y: 0,
-            opacity: 1,
-            duration: 0.9,
-            ease: "power3.out",
-
-            scrollTrigger: {
-              trigger: element,
-              start: "top 88%",
-              once: true,
-            },
-          }
-        );
-      });
-
-      /* PRODUCTS */
-
-      ScrollTrigger.batch(
-        "[data-product-card]",
-        {
-          start: "top 92%",
-          once: true,
-
-          onEnter: (elements) => {
-            gsap.fromTo(
-              elements,
-              {
-                y: 45,
-                opacity: 0,
-                scale: 0.985,
-              },
-              {
-                y: 0,
-                opacity: 1,
-                scale: 1,
-                duration: 0.75,
-                stagger: 0.08,
-                ease: "power3.out",
-              }
-            );
-          },
-        }
+    const media =
+      window.matchMedia(
+        "(max-width: 767px)",
       );
 
-      /* FIND YOUR FIT */
-
-      const fitCards =
-        gsap.utils.toArray("[data-fit-card]");
-
-      if (fitCards.length) {
-        gsap.fromTo(
-          fitCards,
-          {
-            y: 100,
-            opacity: 0,
-          },
-          {
-            y: 0,
-            opacity: 1,
-            stagger: 0.12,
-            duration: 1,
-            ease: "power4.out",
-
-            scrollTrigger: {
-              trigger: "#find-your-fit",
-              start: "top 78%",
-              once: true,
-            },
-          }
+    const update =
+      () => {
+        setMobile(
+          media.matches,
         );
-      }
-    }, main);
+      };
 
-    ScrollTrigger.refresh();
+    update();
+
+    media.addEventListener(
+      "change",
+      update,
+    );
+
+    return () =>
+      media.removeEventListener(
+        "change",
+        update,
+      );
+  }, []);
+
+  /* =======================================================
+     LOAD ALL HOME APIs
+  ======================================================= */
+
+  useEffect(() => {
+    let mounted =
+      true;
+
+    async function loadHome() {
+      setLoading(true);
+
+      const [
+        bannerResponse,
+        trendResponse,
+        alwaysResponse,
+        newLaunchResponse,
+        activeResponse,
+      ] =
+        await Promise.all([
+          safeJson(
+            "/api/banners/active",
+          ),
+
+          safeJson(
+            "/api/on-trend-picks",
+          ),
+
+          safeJson(
+            "/api/always-in-it",
+          ),
+
+          safeJson(
+            "/api/products/new-launches",
+          ),
+
+          safeJson(
+            "/api/products/active",
+          ),
+        ]);
+
+      if (!mounted) {
+        return;
+      }
+
+      setBanners(
+        asArray<BannerGroup>(
+          bannerResponse
+            ?.data,
+        ),
+      );
+
+      setTrendItems(
+        asArray<OnTrendItem>(
+          trendResponse
+            ?.items,
+        ),
+      );
+
+      setAlwaysItems(
+        asArray<AlwaysInItItem>(
+          alwaysResponse
+            ?.items,
+        ),
+      );
+
+      setNewLaunchProducts(
+        asArray<ApiProduct>(
+          newLaunchResponse
+            ?.products,
+        ),
+      );
+
+      setActiveProducts(
+        asArray<ApiProduct>(
+          activeResponse
+            ?.products,
+        ),
+      );
+
+      setLoading(false);
+    }
+
+    void loadHome();
 
     return () => {
-      ctx.revert();
+      mounted = false;
     };
   }, []);
 
+  /* =======================================================
+     BANNER DATA
+  ======================================================= */
+
+  const eligible =
+    useMemo(
+      () =>
+        usableBanners(
+          banners,
+          mobile,
+        ),
+      [
+        banners,
+        mobile,
+      ],
+    );
+
+  const heroItems =
+    useMemo(
+      () =>
+        bannerImages(
+          eligible.filter(
+            (banner) =>
+              banner.position ===
+              "home_hero",
+          ),
+        ),
+      [
+        eligible,
+      ],
+    );
+
+  const favourites =
+    useMemo(
+      () =>
+        purposeBannerImages(
+          eligible,
+          [
+            "favourite",
+            "favorite",
+            "limited",
+          ],
+          "home_top",
+        ),
+      [
+        eligible,
+      ],
+    );
+
+  const findYourFit =
+    useMemo(
+      () =>
+        purposeBannerImages(
+          eligible,
+          [
+            "find your fit",
+            "find-your-fit",
+            "find-fit",
+          ],
+          "home_middle",
+        ),
+      [
+        eligible,
+      ],
+    );
+
+  const bottom =
+    useMemo(
+      () =>
+        bannerImages(
+          eligible.filter(
+            (banner) =>
+              banner.position ===
+              "home_bottom",
+          ),
+        ),
+      [
+        eligible,
+      ],
+    );
+
+  /* =======================================================
+     PAGE
+  ======================================================= */
+
   return (
     <>
-      {/* HEADER */}
-
       <Header />
 
-      <main
-        ref={mainRef}
-        className="
-          min-h-screen
-          bg-[#F7F3EF]
-          text-[#211A18]
-        "
-      >
-        {/* =================================================
-            MAIN BANNER — EXACT 1600:558 RATIO
-        ================================================= */}
-
-        <BannerSlider />
-
-        {/* =================================================
-            YOUR FAVOURITES
-        ================================================= */}
-
-        <section
+      {loading ? (
+        <LoadingHome />
+      ) : (
+        <main
           className="
-            px-5
-            pb-10
-            pt-20
-            text-center
-            md:pt-24
+            min-h-screen
+            overflow-x-hidden
+            bg-[#F8F3EF]
+            text-[#211A18]
           "
         >
-          <div data-reveal>
-            <p
-              className="
-                mb-4
-                text-[8px]
-                uppercase
-                tracking-[0.45em]
-                text-[#9C765D]
-              "
-            >
-              Curated for you
-            </p>
+          {/* HOME BANNER */}
 
-            <h1
-              className="
-                text-[38px]
-                font-medium
-                uppercase
-                leading-[0.95]
-                tracking-[-0.04em]
-                md:text-[58px]
-                lg:text-[66px]
-              "
-            >
-              Your favourites for a
+          <HeroBanner
+            items={
+              heroItems
+            }
+          />
 
-              <span className="text-[#8C1839]">
-                {" "}
-                limited time!
-              </span>
-            </h1>
-          </div>
-        </section>
+          {/* ON TREND PICKS */}
 
-        <section
-          className="
-            px-4
-            pb-24
-            md:px-6
-            lg:px-8
-          "
-        >
-          <div
-            className="
-              mx-auto
-              grid
-              max-w-[1450px]
-              grid-cols-1
-              gap-5
-              md:grid-cols-2
-            "
-          >
-            {favouriteCards.map((card, index) => (
-              <FavouriteCard
-                key={card.name}
-                card={card}
-                delay={index * 300}
-              />
-            ))}
-          </div>
-        </section>
+          <OnTrendPicks
+            items={
+              trendItems
+            }
+          />
 
-        {/* =================================================
-            INNERWEAR ONLINE FOR EVERY WOMAN
-        ================================================= */}
+          {/* ALWAYS IN IT */}
 
-        <ProductSection
-          eyebrow="Women's essentials"
-          title="Innerwear online for"
-          accent="every woman."
-          products={everyWomanProducts}
-        />
+          <AlwaysInItSection
+            records={
+              alwaysItems
+            }
+          />
 
-        {/* =================================================
-            NEW INNERWEAR FOR MEN & WOMEN
-        ================================================= */}
+          {/* NEW ARRIVALS */}
 
-        <ProductSection
-          eyebrow="Fresh selections"
-          title="New innerwear for"
-          accent="men & women."
-          products={menWomenProducts}
-          alternate
-        />
+          <NewArrivalsSection
+            products={
+              newLaunchProducts
+            }
+          />
 
-        {/* =================================================
-            STYLE, COMFORT & CONFIDENCE
-        ================================================= */}
+          {/* WOMEN 8 LATEST */}
 
-        <StyleConfidence />
+          <LatestProductsSection
+            gender="women"
+            products={
+              activeProducts
+            }
+          />
 
-        {/* =================================================
-            FIND YOUR FIT
-        ================================================= */}
+          {/* MEN 8 LATEST */}
 
-        <FindYourFit />
+          <LatestProductsSection
+            gender="men"
+            products={
+              activeProducts
+            }
+          />
 
-        {/* =================================================
-            LAST OFFER
-        ================================================= */}
+          {/* COLORS */}
 
-        <section
-          className="
-            flex
-            min-h-[65vh]
-            items-center
-            justify-center
-            bg-[#EDE1D7]
-            px-6
-            py-24
-          "
-        >
-          <div
-            data-reveal
-            className="
-              max-w-[1000px]
-              text-center
-            "
-          >
-            <p
-              className="
-                mb-5
-                text-[8px]
-                uppercase
-                tracking-[0.5em]
-                text-[#9C765D]
-              "
-            >
-              Hivra Soft
-            </p>
+          <ColorSection
+            products={
+              activeProducts
+            }
+          />
 
-            <h2
-              className="
-                text-[50px]
-                font-medium
-                leading-[0.9]
-                tracking-[-0.055em]
-                md:text-[78px]
-                lg:text-[100px]
-              "
-            >
-              More comfort.
+          {/* FAVOURITES */}
 
-              <br />
+          <PromoGrid
+            items={
+              favourites
+            }
+            type="favourites"
+          />
 
-              <span
-                className="
-                  font-serif
-                  font-normal
-                  italic
-                  text-[#8C1839]
-                "
-              >
-                More for you.
-              </span>
-            </h2>
+          {/* FIND YOUR FIT */}
 
-            <div
-              className="
-                mt-10
-                flex
-                flex-wrap
-                justify-center
-                gap-4
-              "
-            >
-              <Link
-                href="/bundle-pricing"
-                className="
-                  rounded-full
-                  bg-[#211A18]
-                  px-8
-                  py-4
-                  text-[9px]
-                  uppercase
-                  tracking-[0.2em]
-                  text-white
-                  transition
-                  hover:bg-[#8C1839]
-                "
-              >
-                Bundle Pricing
-              </Link>
+          <PromoGrid
+            items={
+              findYourFit
+            }
+            type="fit"
+          />
 
-              <Link
-                href="/buy-3-get-1-free"
-                className="
-                  rounded-full
-                  border
-                  border-[#211A18]/30
-                  px-8
-                  py-4
-                  text-[9px]
-                  uppercase
-                  tracking-[0.2em]
-                  transition
-                  hover:bg-[#211A18]
-                  hover:text-white
-                "
-              >
-                Buy 3 Get 1 Free
-              </Link>
-            </div>
-          </div>
-        </section>
-      </main>
+          {/* BOTTOM BANNER */}
+
+          <BottomBanner
+            item={
+              bottom[0]
+            }
+          />
+        </main>
+      )}
     </>
   );
 }

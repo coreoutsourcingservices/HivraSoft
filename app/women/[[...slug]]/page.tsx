@@ -8,13 +8,8 @@ import WomenCatalog from "@/src/components/Women/WomenCatalog";
 
 import {
   findCategoryRoot,
-  getActiveCategoryTree,
   resolveCategoryPath,
 } from "@/src/services/categories";
-
-import {
-  getActiveProducts,
-} from "@/src/services/products";
 
 import {
   getCategoryBanners,
@@ -22,14 +17,34 @@ import {
   productBelongsToCategory,
 } from "@/src/services/storefront-catalog";
 
-export const dynamic =
-  "force-dynamic";
+import {
+  getCachedActiveCategoryTree,
+  getCachedActiveProducts,
+  getCachedFixedPriceOfferForCategory,
+} from "@/src/services/storefront-fast";
+
+/* =========================================================
+   REVALIDATE
+
+   force-dynamic hata diya.
+========================================================= */
+
+export const revalidate =
+  30;
+
+/* =========================================================
+   TYPES
+========================================================= */
 
 type Props = {
   params: Promise<{
     slug?: string[];
   }>;
 };
+
+/* =========================================================
+   WOMEN PAGE
+========================================================= */
 
 export default async function WomenPage({
   params,
@@ -42,27 +57,47 @@ export default async function WomenPage({
       resolved.slug ||
       []
     )
-      .map((slug) =>
-        String(slug)
-          .trim()
-          .toLowerCase()
+      .map(
+        (
+          slug,
+        ) =>
+          String(
+            slug,
+          )
+            .trim()
+            .toLowerCase(),
       )
-      .filter(Boolean);
+      .filter(
+        Boolean,
+      );
 
   /* =======================================================
-     CATEGORY TREE
+     CATEGORY TREE + PRODUCTS PARALLEL
   ======================================================= */
 
-  const tree =
-    await getActiveCategoryTree();
+  const [
+    tree,
+    apiProducts,
+  ] =
+    await Promise.all([
+      getCachedActiveCategoryTree(),
+
+      getCachedActiveProducts(),
+    ]);
+
+  /* =======================================================
+     WOMEN ROOT
+  ======================================================= */
 
   const womenRoot =
     findCategoryRoot(
       tree,
-      "women"
+      "women",
     );
 
-  if (!womenRoot) {
+  if (
+    !womenRoot
+  ) {
     notFound();
   }
 
@@ -73,49 +108,76 @@ export default async function WomenPage({
   const selected =
     resolveCategoryPath(
       womenRoot,
-      slugParts
+      slugParts,
     );
 
-  if (!selected) {
+  if (
+    !selected
+  ) {
     notFound();
   }
 
   const currentCategory =
-    selected.at(-1) ||
+    selected.at(
+      -1,
+    ) ||
     womenRoot;
+
+  /* =======================================================
+     FIXED PRICE OFFER
+  ======================================================= */
+
+  const fixedPriceOffer =
+    await getCachedFixedPriceOfferForCategory(
+      currentCategory.id,
+    );
 
   /* =======================================================
      PRODUCTS
   ======================================================= */
 
-  const apiProducts =
-    await getActiveProducts();
-
   const products =
     apiProducts
-      .filter((product) =>
-        productBelongsToCategory(
+      .filter(
+        (
           product,
-          currentCategory
-        )
+        ) =>
+          productBelongsToCategory(
+            product,
+            currentCategory,
+          ),
       )
       .flatMap(
-        mapProductToColorCards
+        mapProductToColorCards,
       );
 
   /* =======================================================
-     BANNER
-
-     ONLY CURRENT CATEGORY.
-     NO WOMEN ROOT FALLBACK.
+     BANNERS
   ======================================================= */
 
   const banners =
     getCategoryBanners(
       currentCategory,
       "/women",
-      slugParts
+      slugParts,
     );
+
+  /* =======================================================
+     DESCRIPTION
+  ======================================================= */
+
+  const description =
+    currentCategory.description ||
+    (
+      currentCategory.id ===
+      womenRoot.id
+        ? "Explore HivraSoft women's collection designed around comfort and confidence."
+        : `Shop HivraSoft ${currentCategory.name}.`
+    );
+
+  /* =======================================================
+     RENDER
+  ======================================================= */
 
   return (
     <>
@@ -132,19 +194,16 @@ export default async function WomenPage({
           currentCategory.name
         }
         description={
-          currentCategory.description ||
-          (
-            currentCategory.id ===
-            womenRoot.id
-              ? "Explore HivraSoft women's collection designed around comfort and confidence."
-              : `Shop HivraSoft ${currentCategory.name}.`
-          )
+          description
         }
         categoryRoot={
           womenRoot
         }
         categoryPath={
           slugParts
+        }
+        fixedPriceOffer={
+          fixedPriceOffer
         }
       />
     </>
