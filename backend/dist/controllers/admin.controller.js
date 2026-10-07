@@ -558,6 +558,8 @@ async function createAdminCustomer(req, res) {
         const accountStatus = (["active", "inactive", "blocked"].includes(requestedStatus) ? requestedStatus : "active");
         const customer = await User_model_1.default.create({
             name, email, phone, role: "customer", emailVerified: Boolean(req.body?.emailVerified),
+            birthday: req.body?.birthday ? new Date(req.body.birthday) : null,
+            anniversary: req.body?.anniversary ? new Date(req.body.anniversary) : null,
             isActive: accountStatus === "active", accountStatus, lastActiveAt: req.body?.lastActiveAt || null,
         });
         await account_model_1.default.updateOne({ user: customer._id }, { $setOnInsert: { user: customer._id, role: "customer", emailVerified: customer.emailVerified }, $set: { isActive: accountStatus === "active", isBlocked: accountStatus === "blocked" } }, { upsert: true });
@@ -588,12 +590,25 @@ async function updateAdminCustomer(req, res) {
                 return res.status(400).json({ success: false, message: "Gender must be male, female or other." });
             update.gender = gender;
         }
+        for (const field of ["birthday", "anniversary"]) {
+            if (req.body?.[field] !== undefined) {
+                const raw = String(req.body[field] || "").trim();
+                if (!raw)
+                    update[field] = null;
+                else {
+                    const parsed = new Date(raw);
+                    if (Number.isNaN(parsed.getTime()))
+                        return res.status(400).json({ success: false, message: `Invalid ${field} date.` });
+                    update[field] = parsed;
+                }
+            }
+        }
         if (req.body?.emailVerified !== undefined)
             update.emailVerified = Boolean(req.body.emailVerified);
         if (Object.values(update).some((value) => value === ""))
             return res.status(400).json({ success: false, message: "Updated fields cannot be empty." });
         const customer = await User_model_1.default.findOneAndUpdate({ _id: id, role: "customer" }, { $set: update }, { new: true, runValidators: true })
-            .select("name email phone gender emailVerified isActive accountStatus lastActiveAt createdAt updatedAt");
+            .select("name email phone gender birthday anniversary emailVerified isActive accountStatus lastActiveAt createdAt updatedAt");
         if (!customer)
             return res.status(404).json({ success: false, message: "Customer not found." });
         return res.json({ success: true, message: "Customer updated.", data: customer });
@@ -715,7 +730,7 @@ async function getAdminCustomerDetails(req, res) {
         }
         const userObjectId = new mongoose_1.Types.ObjectId(customerId);
         const customer = await User_model_1.default.findOne({ _id: userObjectId, role: "customer" })
-            .select("name username email phone gender role emailVerified isActive accountStatus lastActiveAt avatar createdAt updatedAt")
+            .select("name username email phone gender birthday anniversary role emailVerified isActive accountStatus lastActiveAt avatar createdAt updatedAt")
             .lean();
         if (!customer) {
             return res.status(404).json({ success: false, message: "Customer not found." });
@@ -1024,7 +1039,7 @@ async function updateAdminCustomerStatus(req, res) {
             return res.status(400).json({ success: false, message: "accountStatus must be active, inactive or blocked." });
         }
         const isActive = rawStatus === "active";
-        const customer = await User_model_1.default.findOneAndUpdate({ _id: id, role: "customer" }, { $set: { isActive, accountStatus: rawStatus } }, { new: true }).select("name email phone gender emailVerified isActive accountStatus lastActiveAt createdAt updatedAt");
+        const customer = await User_model_1.default.findOneAndUpdate({ _id: id, role: "customer" }, { $set: { isActive, accountStatus: rawStatus } }, { new: true }).select("name email phone gender birthday anniversary emailVerified isActive accountStatus lastActiveAt createdAt updatedAt");
         if (!customer)
             return res.status(404).json({ success: false, message: "Customer not found." });
         await account_model_1.default.updateOne({ user: customer._id }, { $set: { isActive, isBlocked: rawStatus === "blocked" }, $setOnInsert: { user: customer._id, role: "customer", emailVerified: customer.emailVerified } }, { upsert: true });
