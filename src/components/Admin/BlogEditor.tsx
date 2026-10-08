@@ -90,7 +90,6 @@ export default function BlogEditor({ blogId }: { blogId?: string }) {
   const [category, setCategory] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
-  const [categories, setCategories] = useState<ProductCategoryOption[]>([]);
   const [status, setStatus] = useState<"DRAFT" | "PUBLISHED" | "SCHEDULED" | "PRIVATE">("DRAFT");
   const [scheduledAt, setScheduledAt] = useState("");
   const [isFeatured, setIsFeatured] = useState(false);
@@ -116,20 +115,6 @@ export default function BlogEditor({ blogId }: { blogId?: string }) {
 
   const localKey = `hivrasoft-blog-document:${blogId || "new"}`;
   const markDirty = useCallback(() => setDirty(true), []);
-
-  useEffect(() => {
-    const apiUrl = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000").replace(/\/+$/, "");
-    void fetch(`${apiUrl}/api/categories/tree`, { credentials: "include", cache: "no-store" })
-      .then(async (response) => {
-        if (!response.ok) throw new Error("Unable to load product categories.");
-        return response.json();
-      })
-      .then((data) => {
-        const tree = Array.isArray(data) ? data : Array.isArray(data?.categories) ? data.categories : Array.isArray(data?.data) ? data.data : [];
-        setCategories(flattenProductCategories(tree));
-      })
-      .catch(() => setCategories([]));
-  }, []);
 
   useEffect(() => {
     if (!blogId) {
@@ -258,7 +243,8 @@ export default function BlogEditor({ blogId }: { blogId?: string }) {
       setDirty(false);
       localStorage.removeItem(localKey);
       setMessage(nextStatus === "PUBLISHED" ? "Blog published successfully." : "Blog saved successfully.");
-      if (!blogId) router.replace(`/admin/blog/${result.blog._id}/edit`);
+      router.replace("/admin/blog");
+      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to save blog.");
     } finally {
@@ -323,8 +309,7 @@ export default function BlogEditor({ blogId }: { blogId?: string }) {
         </div>
         <div className="flex flex-wrap gap-2">
           <button type="button" onClick={() => setShowPreview((value) => !value)} className="h-10 rounded-xl border border-[#211A18]/10 bg-white px-4 text-[10px] font-semibold">{showPreview ? "Back to Editor" : "Preview"}</button>
-          <button type="button" disabled={saving} onClick={() => void save("DRAFT")} className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#8C1839]/20 px-4 text-[10px] font-semibold text-[#8C1839] disabled:opacity-50"><Save size={13} />Save Draft</button>
-          <button type="button" disabled={saving} onClick={() => void save("PUBLISHED")} className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#A51D45] px-4 text-[10px] font-semibold text-white disabled:opacity-50">{saving ? <Loader2 size={13} className="animate-spin" /> : null}Publish</button>
+          <button type="button" disabled={saving} onClick={() => void save()} className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#A51D45] px-4 text-[10px] font-semibold text-white disabled:opacity-50">{saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}{blogId ? "Update" : "Save"}</button>
         </div>
       </div>
 
@@ -357,7 +342,6 @@ export default function BlogEditor({ blogId }: { blogId?: string }) {
               <label className="block"><FieldLabel>Status</FieldLabel><select value={status} onChange={(event) => { setStatus(event.target.value as typeof status); markDirty(); }} className="field"><option value="DRAFT">Draft</option><option value="PUBLISHED">Published</option><option value="SCHEDULED">Scheduled</option><option value="PRIVATE">Private</option></select></label>
               {status === "SCHEDULED" && <label className="mt-3 block"><FieldLabel>Publish At</FieldLabel><input type="datetime-local" value={scheduledAt} onChange={(event) => { setScheduledAt(event.target.value); markDirty(); }} className="field" /></label>}
               <label className="mt-3 flex items-center gap-2 text-[10px] font-semibold"><input type="checkbox" checked={isFeatured} onChange={(event) => { setIsFeatured(event.target.checked); markDirty(); }} className="accent-[#8C1839]" />Featured Blog</label>
-              <button type="button" onClick={() => void save(status)} disabled={saving} className="mt-4 h-11 w-full rounded-xl bg-[#211A18] text-[10px] font-semibold text-white disabled:opacity-50">Save / Update</button>
             </Panel>
 
             <Panel title="Featured Image">
@@ -366,15 +350,7 @@ export default function BlogEditor({ blogId }: { blogId?: string }) {
               {featuredImage.url && <><input value={featuredImage.alt || ""} onChange={(event) => { setFeaturedImage((value) => ({ ...value, alt: event.target.value })); markDirty(); }} placeholder="ALT text" className="field mt-3" /><button type="button" onClick={() => { setFeaturedImage(emptyImage); markDirty(); }} className="mt-2 text-[9px] font-semibold text-red-600">Remove image</button></>}
             </Panel>
 
-            <Panel title="Category & Tags">
-              <label className="block">
-                <FieldLabel>Product Category</FieldLabel>
-                <select value={category} onChange={(event) => { setCategory(event.target.value); markDirty(); }} className="field">
-                  <option value="">No category</option>
-                  {categories.map((item) => <option key={item.id} value={item.id}>{`${"— ".repeat(Math.max(0, item.level))}${item.name}`}</option>)}
-                </select>
-              </label>
-
+            <Panel title="Tags">
               <div className="mt-3">
                 <FieldLabel>Tags</FieldLabel>
                 <div className="rounded-xl border border-[#211A18]/10 bg-white p-2.5 focus-within:border-[#8C1839]/35">

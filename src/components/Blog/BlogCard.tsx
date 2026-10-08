@@ -14,7 +14,6 @@ export default function BlogCard({ blog }: { blog: BlogRecord }) {
       <div className="flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#A51D45]"><span>{taxName(blog.category)}</span><span className="text-[#211A18]/20">•</span><span className="text-[#211A18]/40">{niceDate(blog.publishedAt || blog.scheduledAt)}</span></div>
       <Link href={`/${blog.slug}`}><h2 className="mt-3 text-xl font-semibold leading-snug text-[#211A18] transition group-hover:text-[#A51D45]">{blog.title}</h2></Link>
       {blog.excerpt && <p className="mt-3 line-clamp-3 text-sm leading-6 text-[#211A18]/55">{blog.excerpt}</p>}
-      <div className="mt-5 flex items-center justify-between border-t border-[#211A18]/8 pt-4 text-[10px] text-[#211A18]/45"><span>{authorName(blog.author)}</span><span>{blog.readingTime || 1} min read</span></div>
-    </div>
+      </div>
   </article>;
 }

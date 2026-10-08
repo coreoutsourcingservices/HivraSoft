@@ -36,9 +36,7 @@ export default async function BlogDetailPage({ params }: Props) {
     if (item.slug !== blog.slug && !unique.has(item.slug)) unique.set(item.slug, item);
   }
   const related = [...unique.values()].slice(0, 10);
-  const categories = [blog.category, ...(blog.tags || []), ...related.map(x => x.category)]
-    .map(label).filter(v => v && v !== "Blog");
-  const categoryNames = [...new Set(categories)].slice(0, 10);
+  const visibleTags = [...new Set((blog.tags || []).map(label).filter(v => v && v !== "Blog"))].slice(0, 10);
   return <>
     <Header />
     <main className="min-h-screen bg-[#FBF8F5] text-[#251B19]">
@@ -46,13 +44,13 @@ export default async function BlogDetailPage({ params }: Props) {
         <div className="mx-auto max-w-[1520px]">
           <Link href="/blog" className="text-xs font-semibold uppercase tracking-[.14em] text-[#A01543]">← Back to Blogs</Link>
           <div className="mt-6 flex flex-wrap gap-3 text-xs text-[#816C69]">
-            <span>{label(blog.category)}</span><span>•</span>
+           
             <time>{dateText(blog.publishedAt || blog.scheduledAt || blog.createdAt)}</time><span>•</span>
-            <span>{readMinutes(blog.content)} min read</span>
+           
           </div>
           <h1 className="mt-4 w-full text-[clamp(2rem,4vw,4.5rem)] font-semibold leading-[1.12] tracking-tight">{blog.title}</h1>
           {blog.excerpt && <p className="mt-5 max-w-5xl text-base leading-8 text-[#786965] sm:text-lg">{blog.excerpt}</p>}
-          <div className="mt-5 text-sm text-[#8E7C76]">By {authorName(blog.author)}</div>
+          <div className="mt-5 text-sm text-[#8E7C76]">By Hivra Soft</div>
           <div className="mt-5"><BlogShare title={blog.title} /></div>
         </div>
       </header>
@@ -74,7 +72,7 @@ export default async function BlogDetailPage({ params }: Props) {
             </div>
             <Link href="/blog" className="mt-5 inline-block text-sm font-semibold text-[#A01543]">View all blogs →</Link>
           </section>
-          {categoryNames.length > 0 && <section className="rounded-2xl border border-[#251B19]/10 bg-white p-5 sm:p-6"><h2 className="text-xl font-semibold">Categories & Tags</h2><div className="mt-4 flex flex-wrap gap-2">{categoryNames.map(name => <span key={name} className="rounded-full bg-[#F7EDEF] px-3 py-2 text-xs text-[#8F2447]">{name}</span>)}</div></section>}
+          {visibleTags.length > 0 && <section className="rounded-2xl border border-[#251B19]/10 bg-white p-5 sm:p-6"><h2 className="text-xl font-semibold">Tags</h2><div className="mt-4 flex flex-wrap gap-2">{visibleTags.map(name => <span key={name} className="rounded-full bg-[#F7EDEF] px-3 py-2 text-xs text-[#8F2447]">{name}</span>)}</div></section>}
         </aside>
       </div>
     </main>

@@ -9,7 +9,7 @@ export default function BlogListingShell({ title, subtitle, blogs, page = 1, tot
   const pages = Array.from({ length: Math.min(totalPages, 5) }, (_, i) => Math.max(1, Math.min(page - 2, totalPages - 4)) + i);
   return <><Header /><main className="min-h-[70vh] bg-[#FBF8F5] text-[#251B19]">
     <section className="border-b border-[#251B19]/10 px-4 py-10 sm:px-6 sm:py-14"><div className="mx-auto max-w-[1520px]">
-      <p className="text-xs font-semibold uppercase tracking-widest text-[#A01543]">HivraSoft Journal</p>
+      <p className="text-xs font-semibold uppercase tracking-widest text-[#A01543]">Hivra Soft Journal</p>
       <h1 className="mt-3 text-4xl font-semibold sm:text-5xl">{title}</h1>
       {subtitle && <p className="mt-3 text-base text-[#776A66]">{subtitle}</p>}
     </div></section>
