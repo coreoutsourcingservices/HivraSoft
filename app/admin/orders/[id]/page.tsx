@@ -683,11 +683,19 @@ export default function AdminOrderDetailsPage() {
                 </p>
               )}
 
-              {addressCity && (
-                <p>
-                  {addressCity}
-                </p>
-              )}
+              <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2">
+                {([
+                  ["City", address.city],
+                  ["District", address.district],
+                  ["State", address.state],
+                  ["Pincode", address.postalCode ?? address.pincode],
+                ] as const).map(([label, value]) => (
+                  <div key={label}>
+                    <p className="text-[10px] font-semibold text-[#241C19]">{label}</p>
+                    <p>{hasValue(value) ? String(value) : "—"}</p>
+                  </div>
+                ))}
+              </div>
 
               <p>
                 {text(

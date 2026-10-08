@@ -86,23 +86,19 @@ function companyLines() {
 }
 
 function addressLines(address: any) {
-  if (!address || typeof address !== "object") return ["-"];
-
+  if (!address || typeof address !== "object") return ["Address: -"];
   return [
     address.fullName,
-    [address.homeNumber, address.officeNumber, address.addressLine1]
-      .filter(Boolean)
-      .join(" "),
+    [address.homeNumber, address.officeNumber, address.addressLine1].filter(Boolean).join(" "),
     address.addressLine2,
-    [address.landmark, address.city, address.district]
-      .filter(Boolean)
-      .join(", "),
-    [address.state, address.postalCode].filter(Boolean).join(" - "),
-    address.country,
+    address.landmark ? `Landmark: ${address.landmark}` : "",
+    `City: ${address.city || "-"}`,
+    `District: ${address.district || "-"}`,
+    `State: ${address.state || "-"}`,
+    `Pincode: ${address.postalCode || address.pincode || "-"}`,
+    address.country ? `Country: ${address.country}` : "",
     address.phone ? `Phone: ${address.phone}` : "",
-  ]
-    .filter(Boolean)
-    .map(String);
+  ].filter(Boolean).map(String);
 }
 
 function orderCustomer(order: InvoiceOrder) {
@@ -176,16 +172,16 @@ function buildInvoicePage(
     );
   }
 
-  out += rectCmd(MARGIN, 562, PAGE_W - MARGIN * 2, 116, 0.96);
+  out += rectCmd(MARGIN, 534, PAGE_W - MARGIN * 2, 144, 0.96);
   out += textCmd(MARGIN + 16, 658, "Billing / Shipping", 11, true);
 
   const addr = addressLines(order.shippingAddress);
-  addr.slice(0, 7).forEach((line, index) => {
-    out += textCmd(MARGIN + 16, 642 - index * 13, line, 8.7);
+  addr.slice(0, 10).forEach((line, index) => {
+    out += textCmd(MARGIN + 16, 642 - index * 11, line, 8.2);
   });
 
   if (customer.email) {
-    out += textCmd(MARGIN + 16, 552, `Email: ${customer.email}`, 8);
+    out += textCmd(MARGIN + 16, 525, `Email: ${customer.email}`, 8);
   }
 
   const rx = 368;

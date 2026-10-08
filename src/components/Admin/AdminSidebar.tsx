@@ -20,6 +20,7 @@ import {
   House,
   Trash2,
   Images,
+  FolderTree, Image as ImageIcon, ClipboardList, Settings2, List, FilePlus2, Gift, Layers3, Sparkles, Newspaper, CalendarClock, Shirt, CircleDot,
 } from "lucide-react";
 
 export default function AdminSidebar() {
@@ -86,10 +87,10 @@ export default function AdminSidebar() {
             onToggle={() => setProductsOpen((current) => !current)}
             icon={<Package size={17} />}
           >
-            <SubMenuLink href="/admin/products" active={pathname === "/admin/products"}>
+            <SubMenuLink href="/admin/products" active={pathname === "/admin/products"} icon={<List size={13} />}>
               All Products
             </SubMenuLink>
-            <SubMenuLink href="/admin/products/new" active={pathname === "/admin/products/new"} plus>
+            <SubMenuLink href="/admin/products/new" active={pathname === "/admin/products/new"} plus icon={<FilePlus2 size={13} />}>
               Add Product
             </SubMenuLink>
           </DropdownMenu>
@@ -101,7 +102,7 @@ export default function AdminSidebar() {
           <MenuLink
             href="/admin/categories"
             active={pathname.startsWith("/admin/categories")}
-          >
+           icon={<FolderTree size={17} />}>
             Categories
           </MenuLink>
 
@@ -115,18 +116,18 @@ export default function AdminSidebar() {
             <SubMenuLink
               href="/admin/offers/buy-get"
               active={pathname === "/admin/offers/buy-get"}
-            >
+             icon={<Gift size={13} />}>
               Buy & Get Offer
             </SubMenuLink>
             <SubMenuLink
               href="/admin/offers/fixed-price-bundle"
               active={pathname === "/admin/offers/fixed-price-bundle"}
-            >
+             icon={<Layers3 size={13} />}>
               Fixed Price Bundle
             </SubMenuLink>
           </DropdownMenu>
 
-          <MenuLink href="/admin/banners" active={pathname.startsWith("/admin/banners")}>
+          <MenuLink href="/admin/banners" active={pathname.startsWith("/admin/banners")} icon={<ImageIcon size={17} />}>
             Banners
           </MenuLink>
 
@@ -137,19 +138,19 @@ export default function AdminSidebar() {
             onToggle={() => setHomepageOpen((current) => !current)}
             icon={<House size={17} />}
           >
-            <SubMenuLink href="/admin/homepage/on-trend-picks" active={pathname === "/admin/homepage/on-trend-picks"}>
+            <SubMenuLink href="/admin/homepage/on-trend-picks" active={pathname === "/admin/homepage/on-trend-picks"} icon={<Sparkles size={13} />}>
               On Trend Picks
             </SubMenuLink>
-            <SubMenuLink href="/admin/homepage/always-in-it" active={pathname === "/admin/homepage/always-in-it"}>
+            <SubMenuLink href="/admin/homepage/always-in-it" active={pathname === "/admin/homepage/always-in-it"} icon={<Heart size={13} />}>
               Always In It
             </SubMenuLink>
-            <SubMenuLink href="/admin/homepage/prime-selection" active={pathname === "/admin/homepage/prime-selection"}>
+            <SubMenuLink href="/admin/homepage/prime-selection" active={pathname === "/admin/homepage/prime-selection"} icon={<Star size={13} />}>
               Prime Selection
             </SubMenuLink>
           </DropdownMenu>
 
 
-          <MenuLink href="/admin/orders" active={pathname.startsWith("/admin/orders")}>
+          <MenuLink href="/admin/orders" active={pathname.startsWith("/admin/orders")} icon={<ClipboardList size={17} />}>
             Orders
           </MenuLink>
 
@@ -162,7 +163,7 @@ export default function AdminSidebar() {
           </MenuLink>
 
 
-          <MenuLink href="/admin/send-your-bra" active={pathname.startsWith("/admin/send-your-bra")} icon={<Heart size={17} />}>
+          <MenuLink href="/admin/send-your-bra" active={pathname.startsWith("/admin/send-your-bra")} icon={<Shirt size={17} />}>
             Send Your Bra
           </MenuLink>
 
@@ -177,8 +178,8 @@ export default function AdminSidebar() {
             onToggle={() => setBlogOpen((current) => !current)}
             icon={<FileText size={17} />}
           >
-            <SubMenuLink href="/admin/blog" active={pathname === "/admin/blog"}>All Blogs</SubMenuLink>
-            <SubMenuLink href="/admin/blog/add" active={pathname === "/admin/blog/add"} plus>Add New Blog</SubMenuLink>
+            <SubMenuLink href="/admin/blog" active={pathname === "/admin/blog"} icon={<Newspaper size={13} />}>All Blogs</SubMenuLink>
+            <SubMenuLink href="/admin/blog/add" active={pathname === "/admin/blog/add"} plus icon={<FilePlus2 size={13} />}>Add New Blog</SubMenuLink>
           </DropdownMenu>
 
           <DropdownMenu
@@ -191,7 +192,7 @@ export default function AdminSidebar() {
             <SubMenuLink
               href="/admin/customers"
               active={pathname.startsWith("/admin/customers")}
-            >
+             icon={<UsersRound size={13} />}>
               Customers
             </SubMenuLink>
             <SubMenuLink href="/admin/reviews" active={pathname.startsWith("/admin/reviews")} icon={<Star size={13} />}>
@@ -261,7 +262,7 @@ export default function AdminSidebar() {
             </span>
           </MenuLink>
 
-          <MenuLink href="/admin/settings" active={pathname.startsWith("/admin/settings")}>
+          <MenuLink href="/admin/settings" active={pathname.startsWith("/admin/settings")} icon={<Settings2 size={17} />}>
             Settings
           </MenuLink>
         </nav>
@@ -354,7 +355,7 @@ function SubMenuLink({
           +
         </span>
       ) : (
-        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-current" />
+        <CircleDot size={13} className="shrink-0" />
       )}
       <span>{children}</span>
     </Link>
