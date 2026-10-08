@@ -1,84 +1,117 @@
 import Link from "next/link";
+import type { ComponentType, ReactNode } from "react";
+import Header from "@/src/components/Header/Header";
 
-export default function SupportShell({
-  eyebrow = "Hivrasoft Support",
+/**
+ * Shared public support-page layout.
+ *
+ * Kept at components/SupportShell.tsx because existing routes import it as
+ * `@/components/SupportShell` (the @ alias points at the project root).
+ * The props are intentionally flexible to work with existing support pages.
+ */
+export type SupportShellProps = {
+  title?: ReactNode;
+  description?: ReactNode;
+  subtitle?: ReactNode;
+  eyebrow?: ReactNode;
+  label?: ReactNode;
+  icon?: ReactNode | ComponentType<{ className?: string }>;
+  actions?: ReactNode;
+  sidebar?: ReactNode | boolean;
+  aside?: ReactNode;
+  className?: string;
+  children?: ReactNode;
+  [extraProp: string]: unknown;
+};
+
+const supportLinks = [
+  { href: "/faq", text: "FAQs" },
+  { href: "/shipping", text: "Shipping" },
+  { href: "/returns", text: "Returns & Exchanges" },
+  { href: "/terms", text: "Terms & Conditions" },
+  { href: "/contact", text: "Contact Us" },
+];
+
+export function SupportShell({
   title,
   description,
+  subtitle,
+  eyebrow,
+  label,
+  icon,
+  actions,
+  sidebar,
+  aside,
+  className = "",
   children,
-}) {
+}: SupportShellProps) {
+  const IconComponent =
+    typeof icon === "function" ? icon : null;
+  const visibleIcon: ReactNode =
+    IconComponent ? <IconComponent className="h-5 w-5" /> : (icon as ReactNode);
+  const showSidebar = sidebar !== false;
+  const sideContent = aside ?? (typeof sidebar === "boolean" ? null : sidebar);
+
   return (
-    <main className="min-h-screen bg-[#fffafc] text-slate-900">
-      <div className="pointer-events-none fixed inset-x-0 top-0 h-[420px] bg-[radial-gradient(circle_at_top_left,_rgba(244,114,182,0.20),_transparent_36%),radial-gradient(circle_at_top_right,_rgba(139,92,246,0.16),_transparent_35%)]" />
+    <>
+      <Header />
+      <main className={`min-h-screen bg-[#F8F5F2] px-4 py-8 text-[#211A18] sm:px-6 md:py-14 ${className}`}>
+        <div className="mx-auto w-full max-w-[1160px]">
+          <nav aria-label="Breadcrumb" className="mb-7 flex items-center gap-2 text-[11px] text-[#211A18]/55">
+            <Link href="/" className="hover:text-[#8C1839]">Home</Link>
+            <span aria-hidden="true">/</span>
+            <span>Customer Support</span>
+          </nav>
 
-      <header className="relative border-b border-rose-100/80 bg-white/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 sm:px-8">
-          <Link href="/" className="group">
-            <span className="text-xl font-black tracking-tight text-slate-950">
-              HIVRA<span className="text-rose-500">SOFT</span>
-            </span>
-            <span className="ml-2 text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
-              Support
-            </span>
-          </Link>
+          {(title || description || subtitle || eyebrow || label || icon || actions) && (
+            <header className="mb-8 rounded-[24px] border border-[#211A18]/10 bg-white px-5 py-8 shadow-sm sm:px-8 md:py-10">
+              {(eyebrow || label) && (
+                <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.22em] text-[#A51D45]">
+                  {eyebrow || label}
+                </p>
+              )}
+              <div className="flex flex-wrap items-start gap-4">
+                {visibleIcon && (
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#FFF1F5] text-[#8C1839]">
+                    {visibleIcon}
+                  </span>
+                )}
+                <div className="min-w-0 flex-1">
+                  {title && <h1 className="font-serif text-3xl font-semibold leading-tight sm:text-4xl">{title}</h1>}
+                  {(description || subtitle) && (
+                    <p className="mt-3 max-w-3xl text-[13px] leading-7 text-[#211A18]/65">{description || subtitle}</p>
+                  )}
+                </div>
+                {actions}
+              </div>
+            </header>
+          )}
 
-          <div className="flex items-center gap-2">
-            <Link
-              href="/help"
-              className="hidden rounded-full px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-rose-50 hover:text-rose-600 sm:inline-flex"
-            >
-              Help Center
-            </Link>
-            <Link
-              href="/contact"
-              className="rounded-full bg-slate-950 px-4 py-2 text-sm font-bold text-white transition hover:bg-rose-600"
-            >
-              Contact Us
-            </Link>
+          <div className={showSidebar ? "grid gap-6 lg:grid-cols-[minmax(0,1fr)_245px]" : ""}>
+            <div className="min-w-0 rounded-[24px] border border-[#211A18]/10 bg-white p-5 shadow-sm sm:p-8">
+              {children}
+            </div>
+            {showSidebar && (
+              <aside className="min-w-0 self-start rounded-[24px] border border-[#211A18]/10 bg-white p-5 shadow-sm sm:p-6">
+                {sideContent ?? (
+                  <>
+                    <h2 className="mb-4 text-xs font-bold uppercase tracking-wider text-[#211A18]">Customer Support</h2>
+                    <nav aria-label="Support pages" className="space-y-1">
+                      {supportLinks.map(({ href, text }) => (
+                        <Link key={href} href={href} className="block rounded-lg px-3 py-2.5 text-[12px] text-[#211A18]/75 transition-colors hover:bg-[#FFF1F5] hover:text-[#8C1839]">
+                          {text}
+                        </Link>
+                      ))}
+                    </nav>
+                  </>
+                )}
+              </aside>
+            )}
           </div>
         </div>
-      </header>
-
-      <section className="relative mx-auto max-w-6xl px-5 pb-16 pt-12 sm:px-8 sm:pt-16">
-        <div className="mb-10 max-w-3xl">
-          <Link
-            href="/help"
-            className="mb-5 inline-flex items-center gap-2 text-sm font-semibold text-rose-600 hover:text-rose-700"
-          >
-            <span aria-hidden>←</span> Back to Help Center
-          </Link>
-
-          <p className="mb-3 text-xs font-black uppercase tracking-[0.28em] text-rose-500">
-            {eyebrow}
-          </p>
-          <h1 className="text-4xl font-black tracking-tight text-slate-950 sm:text-5xl">
-            {title}
-          </h1>
-          {description ? (
-            <p className="mt-5 max-w-2xl text-base leading-8 text-slate-600 sm:text-lg">
-              {description}
-            </p>
-          ) : null}
-        </div>
-
-        <div className="rounded-[32px] border border-rose-100 bg-white/90 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur sm:p-8 lg:p-10">
-          {children}
-        </div>
-
-        <div className="mt-8 flex flex-col gap-3 rounded-3xl border border-slate-200 bg-slate-950 p-6 text-white sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-sm font-bold text-rose-300">Still need help?</p>
-            <p className="mt-1 text-sm text-slate-300">
-              Our support team is available at support@hivrasoft.com.
-            </p>
-          </div>
-          <a
-            href="mailto:support@hivrasoft.com"
-            className="inline-flex w-fit rounded-full bg-white px-5 py-2.5 text-sm font-black text-slate-950 transition hover:bg-rose-100"
-          >
-            Email Support
-          </a>
-        </div>
-      </section>
-    </main>
+      </main>
+    </>
   );
 }
+
+export default SupportShell;
