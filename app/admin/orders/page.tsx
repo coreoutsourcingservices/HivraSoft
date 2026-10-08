@@ -78,6 +78,36 @@ function statusClass(status: SimpleOrderStatus) {
   return "border-amber-200 bg-amber-50 text-amber-700";
 }
 
+function paymentStatusMeta(value: unknown) {
+  const status = text(value, "pending").trim().toLowerCase();
+
+  if (status === "paid") {
+    return {
+      label: "Successful",
+      className: "border-green-200 bg-green-50 text-green-700",
+    };
+  }
+
+  if (status === "failed") {
+    return {
+      label: "Failed",
+      className: "border-red-200 bg-red-50 text-red-700",
+    };
+  }
+
+  if (status === "refunded") {
+    return {
+      label: "Refunded",
+      className: "border-sky-200 bg-sky-50 text-sky-700",
+    };
+  }
+
+  return {
+    label: "Pending",
+    className: "border-amber-200 bg-amber-50 text-amber-700",
+  };
+}
+
 function sourceLabel(value: unknown) {
   const source = text(value, "").trim().toLowerCase();
 
@@ -106,6 +136,7 @@ export default function AdminOrdersPage() {
   const [search, setSearch] = useState("");
   const [orderStatus, setOrderStatus] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("");
+  const [paymentStatus, setPaymentStatus] = useState("");
   const [bulkAction, setBulkAction] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -124,6 +155,7 @@ export default function AdminOrdersPage() {
         search: search.trim(),
         status: orderStatus,
         paymentMethod,
+        paymentStatus,
       });
 
       setOrders(Array.isArray(result.orders) ? result.orders : []);
@@ -142,7 +174,7 @@ export default function AdminOrdersPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, orderStatus, paymentMethod]);
+  }, [page, search, orderStatus, paymentMethod, paymentStatus]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -315,7 +347,7 @@ export default function AdminOrdersPage() {
           </button>
         </div>
 
-        <div className="mt-4 grid gap-3 md:grid-cols-3">
+        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <label className="relative">
             <Search
               className="absolute left-3 top-1/2 -translate-y-1/2 text-[#211A18]/35"
@@ -359,6 +391,21 @@ export default function AdminOrdersPage() {
             <option value="cod">COD</option>
             <option value="razorpay">Razorpay</option>
           </select>
+
+          <select
+            value={paymentStatus}
+            onChange={(event) => {
+              setPage(1);
+              setPaymentStatus(event.target.value);
+            }}
+            className="h-11 rounded-xl border border-[#211A18]/10 bg-white px-3 text-xs text-[#211A18] outline-none transition focus:border-[#8C1839]/40"
+          >
+            <option value="">All payment status</option>
+            <option value="paid">Successful</option>
+            <option value="pending">Pending</option>
+            <option value="failed">Failed</option>
+            <option value="refunded">Refunded</option>
+          </select>
         </div>
 
         {actionMessage && (
@@ -399,7 +446,7 @@ export default function AdminOrdersPage() {
                 <th className="px-3 py-3">Customer</th>
                 <th className="px-3 py-3">Qty</th>
                 <th className="px-3 py-3">Total</th>
-                <th className="px-3 py-3">Payment</th>
+                <th className="px-3 py-3">Payment / Status</th>
                 <th className="px-3 py-3">Origin</th>
                 <th className="px-3 py-3">Order Status</th>
                 <th className="px-3 py-3">Date</th>
@@ -434,6 +481,7 @@ export default function AdminOrdersPage() {
                     0
                   );
                   const status = simpleOrderStatus(order.status);
+                  const paymentState = paymentStatusMeta(order.paymentStatus);
                   const origin = record(order.origin);
                   const source = sourceLabel(origin.source);
                   const sourceDetails = [
@@ -505,8 +553,15 @@ export default function AdminOrdersPage() {
 
                       <td className="px-3 py-4 font-semibold">{money(orderTotal(order))}</td>
 
-                      <td className="px-3 py-4 font-medium uppercase">
-                        {text(order.paymentMethod)}
+                      <td className="px-3 py-4">
+                        <p className="text-[10px] font-semibold uppercase text-[#211A18]">
+                          {text(order.paymentMethod)}
+                        </p>
+                        <span
+                          className={`mt-1.5 inline-flex rounded-full border px-2 py-1 text-[8px] font-bold uppercase tracking-wide ${paymentState.className}`}
+                        >
+                          {paymentState.label}
+                        </span>
                       </td>
 
                       <td className="px-3 py-4">

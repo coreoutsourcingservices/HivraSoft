@@ -8,6 +8,7 @@ import {
   getUserOrderById,
   getUserOrders,
   markRazorpayPaymentFailed,
+  markRazorpayPaymentFailedForUser,
   verifyRazorpayPaymentForUser,
 } from "../services/order.service";
 import { verifyRazorpayWebhookSignature } from "../services/razorpay.service";
@@ -54,6 +55,15 @@ export async function verifyRazorpayOrderController(req: Request, res: Response)
     return res.json({ success: true, message: "Payment verified and order confirmed.", order });
   } catch (error) {
     return errorResponse(res, error, "Unable to verify Razorpay payment.");
+  }
+}
+
+export async function markRazorpayOrderFailedController(req: Request, res: Response) {
+  try {
+    const order = await markRazorpayPaymentFailedForUser(userId(req), req.body || {});
+    return res.json({ success: true, message: "Payment failure recorded.", order });
+  } catch (error) {
+    return errorResponse(res, error, "Unable to record Razorpay payment failure.");
   }
 }
 
