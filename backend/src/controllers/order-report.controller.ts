@@ -18,7 +18,7 @@ function today() {
 export async function getAdminOrderReport(req: Request, res: Response) {
   try {
     const period = normalizeReportPeriod(req.query.period || "1_month");
-    const report = await buildOrderReport(period, false);
+    const report = await buildOrderReport(period, false, String(req.query.dateFrom || ""), String(req.query.dateTo || ""));
     res.setHeader("Cache-Control", "no-store");
     return res.json({ success: true, report });
   } catch (error) {
@@ -34,7 +34,7 @@ export async function exportAdminOrderReport(req: Request, res: Response) {
       return res.status(400).json({ success: false, message: "Invalid export format. Use pdf, csv, xlsx or xml." });
     }
 
-    const report = await buildOrderReport(period, true);
+    const report = await buildOrderReport(period, true, String(req.query.dateFrom || ""), String(req.query.dateTo || ""));
     const builders: Record<string, () => Buffer> = {
       pdf: () => buildOrderReportPdf(report),
       csv: () => buildOrderReportCsv(report),
@@ -48,7 +48,7 @@ export async function exportAdminOrderReport(req: Request, res: Response) {
       xml: "application/xml; charset=utf-8",
     };
     const buffer = builders[format]();
-    const filename = `hivrasoft-orders-report-${periodFilename(period)}-${today()}.${format}`;
+    const filename = `hivrasoft-orders-report-${periodFilename(req.query.dateFrom && req.query.dateTo ? `${req.query.dateFrom}-to-${req.query.dateTo}` : period)}-${today()}.${format}`;
 
     res.setHeader("Content-Type", contentTypes[format]);
     res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);

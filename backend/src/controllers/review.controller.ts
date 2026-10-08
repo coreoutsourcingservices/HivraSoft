@@ -39,6 +39,10 @@ export async function createReview(req: Request, res: Response) {
     if (!order) return res.status(404).json({ success: false, message: "Order not found for this account." });
     const purchased = Array.isArray((order as any).items) && (order as any).items.some((item: any) => String(item.productId || item.product || "") === productId);
     if (!purchased) return res.status(403).json({ success: false, message: "This product was not purchased in the selected order." });
+    // Both payment methods require a delivered order. Online orders must also be paid.
+    if (String((order as any).status).toLowerCase() !== "delivered") return res.status(403).json({ success: false, message: "You can review this product only after delivery." });
+    const isCod = String((order as any).paymentMethod || "").toLowerCase() === "cod";
+    if (!isCod && String((order as any).paymentStatus || "").toLowerCase() !== "paid") return res.status(403).json({ success: false, message: "Online payment must be successful before reviewing." });
     const exists = await Review.exists({ userId: uid, productId, orderId });
     if (exists) return res.status(409).json({ success: false, message: "You already reviewed this product from this order." });
 
@@ -50,6 +54,9 @@ export async function createReview(req: Request, res: Response) {
     for (const file of videos) { const uploaded = await uploadVideoBuffer(file.buffer, "hivrasoft/reviews"); media.push({ type: "video", url: uploaded.secure_url, publicId: uploaded.public_id }); }
 
     const review = await Review.create({ userId: uid, productId, orderId, rating, title, comment, media, isVerified: true });
+    // The requested COD workflow treats the first successful verified review as
+    // customer acknowledgement of cash payment. Never mark an undelivered order paid.
+    if (isCod) await Order.updateOne({ _id: orderId, user: uid, status: "delivered", paymentMethod: "cod", paymentStatus: "pending" }, { $set: { paymentStatus: "paid" } });
     await refreshProductRating(productId);
     return res.status(201).json({ success: true, message: "Review submitted.", review: publicReview(review.toObject()) });
   } catch (error: any) { return res.status(400).json({ success: false, message: error?.message || "Unable to submit review." }); }

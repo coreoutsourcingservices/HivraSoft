@@ -195,7 +195,16 @@ function endOfDay(date: Date) {
   return d;
 }
 
-export function resolveReportRange(periodInput: unknown, now = new Date()): ReportRange {
+export function resolveReportRange(periodInput: unknown, now = new Date(), dateFrom?: string, dateTo?: string): ReportRange {
+  if (dateFrom || dateTo) {
+    if (!dateFrom || !dateTo || !/^\d{4}-\d{2}-\d{2}$/.test(dateFrom) || !/^\d{4}-\d{2}-\d{2}$/.test(dateTo)) throw new Error("Both custom dates must be valid YYYY-MM-DD dates.");
+    const start = startOfDay(new Date(`${dateFrom}T00:00:00`));
+    const end = endOfDay(new Date(`${dateTo}T00:00:00`));
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start > end || start.getFullYear() !== Number(dateFrom.slice(0,4)) || end.getFullYear() !== Number(dateTo.slice(0,4))) throw new Error("Invalid custom report date range.");
+    const duration = end.getTime() - start.getTime() + 1;
+    const previousEnd = new Date(start.getTime() - 1);
+    return { period: "all", start, end, previousStart: new Date(previousEnd.getTime() - duration + 1), previousEnd, label: `${dateFrom} to ${dateTo}` };
+  }
   const period = normalizeReportPeriod(periodInput || "1_month");
   const end = endOfDay(now);
   if (period === "all") {
@@ -374,7 +383,7 @@ function buildSeries(currentOrders: any[], previousOrders: any[], range: ReportR
 
 function statusStatistics(orders: any[]) {
   const groups = [
-    { status: "processing", label: "Processing", count: orders.filter((o) => !isCompleted(o) && !isCancelled(o) && !isFailed(o)).length },
+    { status: "pending", label: "Pending", count: orders.filter((o) => !isCompleted(o) && !isCancelled(o) && !isFailed(o)).length },
     { status: "completed", label: "Completed", count: orders.filter(isCompleted).length },
     { status: "cancelled", label: "Cancelled", count: orders.filter(isCancelled).length },
     { status: "failed", label: "Failed", count: orders.filter(isFailed).length },
@@ -504,8 +513,8 @@ async function loadOrders(range: ReportRange, previous = false) {
     .lean();
 }
 
-export async function buildOrderReport(periodInput: unknown, includeRows = false): Promise<OrderReport> {
-  const range = resolveReportRange(periodInput || "1_month");
+export async function buildOrderReport(periodInput: unknown, includeRows = false, dateFrom?: string, dateTo?: string): Promise<OrderReport> {
+  const range = resolveReportRange(periodInput || "1_month", new Date(), dateFrom, dateTo);
   const [orders, previousOrders] = await Promise.all([loadOrders(range), loadOrders(range, true)]);
   const currentSummary = summaryOf(orders as any[]);
   const previousSummary = summaryOf(previousOrders as any[]);
