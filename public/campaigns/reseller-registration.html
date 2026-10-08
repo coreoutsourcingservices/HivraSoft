@@ -675,18 +675,24 @@
     const fullName=val('f-name'),mobileNumber=val('f-phone'),emailAddress=val('f-email'),city=val('f-city');
     const sellingPlatform=val('f-platform'),expectedOrderQuantity=val('f-qty');
     const additionalNote=val('f-msg');
-    if(!fullName||!/^\d{10}$/.test(mobileNumber.replace(/\D/g,''))||!emailAddress||!city||!sellingPlatform||!expectedOrderQuantity){showError('required');return;}
+    const digits = mobileNumber.replace(/\D/g, '');
+    const normalizedMobile = digits.length === 12 && digits.startsWith('91') ? digits.slice(2) : digits;
+    const requiredFields = [['f-name', fullName, 'Full Name'], ['f-phone', normalizedMobile, 'Mobile Number'], ['f-email', emailAddress, 'Email Address'], ['f-city', city, 'City'], ['f-platform', sellingPlatform, 'Selling Platform'], ['f-qty', expectedOrderQuantity, 'Expected Order Quantity']];
+    const missing = requiredFields.find(([id, value]) => !value);
+    const errEl = document.getElementById('form-error');
+    if (missing) { errEl.textContent = 'Please fill: ' + missing[2]; errEl.style.display = 'block'; document.getElementById(missing[0]).focus(); return; }
+    if (!/^[6-9]\d{9}$/.test(normalizedMobile)) { errEl.textContent = 'Enter a valid 10-digit Indian mobile number (you may use +91).'; errEl.style.display = 'block'; document.getElementById('f-phone').focus(); return; }
     if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailAddress)){showError('email');return;}
     document.getElementById('form-error').style.display='none';
     const btn=document.getElementById('submit-btn');btn.disabled=true;
     const chatWindow=window.open('about:blank','_blank');
     try{
       const api=new URLSearchParams(location.search).get('api')||location.origin;
-      const response=await fetch(api.replace(/\/$/,'')+'/api/reseller-registration',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({fullName,mobileNumber,emailAddress,city,sellingPlatform,expectedOrderQuantity})});
+      const response=await fetch(api.replace(/\/$/,'')+'/api/reseller-registration',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({fullName,mobileNumber:normalizedMobile,emailAddress,city,sellingPlatform,expectedOrderQuantity})});
       const result=await response.json().catch(()=>({}));
       if(!response.ok)throw new Error(result.message||'Failed to save registration');
       const platform=document.getElementById('f-platform');const qty=document.getElementById('f-qty');
-      const message=['New Hivra Soft Reseller Registration','Name: '+fullName,'Mobile: '+mobileNumber,'Email: '+emailAddress,'City: '+city,'Selling Platform: '+platform.options[platform.selectedIndex].text,'Expected Quantity: '+qty.options[qty.selectedIndex].text,additionalNote?'Message: '+additionalNote:''].filter(Boolean).join('\n');
+      const message=['New Hivra Soft Reseller Registration','Name: '+fullName,'Mobile: '+normalizedMobile,'Email: '+emailAddress,'City: '+city,'Selling Platform: '+platform.options[platform.selectedIndex].text,'Expected Quantity: '+qty.options[qty.selectedIndex].text,additionalNote?'Message: '+additionalNote:''].filter(Boolean).join('\n');
       const url='https://wa.me/919420980536?text='+encodeURIComponent(message);
       if(chatWindow)chatWindow.location.replace(url);else window.location.href=url;
       document.getElementById('form-content').style.display='none';

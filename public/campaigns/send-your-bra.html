@@ -2361,7 +2361,8 @@
     event.preventDefault();
     const get = id => document.getElementById(id).value.trim();
     const fullName = get('hrName');
-    const whatsappNumber = get('hrPhone').replace(/\D/g,'');
+    const rawWhatsApp = get('hrPhone').replace(/\D/g,'');
+    const whatsappNumber = rawWhatsApp.length === 12 && rawWhatsApp.startsWith('91') ? rawWhatsApp.slice(2) : rawWhatsApp;
     const city = get('hrCity');
     const pinCode = get('hrPincode').replace(/\D/g,'');
     const quantity = get('hrCount');
