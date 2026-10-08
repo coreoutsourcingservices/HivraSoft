@@ -1,1595 +1,1132 @@
 "use client";
 
 import {
+  useCallback,
   useEffect,
-  type Dispatch,
-  type InputHTMLAttributes,
-  type ReactNode,
-  type SetStateAction,
+  useState,
 } from "react";
 
 import {
-  BriefcaseBusiness,
-  Check,
-  Home,
-  MapPin,
-  Navigation,
-  Phone,
-  UserRound,
-  X,
+  BadgePercent,
+  CircleCheckBig,
+  Gift,
+  Loader2,
+  LockKeyhole,
+  Tag,
+  Truck,
 } from "lucide-react";
 
-import type {
-  CheckoutAddress,
-  CheckoutAddressType,
-} from "@/lib/checkout";
+import {
+  applyDiscountCode,
+  getCart,
+  removeDiscountCode,
+} from "@/lib/cart";
+
+import {
+  normalizeCartResponse,
+  type CartView,
+} from "@/src/services/cart-view";
 
 /* =========================================================
-   TYPES
+   MONEY
 ========================================================= */
 
-type AddressFormValue =
-  Omit<
-    CheckoutAddress,
-    "id"
-  >;
-
-type Props = {
+function money(
   value:
-    AddressFormValue;
-
-  onChange:
-    Dispatch<
-      SetStateAction<
-        AddressFormValue
-      >
-    >;
-
-  saving: boolean;
-
-  error?: string;
-
-  onSave:
-    () => void;
-
-  onClose:
-    () => void;
-};
+    number
+) {
+  return `₹${Math.max(
+    0,
+    Number(
+      value ||
+        0
+    )
+  ).toLocaleString(
+    "en-IN",
+    {
+      maximumFractionDigits:
+        2,
+    }
+  )}`;
+}
 
 /* =========================================================
-   MAIN ADDRESS MODAL
+   CHECKOUT ORDER SUMMARY
+
+   Payment page ke right-side existing Order Summary ko
+   is component se replace karo.
+
+   Same /api/cart data use hota hai:
+   - offer discounts
+   - automatic discounts
+   - discount code
+   - tax
+   - delivery charge (agar backend return kare)
+   - final total
 ========================================================= */
 
-export default function AddressModal({
-  value,
-  onChange,
-  saving,
-  error = "",
-  onSave,
-  onClose,
-}: Props) {
+export default function CheckoutOrderSummary() {
+  const [
+    cart,
+    setCart,
+  ] =
+    useState<CartView | null>(
+      null
+    );
+
+  const [
+    loading,
+    setLoading,
+  ] =
+    useState(
+      true
+    );
+
+  const [
+    error,
+    setError,
+  ] =
+    useState(
+      ""
+    );
+
+  const [
+    code,
+    setCode,
+  ] =
+    useState(
+      ""
+    );
+
+  const [
+    applying,
+    setApplying,
+  ] =
+    useState(
+      false
+    );
+
   /* =======================================================
-     LOCK BODY SCROLL
+     LOAD
+  ======================================================= */
+
+  const load =
+    useCallback(
+      async (
+        showLoader =
+          false
+      ) => {
+        try {
+          if (
+            showLoader
+          ) {
+            setLoading(
+              true
+            );
+          }
+
+          const response =
+            await getCart();
+
+          setCart(
+            normalizeCartResponse(
+              response
+            )
+          );
+
+          setError(
+            ""
+          );
+        } catch (
+          loadError
+        ) {
+          setError(
+            loadError instanceof
+            Error
+              ? loadError.message
+              : "Unable to load order summary."
+          );
+        } finally {
+          if (
+            showLoader
+          ) {
+            setLoading(
+              false
+            );
+          }
+        }
+      },
+      []
+    );
+
+  useEffect(() => {
+    void load(
+      true
+    );
+  }, [
+    load,
+  ]);
+
+  /* =======================================================
+     CART CHANGES
+
+     Payment page visible ho aur cart event aaye to
+     background update; no whole page refresh.
   ======================================================= */
 
   useEffect(() => {
-    const previousOverflow =
-      document.body.style.overflow;
-
-    document.body.style.overflow =
-      "hidden";
-
-    return () => {
-      document.body.style.overflow =
-        previousOverflow;
-    };
-  }, []);
-
-  /* =======================================================
-     ESC CLOSE
-  ======================================================= */
-
-  useEffect(() => {
-    const handleKeyDown = (
-      event:
-        KeyboardEvent
-    ) => {
-      if (
-        event.key ===
-          "Escape" &&
-        !saving
-      ) {
-        onClose();
-      }
-    };
+    const handle =
+      () => {
+        void load(
+          false
+        );
+      };
 
     window.addEventListener(
-      "keydown",
-      handleKeyDown
+      "hivrasoft-cart-updated",
+      handle
     );
 
     return () => {
       window.removeEventListener(
-        "keydown",
-        handleKeyDown
+        "hivrasoft-cart-updated",
+        handle
       );
     };
   }, [
-    onClose,
-    saving,
+    load,
   ]);
 
   /* =======================================================
-     UPDATE FIELD
+     COUPON
   ======================================================= */
 
-  const updateField = <
-    K extends keyof AddressFormValue,
-  >(
-    key: K,
-    next:
-      AddressFormValue[K]
-  ) => {
-    onChange(
-      (
-        current
-      ) => ({
-        ...current,
+  async function applyCode() {
+    const value =
+      code
+        .trim()
+        .toUpperCase();
 
-        [key]:
-          next,
-      })
-    );
-  };
+    if (
+      !value ||
+      applying
+    ) {
+      return;
+    }
+
+    try {
+      setApplying(
+        true
+      );
+
+      setError(
+        ""
+      );
+
+      const response =
+        await applyDiscountCode(
+          value
+        );
+
+      setCart(
+        normalizeCartResponse(
+          response
+        )
+      );
+
+      setCode(
+        ""
+      );
+    } catch (
+      applyError
+    ) {
+      setError(
+        applyError instanceof
+        Error
+          ? applyError.message
+          : "Unable to apply code."
+      );
+    } finally {
+      setApplying(
+        false
+      );
+    }
+  }
+
+  async function removeCode() {
+    if (
+      applying
+    ) {
+      return;
+    }
+
+    try {
+      setApplying(
+        true
+      );
+
+      setError(
+        ""
+      );
+
+      const response =
+        await removeDiscountCode();
+
+      setCart(
+        normalizeCartResponse(
+          response
+        )
+      );
+    } catch (
+      removeError
+    ) {
+      setError(
+        removeError instanceof
+        Error
+          ? removeError.message
+          : "Unable to remove code."
+      );
+    } finally {
+      setApplying(
+        false
+      );
+    }
+  }
 
   /* =======================================================
-     CHANGE ADDRESS TYPE
+     LOADING
   ======================================================= */
 
-  const changeAddressType = (
-    type:
-      CheckoutAddressType
-  ) => {
-    onChange(
-      (
-        current
-      ) => ({
-        ...current,
-
-        addressType:
-          type,
-      })
-    );
-  };
-
-  return (
-    <div
-      className="
-        fixed
-
-        inset-x-0
-        bottom-0
-        top-[68px]
-
-        z-[200]
-
-        flex
-        items-end
-        justify-center
-
-        bg-[#17100E]/45
-
-        backdrop-blur-[4px]
-
-        sm:top-[72px]
-        sm:items-center
-        sm:p-4
-
-        md:p-5
-
-        lg:top-[76px]
-        lg:p-6
-
-        xl:p-7
-      "
-    >
-      {/* =================================================
-          BACKDROP
-      ================================================= */}
-
-      <button
-        type="button"
-        aria-label="Close address modal"
-        onClick={() => {
-          if (!saving) {
-            onClose();
-          }
-        }}
+  if (
+    loading
+  ) {
+    return (
+      <aside
         className="
-          absolute
-          inset-0
-
-          cursor-default
-        "
-      />
-
-      {/* =================================================
-          MODAL
-      ================================================= */}
-
-      <section
-        role="dialog"
-        aria-modal="true"
-        aria-label="Add delivery address"
-        className="
-          relative
-          z-10
-
-          flex
-
-          h-full
-          w-full
-
-          flex-col
-
-          overflow-hidden
-
-          rounded-t-[26px]
-
+          rounded-[18px]
           border
-          border-white/60
-
-          bg-[#FFFCFB]
-
-          shadow-[0_-15px_60px_rgba(20,10,8,.18)]
-
-          sm:h-auto
-          sm:max-h-[calc(100dvh-108px)]
-          sm:max-w-[760px]
-          sm:rounded-[26px]
-
-          md:max-w-[820px]
-
-          lg:max-h-[calc(100dvh-118px)]
-          lg:max-w-[880px]
-
-          xl:max-w-[920px]
-
-          2xl:max-w-[960px]
+          border-[#E9DFDB]
+          bg-white
+          p-5
         "
       >
-        {/* =================================================
-            TOP ACCENT
-        ================================================= */}
-
         <div
           className="
-            h-[4px]
-            w-full
-
-            shrink-0
-
-            bg-gradient-to-r
-            from-[#8E0E35]
-            via-[#B31345]
-            to-[#E98BA7]
-          "
-        />
-
-        {/* =================================================
-            HEADER
-        ================================================= */}
-
-        <header
-          className="
-            sticky
-            top-0
-
-            z-30
-
-            shrink-0
-
-            border-b
-            border-[#EFE1DD]
-
-            bg-[#FFFCFB]/95
-
-            px-4
-            py-4
-
-            backdrop-blur-xl
-
-            sm:px-6
-            sm:py-4
-
-            md:px-7
-
-            lg:px-8
+            flex
+            min-h-[170px]
+            items-center
+            justify-center
+            gap-2
+            text-[10px]
+            text-black/45
           "
         >
-          <div
+          <Loader2
             className="
-              flex
+              animate-spin
+            "
+            size={16}
+          />
 
-              items-start
-              justify-between
+          Loading summary...
+        </div>
+      </aside>
+    );
+  }
 
-              gap-4
+  if (
+    !cart
+  ) {
+    return (
+      <aside
+        className="
+          rounded-[18px]
+          border
+          border-[#E9DFDB]
+          bg-white
+          p-5
+          text-[10px]
+          text-red-600
+        "
+      >
+        {error ||
+          "Unable to load order summary."}
+      </aside>
+    );
+  }
+
+  const delivery =
+    cart.deliveryCharge;
+
+  return (
+    <aside
+      className="
+        h-fit
+        overflow-hidden
+        rounded-[18px]
+        border
+        border-[#E9DFDB]
+        bg-white
+        shadow-[0_14px_40px_rgba(58,28,21,.05)]
+      "
+    >
+      {/* HEADER */}
+
+      <div
+        className="
+          border-b
+          border-[#EFE6E2]
+          bg-[#FFF9F8]
+          px-5
+          py-4
+        "
+      >
+        <div
+          className="
+            flex
+            items-center
+            justify-between
+            gap-3
+          "
+        >
+          <div>
+            <p
+              className="
+                text-[8px]
+                font-bold
+                uppercase
+                tracking-[0.16em]
+                text-[#B31345]
+              "
+            >
+              Checkout
+            </p>
+
+            <h2
+              className="
+                mt-1
+                font-serif
+                text-[20px]
+                text-[#211817]
+              "
+            >
+              Order Summary
+            </h2>
+          </div>
+
+          <span
+            className="
+              inline-flex
+              items-center
+              gap-1
+              rounded-full
+              bg-emerald-50
+              px-2.5
+              py-1.5
+              text-[8px]
+              font-semibold
+              text-emerald-700
             "
           >
-            {/* LEFT */}
-
-            <div
-              className="
-                flex
-
-                min-w-0
-
-                items-start
-
-                gap-3
-              "
-            >
-              <div
-                className="
-                  flex
-                  h-10
-                  w-10
-
-                  shrink-0
-
-                  items-center
-                  justify-center
-
-                  rounded-[13px]
-
-                  bg-[#FBECEF]
-
-                  text-[#B31345]
-
-                  sm:h-11
-                  sm:w-11
-                "
-              >
-                <MapPin
-                  className="
-                    h-[18px]
-                    w-[18px]
-
-                    sm:h-5
-                    sm:w-5
-                  "
-                />
-              </div>
-
-              <div
-                className="
-                  min-w-0
-                "
-              >
-                <p
-                  className="
-                    text-[7px]
-                    font-bold
-
-                    uppercase
-
-                    tracking-[0.22em]
-
-                    text-[#B31345]
-
-                    sm:text-[8px]
-                  "
-                >
-                  Delivery Address
-                </p>
-
-                <h2
-                  className="
-                    mt-1
-
-                    text-[20px]
-                    font-semibold
-
-                    tracking-[-0.035em]
-
-                    text-[#211817]
-
-                    sm:text-[24px]
-
-                    lg:text-[27px]
-                  "
-                >
-                  Add New Address
-                </h2>
-
-                <p
-                  className="
-                    mt-1
-
-                    max-w-[520px]
-
-                    text-[9px]
-                    leading-4
-
-                    text-black/45
-
-                    sm:text-[10px]
-                    sm:leading-5
-                  "
-                >
-                  Add the address where
-                  you want your order
-                  delivered.
-                </p>
-              </div>
-            </div>
-
-            {/* CLOSE */}
-
-            <button
-              type="button"
-              aria-label="Close"
-              disabled={
-                saving
-              }
-              onClick={
-                onClose
-              }
-              className="
-                flex
-                h-9
-                w-9
-
-                shrink-0
-
-                cursor-pointer
-
-                items-center
-                justify-center
-
-                rounded-full
-
-                border
-                border-black/[0.07]
-
-                bg-white
-
-                text-black/55
-
-                shadow-sm
-
-                transition
-
-                hover:border-[#B31345]/20
-                hover:bg-[#FDF1F4]
-                hover:text-[#B31345]
-
-                disabled:cursor-not-allowed
-                disabled:opacity-40
-
-                sm:h-10
-                sm:w-10
-              "
-            >
-              <X
-                className="
-                  h-[17px]
-                  w-[17px]
-                "
-              />
-            </button>
-          </div>
-        </header>
-
-        {/* =================================================
-            SCROLLABLE BODY
-        ================================================= */}
-
-        <div
-          className="
-            min-h-0
-            flex-1
-
-            overflow-y-auto
-
-            overscroll-contain
-
-            scroll-smooth
-
-            px-4
-            py-4
-
-            sm:px-6
-            sm:py-5
-
-            md:px-7
-
-            lg:px-8
-          "
-        >
-          {/* =================================================
-              ADDRESS TYPE
-          ================================================= */}
-
-          <FormSection
-            title="Address Type"
-            description="Choose where this address belongs."
-          >
-            <div
-              className="
-                grid
-                grid-cols-3
-
-                gap-2
-
-                sm:flex
-                sm:flex-wrap
-              "
-            >
-              <AddressTypeButton
-                active={
-                  value.addressType ===
-                  "home"
-                }
-                label="Home"
-                icon={
-                  <Home />
-                }
-                onClick={() =>
-                  changeAddressType(
-                    "home"
-                  )
-                }
-              />
-
-              <AddressTypeButton
-                active={
-                  value.addressType ===
-                  "work"
-                }
-                label="Office"
-                icon={
-                  <BriefcaseBusiness />
-                }
-                onClick={() =>
-                  changeAddressType(
-                    "work"
-                  )
-                }
-              />
-
-              <AddressTypeButton
-                active={
-                  value.addressType ===
-                  "other"
-                }
-                label="Other"
-                icon={
-                  <Navigation />
-                }
-                onClick={() =>
-                  changeAddressType(
-                    "other"
-                  )
-                }
-              />
-            </div>
-          </FormSection>
-
-          {/* =================================================
-              CONTACT DETAILS
-          ================================================= */}
-
-          <FormSection
-            title="Contact Details"
-            description="We'll use these details for delivery updates."
-          >
-            <div
-              className="
-                grid
-
-                gap-4
-
-                md:grid-cols-2
-              "
-            >
-              <FormInput
-                label="Full Name"
-                required
-                icon={
-                  <UserRound />
-                }
-                placeholder="Enter full name"
-                autoComplete="name"
-                value={
-                  value.name
-                }
-                onChange={(
-                  next
-                ) =>
-                  updateField(
-                    "name",
-                    next
-                  )
-                }
-              />
-
-              <FormInput
-                label="Phone Number"
-                required
-                icon={
-                  <Phone />
-                }
-                placeholder="10 digit mobile number"
-                inputMode="tel"
-                autoComplete="tel"
-                maxLength={10}
-                value={
-                  value.phone
-                }
-                onChange={(
-                  next
-                ) =>
-                  updateField(
-                    "phone",
-                    next.replace(
-                      /\D/g,
-                      ""
-                    )
-                  )
-                }
-              />
-
-              <FormInput
-                label="Alternate Phone"
-                icon={
-                  <Phone />
-                }
-                placeholder="Optional alternate number"
-                inputMode="tel"
-                maxLength={10}
-                value={
-                  value.alternatePhone ||
-                  ""
-                }
-                onChange={(
-                  next
-                ) =>
-                  updateField(
-                    "alternatePhone",
-                    next.replace(
-                      /\D/g,
-                      ""
-                    )
-                  )
-                }
-              />
-
-              {value.addressType ===
-                "home" && (
-                <FormInput
-                  label="House / Flat No."
-                  placeholder="House or flat number"
-                  value={
-                    value.homeNumber ||
-                    ""
-                  }
-                  onChange={(
-                    next
-                  ) =>
-                    updateField(
-                      "homeNumber",
-                      next
-                    )
-                  }
-                />
-              )}
-
-              {value.addressType ===
-                "work" && (
-                <FormInput
-                  label="Office / Unit No."
-                  placeholder="Office or unit number"
-                  value={
-                    value.officeNumber ||
-                    ""
-                  }
-                  onChange={(
-                    next
-                  ) =>
-                    updateField(
-                      "officeNumber",
-                      next
-                    )
-                  }
-                />
-              )}
-            </div>
-          </FormSection>
-
-          {/* =================================================
-              ADDRESS DETAILS
-          ================================================= */}
-
-          <FormSection
-            title="Address Details"
-            description="Enter complete location details for smooth delivery."
-          >
-            <div
-              className="
-                grid
-
-                gap-4
-
-                md:grid-cols-2
-              "
-            >
-              <div
-                className="
-                  md:col-span-2
-                "
-              >
-                <FormInput
-                  label="Address"
-                  required
-                  icon={
-                    <MapPin />
-                  }
-                  placeholder="House no., building, street"
-                  autoComplete="street-address"
-                  value={
-                    value.addressLine1
-                  }
-                  onChange={(
-                    next
-                  ) =>
-                    updateField(
-                      "addressLine1",
-                      next
-                    )
-                  }
-                />
-              </div>
-
-              <div
-                className="
-                  md:col-span-2
-                "
-              >
-                <FormInput
-                  label="Address Line 2"
-                  placeholder="Apartment, locality or area"
-                  value={
-                    value.addressLine2 ||
-                    ""
-                  }
-                  onChange={(
-                    next
-                  ) =>
-                    updateField(
-                      "addressLine2",
-                      next
-                    )
-                  }
-                />
-              </div>
-
-              <div
-                className="
-                  md:col-span-2
-                "
-              >
-                <FormInput
-                  label="Landmark / Area"
-                  placeholder="Nearby landmark or area"
-                  value={
-                    value.landmark ||
-                    ""
-                  }
-                  onChange={(
-                    next
-                  ) =>
-                    updateField(
-                      "landmark",
-                      next
-                    )
-                  }
-                />
-              </div>
-
-              <FormInput
-                label="City"
-                required
-                placeholder="City"
-                autoComplete="address-level2"
-                value={
-                  value.city
-                }
-                onChange={(
-                  next
-                ) =>
-                  updateField(
-                    "city",
-                    next
-                  )
-                }
-              />
-
-              <FormInput
-                label="District"
-                placeholder="District"
-                value={
-                  value.district
-                }
-                onChange={(
-                  next
-                ) =>
-                  updateField(
-                    "district",
-                    next
-                  )
-                }
-              />
-
-              <FormInput
-                label="State"
-                required
-                placeholder="State"
-                autoComplete="address-level1"
-                value={
-                  value.state
-                }
-                onChange={(
-                  next
-                ) =>
-                  updateField(
-                    "state",
-                    next
-                  )
-                }
-              />
-
-              <FormInput
-                label="Pincode"
-                required
-                placeholder="6 digit pincode"
-                inputMode="numeric"
-                autoComplete="postal-code"
-                maxLength={6}
-                value={
-                  value.postalCode
-                }
-                onChange={(
-                  next
-                ) =>
-                  updateField(
-                    "postalCode",
-                    next.replace(
-                      /\D/g,
-                      ""
-                    )
-                  )
-                }
-              />
-            </div>
-          </FormSection>
-
-          {/* =================================================
-              DELIVERY PREFERENCES
-          ================================================= */}
-
-          <FormSection
-            title="Delivery Preferences"
-            description="Optional instructions for the delivery partner."
-          >
-            <FormInput
-              label="Delivery Instructions"
-              placeholder="Example: Call before arriving"
-              value={
-                value.instructions ||
-                ""
-              }
-              onChange={(
-                next
-              ) =>
-                updateField(
-                  "instructions",
-                  next
-                )
-              }
+            <LockKeyhole
+              size={11}
             />
 
-            {/* DEFAULT ADDRESS */}
+            Secure
+          </span>
+        </div>
+      </div>
 
-            <button
-              type="button"
-              onClick={() =>
-                updateField(
-                  "isDefault",
-                  !value.isDefault
-                )
-              }
-              className={`
-                mt-4
+      <div
+        className="
+          p-5
+        "
+      >
+        {/* ITEMS */}
 
-                flex
-                w-full
-
-                cursor-pointer
-
-                items-center
-
-                gap-3
-
-                rounded-[15px]
-
-                border
-
-                px-4
-                py-3
-
-                text-left
-
-                transition
-
-                ${
-                  value.isDefault
-                    ? `
-                      border-[#B31345]/25
-
-                      bg-[#FDF0F4]
-                    `
-                    : `
-                      border-[#E9DEDA]
-
-                      bg-[#FAF7F5]
-
-                      hover:border-[#D8C4BE]
-                    `
+        <div
+          className="
+            max-h-[260px]
+            space-y-3
+            overflow-y-auto
+            pr-1
+          "
+        >
+          {cart.items.map(
+            (
+              item
+            ) => (
+              <div
+                key={
+                  item.id
                 }
-              `}
-            >
-              <span
-                className={`
-                  flex
-                  h-5
-                  w-5
-
-                  shrink-0
-
-                  items-center
-                  justify-center
-
-                  rounded-[6px]
-
-                  border
-
-                  transition
-
-                  ${
-                    value.isDefault
-                      ? `
-                        border-[#B31345]
-
-                        bg-[#B31345]
-
-                        text-white
-                      `
-                      : `
-                        border-black/15
-
-                        bg-white
-
-                        text-transparent
-                      `
-                  }
-                `}
-              >
-                <Check
-                  className="
-                    h-3.5
-                    w-3.5
-                  "
-                />
-              </span>
-
-              <span
                 className="
-                  min-w-0
+                  flex
+                  gap-3
                 "
               >
-                <span
+                <div
                   className="
-                    block
-
-                    text-[10px]
-                    font-semibold
-
-                    text-[#251B19]
+                    h-[62px]
+                    w-[50px]
+                    shrink-0
+                    overflow-hidden
+                    rounded-[9px]
+                    bg-[#F5F1EF]
                   "
                 >
-                  Set as my default
-                  delivery address
-                </span>
+                  {item.image ? (
+                    <img
+                      src={
+                        item.image
+                      }
+                      alt={
+                        item.name
+                      }
+                      className="
+                        h-full
+                        w-full
+                        object-cover
+                      "
+                    />
+                  ) : null}
+                </div>
 
-                <span
+                <div
                   className="
-                    mt-0.5
-
-                    block
-
-                    text-[8px]
-
-                    leading-4
-
-                    text-black/40
+                    min-w-0
+                    flex-1
                   "
                 >
-                  This address will be
-                  selected automatically
-                  next time.
-                </span>
-              </span>
-            </button>
-          </FormSection>
+                  <p
+                    className="
+                      line-clamp-2
+                      text-[9px]
+                      font-semibold
+                      leading-4
+                      text-[#211817]
+                    "
+                  >
+                    {item.name}
+                  </p>
 
-          {/* =================================================
-              ERROR
-          ================================================= */}
+                  <div
+                    className="
+                      mt-1
+                      text-[8px]
+                      text-black/35
+                    "
+                  >
+                    Qty{" "}
+                    {
+                      item.quantity
+                    }
 
-          {error && (
-            <div
-              className="
-                mt-4
+                    {item.size
+                      ? ` • ${item.size}`
+                      : ""}
+                  </div>
 
-                rounded-[13px]
+                  <div
+                    className="
+                      mt-1.5
+                      flex
+                      flex-wrap
+                      gap-1
+                    "
+                  >
+                    {item.offerContext
+                      ?.offerType ===
+                    "fixed_price_bundle" ? (
+                      <span
+                        className="
+                          rounded-full
+                          bg-[#FFF0F4]
+                          px-2
+                          py-0.5
+                          text-[7px]
+                          font-bold
+                          text-[#B31345]
+                        "
+                      >
+                        Bundle
+                      </span>
+                    ) : null}
 
-                border
-                border-red-100
+                    {item.discount
+                      .offerName ? (
+                      <span
+                        className="
+                          max-w-full
+                          truncate
+                          rounded-full
+                          bg-emerald-50
+                          px-2
+                          py-0.5
+                          text-[7px]
+                          font-bold
+                          text-emerald-700
+                        "
+                      >
+                        {
+                          item.discount
+                            .offerName
+                        }
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
 
-                bg-red-50
+                <div
+                  className="
+                    shrink-0
+                    text-right
+                  "
+                >
+                  <strong
+                    className="
+                      block
+                      text-[10px]
+                      text-[#211817]
+                    "
+                  >
+                    {money(
+                      item.finalLineTotal
+                    )}
+                  </strong>
 
-                px-4
-                py-3
-
-                text-[9px]
-                font-medium
-
-                leading-5
-
-                text-red-700
-              "
-            >
-              {error}
-            </div>
+                  {item.discount
+                    .totalDiscount >
+                  0 ? (
+                    <span
+                      className="
+                        mt-1
+                        block
+                        text-[8px]
+                        text-black/30
+                        line-through
+                      "
+                    >
+                      {money(
+                        item.subtotal
+                      )}
+                    </span>
+                  ) : null}
+                </div>
+              </div>
+            )
           )}
+        </div>
 
-          {/* EXTRA SPACE */}
+        {/* OFFERS */}
 
+        {cart.appliedOffers
+          .length ? (
           <div
             className="
-              h-3
+              mt-4
+              rounded-[12px]
+              bg-emerald-50/70
+              p-3
             "
+          >
+            <div
+              className="
+                flex
+                items-center
+                gap-2
+                text-[8px]
+                font-bold
+                uppercase
+                tracking-[0.08em]
+                text-emerald-700
+              "
+            >
+              <Gift
+                size={12}
+              />
+
+              Offers Applied
+            </div>
+
+            <div
+              className="
+                mt-2
+                space-y-1.5
+              "
+            >
+              {cart.appliedOffers.map(
+                (
+                  offer
+                ) => (
+                  <div
+                    key={`${offer.offerId}-${offer.name}`}
+                    className="
+                      flex
+                      justify-between
+                      gap-3
+                      text-[9px]
+                    "
+                  >
+                    <span
+                      className="
+                        min-w-0
+                        truncate
+                        text-emerald-800
+                      "
+                    >
+                      {
+                        offer.name
+                      }
+                    </span>
+
+                    <strong
+                      className="
+                        shrink-0
+                        text-emerald-700
+                      "
+                    >
+                      -
+                      {money(
+                        offer.amount
+                      )}
+                    </strong>
+                  </div>
+                )
+              )}
+            </div>
+          </div>
+        ) : null}
+
+        {/* BREAKDOWN */}
+
+        <div
+          className="
+            mt-4
+            space-y-2.5
+            border-t
+            border-[#EFE6E2]
+            pt-4
+            text-[9px]
+          "
+        >
+          <Row
+            label={`Subtotal (${cart.totalItems})`}
+            value={money(
+              cart.subtotal
+            )}
+          />
+
+          {cart.offerDiscount >
+          0 ? (
+            <Row
+              positive
+              label="Offer discount"
+              value={`-${money(
+                cart.offerDiscount
+              )}`}
+            />
+          ) : null}
+
+          {cart.automaticDiscount >
+          0 ? (
+            <Row
+              positive
+              label={
+                cart.automatic
+                  ?.percentage
+                  ? `${
+                      cart.automatic
+                        .name
+                    } (${cart.automatic.percentage}%)`
+                  : cart.automatic
+                      ?.name ||
+                    "Automatic discount"
+              }
+              value={`-${money(
+                cart.automaticDiscount
+              )}`}
+            />
+          ) : null}
+
+          {cart.codeDiscount >
+          0 ? (
+            <Row
+              positive
+              label={`Coupon ${cart.appliedDiscountCode}`}
+              value={`-${money(
+                cart.codeDiscount
+              )}`}
+            />
+          ) : null}
+
+          {cart.tax >
+          0 ? (
+            <Row
+              label={
+                cart.taxPercentage >
+                0
+                  ? `${cart.taxName} (${cart.taxPercentage}%)`
+                  : cart.taxName
+              }
+              value={`+${money(
+                cart.tax
+              )}`}
+            />
+          ) : null}
+
+          <Row
+            label="Delivery"
+            value={
+              delivery ===
+              null
+                ? "Calculated"
+                : delivery >
+                    0
+                  ? `+${money(
+                      delivery
+                    )}`
+                  : "FREE"
+            }
           />
         </div>
 
-        {/* =================================================
-            STICKY FOOTER
-        ================================================= */}
+        {/* COUPON */}
 
-        <footer
+        <div
           className="
-            sticky
-            bottom-0
-
-            z-30
-
-            shrink-0
-
-            border-t
-            border-[#EFE2DE]
-
-            bg-[#FFFCFB]/95
-
-            px-4
-
-            pb-[max(12px,env(safe-area-inset-bottom))]
-            pt-3
-
-            backdrop-blur-xl
-
-            sm:px-6
-            sm:pb-4
-
-            md:px-7
-
-            lg:px-8
+            mt-4
+            rounded-[12px]
+            bg-[#FAF6F4]
+            p-3
           "
         >
           <div
             className="
               flex
-
               items-center
-
-              gap-2.5
-
-              sm:gap-3
+              gap-2
+              text-[8px]
+              font-bold
+              uppercase
+              tracking-[0.08em]
+              text-[#6A5C57]
             "
           >
-            <button
-              type="button"
-              disabled={
-                saving
-              }
-              onClick={
-                onClose
-              }
-              className="
-                h-[46px]
+            <Tag
+              size={12}
+            />
 
-                shrink-0
-
-                cursor-pointer
-
-                rounded-full
-
-                border
-                border-black/10
-
-                bg-white
-
-                px-4
-
-                text-[8px]
-                font-bold
-
-                uppercase
-
-                tracking-[0.08em]
-
-                text-black/55
-
-                transition
-
-                hover:bg-[#F7F2F0]
-
-                disabled:cursor-not-allowed
-                disabled:opacity-40
-
-                sm:px-6
-                sm:text-[9px]
-              "
-            >
-              Cancel
-            </button>
-
-            <button
-              type="button"
-              disabled={
-                saving
-              }
-              onClick={
-                onSave
-              }
-              className="
-                flex
-
-                h-[46px]
-
-                min-w-0
-                flex-1
-
-                cursor-pointer
-
-                items-center
-                justify-center
-
-                rounded-full
-
-                bg-[#B31345]
-
-                px-4
-
-                text-[8px]
-                font-bold
-
-                uppercase
-
-                tracking-[0.08em]
-
-                text-white
-
-                shadow-[0_10px_30px_rgba(179,19,69,.22)]
-
-                transition
-
-                hover:bg-[#97103A]
-
-                active:scale-[0.995]
-
-                disabled:cursor-not-allowed
-                disabled:opacity-50
-
-                sm:h-[48px]
-                sm:text-[9px]
-              "
-            >
-              {saving
-                ? "Saving Address..."
-                : "Save Delivery Address"}
-            </button>
+            Have a discount code?
           </div>
 
+          {cart.appliedDiscountCode ? (
+            <div
+              className="
+                mt-2
+                flex
+                items-center
+                justify-between
+                gap-3
+                rounded-[9px]
+                bg-white
+                px-3
+                py-2
+              "
+            >
+              <div
+                className="
+                  min-w-0
+                "
+              >
+                <strong
+                  className="
+                    block
+                    truncate
+                    text-[10px]
+                    text-[#B31345]
+                  "
+                >
+                  {
+                    cart.appliedDiscountCode
+                  }
+                </strong>
+
+                <span
+                  className="
+                    text-[7px]
+                    text-black/35
+                  "
+                >
+                  Applied
+                </span>
+              </div>
+
+              <button
+                type="button"
+                disabled={
+                  applying
+                }
+                onClick={() =>
+                  void removeCode()
+                }
+                className="
+                  text-[8px]
+                  font-bold
+                  text-[#B31345]
+                  disabled:opacity-40
+                "
+              >
+                Remove
+              </button>
+            </div>
+          ) : (
+            <div
+              className="
+                mt-2
+                flex
+                gap-2
+              "
+            >
+              <input
+                value={
+                  code
+                }
+                onChange={(
+                  event
+                ) =>
+                  setCode(
+                    event.target.value.toUpperCase()
+                  )
+                }
+                onKeyDown={(
+                  event
+                ) => {
+                  if (
+                    event.key ===
+                    "Enter"
+                  ) {
+                    void applyCode();
+                  }
+                }}
+                placeholder="HIVRA20"
+                className="
+                  h-9
+                  min-w-0
+                  flex-1
+                  rounded-[9px]
+                  border
+                  border-black/10
+                  bg-white
+                  px-3
+                  text-[9px]
+                  uppercase
+                  outline-none
+                  focus:border-[#B31345]/40
+                "
+              />
+
+              <button
+                type="button"
+                disabled={
+                  applying ||
+                  !code.trim()
+                }
+                onClick={() =>
+                  void applyCode()
+                }
+                className="
+                  rounded-[9px]
+                  bg-[#211817]
+                  px-3
+                  text-[8px]
+                  font-bold
+                  uppercase
+                  text-white
+                  disabled:opacity-40
+                "
+              >
+                {applying
+                  ? "..."
+                  : "Apply"}
+              </button>
+            </div>
+          )}
+        </div>
+
+        {error ? (
           <p
             className="
-              mt-2
-
-              hidden
-
-              text-center
-
-              text-[7px]
-
-              text-black/25
-
-              sm:block
+              mt-3
+              rounded-[9px]
+              bg-red-50
+              px-3
+              py-2
+              text-[8px]
+              text-red-700
             "
           >
-            Your delivery details
-            are securely saved to
-            your account.
+            {error}
           </p>
-        </footer>
-      </section>
-    </div>
-  );
-}
+        ) : null}
 
-/* =========================================================
-   FORM SECTION
-========================================================= */
+        {/* TOTAL */}
 
-function FormSection({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-
-  description?: string;
-
-  children:
-    ReactNode;
-}) {
-  return (
-    <section
-      className="
-        border-b
-        border-[#F0E7E3]
-
-        py-5
-
-        first:pt-0
-
-        last:border-b-0
-
-        sm:py-6
-      "
-    >
-      <div
-        className="
-          mb-4
-        "
-      >
-        <h3
+        <div
           className="
-            text-[12px]
-            font-semibold
-
-            tracking-[-0.015em]
-
-            text-[#261C19]
-
-            sm:text-[13px]
+            mt-4
+            border-t
+            border-dashed
+            border-[#DCCFCC]
+            pt-4
           "
         >
-          {title}
-        </h3>
-
-        {description && (
-          <p
+          <div
             className="
-              mt-1
-
-              text-[8px]
-              leading-4
-
-              text-black/38
-
-              sm:text-[9px]
+              flex
+              items-end
+              justify-between
+              gap-4
             "
           >
-            {description}
-          </p>
-        )}
+            <div>
+              <p
+                className="
+                  text-[10px]
+                  font-bold
+                  text-[#211817]
+                "
+              >
+                Total
+              </p>
+
+              <p
+                className="
+                  mt-1
+                  text-[7px]
+                  text-black/30
+                "
+              >
+                Current taxes and
+                discounts included
+              </p>
+            </div>
+
+            <strong
+              className="
+                font-serif
+                text-[22px]
+                text-[#211817]
+              "
+            >
+              {money(
+                cart.total
+              )}
+            </strong>
+          </div>
+        </div>
+
+        {cart.discount >
+        0 ? (
+          <div
+            className="
+              mt-3
+              flex
+              items-center
+              gap-2
+              rounded-[10px]
+              bg-emerald-50
+              px-3
+              py-2
+              text-[8px]
+              font-semibold
+              text-emerald-700
+            "
+          >
+            <CircleCheckBig
+              size={12}
+            />
+
+            You save{" "}
+            {money(
+              cart.discount
+            )}
+          </div>
+        ) : null}
+
+        <div
+          className="
+            mt-3
+            flex
+            items-center
+            justify-center
+            gap-2
+            text-[7px]
+            text-black/30
+          "
+        >
+          <Truck
+            size={11}
+          />
+
+          Delivery is finalized
+          before payment
+        </div>
       </div>
-
-      {children}
-    </section>
+    </aside>
   );
 }
 
 /* =========================================================
-   ADDRESS TYPE BUTTON
+   ROW
 ========================================================= */
 
-function AddressTypeButton({
-  active,
+function Row({
   label,
-  icon,
-  onClick,
-}: {
-  active: boolean;
-
-  label: string;
-
-  icon:
-    ReactNode;
-
-  onClick:
-    () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={
-        onClick
-      }
-      className={`
-        flex
-
-        min-w-0
-
-        cursor-pointer
-
-        items-center
-        justify-center
-
-        gap-1.5
-
-        rounded-full
-
-        border
-
-        px-3
-        py-2.5
-
-        text-[8px]
-        font-semibold
-
-        transition-all
-
-        sm:px-4
-        sm:text-[9px]
-
-        ${
-          active
-            ? `
-              border-[#B31345]
-
-              bg-[#B31345]
-
-              text-white
-
-              shadow-[0_6px_18px_rgba(179,19,69,.18)]
-            `
-            : `
-              border-[#E6DAD6]
-
-              bg-white
-
-              text-black/55
-
-              hover:border-[#B31345]/30
-              hover:bg-[#FDF5F7]
-              hover:text-[#B31345]
-            `
-        }
-      `}
-    >
-      <span
-        className="
-          [&>svg]:h-3.5
-          [&>svg]:w-3.5
-        "
-      >
-        {icon}
-      </span>
-
-      <span
-        className="
-          truncate
-        "
-      >
-        {label}
-      </span>
-    </button>
-  );
-}
-
-/* =========================================================
-   FORM INPUT
-========================================================= */
-
-function FormInput({
-  label,
-  required = false,
-  icon,
-  placeholder,
   value,
-  onChange,
-  inputMode,
-  autoComplete,
-  maxLength,
+  positive =
+    false,
 }: {
-  label: string;
+  label:
+    string;
 
-  required?: boolean;
+  value:
+    string;
 
-  icon?:
-    ReactNode;
-
-  placeholder: string;
-
-  value: string;
-
-  onChange:
-    (
-      value: string
-    ) => void;
-
-  inputMode?:
-    InputHTMLAttributes<HTMLInputElement>["inputMode"];
-
-  autoComplete?: string;
-
-  maxLength?: number;
+  positive?:
+    boolean;
 }) {
   return (
-    <label
+    <div
       className="
-        block
-        min-w-0
+        flex
+        items-start
+        justify-between
+        gap-4
       "
     >
       <span
         className="
-          mb-1.5
-
-          block
-
-          text-[8px]
-          font-semibold
-
-          tracking-[0.01em]
-
-          text-[#443734]
+          min-w-0
+          text-black/50
         "
       >
         {label}
-
-        {required && (
-          <span
-            className="
-              ml-1
-
-              text-[#B31345]
-            "
-          >
-            *
-          </span>
-        )}
       </span>
 
-      <div
-        className="
-          group
+      <strong
+        className={`
+          shrink-0
 
-          relative
-        "
+          ${
+            positive
+              ? "text-emerald-700"
+              : "text-[#211817]"
+          }
+        `}
       >
-        {icon && (
-          <span
-            className="
-              pointer-events-none
-
-              absolute
-              left-3.5
-              top-1/2
-
-              -translate-y-1/2
-
-              text-black/28
-
-              transition
-
-              group-focus-within:text-[#B31345]
-
-              [&>svg]:h-4
-              [&>svg]:w-4
-            "
-          >
-            {icon}
-          </span>
-        )}
-
-        <input
-          type="text"
-          value={
-            value
-          }
-          placeholder={
-            placeholder
-          }
-          inputMode={
-            inputMode
-          }
-          autoComplete={
-            autoComplete
-          }
-          maxLength={
-            maxLength
-          }
-          onChange={(
-            event
-          ) =>
-            onChange(
-              event.target.value
-            )
-          }
-          className={`
-            h-[46px]
-            w-full
-
-            rounded-[13px]
-
-            border
-            border-[#E5DAD6]
-
-            bg-white
-
-            pr-4
-
-            text-[9px]
-
-            text-[#211817]
-
-            outline-none
-
-            transition-all
-
-            placeholder:text-black/25
-
-            hover:border-[#D7C3BD]
-
-            focus:border-[#B31345]/55
-
-            focus:ring-4
-            focus:ring-[#B31345]/[0.05]
-
-            sm:h-[48px]
-            sm:text-[10px]
-
-            ${
-              icon
-                ? "pl-10"
-                : "pl-4"
-            }
-          `}
-        />
-      </div>
-    </label>
+        {value}
+      </strong>
+    </div>
   );
 }

@@ -15,19 +15,18 @@ import type {
 } from "@/src/services/offers";
 
 import type {
+  CartOfferContext,
+} from "@/lib/cart";
+
+import type {
   CatalogBanner,
   CatalogProduct,
 } from "@/types/catalog";
 
 type Props = {
-  offer:
-    StorefrontOffer;
-
-  products:
-    CatalogProduct[];
-
-  banners:
-    CatalogBanner[];
+  offer: StorefrontOffer;
+  products: CatalogProduct[];
+  banners: CatalogBanner[];
 };
 
 /* =========================================================
@@ -37,23 +36,18 @@ type Props = {
 function OfferBannerSlider({
   banners,
 }: {
-  banners:
-    CatalogBanner[];
+  banners: CatalogBanner[];
 }) {
   const validBanners =
     useMemo(
       () =>
         banners.filter(
-          (
-            banner,
-          ) =>
+          (banner) =>
             Boolean(
-              banner.image,
-            ),
+              banner.image
+            )
         ),
-      [
-        banners,
-      ],
+      [banners]
     );
 
   const [
@@ -63,9 +57,7 @@ function OfferBannerSlider({
     useState(0);
 
   useEffect(() => {
-    setActive(
-      0,
-    );
+    setActive(0);
 
     if (
       validBanners.length <=
@@ -78,22 +70,20 @@ function OfferBannerSlider({
       window.setInterval(
         () => {
           setActive(
-            (
-              current,
-            ) =>
+            (current) =>
               (
                 current +
                 1
               ) %
-              validBanners.length,
+              validBanners.length
           );
         },
-        4500,
+        4500
       );
 
     return () =>
       window.clearInterval(
-        timer,
+        timer
       );
   }, [
     validBanners.length,
@@ -122,7 +112,7 @@ function OfferBannerSlider({
       {validBanners.map(
         (
           banner,
-          index,
+          index
         ) => (
           <Link
             key={`${banner.image}-${index}`}
@@ -132,23 +122,16 @@ function OfferBannerSlider({
             className={`
               absolute
               inset-0
-
               h-full
               w-full
-
               transition-opacity
               duration-700
 
               ${
                 active ===
                 index
-                  ? `
-                    opacity-100
-                  `
-                  : `
-                    pointer-events-none
-                    opacity-0
-                  `
+                  ? "opacity-100"
+                  : "pointer-events-none opacity-0"
               }
             `}
           >
@@ -162,13 +145,12 @@ function OfferBannerSlider({
               className="
                 h-full
                 w-full
-
                 object-cover
                 object-center
               "
             />
           </Link>
-        ),
+        )
       )}
 
       {validBanners.length >
@@ -179,26 +161,25 @@ function OfferBannerSlider({
             bottom-4
             left-1/2
             z-30
-
             flex
             -translate-x-1/2
-
             gap-2
           "
         >
           {validBanners.map(
             (
               _,
-              index,
+              index
             ) => (
               <button
                 key={
                   index
                 }
                 type="button"
+                aria-label={`Show banner ${index + 1}`}
                 onClick={() =>
                   setActive(
-                    index,
+                    index
                   )
                 }
                 className={`
@@ -208,18 +189,12 @@ function OfferBannerSlider({
                   ${
                     active ===
                     index
-                      ? `
-                        w-7
-                        bg-[#B31345]
-                      `
-                      : `
-                        w-[6px]
-                        bg-white
-                      `
+                      ? "w-7 bg-[#B31345]"
+                      : "w-[6px] bg-white"
                   }
                 `}
               />
-            ),
+            )
           )}
         </div>
       ) : null}
@@ -241,7 +216,31 @@ export default function BuyGetOfferCatalog({
     setSort,
   ] =
     useState(
-      "featured",
+      "featured"
+    );
+
+  /*
+   * IMPORTANT:
+   * Ye context ONLY Buy/Get offer page se pass hota hai.
+   *
+   * Men / Women / Home / Search ke StorefrontProductCard
+   * is prop ko pass nahi karenge.
+   */
+  const offerContext =
+    useMemo<CartOfferContext>(
+      () => ({
+        offerId:
+          offer._id,
+
+        offerType:
+          "buy_get",
+
+        source:
+          "buy_get_page",
+      }),
+      [
+        offer._id,
+      ]
     );
 
   const sortedProducts =
@@ -255,12 +254,9 @@ export default function BuyGetOfferCatalog({
         "low"
       ) {
         return result.sort(
-          (
-            a,
-            b,
-          ) =>
+          (a, b) =>
             a.showPrice -
-            b.showPrice,
+            b.showPrice
         );
       }
 
@@ -269,12 +265,9 @@ export default function BuyGetOfferCatalog({
         "high"
       ) {
         return result.sort(
-          (
-            a,
-            b,
-          ) =>
+          (a, b) =>
             b.showPrice -
-            a.showPrice,
+            a.showPrice
         );
       }
 
@@ -292,26 +285,19 @@ export default function BuyGetOfferCatalog({
         text-[#211A18]
       "
     >
-      {/* BANNER */}
-
       <OfferBannerSlider
         banners={
           banners
         }
       />
 
-      {/* PRODUCTS */}
-
       <section
         className="
           mx-auto
           max-w-[1450px]
-
           px-3
           py-9
-
           sm:px-5
-
           lg:px-8
           lg:py-14
         "
@@ -320,14 +306,10 @@ export default function BuyGetOfferCatalog({
           className="
             flex
             flex-col
-
             gap-5
-
             border-b
             border-black/[0.07]
-
             pb-6
-
             sm:flex-row
             sm:items-end
             sm:justify-between
@@ -339,9 +321,7 @@ export default function BuyGetOfferCatalog({
                 text-[8px]
                 font-bold
                 uppercase
-
                 tracking-[0.22em]
-
                 text-[#B31345]
               "
             >
@@ -359,12 +339,9 @@ export default function BuyGetOfferCatalog({
             <h1
               className="
                 mt-2
-
                 text-[28px]
                 font-semibold
-
                 sm:text-[34px]
-
                 lg:text-[40px]
               "
             >
@@ -374,9 +351,7 @@ export default function BuyGetOfferCatalog({
             <p
               className="
                 mt-2
-
                 text-[10px]
-
                 text-black/45
               "
             >
@@ -390,26 +365,21 @@ export default function BuyGetOfferCatalog({
               sort
             }
             onChange={(
-              event,
+              event
             ) =>
               setSort(
                 event.target
-                  .value,
+                  .value
               )
             }
             className="
               h-11
               min-w-[180px]
-
               rounded-full
-
               border
               border-black/10
-
               bg-white
-
               px-4
-
               text-[10px]
             "
           >
@@ -432,24 +402,19 @@ export default function BuyGetOfferCatalog({
           <div
             className="
               mt-8
-
               grid
               grid-cols-2
-
               gap-x-3
               gap-y-9
-
               sm:gap-x-5
-
               md:grid-cols-3
-
               lg:grid-cols-4
               lg:gap-x-6
             "
           >
             {sortedProducts.map(
               (
-                product,
+                product
               ) => (
                 <StorefrontProductCard
                   key={
@@ -458,17 +423,18 @@ export default function BuyGetOfferCatalog({
                   product={
                     product
                   }
+                  offerContext={
+                    offerContext
+                  }
                 />
-              ),
+              )
             )}
           </div>
         ) : (
           <div
             className="
               py-20
-
               text-center
-
               text-[11px]
               text-black/45
             "

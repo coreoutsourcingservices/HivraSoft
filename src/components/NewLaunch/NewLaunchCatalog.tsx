@@ -1346,7 +1346,7 @@ export default function NewLaunchCatalog({
                   {products
                     .slice(
                       0,
-                      5,
+                      500,
                     )
                     .map(
                       (
@@ -1931,7 +1931,7 @@ export default function NewLaunchCatalog({
                     {products
                       .slice(
                         0,
-                        5,
+                        500,
                       )
                       .map(
                         (

@@ -10,33 +10,93 @@ import type {
   CatalogProduct,
 } from "@/types/catalog";
 
+import type {
+  CartOfferContext,
+} from "@/lib/cart";
+
+import {
+  useFixedPriceOfferScope,
+} from "@/src/components/Offers/FixedPriceOfferScope";
+
 type Props = {
-  product: CatalogProduct;
-  overlay?: boolean;
+  product:
+    CatalogProduct;
+
+  overlay?:
+    boolean;
+
+  offerContext?:
+    | CartOfferContext
+    | null;
 };
 
 export default function StorefrontProductCard({
   product,
   overlay = false,
+  offerContext = null,
 }: Props) {
   const commerce =
     useStorefrontCommerce();
 
+  const fixedPriceOffer =
+    useFixedPriceOfferScope();
+
+  /*
+   * Explicit context Buy/Get page se aa sakta hai.
+   *
+   * Agar explicit context nahi hai aur current category
+   * Fixed Price Bundle scope ke andar hai, to bundle context
+   * automatically card se cart tak jayega.
+   */
+  const resolvedOfferContext:
+    | CartOfferContext
+    | null =
+    offerContext ||
+    (
+      fixedPriceOffer
+        ? {
+            offerId:
+              fixedPriceOffer._id,
+
+            offerType:
+              "fixed_price_bundle",
+
+            source:
+              "fixed_price_bundle",
+
+            offerName:
+              fixedPriceOffer.name,
+
+            requiredQuantity:
+              Number(
+                fixedPriceOffer.buyQuantity ||
+                  1
+              ),
+
+            fixedPrice:
+              Number(
+                fixedPriceOffer.fixedPrice ||
+                  0
+              ),
+          }
+        : null
+    );
+
   const wished =
     commerce.isWishlisted(
-      product,
+      product
     );
 
   const wishlistBusy =
     commerce.isWishlistBusy(
-      product,
+      product
     );
 
   const hasSecondImage =
     Boolean(
       product.image2 &&
         product.image2 !==
-          product.image1,
+          product.image1
     );
 
   const hasDiscount =
@@ -75,7 +135,7 @@ export default function StorefrontProductCard({
       >
         <Link
           href={`/product/${encodeURIComponent(
-            product.slug,
+            product.slug
           )}`}
           className="
             group/image
@@ -195,18 +255,13 @@ export default function StorefrontProductCard({
             wishlistBusy
           }
           onClick={(
-            event,
+            event
           ) => {
             event.preventDefault();
             event.stopPropagation();
 
-            /*
-             * Provider optimistic update karta hai.
-             * Heart instantly change hoga.
-             * API ke response ka visual wait nahi.
-             */
             void commerce.toggleWishlist(
-              product,
+              product
             );
           }}
           className="
@@ -214,33 +269,22 @@ export default function StorefrontProductCard({
             right-2.5
             top-2.5
             z-20
-
             flex
             h-[32px]
             w-[32px]
-
             cursor-pointer
             items-center
             justify-center
-
             rounded-full
-
             border
             border-black/[0.06]
-
             bg-white/95
-
             p-0
-
             shadow-[0_2px_10px_rgba(0,0,0,.10)]
-
             transition-all
-
             hover:scale-105
             hover:bg-white
-
             disabled:cursor-default
-
             sm:right-3
             sm:top-3
             sm:h-[34px]
@@ -271,7 +315,7 @@ export default function StorefrontProductCard({
 
         <Link
           href={`/product/${encodeURIComponent(
-            product.slug,
+            product.slug
           )}`}
           title={
             product.name
@@ -335,7 +379,7 @@ export default function StorefrontProductCard({
                 {
                   maximumFractionDigits:
                     2,
-                },
+                }
               )}
             </strong>
 
@@ -357,7 +401,7 @@ export default function StorefrontProductCard({
                   {
                     maximumFractionDigits:
                       2,
-                  },
+                  }
                 )}
               </span>
             ) : null}
@@ -368,17 +412,14 @@ export default function StorefrontProductCard({
           <button
             type="button"
             onClick={(
-              event,
+              event
             ) => {
-              /*
-               * Safe against accidental form/navigation submit.
-               * No router.refresh / no reload.
-               */
               event.preventDefault();
               event.stopPropagation();
 
               void commerce.openAddToBag(
                 product,
+                resolvedOfferContext
               );
             }}
             className="

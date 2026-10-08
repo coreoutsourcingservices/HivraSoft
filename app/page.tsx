@@ -39,6 +39,37 @@ const API_URL = (
   "http://localhost:5000"
 ).replace(/\/$/, "");
 
+
+/* =========================================================
+   HOME PAGE CACHE
+
+   Home data changes more often than category navigation,
+   especially product price/stock. So keep this TTL shorter.
+
+   Fresh cache:
+   - render immediately
+   - skip home API calls
+
+   Stale cache:
+   - render immediately
+   - refresh in background
+========================================================= */
+
+const HOME_CACHE_KEY =
+  "hivra:home-page:v2";
+
+const HOME_CACHE_TTL =
+  5 * 60 * 1000;
+
+type HomePageCache = {
+  savedAt: number;
+  banners: BannerGroup[];
+  trendItems: OnTrendItem[];
+  alwaysItems: AlwaysInItItem[];
+  newLaunchProducts: ApiProduct[];
+  activeProducts: ApiProduct[];
+};
+
 /* =========================================================
    TYPES
 ========================================================= */
@@ -550,6 +581,148 @@ async function safeJson(
 
     return null;
   }
+}
+
+/* =========================================================
+   HOME CACHE HELPERS
+========================================================= */
+
+function readHomePageCache():
+  HomePageCache | null {
+  if (
+    typeof window ===
+    "undefined"
+  ) {
+    return null;
+  }
+
+  try {
+    const raw =
+      window.localStorage.getItem(
+        HOME_CACHE_KEY
+      );
+
+    if (
+      !raw
+    ) {
+      return null;
+    }
+
+    const parsed =
+      JSON.parse(
+        raw
+      ) as Partial<HomePageCache>;
+
+    if (
+      !parsed ||
+      !Number.isFinite(
+        parsed.savedAt
+      ) ||
+      !Array.isArray(
+        parsed.banners
+      ) ||
+      !Array.isArray(
+        parsed.trendItems
+      ) ||
+      !Array.isArray(
+        parsed.alwaysItems
+      ) ||
+      !Array.isArray(
+        parsed.newLaunchProducts
+      ) ||
+      !Array.isArray(
+        parsed.activeProducts
+      )
+    ) {
+      window.localStorage.removeItem(
+        HOME_CACHE_KEY
+      );
+
+      return null;
+    }
+
+    return {
+      savedAt:
+        Number(
+          parsed.savedAt
+        ),
+
+      banners:
+        parsed.banners as BannerGroup[],
+
+      trendItems:
+        parsed.trendItems as OnTrendItem[],
+
+      alwaysItems:
+        parsed.alwaysItems as AlwaysInItItem[],
+
+      newLaunchProducts:
+        parsed.newLaunchProducts as ApiProduct[],
+
+      activeProducts:
+        parsed.activeProducts as ApiProduct[],
+    };
+  } catch (
+    error
+  ) {
+    console.error(
+      "HOME CACHE READ ERROR:",
+      error
+    );
+
+    return null;
+  }
+}
+
+function writeHomePageCache(
+  value:
+    Omit<
+      HomePageCache,
+      "savedAt"
+    >
+) {
+  if (
+    typeof window ===
+    "undefined"
+  ) {
+    return;
+  }
+
+  try {
+    const payload:
+      HomePageCache = {
+        savedAt:
+          Date.now(),
+
+        ...value,
+      };
+
+    window.localStorage.setItem(
+      HOME_CACHE_KEY,
+
+      JSON.stringify(
+        payload
+      )
+    );
+  } catch (
+    error
+  ) {
+    console.error(
+      "HOME CACHE WRITE ERROR:",
+      error
+    );
+  }
+}
+
+function isHomePageCacheFresh(
+  cache:
+    HomePageCache
+) {
+  return (
+    Date.now() -
+      cache.savedAt <
+    HOME_CACHE_TTL
+  );
 }
 
 /* =========================================================
@@ -6125,7 +6298,17 @@ export default function HomePage() {
   }, []);
 
   /* =======================================================
-     LOAD ALL HOME APIs
+     LOAD ALL HOME APIs WITH STALE-WHILE-REVALIDATE CACHE
+
+     Flow:
+     1. cache se page instantly render
+     2. har refresh/load par latest APIs background me fetch
+     3. new product/banner/content milte hi UI update
+     4. latest response cache me save
+
+     Result:
+     - refresh par loader/flicker minimum
+     - admin se new product add ho to next refresh par dikhega
   ======================================================= */
 
   useEffect(() => {
@@ -6133,7 +6316,54 @@ export default function HomePage() {
       true;
 
     async function loadHome() {
-      setLoading(true);
+      const cached =
+        readHomePageCache();
+
+      /* =====================================================
+         SHOW CACHE IMMEDIATELY
+      ===================================================== */
+
+      if (
+        cached &&
+        mounted
+      ) {
+        setBanners(
+          cached.banners
+        );
+
+        setTrendItems(
+          cached.trendItems
+        );
+
+        setAlwaysItems(
+          cached.alwaysItems
+        );
+
+        setNewLaunchProducts(
+          cached.newLaunchProducts
+        );
+
+        setActiveProducts(
+          cached.activeProducts
+        );
+
+        setLoading(
+          false
+        );
+      } else if (
+        mounted
+      ) {
+        setLoading(
+          true
+        );
+      }
+
+      /* =====================================================
+         ALWAYS REFRESH LATEST DATA IN BACKGROUND
+
+         Fresh cache hone par bhi API skip nahi hoti.
+         Cache fast first paint ke liye hai.
+      ===================================================== */
 
       const [
         bannerResponse,
@@ -6144,72 +6374,201 @@ export default function HomePage() {
       ] =
         await Promise.all([
           safeJson(
-            "/api/banners/active",
+            "/api/banners/active"
           ),
 
           safeJson(
-            "/api/on-trend-picks",
+            "/api/on-trend-picks"
           ),
 
           safeJson(
-            "/api/always-in-it",
+            "/api/always-in-it"
           ),
 
           safeJson(
-            "/api/products/new-launches",
+            "/api/products/new-launches"
           ),
 
           safeJson(
-            "/api/products/active",
+            "/api/products/active"
           ),
         ]);
 
-      if (!mounted) {
+      if (
+        !mounted
+      ) {
         return;
       }
 
+      /*
+       * Individual API fail ho to us section ka cached data
+       * preserve hota rahega.
+       */
+      const nextBanners =
+        bannerResponse
+          ? asArray<BannerGroup>(
+              bannerResponse
+                ?.data
+            )
+          : cached?.banners ||
+            [];
+
+      const nextTrendItems =
+        trendResponse
+          ? asArray<OnTrendItem>(
+              trendResponse
+                ?.items
+            )
+          : cached?.trendItems ||
+            [];
+
+      const nextAlwaysItems =
+        alwaysResponse
+          ? asArray<AlwaysInItItem>(
+              alwaysResponse
+                ?.items
+            )
+          : cached?.alwaysItems ||
+            [];
+
+      const nextNewLaunchProducts =
+        newLaunchResponse
+          ? asArray<ApiProduct>(
+              newLaunchResponse
+                ?.products
+            )
+          : cached?.newLaunchProducts ||
+            [];
+
+      const nextActiveProducts =
+        activeResponse
+          ? asArray<ApiProduct>(
+              activeResponse
+                ?.products
+            )
+          : cached?.activeProducts ||
+            [];
+
       setBanners(
-        asArray<BannerGroup>(
-          bannerResponse
-            ?.data,
-        ),
+        nextBanners
       );
 
       setTrendItems(
-        asArray<OnTrendItem>(
-          trendResponse
-            ?.items,
-        ),
+        nextTrendItems
       );
 
       setAlwaysItems(
-        asArray<AlwaysInItItem>(
-          alwaysResponse
-            ?.items,
-        ),
+        nextAlwaysItems
       );
 
       setNewLaunchProducts(
-        asArray<ApiProduct>(
-          newLaunchResponse
-            ?.products,
-        ),
+        nextNewLaunchProducts
       );
 
       setActiveProducts(
-        asArray<ApiProduct>(
-          activeResponse
-            ?.products,
-        ),
+        nextActiveProducts
       );
 
-      setLoading(false);
+      writeHomePageCache({
+        banners:
+          nextBanners,
+
+        trendItems:
+          nextTrendItems,
+
+        alwaysItems:
+          nextAlwaysItems,
+
+        newLaunchProducts:
+          nextNewLaunchProducts,
+
+        activeProducts:
+          nextActiveProducts,
+      });
+
+      setLoading(
+        false
+      );
     }
 
     void loadHome();
 
+    /* =====================================================
+       CROSS-TAB CACHE SYNC
+    ===================================================== */
+
+    function handleStorage(
+      event:
+        StorageEvent
+    ) {
+      if (
+        event.key !==
+          HOME_CACHE_KEY ||
+        !event.newValue ||
+        !mounted
+      ) {
+        return;
+      }
+
+      try {
+        const parsed =
+          JSON.parse(
+            event.newValue
+          ) as HomePageCache;
+
+        if (
+          !Array.isArray(
+            parsed.banners
+          )
+        ) {
+          return;
+        }
+
+        setBanners(
+          parsed.banners
+        );
+
+        setTrendItems(
+          parsed.trendItems ||
+            []
+        );
+
+        setAlwaysItems(
+          parsed.alwaysItems ||
+            []
+        );
+
+        setNewLaunchProducts(
+          parsed.newLaunchProducts ||
+            []
+        );
+
+        setActiveProducts(
+          parsed.activeProducts ||
+            []
+        );
+
+        setLoading(
+          false
+        );
+      } catch {
+        // Ignore invalid cache written by another tab.
+      }
+    }
+
+    window.addEventListener(
+      "storage",
+      handleStorage
+    );
+
     return () => {
-      mounted = false;
+      mounted =
+        false;
+
+      window.removeEventListener(
+        "storage",
+        handleStorage
+      );
     };
   }, []);
 

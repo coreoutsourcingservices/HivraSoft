@@ -1,1540 +1,2358 @@
 "use client";
-
 import Image from "next/image";
-
+import Link from "next/link";
 import {
+  CSSProperties,
   useEffect,
+  useLayoutEffect,
   useRef,
+  useState,
 } from "react";
-
-import {
-  gsap,
-} from "gsap";
-
-import {
-  ScrollTrigger,
-} from "gsap/ScrollTrigger";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 /* =========================================================
-   IMAGES
-========================================================= */
 
-const images = [
-  "/images/intro/model-walk-1.png",
-  "/images/intro/model-walk-2.png",
-  "/images/intro/model-walk-3.png",
-  "/images/intro/model-walk-4.png",
-  "/images/intro/model-sit-1.png",
-  "/images/intro/model-sit-2.png",
+   ASSETS
+
+   ========================================================= */
+const WOMEN_BG = "/images/story/women-bg.jpg";
+const MEN_BG = "/images/story/men-bg.jpg";
+
+const womenModels = [
+  "/images/header-menu/women-1.jpeg",
+  "/images/header-menu/women-2.jpeg",
+  "/images/header-menu/women-3.jpeg",
+  "/images/header-menu/women-4.jpeg",
+];
+
+const menModels = [
+  "/images/header-menu/men-1.jpeg",
+  "/images/header-menu/men-2.jpeg",
+  "/images/header-menu/men-3.jpeg",
+  "/images/header-menu/men-4.jpeg",
 ];
 
 /* =========================================================
-   SCRAMBLE CHARACTERS
+   MOBILE COLLECTIONS
+
+   Men and Women are intentionally separate.
+   Same JPEG assets that are used in the header mega-menu.
 ========================================================= */
 
+type MobileGender =
+  | "women"
+  | "men";
+
+type MobileCollectionItem = {
+  title: string;
+  subtitle: string;
+  image: string;
+  href: string;
+};
+
+const mobileWomenProducts:
+  MobileCollectionItem[] = [
+  {
+    title: "Women 01",
+    subtitle: "Explore women collection",
+    image: "/images/header-menu/women-1.jpeg",
+    href: "/women",
+  },
+  {
+    title: "Women 02",
+    subtitle: "Explore women collection",
+    image: "/images/header-menu/women-2.jpeg",
+    href: "/women",
+  },
+  {
+    title: "Women 03",
+    subtitle: "Explore women collection",
+    image: "/images/header-menu/women-3.jpeg",
+    href: "/women",
+  },
+  {
+    title: "Women 04",
+    subtitle: "Explore women collection",
+    image: "/images/header-menu/women-4.jpeg",
+    href: "/women",
+  },
+];
+
+const mobileMenProducts:
+  MobileCollectionItem[] = [
+  {
+    title: "Men 01",
+    subtitle: "Explore men collection",
+    image: "/images/header-menu/men-1.jpeg",
+    href: "/men",
+  },
+  {
+    title: "Men 02",
+    subtitle: "Explore men collection",
+    image: "/images/header-menu/men-2.jpeg",
+    href: "/men",
+  },
+  {
+    title: "Men 03",
+    subtitle: "Explore men collection",
+    image: "/images/header-menu/men-3.jpeg",
+    href: "/men",
+  },
+  {
+    title: "Men 04",
+    subtitle: "Explore men collection",
+    image: "/images/header-menu/men-4.jpeg",
+    href: "/men",
+  },
+];
+
+/* =========================================================
+   IMAGE CARD POSITIONS
+
+   JPEGs are full photos, so they are arranged as a clean
+   2 x 2 visual grid on desktop instead of transparent PNGs.
+========================================================= */
+
+const womenPositions = [
+  "right-[30%] top-[9%] h-[36vh] w-[18vw]",
+  "right-[7%] top-[9%] h-[36vh] w-[18vw]",
+  "right-[30%] bottom-[8%] h-[36vh] w-[18vw]",
+  "right-[7%] bottom-[8%] h-[36vh] w-[18vw]",
+];
+
+const menPositions = [
+  "right-[30%] top-[9%] h-[36vh] w-[18vw]",
+  "right-[7%] top-[9%] h-[36vh] w-[18vw]",
+  "right-[30%] bottom-[8%] h-[36vh] w-[18vw]",
+  "right-[7%] bottom-[8%] h-[36vh] w-[18vw]",
+];
+
+/* =========================================================
+
+   SCRAMBLE
+
+   ========================================================= */
 const SCRAMBLE_CHARS =
+
   "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
-/* =========================================================
-   SCRAMBLE HELPER
-
-   GSAP ScrambleText plugin ki zarurat nahi.
-========================================================= */
-
 function createScrambleTween(
+
   element: HTMLElement,
+
   finalText: string,
-  duration = 1.2,
+
+  duration = 1.1,
+
 ) {
-  const proxy = {
-    progress: 0,
-  };
 
-  const originalCharacters =
-    finalText.split("");
+  const proxy = { progress: 0 };
 
-  return gsap.to(
-    proxy,
-    {
-      progress: 1,
+  const chars = finalText.split("");
 
-      duration,
 
-      ease:
-        "power2.out",
 
-      onStart: () => {
-        element.textContent =
-          "";
-      },
+  return gsap.to(proxy, {
 
-      onUpdate: () => {
-        const revealCount =
-          Math.floor(
-            proxy.progress *
-              originalCharacters.length,
-          );
+    progress: 1,
 
-        const result =
-          originalCharacters
-            .map(
-              (
-                character,
-                index,
-              ) => {
-                if (
-                  character ===
-                  " "
-                ) {
-                  return " ";
-                }
+    duration,
 
-                if (
-                  index <
-                  revealCount
-                ) {
-                  return character;
-                }
+    ease: "power2.out",
 
-                return SCRAMBLE_CHARS[
-                  Math.floor(
-                    Math.random() *
-                      SCRAMBLE_CHARS.length,
-                  )
-                ];
-              },
-            )
-            .join("");
 
-        element.textContent =
-          result;
-      },
 
-      onComplete: () => {
-        element.textContent =
-          finalText;
-      },
+    onStart: () => {
+
+      element.textContent = "";
+
     },
-  );
-}
 
-/* =========================================================
-   DIVA STORY
-========================================================= */
 
-export default function DivaStory() {
-  const sectionRef =
-    useRef<HTMLElement | null>(
-      null,
-    );
 
-  const headlineRef =
-    useRef<HTMLDivElement | null>(
-      null,
-    );
+    onUpdate: () => {
 
-  const madeTextRef =
-    useRef<HTMLSpanElement | null>(
-      null,
-    );
+      const revealCount = Math.floor(
 
-  const divaTextRef =
-    useRef<HTMLSpanElement | null>(
-      null,
-    );
+        proxy.progress * chars.length,
 
-  const cursorRef =
-    useRef<HTMLSpanElement | null>(
-      null,
-    );
-
-  const storyRef =
-    useRef<HTMLDivElement | null>(
-      null,
-    );
-
-  const imageRefs =
-    useRef<
-      (
-        HTMLDivElement |
-        null
-      )[]
-    >([]);
-
-  /* =======================================================
-     GSAP
-  ======================================================= */
-
-  useEffect(() => {
-    gsap.registerPlugin(
-      ScrollTrigger,
-    );
-
-    const section =
-      sectionRef.current;
-
-    const headline =
-      headlineRef.current;
-
-    const madeText =
-      madeTextRef.current;
-
-    const divaText =
-      divaTextRef.current;
-
-    const cursor =
-      cursorRef.current;
-
-    const story =
-      storyRef.current;
-
-    if (
-      !section ||
-      !headline ||
-      !madeText ||
-      !divaText ||
-      !story
-    ) {
-      return;
-    }
-
-    const ctx =
-      gsap.context(
-        () => {
-          const cards =
-            imageRefs.current.filter(
-              (
-                card,
-              ): card is HTMLDivElement =>
-                card !== null,
-            );
-
-          /* =============================================
-             INITIAL STATE
-          ============================================= */
-
-          gsap.set(
-            headline,
-            {
-              opacity:
-                1,
-
-              scale:
-                1,
-
-              y:
-                0,
-            },
-          );
-
-          gsap.set(
-            story,
-            {
-              opacity:
-                0,
-
-              y:
-                55,
-
-              scale:
-                0.96,
-            },
-          );
-
-          gsap.set(
-            cards,
-            {
-              opacity:
-                0,
-            },
-          );
-
-          /* =============================================
-             SCRAMBLE INTRO
-          ============================================= */
-
-          const scrambleTimeline =
-            gsap.timeline({
-              delay:
-                0.15,
-            });
-
-          scrambleTimeline
-            .add(
-              createScrambleTween(
-                madeText,
-                "Made to feel",
-                1.15,
-              ),
-            )
-
-            .add(
-              createScrambleTween(
-                divaText,
-                "like a diva.",
-                1.35,
-              ),
-              "-=0.35",
-            );
-
-          /* =============================================
-             CURSOR BLINK
-          ============================================= */
-
-          if (
-            cursor
-          ) {
-            gsap.to(
-              cursor,
-              {
-                opacity:
-                  0,
-
-                duration:
-                  0.42,
-
-                ease:
-                  "none",
-
-                repeat:
-                  -1,
-
-                yoyo:
-                  true,
-              },
-            );
-          }
-
-          /* =============================================
-             SCROLL TIMELINE
-          ============================================= */
-
-          const tl =
-            gsap.timeline({
-              scrollTrigger: {
-                trigger:
-                  section,
-
-                start:
-                  "top top",
-
-                end:
-                  "bottom bottom",
-
-                scrub:
-                  0.85,
-
-                invalidateOnRefresh:
-                  true,
-              },
-            });
-
-          /* =============================================
-             IMAGE 1 — LEFT
-          ============================================= */
-
-          tl.fromTo(
-            imageRefs.current[
-              0
-            ],
-            {
-              xPercent:
-                -120,
-
-              yPercent:
-                20,
-
-              rotation:
-                -8,
-
-              scale:
-                0.78,
-
-              opacity:
-                0,
-            },
-            {
-              xPercent:
-                0,
-
-              yPercent:
-                0,
-
-              rotation:
-                -3,
-
-              scale:
-                1,
-
-              opacity:
-                1,
-
-              duration:
-                1.25,
-
-              ease:
-                "power3.out",
-            },
-            0.2,
-          );
-
-          /* =============================================
-             IMAGE 2 — RIGHT
-          ============================================= */
-
-          tl.fromTo(
-            imageRefs.current[
-              1
-            ],
-            {
-              xPercent:
-                120,
-
-              yPercent:
-                24,
-
-              rotation:
-                8,
-
-              scale:
-                0.8,
-
-              opacity:
-                0,
-            },
-            {
-              xPercent:
-                0,
-
-              yPercent:
-                0,
-
-              rotation:
-                3,
-
-              scale:
-                1,
-
-              opacity:
-                1,
-
-              duration:
-                1.25,
-
-              ease:
-                "power3.out",
-            },
-            0.45,
-          );
-
-          /* =============================================
-             IMAGE 3 — CENTER HERO REVEAL
-          ============================================= */
-
-          tl.fromTo(
-            imageRefs.current[
-              2
-            ],
-            {
-              yPercent:
-                80,
-
-              scale:
-                1.12,
-
-              opacity:
-                0,
-
-              clipPath:
-                "inset(100% 0% 0% 0%)",
-            },
-            {
-              yPercent:
-                0,
-
-              scale:
-                1,
-
-              opacity:
-                1,
-
-              clipPath:
-                "inset(0% 0% 0% 0%)",
-
-              duration:
-                1.5,
-
-              ease:
-                "power3.inOut",
-            },
-            0.95,
-          );
-
-          /* =============================================
-             IMAGE 4 — BOTTOM LEFT
-          ============================================= */
-
-          tl.fromTo(
-            imageRefs.current[
-              3
-            ],
-            {
-              xPercent:
-                -80,
-
-              yPercent:
-                90,
-
-              rotation:
-                -10,
-
-              opacity:
-                0,
-
-              scale:
-                0.8,
-            },
-            {
-              xPercent:
-                0,
-
-              yPercent:
-                0,
-
-              rotation:
-                -4,
-
-              opacity:
-                1,
-
-              scale:
-                1,
-
-              duration:
-                1.2,
-
-              ease:
-                "power3.out",
-            },
-            1.6,
-          );
-
-          /* =============================================
-             IMAGE 5 — BOTTOM RIGHT
-          ============================================= */
-
-          tl.fromTo(
-            imageRefs.current[
-              4
-            ],
-            {
-              xPercent:
-                80,
-
-              yPercent:
-                100,
-
-              rotation:
-                10,
-
-              opacity:
-                0,
-
-              scale:
-                0.8,
-            },
-            {
-              xPercent:
-                0,
-
-              yPercent:
-                0,
-
-              rotation:
-                4,
-
-              opacity:
-                1,
-
-              scale:
-                1,
-
-              duration:
-                1.2,
-
-              ease:
-                "power3.out",
-            },
-            1.8,
-          );
-
-          /* =============================================
-             IMAGE 6 — BACK / CENTER
-          ============================================= */
-
-          tl.fromTo(
-            imageRefs.current[
-              5
-            ],
-            {
-              yPercent:
-                110,
-
-              scale:
-                0.72,
-
-              opacity:
-                0,
-            },
-            {
-              yPercent:
-                0,
-
-              scale:
-                1,
-
-              opacity:
-                1,
-
-              duration:
-                1.25,
-
-              ease:
-                "power3.out",
-            },
-            2.05,
-          );
-
-          /* =============================================
-             HEADLINE GOES UP
-
-             Old animation ki tarah screen se fly nahi karega.
-             Bas elegant movement.
-          ============================================= */
-
-          tl.to(
-            headline,
-            {
-              yPercent:
-                -85,
-
-              scale:
-                0.82,
-
-              opacity:
-                0.08,
-
-              duration:
-                1.1,
-
-              ease:
-                "power2.inOut",
-            },
-            2.8,
-          );
-
-          /* =============================================
-             COLLAGE EXPANDS
-
-             Images center text ke around frame banayengi.
-          ============================================= */
-
-          tl.to(
-            imageRefs.current[
-              0
-            ],
-            {
-              xPercent:
-                -8,
-
-              yPercent:
-                -8,
-
-              scale:
-                0.93,
-
-              duration:
-                1,
-            },
-            2.9,
-          );
-
-          tl.to(
-            imageRefs.current[
-              1
-            ],
-            {
-              xPercent:
-                8,
-
-              yPercent:
-                -7,
-
-              scale:
-                0.93,
-
-              duration:
-                1,
-            },
-            2.9,
-          );
-
-          tl.to(
-            imageRefs.current[
-              2
-            ],
-            {
-              yPercent:
-                -7,
-
-              scale:
-                0.9,
-
-              opacity:
-                0.75,
-
-              duration:
-                1,
-            },
-            2.9,
-          );
-
-          tl.to(
-            imageRefs.current[
-              3
-            ],
-            {
-              xPercent:
-                -8,
-
-              yPercent:
-                5,
-
-              scale:
-                0.92,
-
-              duration:
-                1,
-            },
-            2.9,
-          );
-
-          tl.to(
-            imageRefs.current[
-              4
-            ],
-            {
-              xPercent:
-                8,
-
-              yPercent:
-                5,
-
-              scale:
-                0.92,
-
-              duration:
-                1,
-            },
-            2.9,
-          );
-
-          tl.to(
-            imageRefs.current[
-              5
-            ],
-            {
-              yPercent:
-                8,
-
-              scale:
-                0.88,
-
-              opacity:
-                0.65,
-
-              duration:
-                1,
-            },
-            2.9,
-          );
-
-          /* =============================================
-             REAL WOMEN STORY TEXT
-          ============================================= */
-
-          tl.to(
-            story,
-            {
-              opacity:
-                1,
-
-              y:
-                0,
-
-              scale:
-                1,
-
-              duration:
-                1.15,
-
-              ease:
-                "power3.out",
-            },
-            3.25,
-          );
-
-          /* =============================================
-             SUBTLE PARALLAX
-          ============================================= */
-
-          tl.to(
-            imageRefs.current[
-              0
-            ],
-            {
-              yPercent:
-                -18,
-
-              duration:
-                1.3,
-
-              ease:
-                "none",
-            },
-            4.25,
-          );
-
-          tl.to(
-            imageRefs.current[
-              1
-            ],
-            {
-              yPercent:
-                -12,
-
-              duration:
-                1.3,
-
-              ease:
-                "none",
-            },
-            4.25,
-          );
-
-          tl.to(
-            imageRefs.current[
-              2
-            ],
-            {
-              yPercent:
-                -20,
-
-              duration:
-                1.3,
-
-              ease:
-                "none",
-            },
-            4.25,
-          );
-
-          tl.to(
-            imageRefs.current[
-              3
-            ],
-            {
-              yPercent:
-                -8,
-
-              duration:
-                1.3,
-
-              ease:
-                "none",
-            },
-            4.25,
-          );
-
-          tl.to(
-            imageRefs.current[
-              4
-            ],
-            {
-              yPercent:
-                -14,
-
-              duration:
-                1.3,
-
-              ease:
-                "none",
-            },
-            4.25,
-          );
-
-          tl.to(
-            imageRefs.current[
-              5
-            ],
-            {
-              yPercent:
-                -7,
-
-              duration:
-                1.3,
-
-              ease:
-                "none",
-            },
-            4.25,
-          );
-
-          /* =============================================
-             END HOLD
-          ============================================= */
-
-          tl.to(
-            {},
-            {
-              duration:
-                0.7,
-            },
-          );
-        },
-        section,
       );
 
-    ScrollTrigger.refresh();
+
+
+      element.textContent = chars
+
+        .map((char, index) => {
+
+          if (char === " ") return " ";
+
+          if (index < revealCount) return char;
+
+
+
+          return SCRAMBLE_CHARS[
+
+            Math.floor(Math.random() * SCRAMBLE_CHARS.length)
+
+          ];
+
+        })
+
+        .join("");
+
+    },
+
+
+
+    onComplete: () => {
+
+      element.textContent = finalText;
+
+    },
+
+  });
+
+}
+
+
+
+/* =========================================================
+
+   ADD 2 MODELS AT A TIME
+
+   ========================================================= */
+
+
+
+function addModelPairs(
+
+  timeline: gsap.core.Timeline,
+
+  cards: HTMLAnchorElement[],
+
+  startTime: number,
+
+) {
+
+  let cursor = startTime;
+
+
+
+  for (let index = 0; index < cards.length; index += 2) {
+
+    const pair = [cards[index], cards[index + 1]].filter(
+
+      (item): item is HTMLAnchorElement => Boolean(item),
+
+    );
+
+
+
+    if (!pair.length) continue;
+
+
+
+    pair.forEach((card, pairIndex) => {
+
+      timeline.fromTo(
+
+        card,
+
+        {
+
+          autoAlpha: 0,
+
+          xPercent: pairIndex === 0 ? 45 : 75,
+
+          yPercent: 28,
+
+          scale: 0.86,
+
+          rotation: pairIndex === 0 ? -4 : 4,
+
+          filter: "blur(6px)",
+
+        },
+
+        {
+
+          autoAlpha: 1,
+
+          xPercent: 0,
+
+          yPercent: 0,
+
+          scale: 1,
+
+          rotation: 0,
+
+          filter: "blur(0px)",
+
+          duration: 0.75,
+
+          ease: "power3.out",
+
+        },
+
+        cursor + pairIndex * 0.08,
+
+      );
+
+    });
+
+
+
+    timeline.to(
+
+      pair,
+
+      {
+
+        scale: 1.015,
+
+        duration: 0.55,
+
+        ease: "none",
+
+      },
+
+      cursor + 0.76,
+
+    );
+
+
+
+    timeline.to(
+
+      pair,
+
+      {
+
+        autoAlpha: 0,
+
+        xPercent: -24,
+
+        yPercent: -12,
+
+        scale: 0.94,
+
+        filter: "blur(6px)",
+
+        duration: 0.55,
+
+        stagger: 0.05,
+
+        ease: "power3.in",
+
+      },
+
+      cursor + 1.31,
+
+    );
+
+
+
+    cursor += 1.9;
+
+  }
+
+
+
+  return cursor;
+
+}
+
+
+
+/* =========================================================
+
+   DESKTOP STORY
+
+   IMPORTANT:
+
+   No long sticky 820vh section now.
+
+   ScrollTrigger itself pins the section.
+
+   This removes the blank screen problem.
+
+   ========================================================= */
+
+
+
+function DesktopStory() {
+
+  const sectionRef = useRef<HTMLElement | null>(null);
+
+
+
+  const introRef = useRef<HTMLDivElement | null>(null);
+
+  const madeRef = useRef<HTMLSpanElement | null>(null);
+
+  const youRef = useRef<HTMLSpanElement | null>(null);
+
+  const cursorRef = useRef<HTMLSpanElement | null>(null);
+
+
+
+  const womenSceneRef = useRef<HTMLDivElement | null>(null);
+
+  const menSceneRef = useRef<HTMLDivElement | null>(null);
+
+
+
+  const womenRefs = useRef<(HTMLAnchorElement | null)[]>([]);
+
+  const menRefs = useRef<(HTMLAnchorElement | null)[]>([]);
+
+
+
+  useEffect(() => {
+
+    if (!window.matchMedia("(min-width: 1024px)").matches) {
+
+      return;
+
+    }
+
+
+
+    gsap.registerPlugin(ScrollTrigger);
+
+
+
+    const section = sectionRef.current;
+
+    const intro = introRef.current;
+
+    const womenScene = womenSceneRef.current;
+
+    const menScene = menSceneRef.current;
+
+    const made = madeRef.current;
+
+    const you = youRef.current;
+
+    const cursor = cursorRef.current;
+
+
+
+    if (
+
+      !section ||
+
+      !intro ||
+
+      !womenScene ||
+
+      !menScene ||
+
+      !made ||
+
+      !you
+
+    ) {
+
+      return;
+
+    }
+
+
+
+    const womenCards = womenRefs.current.filter(
+
+      (item): item is HTMLAnchorElement => item !== null,
+
+    );
+
+
+
+    const menCards = menRefs.current.filter(
+
+      (item): item is HTMLAnchorElement => item !== null,
+
+    );
+
+
+
+    const ctx = gsap.context(() => {
+
+      /* -----------------------------------------
+
+         INITIAL STATES
+
+         ----------------------------------------- */
+
+
+
+      gsap.set(intro, {
+
+        autoAlpha: 1,
+
+        yPercent: 0,
+
+        scale: 1,
+
+      });
+
+
+
+      /*
+
+        NO Tailwind "invisible" class.
+
+        GSAP completely controls visibility.
+
+      */
+
+      gsap.set(womenScene, {
+
+        autoAlpha: 0,
+
+        yPercent: 100,
+
+        visibility: "visible",
+
+      });
+
+
+
+      gsap.set(menScene, {
+
+        autoAlpha: 0,
+
+        yPercent: 100,
+
+        visibility: "visible",
+
+      });
+
+
+
+      gsap.set([...womenCards, ...menCards], {
+
+        autoAlpha: 0,
+
+        visibility: "hidden",
+
+      });
+
+
+
+      /* -----------------------------------------
+
+         TEXT SCRAMBLE
+
+         ----------------------------------------- */
+
+
+
+      const introText = gsap.timeline({
+
+        delay: 0.1,
+
+      });
+
+
+
+      introText
+
+        .add(createScrambleTween(made, "Made to feel", 1))
+
+        .add(createScrambleTween(you, "like you.", 1.15), "-=0.25");
+
+
+
+      if (cursor) {
+
+        gsap.to(cursor, {
+
+          opacity: 0,
+
+          duration: 0.4,
+
+          repeat: -1,
+
+          yoyo: true,
+
+          ease: "none",
+
+        });
+
+      }
+
+
+
+      /* -----------------------------------------
+
+         MASTER PINNED TIMELINE
+
+         ----------------------------------------- */
+
+
+
+      const timeline = gsap.timeline({
+
+        scrollTrigger: {
+
+          trigger: section,
+
+          start: "top top",
+
+
+
+          /*
+
+            Scroll distance for the complete intro -> women -> men story.
+
+          */
+
+          end: "+=6200",
+
+
+
+          scrub: 0.85,
+
+          pin: true,
+
+          pinSpacing: true,
+
+          anticipatePin: 1,
+
+          invalidateOnRefresh: true,
+
+        },
+
+      });
+
+
+
+      /* =========================================
+
+         1. INTRO
+
+         ========================================= */
+
+
+
+      timeline.to({}, { duration: 0.7 });
+
+
+
+      /*
+
+        Women starts BEFORE intro is completely gone.
+
+        Therefore there can be no cream blank screen.
+
+      */
+
+      timeline.fromTo(
+
+        womenScene,
+
+        {
+
+          yPercent: 100,
+
+          autoAlpha: 0,
+
+        },
+
+        {
+
+          yPercent: 0,
+
+          autoAlpha: 1,
+
+          duration: 1.15,
+
+          ease: "power4.inOut",
+
+        },
+
+        0.55,
+
+      );
+
+
+
+      timeline.to(
+
+        intro,
+
+        {
+
+          yPercent: -24,
+
+          scale: 0.96,
+
+          autoAlpha: 0,
+
+          duration: 0.85,
+
+          ease: "power3.inOut",
+
+        },
+
+        0.7,
+
+      );
+
+
+
+      /* =========================================
+
+         2. WOMEN MODELS
+
+         ========================================= */
+
+
+
+      const womenEnd = addModelPairs(
+
+        timeline,
+
+        womenCards,
+
+        1.45,
+
+      );
+
+
+
+      const womenFinishedAt = Math.max(womenEnd, 3.5);
+
+
+
+      timeline.to(
+
+        {},
+
+        {
+
+          duration: 0.45,
+
+        },
+
+        womenFinishedAt,
+
+      );
+
+
+
+      /* =========================================
+
+         3. WOMEN -> MEN
+
+         ========================================= */
+
+
+
+      const menSwitchAt = womenFinishedAt + 0.35;
+
+
+
+      /*
+
+        Men comes up while women is leaving.
+
+        Again: no blank frame between sections.
+
+      */
+
+      timeline.fromTo(
+
+        menScene,
+
+        {
+
+          yPercent: 100,
+
+          autoAlpha: 0,
+
+        },
+
+        {
+
+          yPercent: 0,
+
+          autoAlpha: 1,
+
+          duration: 1.15,
+
+          ease: "power4.inOut",
+
+        },
+
+        menSwitchAt,
+
+      );
+
+
+
+      timeline.to(
+
+        womenScene,
+
+        {
+
+          yPercent: -100,
+
+          autoAlpha: 0,
+
+          duration: 1.15,
+
+          ease: "power4.inOut",
+
+        },
+
+        menSwitchAt,
+
+      );
+
+
+
+      /* =========================================
+
+         4. OPTIONAL MEN MODELS
+
+         ========================================= */
+
+
+
+      if (menCards.length > 0) {
+
+        const menEnd = addModelPairs(
+
+          timeline,
+
+          menCards,
+
+          menSwitchAt + 0.8,
+
+        );
+
+
+
+        timeline.to({}, { duration: 1 }, menEnd);
+
+      } else {
+
+        /*
+
+          Your male PNG files currently don't exist,
+
+          so keep the men hero background visible.
+
+        */
+
+        timeline.to(
+
+          {},
+
+          {
+
+            duration: 2,
+
+          },
+
+          menSwitchAt + 1.15,
+
+        );
+
+      }
+
+    }, section);
+
+
+
+    const refreshTimer = window.setTimeout(() => {
+
+      ScrollTrigger.refresh();
+
+    }, 100);
+
+
 
     return () => {
+
+      window.clearTimeout(refreshTimer);
+
       ctx.revert();
+
     };
+
   }, []);
 
-  /* =======================================================
-     RENDER
-  ======================================================= */
+
 
   return (
+
     <section
-      ref={
-        sectionRef
-      }
+
+      ref={sectionRef}
+
       className="
+
         relative
-        h-[520vh]
+
+        hidden
+
+        h-screen
+
         w-full
+
+        overflow-hidden
+
         bg-[#F7F3EF]
+
+        lg:block
+
       "
+
     >
-      {/* ===================================================
-          STICKY VIEWPORT
-      =================================================== */}
+
+      {/* =================================================
+
+          INTRO
+
+      ================================================= */}
+
+
 
       <div
+
+        ref={introRef}
+
         className="
-          sticky
-          top-0
-          h-screen
-          w-full
-          overflow-hidden
+
+          absolute
+
+          inset-0
+
+          z-30
+
+          flex
+
+          items-center
+
+          justify-center
+
           bg-[#F7F3EF]
+
         "
+
       >
-        {/* =================================================
-            BACKGROUND
-        ================================================= */}
 
         <div
+
           className="
+
             pointer-events-none
+
             absolute
+
             inset-0
-            bg-[radial-gradient(circle_at_center,_#FFF7F2_0%,_#F7F3EF_55%,_#EFE4DE_100%)]
+
+            bg-[radial-gradient(circle_at_center,_#FFF9F5_0%,_#F7F3EF_57%,_#EFE4DE_100%)]
+
           "
+
         />
 
-        <div
-          className="
-            pointer-events-none
-            absolute
-            -left-[15vw]
-            top-[10vh]
-            h-[55vh]
-            w-[55vh]
-            rounded-full
-            bg-[#F4DCD8]/40
-            blur-[90px]
-          "
-        />
 
-        <div
-          className="
-            pointer-events-none
-            absolute
-            -right-[15vw]
-            bottom-[5vh]
-            h-[60vh]
-            w-[60vh]
-            rounded-full
-            bg-[#8C1839]/10
-            blur-[100px]
-          "
-        />
 
-        {/* =================================================
-            MAIN HEADLINE
-        ================================================= */}
+        <div className="relative z-10 w-full px-5 text-center">
 
-        <div
-          ref={
-            headlineRef
-          }
-          className="
-            pointer-events-none
-            absolute
-            left-1/2
-            top-1/2
-            z-40
-            w-full
-            -translate-x-1/2
-            -translate-y-1/2
-            px-5
-            text-center
-          "
-        >
           <p
+
             className="
+
               mb-4
-              text-[8px]
+
+              text-[9px]
+
               uppercase
+
               tracking-[0.5em]
+
               text-[#8C6A52]
 
-              sm:text-[9px]
-
-              md:text-[10px]
             "
+
           >
+
             Hivra Soft
+
           </p>
 
-          <h2
-            aria-label="Made to feel like a diva."
+
+
+          <h1
+
             className="
-              text-[46px]
+
+              text-[70px]
+
               font-medium
-              leading-[0.88]
+
+              leading-[0.9]
+
               tracking-[-0.055em]
+
               text-[#211A18]
 
-              sm:text-[66px]
+              md:text-[88px]
 
-              md:text-[86px]
+              lg:text-[104px]
 
-              lg:text-[105px]
             "
+
           >
+
             <span
-              ref={
-                madeTextRef
-              }
-              className="
-                inline-block
-                min-h-[1em]
-              "
+
+              ref={madeRef}
+
+              className="inline-block min-h-[1em]"
+
             >
+
               Made to feel
+
             </span>
+
+
 
             <br />
 
-            <span
-              className="
-                inline-flex
-                items-end
-                justify-center
-                pt-3
-              "
-            >
+
+
+            <span className="inline-flex items-end justify-center pt-3">
+
               <span
-                ref={
-                  divaTextRef
-                }
-                className="
-                  font-normal
-                  italic
-                  text-[#8C1839]
-                "
+
+                ref={youRef}
+
+                className="font-normal italic text-[#8C1839]"
+
                 style={{
+
                   fontFamily:
+
                     '"Segoe Script", "Snell Roundhand", "Brush Script MT", cursive',
 
-                  fontWeight:
-                    400,
+                  letterSpacing: "-0.04em",
 
-                  letterSpacing:
-                    "-0.04em",
                 }}
+
               >
-                like a diva.
+
+                like you.
+
               </span>
 
+
+
               <span
-                ref={
-                  cursorRef
-                }
-                aria-hidden="true"
+
+                ref={cursorRef}
+
                 className="
+
                   ml-2
+
                   inline-block
+
                   h-[0.78em]
-                  w-[2px]
+
+                  w-[3px]
+
                   bg-[#8C1839]
 
-                  md:w-[3px]
                 "
+
               />
+
             </span>
-          </h2>
+
+          </h1>
+
+
 
           <p
+
             className="
+
               mt-7
-              text-[8px]
+
+              text-[9px]
+
               uppercase
+
               tracking-[0.35em]
+
               text-[#9C765D]
 
-              sm:text-[9px]
-
-              md:text-[10px]
             "
+
           >
+
             Unmistakably yourself.
-          </p>
-        </div>
 
-        {/* =================================================
-            IMAGE 1 — LEFT TOP
-        ================================================= */}
-
-        <div
-          ref={(
-            element,
-          ) => {
-            imageRefs.current[
-              0
-            ] =
-              element;
-          }}
-          className="
-            pointer-events-none
-            absolute
-            -left-[11%]
-            top-[12%]
-            z-20
-            h-[43vh]
-            w-[52vw]
-
-            sm:left-[2%]
-            sm:h-[48vh]
-            sm:w-[30vw]
-
-            lg:left-[4%]
-            lg:w-[23vw]
-          "
-        >
-          <div
-            className="
-              relative
-              h-full
-              w-full
-            "
-          >
-            <Image
-              src={
-                images[0]
-              }
-              alt="Hivra Soft model 1"
-              fill
-              priority
-              sizes="30vw"
-              className="
-                object-contain
-              "
-            />
-          </div>
-        </div>
-
-        {/* =================================================
-            IMAGE 2 — RIGHT TOP
-        ================================================= */}
-
-        <div
-          ref={(
-            element,
-          ) => {
-            imageRefs.current[
-              1
-            ] =
-              element;
-          }}
-          className="
-            pointer-events-none
-            absolute
-            -right-[11%]
-            top-[14%]
-            z-20
-            h-[42vh]
-            w-[52vw]
-
-            sm:right-[2%]
-            sm:h-[47vh]
-            sm:w-[30vw]
-
-            lg:right-[4%]
-            lg:w-[23vw]
-          "
-        >
-          <div
-            className="
-              relative
-              h-full
-              w-full
-            "
-          >
-            <Image
-              src={
-                images[1]
-              }
-              alt="Hivra Soft model 2"
-              fill
-              sizes="30vw"
-              className="
-                object-contain
-              "
-            />
-          </div>
-        </div>
-
-        {/* =================================================
-            IMAGE 3 — CENTER HERO
-        ================================================= */}
-
-        <div
-          ref={(
-            element,
-          ) => {
-            imageRefs.current[
-              2
-            ] =
-              element;
-          }}
-          className="
-            pointer-events-none
-            absolute
-            left-1/2
-            top-[7%]
-            z-30
-            h-[55vh]
-            w-[56vw]
-            -translate-x-1/2
-            overflow-hidden
-
-            sm:h-[61vh]
-            sm:w-[34vw]
-
-            lg:w-[27vw]
-          "
-        >
-          <div
-            className="
-              relative
-              h-full
-              w-full
-            "
-          >
-            <Image
-              src={
-                images[2]
-              }
-              alt="Hivra Soft model 3"
-              fill
-              sizes="35vw"
-              className="
-                object-contain
-              "
-            />
-          </div>
-        </div>
-
-        {/* =================================================
-            IMAGE 4 — BOTTOM LEFT
-        ================================================= */}
-
-        <div
-          ref={(
-            element,
-          ) => {
-            imageRefs.current[
-              3
-            ] =
-              element;
-          }}
-          className="
-            pointer-events-none
-            absolute
-            -left-[5%]
-            bottom-[-2%]
-            z-30
-            h-[39vh]
-            w-[46vw]
-
-            sm:left-[14%]
-            sm:h-[43vh]
-            sm:w-[27vw]
-
-            lg:left-[18%]
-            lg:w-[21vw]
-          "
-        >
-          <div
-            className="
-              relative
-              h-full
-              w-full
-            "
-          >
-            <Image
-              src={
-                images[3]
-              }
-              alt="Hivra Soft model 4"
-              fill
-              sizes="28vw"
-              className="
-                object-contain
-              "
-            />
-          </div>
-        </div>
-
-        {/* =================================================
-            IMAGE 5 — BOTTOM RIGHT
-        ================================================= */}
-
-        <div
-          ref={(
-            element,
-          ) => {
-            imageRefs.current[
-              4
-            ] =
-              element;
-          }}
-          className="
-            pointer-events-none
-            absolute
-            -right-[6%]
-            bottom-[-2%]
-            z-30
-            h-[39vh]
-            w-[46vw]
-
-            sm:right-[14%]
-            sm:h-[43vh]
-            sm:w-[27vw]
-
-            lg:right-[18%]
-            lg:w-[21vw]
-          "
-        >
-          <div
-            className="
-              relative
-              h-full
-              w-full
-            "
-          >
-            <Image
-              src={
-                images[4]
-              }
-              alt="Hivra Soft model 5"
-              fill
-              sizes="28vw"
-              className="
-                object-contain
-              "
-            />
-          </div>
-        </div>
-
-        {/* =================================================
-            IMAGE 6 — LOWER CENTER
-        ================================================= */}
-
-        <div
-          ref={(
-            element,
-          ) => {
-            imageRefs.current[
-              5
-            ] =
-              element;
-          }}
-          className="
-            pointer-events-none
-            absolute
-            bottom-[-8%]
-            left-1/2
-            z-10
-            h-[37vh]
-            w-[42vw]
-            -translate-x-1/2
-
-            sm:h-[40vh]
-            sm:w-[25vw]
-
-            lg:w-[19vw]
-          "
-        >
-          <div
-            className="
-              relative
-              h-full
-              w-full
-            "
-          >
-            <Image
-              src={
-                images[5]
-              }
-              alt="Hivra Soft model 6"
-              fill
-              sizes="25vw"
-              className="
-                object-contain
-              "
-            />
-          </div>
-        </div>
-
-        {/* =================================================
-            STORY TEXT
-
-            Images reveal hone ke baad center me aayega.
-        ================================================= */}
-
-        <div
-          ref={
-            storyRef
-          }
-          className="
-            pointer-events-none
-            absolute
-            left-1/2
-            top-1/2
-            z-50
-            w-full
-            max-w-[760px]
-            -translate-x-1/2
-            -translate-y-1/2
-            px-6
-            text-center
-          "
-        >
-          <p
-            className="
-              mb-4
-              text-[8px]
-              uppercase
-              tracking-[0.5em]
-              text-[#8C6A52]
-
-              sm:text-[9px]
-            "
-          >
-            The Hivra Story
           </p>
 
-          <h3
-            className="
-              font-serif
-              text-[40px]
-              leading-[0.95]
-              tracking-[-0.045em]
-              text-[#211A18]
+        </div>
 
-              sm:text-[58px]
+      </div>
 
-              md:text-[72px]
 
-              lg:text-[86px]
-            "
+
+      {/* =================================================
+
+          WOMEN
+
+      ================================================= */}
+
+
+
+      <div
+
+        ref={womenSceneRef}
+
+        className="
+
+          absolute
+
+          inset-0
+
+          z-20
+
+          overflow-hidden
+
+          bg-[#706545]
+
+        "
+
+        style={{
+
+          opacity: 0,
+
+          visibility: "hidden",
+
+        }}
+
+      >
+
+        <Image
+
+          src={WOMEN_BG}
+
+          alt="Hivra Soft women collection"
+
+          fill
+
+          priority
+
+          sizes="100vw"
+
+          className="object-cover object-center"
+
+        />
+
+
+
+        <div className="pointer-events-none absolute inset-0 bg-black/[0.02]" />
+
+
+
+        {womenModels.map((src, index) => (
+
+          <Link
+
+            key={src}
+
+            ref={(element) => {
+
+              womenRefs.current[index] = element;
+
+            }}
+
+            href="/women"
+
+            aria-label={`Explore women collection model ${index + 1}`}
+
+            className={`
+
+              absolute
+
+              z-30
+
+              block
+
+              cursor-pointer
+
+              ${womenPositions[index]}
+
+            `}
+
+            style={{
+
+              opacity: 0,
+
+              visibility: "hidden",
+
+            }}
+
           >
-            Real women.
 
-            <br />
-
-            <span
+            <div
               className="
-                italic
-                text-[#8C1839]
+                relative
+                h-full
+                w-full
+                origin-bottom
+                overflow-hidden
+                rounded-[22px]
+                border
+                border-white/20
+                bg-white/10
+                shadow-[0_24px_55px_rgba(0,0,0,0.22)]
+                transition-transform
+                duration-500
+                hover:scale-[1.035]
               "
             >
-              Real stories.
-            </span>
-          </h3>
+              <Image
+                src={src}
+                alt={`Women collection ${index + 1}`}
+                fill
+                sizes="20vw"
+                className="
+                  object-cover
+                  object-center
+                  transition-transform
+                  duration-700
+                  hover:scale-[1.06]
+                "
+              />
 
-          <p
-            className="
-              mx-auto
-              mt-6
-              max-w-[430px]
+              <div
+                className="
+                  pointer-events-none
+                  absolute
+                  inset-0
+                  bg-gradient-to-t
+                  from-black/25
+                  via-transparent
+                  to-transparent
+                "
+              />
+
+              <span
+                className="
+                  absolute
+                  bottom-3
+                  left-3
+                  text-[8px]
+                  font-bold
+                  uppercase
+                  tracking-[0.16em]
+                  text-white
+                "
+              >
+                Women {String(index + 1).padStart(2, "0")}
+              </span>
+            </div>
+
+          </Link>
+
+        ))}
+
+
+
+        <Link
+
+          href="/women"
+
+          className="
+
+            absolute
+
+            bottom-[6%]
+
+            right-[4%]
+
+            z-50
+
+            text-right
+
+            text-white
+
+          "
+
+        >
+
+          <p className="text-[8px] uppercase tracking-[0.5em]">
+
+            Hivra Soft
+
+          </p>
+
+
+
+          <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.28em]">
+
+            Explore Women -&gt;
+
+          </p>
+
+        </Link>
+
+      </div>
+
+
+
+      {/* =================================================
+
+          MEN
+
+      ================================================= */}
+
+
+
+      <div
+
+        ref={menSceneRef}
+
+        className="
+
+          absolute
+
+          inset-0
+
+          z-20
+
+          overflow-hidden
+
+          bg-[#B77F47]
+
+        "
+
+        style={{
+
+          opacity: 0,
+
+          visibility: "hidden",
+
+        }}
+
+      >
+
+        <Image
+
+          src={MEN_BG}
+
+          alt="Hivra Soft men collection"
+
+          fill
+
+          priority
+
+          sizes="100vw"
+
+          className="object-cover object-center"
+
+        />
+
+
+
+        <div className="pointer-events-none absolute inset-0 bg-black/[0.02]" />
+
+
+
+        {menModels.map((src, index) => (
+
+          <Link
+
+            key={src}
+
+            ref={(element) => {
+
+              menRefs.current[index] = element;
+
+            }}
+
+            href="/men"
+
+            className={`
+
+              absolute
+
+              z-30
+
+              block
+
+              cursor-pointer
+
+              ${menPositions[index]}
+
+            `}
+
+            style={{
+
+              opacity: 0,
+
+              visibility: "hidden",
+
+            }}
+
+          >
+
+            <div
+              className="
+                relative
+                h-full
+                w-full
+                overflow-hidden
+                rounded-[22px]
+                border
+                border-white/20
+                bg-white/10
+                shadow-[0_24px_55px_rgba(0,0,0,0.22)]
+                transition-transform
+                duration-500
+                hover:scale-[1.035]
+              "
+            >
+              <Image
+                src={src}
+                alt={`Men collection ${index + 1}`}
+                fill
+                sizes="20vw"
+                className="
+                  object-cover
+                  object-center
+                  transition-transform
+                  duration-700
+                  hover:scale-[1.06]
+                "
+              />
+
+              <div
+                className="
+                  pointer-events-none
+                  absolute
+                  inset-0
+                  bg-gradient-to-t
+                  from-black/25
+                  via-transparent
+                  to-transparent
+                "
+              />
+
+              <span
+                className="
+                  absolute
+                  bottom-3
+                  left-3
+                  text-[8px]
+                  font-bold
+                  uppercase
+                  tracking-[0.16em]
+                  text-white
+                "
+              >
+                Men {String(index + 1).padStart(2, "0")}
+              </span>
+            </div>
+
+          </Link>
+
+        ))}
+
+
+
+        <Link
+
+          href="/men"
+
+          className="
+
+            absolute
+
+            bottom-[6%]
+
+            right-[4%]
+
+            z-50
+
+            text-right
+
+            text-white
+
+          "
+
+        >
+
+          <p className="text-[8px] uppercase tracking-[0.5em]">
+
+            Hivra Soft
+
+          </p>
+
+
+
+          <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.28em]">
+
+            Explore Men -&gt;
+
+          </p>
+
+        </Link>
+
+      </div>
+
+    </section>
+
+  );
+
+}
+
+
+
+/* =========================================================
+
+   MOBILE CIRCULAR PRODUCT WHEEL
+
+   ========================================================= */
+
+
+
+function MobileProductWheel() {
+  const [
+    gender,
+    setGender,
+  ] =
+    useState<MobileGender>(
+      "women"
+    );
+
+  const [
+    active,
+    setActive,
+  ] =
+    useState(
+      0
+    );
+
+  const mobileProducts =
+    gender === "women"
+      ? mobileWomenProducts
+      : mobileMenProducts;
+
+  const activeProduct =
+    mobileProducts[active];
+
+  useEffect(() => {
+    setActive(
+      0
+    );
+  }, [
+    gender,
+  ]);
+
+
+
+  const move = (direction: number) => {
+
+    setActive((current) => {
+
+      const next = current + direction;
+
+
+
+      return (
+
+        (next + mobileProducts.length) %
+
+        mobileProducts.length
+
+      );
+
+    });
+
+  };
+
+
+
+  return (
+
+    <section
+
+      className="
+
+        relative
+
+        min-h-screen
+
+        overflow-hidden
+
+        bg-[#F7F3EF]
+
+        px-4
+
+        pb-7
+
+        pt-8
+
+        text-[#211A18]
+
+        lg:hidden
+
+      "
+
+    >
+
+      <div
+
+        className="
+
+          pointer-events-none
+
+          absolute
+
+          inset-0
+
+          bg-[radial-gradient(circle_at_80%_12%,rgba(140,24,57,0.12),transparent_36%)]
+
+        "
+
+      />
+
+
+
+      <div className="relative z-10">
+
+        <p
+
+          className="
+
+            mb-2
+
+            text-[9px]
+
+            font-semibold
+
+            uppercase
+
+            tracking-[0.35em]
+
+            text-[#9C765D]
+
+          "
+
+        >
+
+          Hivra Soft
+
+        </p>
+
+
+
+        <h2
+          className="
+            max-w-[300px]
+            font-serif
+            text-[48px]
+            font-normal
+            leading-[0.93]
+            tracking-[-0.055em]
+          "
+        >
+          Find your fit.
+        </h2>
+
+        <div
+          className="
+            mt-5
+            inline-flex
+            rounded-full
+            border
+            border-[#211A18]/10
+            bg-white/70
+            p-1
+            shadow-sm
+            backdrop-blur
+          "
+        >
+          <button
+            type="button"
+            onClick={() =>
+              setGender(
+                "women"
+              )
+            }
+            className={`
+              rounded-full
+              px-5
+              py-2
               text-[10px]
-              leading-6
-              text-[#765F55]
-
-              sm:text-[11px]
-
-              md:text-[12px]
-            "
-          >
-            Different bodies.
-            Same confidence.
-            Designed to feel
-            comfortable, effortless
-            and completely yours.
-          </p>
-
-          <div
-            className="
-              mx-auto
-              mt-7
-              h-[42px]
-              w-px
-              bg-[#8C1839]/40
-            "
-          />
-
-          <p
-            className="
-              mt-3
-              text-[7px]
+              font-bold
               uppercase
-              tracking-[0.35em]
-              text-[#8C6A52]
+              tracking-[0.12em]
+              transition
 
-              sm:text-[8px]
-            "
+              ${
+                gender === "women"
+                  ? "bg-[#8C1839] text-white"
+                  : "text-[#211A18]/65"
+              }
+            `}
           >
-            Scroll to discover
-          </p>
+            Women
+          </button>
+
+          <button
+            type="button"
+            onClick={() =>
+              setGender(
+                "men"
+              )
+            }
+            className={`
+              rounded-full
+              px-5
+              py-2
+              text-[10px]
+              font-bold
+              uppercase
+              tracking-[0.12em]
+              transition
+
+              ${
+                gender === "men"
+                  ? "bg-[#211A18] text-white"
+                  : "text-[#211A18]/65"
+              }
+            `}
+          >
+            Men
+          </button>
         </div>
       </div>
+
+
+
+      <div
+
+        className="
+
+          hivra-mobile-card
+
+          relative
+
+          mt-8
+
+          min-h-[680px]
+
+          overflow-hidden
+
+          rounded-[26px]
+
+          border
+
+          border-[#211A18]/15
+
+          bg-[#FFF9F5]
+
+          shadow-[0_24px_80px_rgba(71,43,33,0.11)]
+
+        "
+
+      >
+
+        <div
+
+          className="
+
+            pointer-events-none
+
+            absolute
+
+            inset-0
+
+            bg-[radial-gradient(circle_at_50%_-5%,rgba(140,24,57,0.18),transparent_36%),radial-gradient(circle_at_12%_70%,rgba(197,138,84,0.16),transparent_28%)]
+
+          "
+
+        />
+
+
+
+        <div className="absolute left-1/2 top-[-145px] h-px w-px">
+
+          <div className="hivra-wheel-orbit relative h-px w-px">
+
+            {mobileProducts.map((product, index) => {
+
+              let delta = index - active;
+
+
+
+              if (delta > mobileProducts.length / 2) {
+
+                delta -= mobileProducts.length;
+
+              }
+
+
+
+              if (delta < -mobileProducts.length / 2) {
+
+                delta += mobileProducts.length;
+
+              }
+
+
+
+              const angle = delta * (360 / mobileProducts.length);
+
+
+
+              const itemStyle: CSSProperties = {
+
+                transform: `rotate(${angle}deg) translateY(var(--wheel-radius)) rotate(${-angle}deg)`,
+
+              };
+
+
+
+              return (
+
+                <button
+
+                  key={`${product.title}-${index}`}
+
+                  type="button"
+
+                  className={`hivra-wheel-item ${
+
+                    index === active ? "is-active" : ""
+
+                  }`}
+
+                  style={itemStyle}
+
+                  onClick={() => setActive(index)}
+
+                  aria-label={`Select ${product.title}`}
+
+                >
+
+                  <span className="hivra-wheel-image">
+
+                    <Image
+
+                      src={product.image}
+
+                      alt={product.title}
+
+                      fill
+
+                      sizes="140px"
+
+                      className="object-cover object-center"
+
+                    />
+
+                  </span>
+
+                </button>
+
+              );
+
+            })}
+
+          </div>
+
+        </div>
+
+
+
+        <div className="absolute bottom-7 left-6 right-6 z-10">
+
+          <p
+
+            className="
+
+              mb-3
+
+              text-[10px]
+
+              font-bold
+
+              tracking-[0.24em]
+
+              text-[#8C1839]
+
+            "
+
+          >
+
+            {String(active + 1).padStart(2, "0")}
+
+            {" / "}
+
+            {String(mobileProducts.length).padStart(2, "0")}
+
+          </p>
+
+
+
+          <h3
+
+            className="
+
+              font-serif
+
+              text-[52px]
+
+              font-normal
+
+              leading-[0.95]
+
+              tracking-[-0.05em]
+
+            "
+
+          >
+
+            {activeProduct.title}
+
+          </h3>
+
+
+
+          <p className="mt-3 text-[13px] text-[#765F55]">
+
+            {activeProduct.subtitle}
+
+          </p>
+
+
+
+          <Link
+
+            href={activeProduct.href}
+
+            className="
+
+              mt-6
+
+              inline-flex
+
+              items-center
+
+              gap-2
+
+              border-b
+
+              border-[#211A18]/40
+
+              pb-1
+
+              text-[11px]
+
+              font-bold
+
+              uppercase
+
+              tracking-[0.16em]
+
+            "
+
+          >
+
+            Explore collection
+
+          </Link>
+
+
+
+          <div className="mt-6 flex gap-2">
+
+            <button
+
+              type="button"
+
+              onClick={() => move(-1)}
+
+              aria-label="Previous product"
+
+              className="
+
+                grid
+
+                h-[52px]
+
+                w-[52px]
+
+                place-items-center
+
+                rounded-full
+
+                border
+
+                border-[#211A18]/15
+
+                bg-[#F7F3EF]
+
+                text-xl
+
+              "
+
+            >
+
+              {"<"}
+
+            </button>
+
+
+
+            <button
+
+              type="button"
+
+              onClick={() => move(1)}
+
+              aria-label="Next product"
+
+              className="
+
+                grid
+
+                h-[52px]
+
+                w-[52px]
+
+                place-items-center
+
+                rounded-full
+
+                border
+
+                border-[#211A18]/15
+
+                bg-[#F7F3EF]
+
+                text-xl
+
+              "
+
+            >
+
+              {">"}
+
+            </button>
+
+          </div>
+
+        </div>
+
+      </div>
+
     </section>
+
   );
+
+}
+
+
+
+/* =========================================================
+
+   MAIN EXPORT
+
+   ========================================================= */
+
+
+
+export default function DivaStory() {
+
+  useLayoutEffect(() => {
+
+    const previousRestoration =
+
+      window.history.scrollRestoration;
+
+
+
+    window.history.scrollRestoration = "manual";
+
+
+
+    const resetScroll = () => {
+
+      window.scrollTo(0, 0);
+
+      document.documentElement.scrollTop = 0;
+
+      document.body.scrollTop = 0;
+
+    };
+
+
+
+    resetScroll();
+
+
+
+    const frame = requestAnimationFrame(() => {
+
+      resetScroll();
+
+    });
+
+
+
+    return () => {
+
+      cancelAnimationFrame(frame);
+
+
+
+      window.history.scrollRestoration =
+
+        previousRestoration;
+
+    };
+
+  }, []);
+
+
+
+  return (
+
+    <main
+
+      className="
+
+        hivra-story-root
+
+        relative
+
+        m-0
+
+        w-full
+
+        overflow-x-hidden
+
+        p-0
+
+      "
+
+    >
+
+      <style>{`
+
+        footer,
+
+        .site-footer,
+
+        [data-site-footer],
+
+        #footer {
+
+          display: none !important;
+
+        }
+
+
+
+        html,
+
+        body {
+
+          margin: 0 !important;
+
+          padding: 0 !important;
+
+        }
+
+
+
+        body {
+
+          overflow-x: hidden;
+
+        }
+
+
+
+        .hivra-mobile-card {
+
+          --wheel-radius: min(57vw, 235px);
+
+        }
+
+
+
+        .hivra-wheel-orbit::before {
+
+          content: "";
+
+          position: absolute;
+
+          top: 50%;
+
+          left: 50%;
+
+
+
+          width: calc((var(--wheel-radius) * 2) + 130px);
+
+          height: calc((var(--wheel-radius) * 2) + 130px);
+
+
+
+          border: 1px dashed rgba(140, 24, 57, 0.22);
+
+          border-radius: 999px;
+
+
+
+          background:
+
+            radial-gradient(
+
+              circle,
+
+              rgba(140, 24, 57, 0.09),
+
+              transparent 64%
+
+            );
+
+
+
+          transform: translate(-50%, -50%);
+
+        }
+
+
+
+        .hivra-wheel-item {
+
+          position: absolute;
+
+
+
+          top: -58px;
+
+          left: -58px;
+
+
+
+          width: 116px;
+
+          height: 116px;
+
+
+
+          padding: 0;
+
+          border: 0;
+
+          border-radius: 999px;
+
+
+
+          background: transparent;
+
+          cursor: pointer;
+
+
+
+          transition:
+
+            transform 600ms cubic-bezier(0.2, 0.85, 0.2, 1),
+
+            opacity 350ms ease;
+
+        }
+
+
+
+        .hivra-wheel-image {
+
+          position: absolute;
+
+          inset: 4px;
+
+
+
+          display: block;
+
+          overflow: hidden;
+
+
+
+          border: 1px solid rgba(33, 26, 24, 0.13);
+
+          border-radius: 999px;
+
+
+
+          background: #eadfd8;
+
+
+
+          box-shadow:
+
+            0 12px 28px rgba(42, 20, 16, 0.16);
+
+
+
+          transition:
+
+            transform 350ms ease,
+
+            box-shadow 350ms ease;
+
+        }
+
+
+
+        .hivra-wheel-item.is-active .hivra-wheel-image {
+
+          transform: scale(1.22);
+
+
+
+          box-shadow:
+
+            0 0 0 5px rgba(247, 243, 239, 0.92),
+
+            0 0 0 7px #8c1839,
+
+            0 20px 35px rgba(42, 20, 16, 0.22);
+
+        }
+
+      `}</style>
+
+
+
+      <DesktopStory />
+
+      <MobileProductWheel />
+
+    </main>
+
+  );
+
 }

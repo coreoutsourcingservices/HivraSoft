@@ -6,6 +6,20 @@ import mongoose, {
 } from "mongoose";
 
 /* =========================================================
+   TYPES
+========================================================= */
+
+export type CartOfferType =
+  | "buy_get"
+  | "fixed_price_bundle"
+  | "";
+
+export type CartOfferSource =
+  | "buy_get_page"
+  | "fixed_price_bundle"
+  | "";
+
+/* =========================================================
    CART ITEM
 ========================================================= */
 
@@ -19,6 +33,23 @@ export interface ICartItem {
   sizeId: Types.ObjectId;
 
   quantity: number;
+
+  /*
+   * null / empty:
+   * Normal Men/Women/Home/Search cart item.
+   *
+   * buy_get + buy_get_page:
+   * Item Buy/Get offer page se add hua hai.
+   */
+  offerId?:
+    | Types.ObjectId
+    | null;
+
+  offerType?:
+    CartOfferType;
+
+  offerSource?:
+    CartOfferSource;
 
   addedAt: Date;
 
@@ -82,6 +113,42 @@ const cartItemSchema =
         min: 1,
         max: 99,
         default: 1,
+      },
+
+      offerId: {
+        type:
+          Schema.Types.ObjectId,
+
+        default:
+          null,
+      },
+
+      offerType: {
+        type:
+          String,
+
+        enum: [
+          "",
+          "buy_get",
+          "fixed_price_bundle",
+        ],
+
+        default:
+          "",
+      },
+
+      offerSource: {
+        type:
+          String,
+
+        enum: [
+          "",
+          "buy_get_page",
+          "fixed_price_bundle",
+        ],
+
+        default:
+          "",
       },
 
       addedAt: {
@@ -153,7 +220,14 @@ const cartSchema =
 cartSchema.index({
   "items.product": 1,
 });
-cartSchema.index({ "items.addedAt": 1 });
+
+cartSchema.index({
+  "items.offerId": 1,
+});
+
+cartSchema.index({
+  "items.addedAt": 1,
+});
 
 /* =========================================================
    MODEL
