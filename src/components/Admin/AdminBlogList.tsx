@@ -115,15 +115,15 @@ export default function AdminBlogList() {
                 <tbody className="divide-y divide-[#211A18]/7">
                   {blogs.map((blog) => <tr key={blog._id} className="text-[10px] text-[#211A18]/70">
                     <td className="px-4 py-3"><div className="h-12 w-16 overflow-hidden rounded-lg bg-[#F2ECE8]">{blog.featuredImage?.url ? <img src={blog.featuredImage.url} alt={blog.featuredImage.alt || blog.title} className="h-full w-full object-cover"/> : null}</div></td>
-                    <td className="max-w-[300px] px-4 py-3"><Link href={`/admin/blog/${blog._id}/edit`} className="font-semibold text-[#211A18] hover:text-[#A51D45]">{blog.title}</Link><div className="mt-1 truncate text-[9px] text-[#211A18]/40">/{blog.slug}</div></td>
+                    <td className="max-w-[300px] px-4 py-3"><Link href={blog.isLegacy ? `/${blog.slug}` : `/admin/blog/${blog._id}/edit`} className="font-semibold text-[#211A18] hover:text-[#A51D45]">{blog.title}</Link><div className="mt-1 truncate text-[9px] text-[#211A18]/40">/{blog.slug}</div></td>
                     <td className="px-4 py-3">{nameOf(blog.category)}</td><td className="px-4 py-3">{authorName(blog.author)}</td>
                     <td className="px-4 py-3"><span className={`rounded-full px-2.5 py-1 text-[8px] font-semibold ${blog.status === "PUBLISHED" ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200" : "bg-red-50 text-red-700 ring-1 ring-red-200"}`}>{blog.status}</span></td>
                     <td className="px-4 py-3">{date(blog.publishedAt || blog.scheduledAt)}</td><td className="px-4 py-3">{date(blog.updatedAt)}</td><td className="px-4 py-3 font-semibold">{blog.views || 0}</td>
                     <td className="px-4 py-3"><div className="flex justify-end gap-2">
-                      {blog.status === "PUBLISHED" && <Link href={`/blog/${blog.slug}`} target="_blank" className="rounded-lg border border-[#211A18]/10 px-2.5 py-2 text-[8px] font-semibold">Preview</Link>}
-                      <Link href={`/admin/blog/${blog._id}/edit`} title="Edit" className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#211A18]/10"><Edit3 size={13}/></Link>
-                      <button disabled={busyId === blog._id} onClick={() => void duplicate(blog)} title="Duplicate" className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#211A18]/10 disabled:opacity-40"><Copy size={13}/></button>
-                      <button disabled={busyId === blog._id} onClick={() => void remove(blog)} title="Delete" className="flex h-8 w-8 items-center justify-center rounded-lg border border-red-100 text-red-600 disabled:opacity-40"><Trash2 size={13}/></button>
+                      {blog.status === "PUBLISHED" && <Link href={`/${blog.slug}`} target="_blank" className="rounded-lg border border-[#211A18]/10 px-2.5 py-2 text-[8px] font-semibold">Preview</Link>}
+                      {!blog.isLegacy && <Link href={`/admin/blog/${blog._id}/edit`} title="Edit" className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#211A18]/10"><Edit3 size={13}/></Link>}
+                      {!blog.isLegacy && <button disabled={busyId === blog._id} onClick={() => void duplicate(blog)} title="Duplicate" className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#211A18]/10 disabled:opacity-40"><Copy size={13}/></button>}
+                      {!blog.isLegacy && <button disabled={busyId === blog._id} onClick={() => void remove(blog)} title="Delete" className="flex h-8 w-8 items-center justify-center rounded-lg border border-red-100 text-red-600 disabled:opacity-40"><Trash2 size={13}/></button>}
                     </div></td>
                   </tr>)}
                 </tbody>

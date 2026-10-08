@@ -687,9 +687,7 @@ export default async function Footer() {
 
           <DynamicFooterColumn
             title="Quick Links"
-            links={
-              quickLinks
-            }
+            links={[...quickLinks.filter((link) => link.href !== "/blog"), { id: "footer-blog", name: "Blog", href: "/blog" }]}
           />
 
           {/* =================================================

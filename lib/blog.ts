@@ -22,6 +22,7 @@ export type BlogBlock = {
 export type BlogTaxonomy = { _id: string; name: string; slug: string; description?: string; image?: BlogImage; isActive?: boolean };
 
 export type BlogRecord = {
+  isLegacy?: boolean;
   _id: string;
   title: string;
   slug: string;

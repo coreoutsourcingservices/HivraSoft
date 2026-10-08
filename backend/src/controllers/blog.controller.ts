@@ -13,7 +13,7 @@ import {
 } from "../services/blog.service";
 import { createSlug } from "../utils/slug";
 import { softDeleteEntity } from "../services/admin-trash.service";
-import { getLegacyBlogBySlug, getLegacyCategories, getLegacyRelatedBlogs, getLegacyTags } from "../services/legacy-blog.service";
+import { getLegacyBlogBySlug, getLegacyCategories, getLegacyRelatedBlogs, getLegacyTags, listLegacyBlogs } from "../services/legacy-blog.service";
 
 function text(value: unknown) {
   return typeof value === "string" ? value.trim() : String(value ?? "").trim();
@@ -57,22 +57,34 @@ export async function listAdminBlogs(req: Request, res: Response) {
       }
     }
 
-    const [total, blogs] = await Promise.all([
-      Blog.countDocuments(match),
-      Blog.find(match)
-        .populate("category", "name slug")
-        .populate("tags", "name slug")
-        .populate("author", "name email avatar")
-        .sort({ updatedAt: -1 })
-        .skip((page - 1) * limit)
-        .limit(limit)
-        .lean(),
-    ]);
-    const adminBlogs = blogs.map((blog: any) => {
+    // Combine MongoDB posts with existing read-only imported WordPress posts.
+    // Existing admin API response and query parameters remain unchanged.
+    const dbBlogs = await Blog.find(match)
+      .populate("category", "name slug")
+      .populate("tags", "name slug")
+      .populate("author", "name email avatar")
+      .sort({ updatedAt: -1 }).lean();
+    const normalized = dbBlogs.map((blog: any) => {
       const { likes = [], ...rest } = blog;
       return { ...rest, likeCount: Array.isArray(likes) ? likes.length : 0 };
     });
-    return res.json({ success: true, blogs: adminBlogs, pagination: { page, limit, total, totalPages: Math.max(1, Math.ceil(total / limit)) } });
+    const legacy = (!category && !author && (!status || status === "PUBLISHED"))
+      ? listLegacyBlogs({ search }).map((blog: any) => ({ ...blog, isLegacy: true }))
+      : [];
+    const existingSlugs = new Set(normalized.map((blog: any) => blog.slug));
+    const combined = [...normalized, ...legacy.filter((blog: any) => !existingSlugs.has(blog.slug))]
+      .filter((blog: any) => {
+        const created = new Date(blog.createdAt || blog.publishedAt || 0).getTime();
+        if (text(req.query.dateFrom) && created < new Date(String(req.query.dateFrom)).getTime()) return false;
+        if (text(req.query.dateTo)) {
+          const to = new Date(String(req.query.dateTo)); to.setHours(23, 59, 59, 999);
+          if (created > to.getTime()) return false;
+        }
+        return true;
+      })
+      .sort((a: any, b: any) => new Date(b.updatedAt || b.publishedAt || 0).getTime() - new Date(a.updatedAt || a.publishedAt || 0).getTime());
+    const total = combined.length;
+    return res.json({ success: true, blogs: combined.slice((page - 1) * limit, page * limit), pagination: { page, limit, total, totalPages: Math.max(1, Math.ceil(total / limit)) } });
   } catch (error) {
     return res.status(500).json({ success: false, message: duplicateMessage(error) });
   }
