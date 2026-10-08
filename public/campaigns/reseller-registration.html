@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hivra Soft Reseller Program — Start Your Business</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --pink: #E91E8C;
+    --pink-dark: #c41578;
+    --plum: #6E1440;
+    --plum-deep: #430C29;
+    --gold: #C8903A;
+    --cream: #FBF3E6;
+    --cream2: #F3E3CA;
+    --text: #241016;
+    --muted: #7a5060;
+    --border: #f0d7c8;
+    --border-pink: #f5c0d0;
+    --white: #ffffff;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    color: var(--text);
+    background: var(--white);
+    overflow-x: hidden;
+  }
+
+  img, svg { max-width: 100%; display: block; }
+
+  /* ── LANGUAGE TOGGLE ── */
+  .lang-bar {
+    position: sticky; top: 0; z-index: 1000;
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    display: flex; justify-content: flex-end; align-items: center;
+    padding: 10px 24px; gap: 8px;
+  }
+  .lang-label { font-size: 11px; color: var(--muted); letter-spacing: 0.8px; text-transform: uppercase; margin-right: 4px; }
+  .lang-toggle { display: flex; background: var(--cream); border: 1px solid var(--border); border-radius: 999px; overflow: hidden; padding: 3px; gap: 3px; }
+  .lang-btn { padding: 5px 16px; border-radius: 999px; border: none; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600; cursor: pointer; letter-spacing: 0.5px; transition: background 0.22s, color 0.22s; background: transparent; color: var(--muted); }
+  .lang-btn.active { background: linear-gradient(90deg, var(--plum), var(--pink-dark)); color: #fff; box-shadow: 0 2px 8px rgba(110,20,64,0.35); }
+  .lang-btn:not(.active):hover { color: var(--pink-dark); }
+
+  /* SECTION SYSTEM */
+  section, .block { padding: 70px 24px; }
+  .wrap { max-width: 1120px; margin: 0 auto; }
+  .bg-cream { background: var(--cream); }
+  .bg-white { background: var(--white); }
+  .bg-plum { background: linear-gradient(135deg, var(--plum), var(--plum-deep)); color: #fff; }
+  .bg-cream2 { background: var(--cream2); }
+
+  .kicker {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--pink-dark);
+    margin-bottom: 12px;
+  }
+  .bg-plum .kicker { color: #f3b8d3; }
+  .kicker::before { content: ''; width: 22px; height: 2px; background: var(--gold); display: inline-block; }
+  .title {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.6rem, 3.2vw, 2.4rem);
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 14px;
+    line-height: 1.2;
+  }
+  .bg-plum .title { color: #fff; }
+  .sub { font-size: 0.97rem; color: var(--muted); max-width: 620px; line-height: 1.75; }
+  .bg-plum .sub { color: #e7c3d5; }
+  .center { text-align: center; margin-left: auto; margin-right: auto; }
+
+  /* HERO */
+  .hero {
+    background: linear-gradient(180deg, var(--cream), #fff 85%);
+    padding: 56px 24px 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-grid {
+    max-width: 1120px; margin: 0 auto;
+    display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 48px; align-items: center;
+  }
+  .hero-pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--white); border: 1px solid var(--border-pink); border-radius: 999px;
+    padding: 6px 18px; margin-bottom: 22px; font-size: 12px; color: var(--plum); font-weight: 600;
+    letter-spacing: 1px; text-transform: uppercase; box-shadow: 0 4px 14px rgba(110,20,64,0.08);
+  }
+  .hero h1 { font-family: 'Playfair Display', serif; font-size: clamp(2rem, 4.4vw, 3.1rem); font-weight: 900; line-height: 1.15; margin-bottom: 18px; color: var(--text); }
+  .hero h1 em { color: var(--pink); font-style: normal; }
+  .hero-sub { font-size: 1.02rem; color: var(--muted); max-width: 520px; margin-bottom: 26px; line-height: 1.75; }
+  .hero-badges { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 30px; }
+  .hbadge { background: var(--white); border: 1px solid var(--border); border-radius: 999px; padding: 7px 15px; font-size: 12px; color: var(--text); display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(110,20,64,0.06); }
+  .hbadge i { color: var(--gold); font-size: 14px; }
+  .hero-cta-wrap { display: flex; flex-wrap: wrap; gap: 14px; }
+  .btn-primary { background: linear-gradient(90deg, var(--plum), var(--pink)); color: #fff; border: none; padding: 14px 30px; border-radius: 999px; font-size: 15px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; transition: opacity 0.2s, transform 0.2s; box-shadow: 0 8px 22px rgba(110,20,64,0.3); }
+  .btn-primary:hover { opacity: 0.9; transform: translateY(-2px); }
+  .btn-wa { background: #25D366; color: #fff; border: none; padding: 14px 26px; border-radius: 999px; font-size: 15px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; transition: opacity 0.2s, transform 0.2s; }
+  .btn-wa:hover { opacity: 0.9; transform: translateY(-2px); }
+
+  .hero-art { position: relative; display: flex; justify-content: center; }
+  .hero-art svg { width: 100%; max-width: 380px; }
+
+  /* TRUST STRIP */
+  .trust-strip {
+    background: linear-gradient(90deg, var(--plum), var(--pink-dark), var(--gold));
+    padding: 14px 20px; text-align: center; font-size: 14px; font-weight: 600; color: #fff;
+  }
+
+  /* STATS BAR */
+  .stats-bar { background: var(--plum-deep); color: #fff; padding: 34px 24px; }
+  .stats-grid { max-width: 1000px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 24px; text-align: center; }
+  .stat-num { font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 900; color: var(--gold); }
+  .stat-label { font-size: 12.5px; color: #e7c3d5; margin-top: 4px; letter-spacing: 0.3px; }
+
+  /* BENEFITS */
+  .benefits-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 20px; margin-top: 40px; }
+  .benefit-card { background: var(--white); border: 1px solid var(--border); border-radius: 16px; padding: 26px 22px; display: flex; flex-direction: column; gap: 12px; text-align: left; transition: transform 0.2s, box-shadow 0.2s; }
+  .benefit-card:hover { transform: translateY(-4px); box-shadow: 0 14px 30px rgba(110,20,64,0.14); border-color: var(--border-pink); }
+  .benefit-icon { width: 46px; height: 46px; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+  .benefit-icon i { font-size: 21px; }
+  .benefit-icon.c1 { background: #fce8f3; } .benefit-icon.c1 i { color: var(--pink); }
+  .benefit-icon.c2 { background: #f3e3ca; } .benefit-icon.c2 i { color: var(--gold); }
+  .benefit-icon.c3 { background: #ecdae2; } .benefit-icon.c3 i { color: var(--plum); }
+  .benefit-card h3 { font-size: 15px; font-weight: 700; color: var(--text); }
+  .benefit-card p { font-size: 13.5px; color: var(--muted); line-height: 1.6; }
+
+  /* TIERS */
+  .tier-row {
+    display: grid; grid-template-columns: 200px 1fr; gap: 32px; align-items: center;
+    padding: 34px 0; border-bottom: 1px solid var(--border);
+  }
+  .tier-row:last-child { border-bottom: none; }
+  .tier-visual { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
+  .tier-icon-circle {
+    width: 96px; height: 96px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 10px 24px rgba(110,20,64,0.18);
+    transition: transform 0.2s;
+  }
+  .tier-icon-circle i { font-size: 40px; color: #fff; }
+  .tier-icon-circle.circle-pink { background: linear-gradient(135deg, var(--pink), var(--pink-dark)); }
+  .tier-icon-circle.circle-gold { background: linear-gradient(135deg, #dba650, var(--gold)); }
+  .tier-icon-circle.circle-plum { background: linear-gradient(135deg, var(--plum), var(--plum-deep)); }
+  .tier-row:hover .tier-icon-circle { transform: scale(1.06); }
+  .tier-off { font-family: 'Playfair Display', serif; font-size: 2.4rem; font-weight: 900; color: var(--pink-dark); line-height: 1; }
+  .tier-off span { display: block; font-size: 0.8rem; font-weight: 700; color: var(--text); font-family: 'DM Sans', sans-serif; letter-spacing: 1px; margin-top: 2px; }
+  .tier-body h3 { font-family: 'Playfair Display', serif; font-size: 1.25rem; margin-bottom: 6px; color: var(--text); }
+  .tier-qty-chip { display: inline-block; background: var(--plum); color: #fff; font-size: 11.5px; font-weight: 700; padding: 4px 12px; border-radius: 999px; margin-bottom: 10px; letter-spacing: 0.3px; }
+  .tier-example { font-size: 13px; color: var(--muted); background: var(--cream); border-radius: 10px; padding: 10px 14px; margin: 10px 0 14px; line-height: 1.6; }
+  .tier-benefits { list-style: none; display: flex; flex-wrap: wrap; gap: 10px; }
+  .tier-benefits li { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text); background: var(--white); border: 1px solid var(--border); padding: 6px 12px; border-radius: 999px; }
+  .tier-benefits li i { color: var(--pink); font-size: 15px; }
+  .tier-note { font-size: 12.5px; color: var(--muted); font-style: italic; margin-top: 28px; text-align: center; }
+
+  /* PROCESS */
+  .process-row { display: grid; grid-template-columns: 1fr 1fr; gap: 44px; align-items: center; padding: 40px 0; }
+  .process-row:not(:last-child) { border-bottom: 1px dashed var(--border-pink); }
+  .process-row.reverse .process-art { order: 2; }
+  .process-num { font-family: 'Playfair Display', serif; font-size: 3rem; font-weight: 900; color: var(--border-pink); line-height: 1; margin-bottom: 8px; }
+  .process-text h4 { font-size: 1.15rem; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+  .process-text p { font-size: 14px; color: var(--muted); line-height: 1.7; }
+  .process-art { display: flex; justify-content: center; }
+  .process-art svg { width: 100%; max-width: 240px; animation: processFloat 3.2s ease-in-out infinite; }
+  @keyframes processFloat {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-14px) rotate(-1.5deg); }
+  }
+  .process-row:nth-child(1) .process-art svg { animation-delay: 0s; }
+  .process-row:nth-child(2) .process-art svg { animation-delay: 0.5s; }
+  .process-row:nth-child(3) .process-art svg { animation-delay: 1s; }
+  .process-row:nth-child(4) .process-art svg { animation-delay: 1.5s; }
+
+  /* FORM */
+  .form-card {
+    max-width: 720px; margin: 0 auto; background: var(--white);
+    border: 1px solid var(--border-pink); border-radius: 22px;
+    padding: 38px 38px 34px; box-shadow: 0 16px 46px rgba(110,20,64,0.1);
+  }
+  .discount-info-box {
+    background: linear-gradient(90deg, #fce8f3, #f3e3ca);
+    border: 1px solid var(--border-pink); border-radius: 12px; padding: 15px 18px; margin-bottom: 26px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .discount-info-box i { font-size: 24px; color: var(--pink-dark); flex-shrink: 0; }
+  .discount-info-box p { font-size: 13.5px; color: var(--text); line-height: 1.5; text-align: left; }
+  .discount-info-box strong { color: var(--plum); }
+
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+  .form-field { display: flex; flex-direction: column; gap: 6px; text-align: left; }
+  .form-field.full { grid-column: 1 / -1; }
+  .form-field label { font-size: 12px; font-weight: 600; color: var(--text); letter-spacing: 0.3px; }
+  .form-field input, .form-field select, .form-field textarea {
+    font-family: 'DM Sans', sans-serif; font-size: 14px; padding: 11px 14px;
+    background: var(--cream); border: 1px solid var(--border); border-radius: 10px;
+    color: var(--text); outline: none; transition: border-color 0.2s, background 0.2s;
+  }
+  .form-field input::placeholder, .form-field textarea::placeholder { color: #c99a76; }
+  .form-field select option { background: #fff; color: var(--text); }
+  .form-field input:focus, .form-field select:focus, .form-field textarea:focus {
+    border-color: var(--pink); background: #fff; box-shadow: 0 0 0 3px rgba(233,30,140,0.12);
+  }
+  .form-field textarea { resize: vertical; min-height: 80px; }
+
+  .submit-btn {
+    width: 100%; margin-top: 20px; padding: 14px; background: linear-gradient(90deg, #25D366, #1fae58);
+    border: none; border-radius: 12px; color: #fff; font-size: 16px; font-weight: 600; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: opacity 0.2s, transform 0.2s; box-shadow: 0 8px 22px rgba(37,211,102,0.3);
+  }
+  .submit-btn:hover { opacity: 0.9; transform: translateY(-2px); }
+  .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+  .form-hint { font-size: 12px; color: var(--muted); text-align: center; margin-top: 12px; }
+
+  .success-card { display: none; text-align: center; padding: 30px 10px 10px; }
+  .success-icon { width: 68px; height: 68px; border-radius: 50%; background: linear-gradient(135deg, #25D366, #1a9e56); margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; }
+  .success-icon i { font-size: 34px; color: #fff; }
+  .success-card h3 { font-family: 'Playfair Display', serif; font-size: 1.5rem; color: var(--text); margin-bottom: 10px; }
+  .success-card p { font-size: 14px; color: var(--muted); line-height: 1.6; }
+  .success-wa { display: inline-flex; align-items: center; gap: 8px; background: #25D366; color: #fff; text-decoration: none; padding: 12px 24px; border-radius: 999px; font-weight: 600; font-size: 14px; margin-top: 20px; transition: opacity 0.2s; }
+  .success-wa:hover { opacity: 0.9; }
+
+  /* FAQ */
+  .faq-wrap { max-width: 720px; margin: 40px auto 0; }
+  .faq-item { border-bottom: 1px solid var(--border); cursor: pointer; }
+  .faq-q { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 18px 0; }
+  .faq-q span { font-size: 15px; font-weight: 600; color: var(--text); line-height: 1.4; }
+  .faq-q i { font-size: 18px; color: var(--pink-dark); flex-shrink: 0; transition: transform 0.25s; }
+  .faq-a { font-size: 13.5px; color: var(--muted); line-height: 1.7; max-height: 0; overflow: hidden; transition: max-height 0.35s ease, padding 0.2s; }
+  .faq-item.open .faq-q i { transform: rotate(180deg); }
+  .faq-item.open .faq-a { max-height: 280px; padding-bottom: 16px; }
+
+  @media (max-width: 860px) {
+    .hero-grid { grid-template-columns: 1fr; text-align: center; }
+    .hero-badges, .hero-cta-wrap { justify-content: center; }
+    .hero-art { order: -1; }
+    .tier-row { grid-template-columns: 1fr; text-align: center; }
+    .tier-visual { align-items: center; }
+    .tier-benefits { justify-content: center; }
+    .process-row, .process-row.reverse { grid-template-columns: 1fr; text-align: center; }
+    .process-row.reverse .process-art { order: 0; }
+  }
+  @media (max-width: 600px) {
+    section, .block { padding: 48px 18px; }
+    .hero { padding: 40px 18px 16px; }
+    .form-card { padding: 24px 18px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LANGUAGE TOGGLE BAR -->
+<div class="lang-bar">
+  <span class="lang-label">Language:</span>
+  <div class="lang-toggle">
+    <button class="lang-btn active" id="btn-hi" onclick="setLang('hi')">🇮🇳 हिं / HI</button>
+    <button class="lang-btn" id="btn-en" onclick="setLang('en')">🇬🇧 EN</button>
+  </div>
+</div>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-grid">
+    <div>
+      <div class="hero-pill"><i class="ti ti-star"></i> <span data-hi="Hivra Soft Reseller Programme" data-en="Hivra Soft Reseller Programme">Hivra Soft Reseller Programme</span></div>
+      <h1>
+        <span data-hi="Apna Khud Ka" data-en="Start Your Own">Apna Khud Ka</span><br>
+        <em data-hi="Innerwear Business" data-en="Innerwear Business">Innerwear Business</em><br>
+        <span data-hi="Shuru Karein" data-en="From Home">Shuru Karein</span>
+      </h1>
+      <p class="hero-sub"
+        data-hi="Hivra Soft ke saath reseller bano — India ka trusted premium innerwear brand. Jitna zyada order, utna zyada discount aur benefits — 15% se 30% tak."
+        data-en="Become a Hivra Soft reseller — India's trusted premium innerwear brand. The more you order, the more you earn — discounts from 15% up to 30%.">
+        Hivra Soft ke saath reseller bano — India ka trusted premium innerwear brand. Jitna zyada order, utna zyada discount aur benefits — 15% se 30% tak.
+      </p>
+      <div class="hero-badges">
+        <span class="hbadge"><i class="ti ti-discount-2"></i><span data-hi="15%–30% Off, Qty Ke Hisaab Se" data-en="15%–30% Off, Based on Quantity">15%–30% Off, Qty Ke Hisaab Se</span></span>
+        <span class="hbadge"><i class="ti ti-truck-delivery"></i><span data-hi="Free Shipping Available" data-en="Free Shipping Available">Free Shipping Available</span></span>
+        <span class="hbadge"><i class="ti ti-map-pin"></i><span data-hi="Made in India" data-en="Made in India">Made in India</span></span>
+      </div>
+      <div class="hero-cta-wrap">
+        <a href="#register" class="btn-primary"><i class="ti ti-arrow-right"></i><span data-hi="Register as Reseller" data-en="Register as Reseller">Register as Reseller</span></a>
+        <a href="https://wa.me/919420980536?text=Hi%20Hivra%20Soft%2C%20I%20want%20to%20know%20more%20about%20the%20Reseller%20Programme." target="_blank" class="btn-wa"><i class="ti ti-brand-whatsapp"></i><span data-hi="WhatsApp Us" data-en="WhatsApp Us">WhatsApp Us</span></a>
+      </div>
+    </div>
+    <div class="hero-art">
+      <!-- Illustration: gift/product box with discount tag -->
+      <svg viewBox="0 0 340 340" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="170" cy="170" r="160" fill="#F3E3CA"/>
+        <circle cx="170" cy="170" r="128" fill="#FBF3E6"/>
+        <rect x="95" y="140" width="150" height="120" rx="10" fill="#E91E8C"/>
+        <rect x="95" y="140" width="150" height="34" rx="10" fill="#6E1440"/>
+        <rect x="160" y="140" width="20" height="120" fill="#C8903A"/>
+        <path d="M160 140 C140 110, 120 110, 118 128 C116 142, 140 140, 160 140 Z" fill="#C8903A"/>
+        <path d="M180 140 C200 110, 220 110, 222 128 C224 142, 200 140, 180 140 Z" fill="#C8903A"/>
+        <circle cx="245" cy="120" r="42" fill="#6E1440"/>
+        <text x="245" y="115" font-family="Playfair Display, serif" font-size="22" font-weight="900" fill="#fff" text-anchor="middle">30%</text>
+        <text x="245" y="134" font-family="DM Sans, sans-serif" font-size="10" font-weight="700" fill="#f3b8d3" text-anchor="middle" letter-spacing="1">OFF</text>
+        <circle cx="80" cy="230" r="14" fill="#C8903A" opacity="0.7"/>
+        <circle cx="260" cy="250" r="9" fill="#E91E8C" opacity="0.6"/>
+        <circle cx="270" cy="90" r="6" fill="#E91E8C" opacity="0.5"/>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<!-- TRUST STRIP -->
+<div class="trust-strip">
+  🎉&nbsp; <span data-hi="Resellers ko milta hai 15% se 30% tak FLAT DISCOUNT — Order quantity jitni zyada, utna zyada fayda!" data-en="Resellers get 15% to 30% FLAT DISCOUNT — the bigger your order, the bigger the benefit!">Resellers ko milta hai <strong>15% se 30% tak FLAT DISCOUNT</strong> — Order quantity jitni zyada, utna zyada fayda!</span> &nbsp;🎉
+</div>
+
+<!-- STATS BAR -->
+<div class="stats-bar">
+  <div class="stats-grid">
+    <div><div class="stat-num">15%–30%</div><div class="stat-label" data-hi="Flat Discount Slabs" data-en="Flat Discount Slabs">Flat Discount Slabs</div></div>
+    <div><div class="stat-num">24–48</div><div class="stat-label" data-hi="Hours Approval Time" data-en="Hours Approval Time">Hours Approval Time</div></div>
+    <div><div class="stat-num">₹0</div><div class="stat-label" data-hi="Registration Fee" data-en="Registration Fee">Registration Fee</div></div>
+    <div><div class="stat-num">100%</div><div class="stat-label" data-hi="Made in India Products" data-en="Made in India Products">Made in India Products</div></div>
+  </div>
+</div>
+
+<!-- BENEFITS -->
+<section class="bg-white">
+  <div class="wrap center">
+    <div class="kicker" style="justify-content:center" data-hi="Why Join" data-en="Why Join">Why Join</div>
+    <div class="title" data-hi="Kyun Bane Hivra Soft Reseller?" data-en="Why Become a Hivra Soft Reseller?">Kyun Bane Hivra Soft Reseller?</div>
+    <p class="sub center" data-hi="Zero experience chahiye. Ghar se shuru karo, online ho ya offline — tumhari marzi. Jaise-jaise order badhega, discount aur benefits bhi badhte jaayenge." data-en="No experience needed. Start from home, online or offline — completely on your terms. As your order grows, your discount and benefits grow too.">
+      Zero experience chahiye. Ghar se shuru karo, online ho ya offline — tumhari marzi. Jaise-jaise order badhega, discount aur benefits bhi badhte jaayenge.
+    </p>
+    <div class="benefits-grid">
+      <div class="benefit-card">
+        <div class="benefit-icon c1"><i class="ti ti-discount-2"></i></div>
+        <h3 data-hi="15%–30% Reseller Discount" data-en="15%–30% Reseller Discount">15%–30% Reseller Discount</h3>
+        <p data-hi="Order ki total quantity par flat discount milega MRP se — jitna zyada order, utna zyada discount" data-en="Get a flat discount on your total order value off MRP — the bigger the order, the bigger the discount">Order ki total quantity par flat discount milega MRP se — jitna zyada order, utna zyada discount</p>
+      </div>
+      <div class="benefit-card">
+        <div class="benefit-icon c2"><i class="ti ti-camera"></i></div>
+        <h3 data-hi="Free Product Images" data-en="Free Product Images">Free Product Images</h3>
+        <p data-hi="White background, lifestyle aur size-chart images milengi — koi alag se photoshoot nahi karna padega" data-en="White-background, lifestyle, and size-chart images provided — no separate photoshoot needed">White background, lifestyle aur size-chart images milengi — koi alag se photoshoot nahi karna padega</p>
+      </div>
+      <div class="benefit-card">
+        <div class="benefit-icon c3"><i class="ti ti-truck-delivery"></i></div>
+        <h3 data-hi="Free Shipping (₹3000+ Orders)" data-en="Free Shipping (₹3000+ Orders)">Free Shipping (₹3000+ Orders)</h3>
+        <p data-hi="₹3000 ya usse zyada ke order par shipping bilkul free — chhote order par sirf ₹100 charge lagta hai" data-en="Orders of ₹3000 or more get completely free shipping — smaller orders only carry a ₹100 charge">₹3000 ya usse zyada ke order par shipping bilkul free — chhote order par sirf ₹100 charge lagta hai</p>
+      </div>
+      <div class="benefit-card">
+        <div class="benefit-icon c1"><i class="ti ti-speakerphone"></i></div>
+        <h3 data-hi="Marketing Kit" data-en="Marketing Kit">Marketing Kit</h3>
+        <p data-hi="Banners, Instagram/Facebook posts, WhatsApp catalogue PDF, reels aur product descriptions — sab ready-made" data-en="Banners, Instagram/Facebook posts, WhatsApp catalogue PDF, reels, and product descriptions — all ready-made">Banners, Instagram/Facebook posts, WhatsApp catalogue PDF, reels aur product descriptions — sab ready-made</p>
+      </div>
+      <div class="benefit-card">
+        <div class="benefit-icon c2"><i class="ti ti-headset"></i></div>
+        <h3 data-hi="Dedicated Support" data-en="Dedicated Support">Dedicated Support</h3>
+        <p data-hi="Product listing, order aur size guide se related har help WhatsApp par milegi — fast reply guarantee" data-en="Get help with product listing, orders, and size guides on WhatsApp — with fast, guaranteed replies">Product listing, order aur size guide se related har help WhatsApp par milegi — fast reply guarantee</p>
+      </div>
+      <div class="benefit-card">
+        <div class="benefit-icon c3"><i class="ti ti-crown"></i></div>
+        <h3 data-hi="Premium Reseller Perks" data-en="Premium Reseller Perks">Premium Reseller Perks</h3>
+        <p data-hi="Bade orders par priority dispatch, early product launch access aur ek dedicated account manager bhi milega" data-en="Larger orders get priority dispatch, early access to new launches, and a dedicated account manager too">Bade orders par priority dispatch, early product launch access aur ek dedicated account manager bhi milega</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TIER TABLE -->
+<section class="bg-cream">
+  <div class="wrap center">
+    <div class="kicker" style="justify-content:center" data-hi="Discount Slabs" data-en="Discount Slabs">Discount Slabs</div>
+    <div class="title" data-hi="Jitna Zyada Order, Utna Zyada Fayda" data-en="The More You Order, The More You Earn">Jitna Zyada Order, Utna Zyada Fayda</div>
+    <p class="sub center" data-hi="Discount total order quantity par milta hai, har piece par alag-alag nahi — jitni bhi qty order karoge, uska ek hi flat % off calculate hoga." data-en="The discount applies to your total order quantity, not separately on each piece — one flat % off is calculated on however much you order.">
+      Discount total order quantity par milta hai, har piece par alag-alag nahi — jitni bhi qty order karoge, uska ek hi flat % off calculate hoga.
+    </p>
+
+    <div style="text-align:left;margin-top:30px">
+
+      <!-- TIER 1 -->
+      <div class="tier-row">
+        <div class="tier-visual">
+          <div class="tier-icon-circle circle-pink"><i class="ti ti-hanger"></i></div>
+          <div class="tier-off">15%<span data-hi="OFF" data-en="OFF">OFF</span></div>
+        </div>
+        <div class="tier-body">
+          <span class="tier-qty-chip" data-hi="20 – 49 Pieces" data-en="20 – 49 Pieces">20 – 49 Pieces</span>
+          <h3 data-hi="Starter Reseller" data-en="Starter Reseller">Starter Reseller</h3>
+          <div class="tier-example" data-hi="Example: ek bra ₹300 ki hai aur tum 25 pcs order karte ho → Total ₹7500 − 15% (₹1125) = ₹6375 tumhe pay karna hoga." data-en="Example: if one bra is ₹300 and you order 25 pcs → Total ₹7500 − 15% (₹1125) = you pay ₹6375.">
+            Example: ek bra ₹300 ki hai aur tum 25 pcs order karte ho → Total ₹7500 − 15% (₹1125) = ₹6375 tumhe pay karna hoga.
+          </div>
+          <ul class="tier-benefits">
+            <li><i class="ti ti-circle-check"></i><span data-hi="Free Product Images" data-en="Free Product Images">Free Product Images</span></li>
+            <li><i class="ti ti-circle-check"></i><span data-hi="Full Seller Support" data-en="Full Seller Support">Full Seller Support</span></li>
+            <li><i class="ti ti-circle-check"></i><span data-hi="₹100/order Shipping" data-en="₹100/order Shipping">₹100/order Shipping</span></li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- TIER 2 -->
+      <div class="tier-row">
+        <div class="tier-visual">
+          <div class="tier-icon-circle circle-gold"><i class="ti ti-rocket"></i></div>
+          <div class="tier-off">20%<span data-hi="OFF" data-en="OFF">OFF</span></div>
+        </div>
+        <div class="tier-body">
+          <span class="tier-qty-chip" data-hi="50 – 99 Pieces · Most Popular" data-en="50 – 99 Pieces · Most Popular">50 – 99 Pieces · Most Popular</span>
+          <h3 data-hi="Growth Reseller" data-en="Growth Reseller">Growth Reseller</h3>
+          <div class="tier-example" data-hi="Discount pure total order par milega. ₹3000+ ke order par shipping bilkul free — koi extra charge nahi." data-en="Discount applies to your entire order total. Orders above ₹3000 get completely free shipping — no extra charge.">
+            Discount pure total order par milega. ₹3000+ ke order par shipping bilkul free — koi extra charge nahi.
+          </div>
+          <ul class="tier-benefits">
+            <li><i class="ti ti-circle-check"></i><span data-hi="Free Shipping (₹3000+)" data-en="Free Shipping (₹3000+)">Free Shipping (₹3000+)</span></li>
+            <li><i class="ti ti-circle-check"></i><span data-hi="Full Marketing Kit" data-en="Full Marketing Kit">Full Marketing Kit</span></li>
+            <li><i class="ti ti-circle-check"></i><span data-hi="Priority Support" data-en="Priority Support">Priority Support</span></li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- TIER 3 -->
+      <div class="tier-row">
+        <div class="tier-visual">
+          <div class="tier-icon-circle circle-plum"><i class="ti ti-crown"></i></div>
+          <div class="tier-off">30%<span data-hi="OFF" data-en="OFF">OFF</span></div>
+        </div>
+        <div class="tier-body">
+          <span class="tier-qty-chip" data-hi="100 – 199 Pieces" data-en="100 – 199 Pieces">100 – 199 Pieces</span>
+          <h3 data-hi="Premium Reseller" data-en="Premium Reseller">Premium Reseller</h3>
+          <div class="tier-example" data-hi="Sabse bada discount slab — dedicated account manager, priority dispatch aur exclusive offers is tier mein milte hain." data-en="Our biggest discount slab — dedicated account manager, priority dispatch, and exclusive offers come with this tier.">
+            Sabse bada discount slab — dedicated account manager, priority dispatch aur exclusive offers is tier mein milte hain.
+          </div>
+          <ul class="tier-benefits">
+            <li><i class="ti ti-circle-check"></i><span data-hi="Priority Dispatch" data-en="Priority Dispatch">Priority Dispatch</span></li>
+            <li><i class="ti ti-circle-check"></i><span data-hi="Early Launch Access" data-en="Early Launch Access">Early Launch Access</span></li>
+            <li><i class="ti ti-circle-check"></i><span data-hi="Dedicated Account Manager" data-en="Dedicated Account Manager">Dedicated Account Manager</span></li>
+            <li><i class="ti ti-circle-check"></i><span data-hi="Exclusive Offers" data-en="Exclusive Offers">Exclusive Offers</span></li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+
+    <p class="tier-note" data-hi="Note: 20 pieces se kam order abhi is programme mein cover nahi hote — kam se kam 20 pieces se shuruaat karein." data-en="Note: Orders below 20 pieces are not currently covered under this programme — please start with at least 20 pieces.">
+      Note: 20 pieces se kam order abhi is programme mein cover nahi hote — kam se kam 20 pieces se shuruaat karein.
+    </p>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="bg-white">
+  <div class="wrap center">
+    <div class="kicker" style="justify-content:center" data-hi="Process" data-en="Process">Process</div>
+    <div class="title" data-hi="Kaise Kaam Karta Hai?" data-en="How Does It Work?">Kaise Kaam Karta Hai?</div>
+    <p class="sub center" data-hi="Sirf 4 simple steps mein apna business shuru karein" data-en="Start your business in just 4 simple steps">Sirf 4 simple steps mein apna business shuru karein</p>
+
+    <div style="margin-top:20px">
+
+      <div class="process-row">
+        <div class="process-text">
+          <div class="process-num">01</div>
+          <h4 data-hi="Form Fill Karke Register Karo" data-en="Fill the Form & Register">Form Fill Karke Register Karo</h4>
+          <p data-hi="Neeche diya hua registration form fill karo apni basic details ke saath — bilkul free hai, koi cost nahi" data-en="Fill out the registration form below with your basic details — completely free, no cost involved">Neeche diya hua registration form fill karo apni basic details ke saath — bilkul free hai, koi cost nahi</p>
+        </div>
+        <div class="process-art">
+          <svg viewBox="0 0 200 200"><rect x="40" y="20" width="120" height="160" rx="14" fill="#FBF3E6" stroke="#f0d7c8" stroke-width="2"/><rect x="60" y="10" width="80" height="24" rx="8" fill="#E91E8C"/><line x1="60" y1="70" x2="140" y2="70" stroke="#f0d7c8" stroke-width="6" stroke-linecap="round"/><line x1="60" y1="95" x2="140" y2="95" stroke="#f0d7c8" stroke-width="6" stroke-linecap="round"/><line x1="60" y1="120" x2="110" y2="120" stroke="#f0d7c8" stroke-width="6" stroke-linecap="round"/><circle cx="140" cy="150" r="26" fill="#C8903A"/><path d="M128 150 l8 8 l16 -18" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+      </div>
+
+      <div class="process-row reverse">
+        <div class="process-text">
+          <div class="process-num">02</div>
+          <h4 data-hi="Team Approval & Welcome" data-en="Team Approval & Welcome">Team Approval &amp; Welcome</h4>
+          <p data-hi="Hamari team 24–48 hours mein verify karti hai aur tumhara reseller account WhatsApp par activate hota hai" data-en="Our team verifies your details within 24–48 hours and activates your reseller account on WhatsApp">Hamari team 24–48 hours mein verify karti hai aur tumhara reseller account WhatsApp par activate hota hai</p>
+        </div>
+        <div class="process-art">
+          <svg viewBox="0 0 200 200"><circle cx="100" cy="100" r="85" fill="#fce8f3"/><rect x="55" y="65" width="90" height="60" rx="16" fill="#25D366"/><path d="M75 125 l-8 18 l22 -12 Z" fill="#25D366"/><circle cx="80" cy="95" r="5" fill="#fff"/><circle cx="100" cy="95" r="5" fill="#fff"/><circle cx="120" cy="95" r="5" fill="#fff"/><circle cx="150" cy="60" r="22" fill="#6E1440"/><path d="M140 60 l7 7 l14 -16" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+      </div>
+
+      <div class="process-row">
+        <div class="process-text">
+          <div class="process-num">03</div>
+          <h4 data-hi="Apni Quantity Ke Hisaab Se Order Karo" data-en="Order Based on Your Quantity Slab">Apni Quantity Ke Hisaab Se Order Karo</h4>
+          <p data-hi="20–49, 50–99 ya 100–199 pieces order karo — quantity ke hisaab se tumhe 15%, 20% ya 30% off milega, total order par" data-en="Order 20–49, 50–99, or 100–199 pieces — based on your quantity you'll get 15%, 20%, or 30% off your total order">20–49, 50–99 ya 100–199 pieces order karo — quantity ke hisaab se tumhe 15%, 20% ya 30% off milega, total order par</p>
+        </div>
+        <div class="process-art">
+          <svg viewBox="0 0 200 200"><rect x="45" y="90" width="110" height="80" rx="8" fill="#C8903A"/><rect x="45" y="90" width="110" height="24" fill="#6E1440"/><rect x="90" y="60" width="20" height="40" fill="#6E1440"/><path d="M90 60 C75 40, 60 40, 58 55 C56 66, 75 65, 90 60 Z" fill="#6E1440"/><path d="M110 60 C125 40, 140 40, 142 55 C144 66, 125 65, 110 60 Z" fill="#6E1440"/><circle cx="155" cy="70" r="26" fill="#E91E8C"/><text x="155" y="76" font-family="DM Sans, sans-serif" font-size="18" font-weight="700" fill="#fff" text-anchor="middle">%</text></svg>
+        </div>
+      </div>
+
+      <div class="process-row reverse">
+        <div class="process-text">
+          <div class="process-num">04</div>
+          <h4 data-hi="Sell Karo, Kamao!" data-en="Sell &amp; Earn!">Sell Karo, Kamao!</h4>
+          <p data-hi="Apne customers ko MRP par sell karo, WhatsApp/Instagram/Meesho ya offline kahin bhi — discount ka difference tumhara pure profit hoga" data-en="Sell to your customers at MRP, on WhatsApp, Instagram, Meesho, or offline — the discount difference is your pure profit">Apne customers ko MRP par sell karo, WhatsApp/Instagram/Meesho ya offline kahin bhi — discount ka difference tumhara pure profit hoga</p>
+        </div>
+        <div class="process-art">
+          <svg viewBox="0 0 200 200"><rect x="40" y="140" width="24" height="35" fill="#f0d7c8"/><rect x="80" y="115" width="24" height="60" fill="#E91E8C"/><rect x="120" y="90" width="24" height="85" fill="#C8903A"/><rect x="160" y="60" width="24" height="115" fill="#6E1440"/><path d="M40 130 L80 100 L120 80 L160 45" stroke="#25D366" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M148 45 l12 0 l0 12" stroke="#25D366" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- REGISTRATION FORM -->
+<div class="block bg-cream2" id="register">
+  <div class="wrap center" style="margin-bottom:36px">
+    <div class="kicker" style="justify-content:center" data-hi="Join Now" data-en="Join Now">Join Now</div>
+    <div class="title" data-hi="Reseller Registration Form" data-en="Reseller Registration Form">Reseller Registration Form</div>
+    <p class="sub center" data-hi="Form submit karte hi WhatsApp khulega tumhari details ke saath — hamari team 24 hours mein reply karegi" data-en="As soon as you submit, WhatsApp will open with your details pre-filled — our team will reply within 24 hours">
+      Form submit karte hi WhatsApp khulega tumhari details ke saath — hamari team 24 hours mein reply karegi
+    </p>
+  </div>
+
+  <div class="form-card">
+    <div class="discount-info-box">
+      <i class="ti ti-gift"></i>
+      <p>
+        <span data-hi="Registration ke baad tumhe milega" data-en="After registration you will receive">Registration ke baad tumhe milega</span>
+        <strong> 15% – 30% flat discount </strong>
+        <span data-hi="Hivra Soft ke saare products par, order quantity ke hisaab se." data-en="on all Hivra Soft products, based on your order quantity.">Hivra Soft ke saare products par, order quantity ke hisaab se.</span>
+        <strong><span data-hi="Pehle order se hi benefit shuru!" data-en="Benefits start from your very first order!">Pehle order se hi benefit shuru!</span></strong>
+      </p>
+    </div>
+
+    <div id="form-content">
+      <div class="form-grid">
+        <div class="form-field">
+          <label data-hi="Pura Naam *" data-en="Full Name *">Pura Naam *</label>
+          <input type="text" id="f-name" data-placeholder-hi="Jaise: Priya Sharma" data-placeholder-en="E.g.: Priya Sharma" placeholder="Jaise: Priya Sharma">
+        </div>
+        <div class="form-field">
+          <label data-hi="Mobile Number *" data-en="Mobile Number *">Mobile Number *</label>
+          <input type="tel" id="f-phone" placeholder="+91 98765 43210">
+        </div>
+        <div class="form-field">
+          <label data-hi="Email Address *" data-en="Email Address *">Email Address *</label>
+          <input type="email" id="f-email" data-placeholder-hi="aapka@email.com" data-placeholder-en="your@email.com" placeholder="aapka@email.com">
+        </div>
+        <div class="form-field">
+          <label data-hi="City / Shehar *" data-en="City *">City / Shehar *</label>
+          <input type="text" id="f-city" data-placeholder-hi="Jaise: Agra, Delhi, Mumbai..." data-placeholder-en="E.g.: Agra, Delhi, Mumbai..." placeholder="Jaise: Agra, Delhi, Mumbai...">
+        </div>
+        <div class="form-field">
+          <label data-hi="Selling Platform *" data-en="Selling Platform *">Selling Platform *</label>
+          <select id="f-platform">
+            <option value="" data-hi="-- Select karein --" data-en="-- Please select --">-- Select karein --</option>
+            <option value="whatsapp_instagram" data-hi="WhatsApp / Instagram" data-en="WhatsApp / Instagram">WhatsApp / Instagram</option>
+            <option value="meesho_glowroad" data-hi="Meesho / GlowRoad" data-en="Meesho / GlowRoad">Meesho / GlowRoad</option>
+            <option value="online_store" data-hi="Apna Online Store" data-en="My Own Online Store">Apna Online Store</option>
+            <option value="offline_local_market" data-hi="Offline / Local Market" data-en="Offline / Local Market">Offline / Local Market</option>
+            <option value="multiple_platforms" data-hi="Multiple Platforms" data-en="Multiple Platforms">Multiple Platforms</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label data-hi="Expected Order Quantity *" data-en="Expected Order Quantity *">Expected Order Quantity *</label>
+          <select id="f-qty">
+            <option value="" data-hi="-- Select karein --" data-en="-- Please select --">-- Select karein --</option>
+            <option value="20_49" data-hi="20–49 pieces (15% off)" data-en="20–49 pieces (15% off)">20–49 pieces (15% off)</option>
+            <option value="50_99" data-hi="50–99 pieces (20% off)" data-en="50–99 pieces (20% off)">50–99 pieces (20% off)</option>
+            <option value="100_199" data-hi="100–199 pieces (30% off)" data-en="100–199 pieces (30% off)">100–199 pieces (30% off)</option>
+            <option value="200_plus" data-hi="200+ pieces" data-en="200+ pieces">200+ pieces</option>
+          </select>
+        </div>
+        <div class="form-field full">
+          <label data-hi="Existing Business / Kuch aur batana chahte ho? (Optional)" data-en="Existing Business / Anything else to share? (Optional)">Existing Business / Kuch aur batana chahte ho? (Optional)</label>
+          <textarea id="f-msg" data-placeholder-hi="Jaise: Mera WhatsApp group hai 500+ customers ka, ya offline boutique hai..." data-placeholder-en="E.g.: I have a WhatsApp group of 500+ customers, or an offline boutique..." placeholder="Jaise: Mera WhatsApp group hai 500+ customers ka, ya offline boutique hai..."></textarea>
+        </div>
+      </div>
+      <button class="submit-btn" id="submit-btn" onclick="handleSubmit()">
+        <i class="ti ti-brand-whatsapp"></i>
+        <span data-hi="WhatsApp Par Registration Bhejein" data-en="Send Registration via WhatsApp">WhatsApp Par Registration Bhejein</span>
+      </button>
+      <p class="form-hint" data-hi="Submit karte hi WhatsApp naye tab mein khulega — tumhari details already type ho chuki hongi" data-en="As soon as you submit, WhatsApp opens in a new tab with your details already typed in">Submit karte hi WhatsApp naye tab mein khulega — tumhari details already type ho chuki hongi</p>
+      <p id="form-error" style="color:#c41578;font-size:13px;text-align:center;margin-top:12px;display:none"></p>
+    </div>
+
+    <div class="success-card" id="success-card">
+      <div class="success-icon"><i class="ti ti-circle-check"></i></div>
+      <h3 data-hi="WhatsApp Khul Gaya! 🎉" data-en="WhatsApp Opened! 🎉">WhatsApp Khul Gaya! 🎉</h3>
+      <p>
+        <span data-hi="Agar tab automatically nahi khula, neeche button dabao. Hamari team" data-en="If the tab didn't open automatically, tap the button below. Our team will contact you within">Agar tab automatically nahi khula, neeche button dabao. Hamari team</span>
+        <strong style="color:var(--plum)"> 24–48 hours </strong>
+        <span data-hi="mein tumse WhatsApp par contact karegi." data-en="on WhatsApp.">mein tumse WhatsApp par contact karegi.</span>
+      </p>
+      <a href="https://wa.me/919420980536" target="_blank" class="success-wa"><i class="ti ti-brand-whatsapp"></i><span data-hi="WhatsApp Kholo" data-en="Open WhatsApp">WhatsApp Kholo</span></a>
+    </div>
+  </div>
+</div>
+
+<!-- FAQ -->
+<section class="bg-white">
+  <div class="wrap center">
+    <div class="kicker" style="justify-content:center" data-hi="FAQ" data-en="FAQ">FAQ</div>
+    <div class="title" data-hi="Aksar Puchhe Jaane Wale Sawaal" data-en="Frequently Asked Questions">Aksar Puchhe Jaane Wale Sawaal</div>
+    <p class="sub center" data-hi="Koi confusion? Yahan dekho ya WhatsApp par poochho" data-en="Still have questions? Check below or ask us on WhatsApp">Koi confusion? Yahan dekho ya WhatsApp par poochho</p>
+
+    <div class="faq-wrap" style="text-align:left">
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-q"><span data-hi="Reseller banne ke liye minimum order kitna chahiye?" data-en="Is there a minimum order to become a reseller?">Reseller banne ke liye minimum order kitna chahiye?</span><i class="ti ti-chevron-down"></i></div>
+        <div class="faq-a" data-hi="Discount tiers 20 pieces se shuru hote hain (20–49, 50–99, 100–199). Registration khud free hai — pehle register karo, phir team apni quantity ke hisaab se sab guide karegi." data-en="Discount tiers start from 20 pieces (20–49, 50–99, 100–199). Registration itself is free — register first and our team will guide you according to your order quantity.">Discount tiers 20 pieces se shuru hote hain (20–49, 50–99, 100–199). Registration khud free hai — pehle register karo, phir team apni quantity ke hisaab se sab guide karegi.</div>
+      </div>
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-q"><span data-hi="Discount total order par milega ya har piece par alag-alag?" data-en="Does the discount apply to the total order or separately on each piece?">Discount total order par milega ya har piece par alag-alag?</span><i class="ti ti-chevron-down"></i></div>
+        <div class="faq-a" data-hi="Discount tumhari total order quantity par ek hi baar calculate hota hai, har piece par alag se nahi. Jaise agar tum 25 pieces order karte ho toh poore order ki value par 15% off milega." data-en="The discount is calculated once on your total order quantity, not separately on each piece. For example, if you order 25 pieces, you get 15% off the entire order value.">Discount tumhari total order quantity par ek hi baar calculate hota hai, har piece par alag se nahi. Jaise agar tum 25 pieces order karte ho toh poore order ki value par 15% off milega.</div>
+      </div>
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-q"><span data-hi="Shipping free hai ya charge lagta hai?" data-en="Is shipping free, or is there a charge?">Shipping free hai ya charge lagta hai?</span><i class="ti ti-chevron-down"></i></div>
+        <div class="faq-a" data-hi="20–49 pieces ke order par ₹100/order shipping charge lagta hai. 50 pieces ya usse zyada ke order par, agar order value ₹3000+ hai, toh shipping bilkul free hai." data-en="Orders of 20–49 pieces carry a ₹100/order shipping charge. For orders of 50 pieces or more, shipping is completely free once the order value crosses ₹3000.">20–49 pieces ke order par ₹100/order shipping charge lagta hai. 50 pieces ya usse zyada ke order par, agar order value ₹3000+ hai, toh shipping bilkul free hai.</div>
+      </div>
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-q"><span data-hi="Marketing Kit mein kya-kya milega?" data-en="What all is included in the Marketing Kit?">Marketing Kit mein kya-kya milega?</span><i class="ti ti-chevron-down"></i></div>
+        <div class="faq-a" data-hi="50–99 pieces aur uske upar wale resellers ko logo, product images, banners, Instagram/Facebook posts, WhatsApp catalogue PDF, product videos, reels, description aur hashtags milte hain — seedha use karne ke liye ready." data-en="Resellers ordering 50–99 pieces or above receive a logo, product images, banners, Instagram/Facebook posts, WhatsApp catalogue PDF, product videos, reels, descriptions, and hashtags — all ready to use directly.">50–99 pieces aur uske upar wale resellers ko logo, product images, banners, Instagram/Facebook posts, WhatsApp catalogue PDF, product videos, reels, description aur hashtags milte hain — seedha use karne ke liye ready.</div>
+      </div>
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-q"><span data-hi="100+ pieces order karne par kya extra milta hai?" data-en="What extra do I get for ordering 100+ pieces?">100+ pieces order karne par kya extra milta hai?</span><i class="ti ti-chevron-down"></i></div>
+        <div class="faq-a" data-hi="100–199 pieces wale resellers ko 30% off ke saath priority dispatch (order sabse pehle pack hota hai), naye products launch se pehle access, ek dedicated account manager aur exclusive offers jaise Buy 100 Get 5 Free bhi milte hain." data-en="Resellers ordering 100–199 pieces get 30% off along with priority dispatch (your order is packed first), early access before new products launch publicly, a dedicated account manager, and exclusive offers like Buy 100 Get 5 Free.">100–199 pieces wale resellers ko 30% off ke saath priority dispatch (order sabse pehle pack hota hai), naye products launch se pehle access, ek dedicated account manager aur exclusive offers jaise Buy 100 Get 5 Free bhi milte hain.</div>
+      </div>
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-q"><span data-hi="Kya WhatsApp ya Instagram se bhi sell kar sakte hain?" data-en="Can I sell through WhatsApp or Instagram?">Kya WhatsApp ya Instagram se bhi sell kar sakte hain?</span><i class="ti ti-chevron-down"></i></div>
+        <div class="faq-a" data-hi="Bilkul! Bahut saare resellers WhatsApp Business, Instagram, Meesho aur GlowRoad se sell karte hain. Hum tumhe product images aur description bhi denge jo aap seedha use kar sako." data-en="Absolutely! Many of our resellers sell through WhatsApp Business, Instagram, Meesho, and GlowRoad. We will provide you with product images and descriptions that you can use directly.">Bilkul! Bahut saare resellers WhatsApp Business, Instagram, Meesho aur GlowRoad se sell karte hain. Hum tumhe product images aur description bhi denge jo aap seedha use kar sako.</div>
+      </div>
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-q"><span data-hi="Kya return/exchange policy resellers ke liye bhi applicable hai?" data-en="Does the return/exchange policy apply to resellers too?">Kya return/exchange policy resellers ke liye bhi applicable hai?</span><i class="ti ti-chevron-down"></i></div>
+        <div class="faq-a" data-hi="Haan, defective products ke liye hamari return policy resellers par bhi apply hoti hai. Registration ke baad dedicated support se saari details milegi." data-en="Yes, our return policy for defective products applies to resellers as well. You will get all the details from your dedicated support after registration.">Haan, defective products ke liye hamari return policy resellers par bhi apply hoti hai. Registration ke baad dedicated support se saari details milegi.</div>
+      </div>
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-q"><span data-hi="Registration approve hone mein kitna time lagta hai?" data-en="How long does registration approval take?">Registration approve hone mein kitna time lagta hai?</span><i class="ti ti-chevron-down"></i></div>
+        <div class="faq-a" data-hi="24–48 working hours. Hamari team form check karti hai aur WhatsApp par contact karti hai verification ke baad." data-en="24–48 working hours. Our team reviews your form and contacts you via WhatsApp after verification.">24–48 working hours. Hamari team form check karti hai aur WhatsApp par contact karti hai verification ke baad.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  let currentLang = 'hi';
+
+  function setLang(lang) {
+    currentLang = lang;
+    document.getElementById('btn-hi').classList.toggle('active', lang === 'hi');
+    document.getElementById('btn-en').classList.toggle('active', lang === 'en');
+    document.querySelectorAll('[data-hi]').forEach(el => { const t = el.getAttribute('data-' + lang); if (t) el.textContent = t; });
+    document.querySelectorAll('[data-placeholder-hi]').forEach(el => { const p = el.getAttribute('data-placeholder-' + lang); if (p) el.placeholder = p; });
+    document.querySelectorAll('select option[data-hi]').forEach(o => { const t = o.getAttribute('data-' + lang); if (t) o.textContent = t; });
+    updateFormErrorLang();
+  }
+
+  function updateFormErrorLang() {
+    const errEl = document.getElementById('form-error');
+    if (errEl && errEl.style.display !== 'none' && errEl._errKey) errEl.textContent = errMessages[errEl._errKey][currentLang];
+  }
+
+  const errMessages = {
+    required: { hi: '⚠️ Kripya sabhi required fields (*) fill karein.', en: '⚠️ Please fill in all required fields (*).' },
+    email: { hi: '⚠️ Valid email address daalo.', en: '⚠️ Please enter a valid email address.' }
+  };
+
+  function showError(key) {
+    const errEl = document.getElementById('form-error');
+    errEl._errKey = key;
+    errEl.textContent = errMessages[key][currentLang];
+    errEl.style.display = 'block';
+  }
+
+  document.addEventListener('DOMContentLoaded', () => setLang(currentLang));
+
+  async function handleSubmit() {
+    const val=id=>document.getElementById(id).value.trim();
+    const fullName=val('f-name'),mobileNumber=val('f-phone'),emailAddress=val('f-email'),city=val('f-city');
+    const sellingPlatform=val('f-platform'),expectedOrderQuantity=val('f-qty');
+    const additionalNote=val('f-msg');
+    if(!fullName||!/^\d{10}$/.test(mobileNumber.replace(/\D/g,''))||!emailAddress||!city||!sellingPlatform||!expectedOrderQuantity){showError('required');return;}
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailAddress)){showError('email');return;}
+    document.getElementById('form-error').style.display='none';
+    const btn=document.getElementById('submit-btn');btn.disabled=true;
+    const chatWindow=window.open('about:blank','_blank');
+    try{
+      const api=new URLSearchParams(location.search).get('api')||location.origin;
+      const response=await fetch(api.replace(/\/$/,'')+'/api/reseller-registration',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({fullName,mobileNumber,emailAddress,city,sellingPlatform,expectedOrderQuantity})});
+      const result=await response.json().catch(()=>({}));
+      if(!response.ok)throw new Error(result.message||'Failed to save registration');
+      const platform=document.getElementById('f-platform');const qty=document.getElementById('f-qty');
+      const message=['New Hivra Soft Reseller Registration','Name: '+fullName,'Mobile: '+mobileNumber,'Email: '+emailAddress,'City: '+city,'Selling Platform: '+platform.options[platform.selectedIndex].text,'Expected Quantity: '+qty.options[qty.selectedIndex].text,additionalNote?'Message: '+additionalNote:''].filter(Boolean).join('\n');
+      const url='https://wa.me/919420980536?text='+encodeURIComponent(message);
+      if(chatWindow)chatWindow.location.replace(url);else window.location.href=url;
+      document.getElementById('form-content').style.display='none';
+      document.getElementById('success-card').style.display='block';
+      document.querySelector('#success-card .success-wa').href=url;
+    }catch(error){if(chatWindow)chatWindow.close();const err=document.getElementById('form-error');err.textContent=error.message||'Unable to save';err.style.display='block';}
+    finally{btn.disabled=false;}
+  }
+
+  function toggleFaq(el) { el.classList.toggle('open'); }
+</script>
+</body>
+</html>
