@@ -438,8 +438,8 @@ export async function createRazorpayOrderFromCart(userId: string, payload: any) 
     paymentMethod: "razorpay",
     paymentStatus: "pending",
     payment: { gateway: "razorpay", amount: snapshot.total, currency: "INR", paidAt: null },
-    status: "confirmed",
-    statusHistory: [{ status: "confirmed", message: "Order placed. Razorpay payment is pending.", at: new Date() }],
+    status: "pending_payment",
+    statusHistory: [{ status: "pending_payment", message: "Order placed. Razorpay payment is pending.", at: new Date() }],
     inventoryCommitted: false,
     fulfillmentState: "pending",
   });
@@ -572,7 +572,9 @@ async function finalizePaidOrder(orderId: string, paymentId: string, source: "ve
 }
 
 export async function verifyRazorpayPaymentForUser(userId: string, payload: any) {
-  const internalOrderId = assertObjectId(payload?.internalOrderId, "internal order ID");
+  // `orderId` was used by the checkout client in older builds. Keep accepting it
+  // so payments created before this fix can still be verified successfully.
+  const internalOrderId = assertObjectId(payload?.internalOrderId || payload?.orderId, "internal order ID");
   const razorpayOrderId = clean(payload?.razorpay_order_id);
   const razorpayPaymentId = clean(payload?.razorpay_payment_id);
   const razorpaySignature = clean(payload?.razorpay_signature);
@@ -605,8 +607,45 @@ export async function markRazorpayPaymentFailed(razorpayOrderId: string, payment
   if (!order || order.paymentStatus === "paid") return order;
   const payment = order.payment && typeof order.payment === "object" ? order.payment : {};
   order.paymentStatus = "failed";
+  if (!order.inventoryCommitted && !["cancelled", "canceled"].includes(String(order.status || ""))) {
+    order.status = "pending_payment";
+    order.fulfillmentState = "failed";
+  }
   order.payment = { ...payment, razorpayPaymentId: paymentId || (payment as any).razorpayPaymentId || "", transactionId: paymentId || (payment as any).transactionId || "" };
   order.statusHistory.push({ status: "pending_payment", message: "Razorpay reported a failed payment.", at: new Date() } as any);
+  await order.save();
+  return order;
+}
+
+export async function markRazorpayPaymentFailedForUser(userId: string, payload: any) {
+  const internalOrderId = assertObjectId(payload?.internalOrderId || payload?.orderId, "internal order ID");
+  const order = await Order.findOne({ _id: internalOrderId, user: userId });
+  if (!order) throw new Error("Order not found.");
+  if (order.paymentStatus === "paid") return order;
+
+  const payment = order.payment && typeof order.payment === "object" ? order.payment : {};
+  const savedRazorpayOrderId = clean((payment as any).razorpayOrderId);
+  const receivedRazorpayOrderId = clean(payload?.razorpayOrderId || payload?.razorpay_order_id);
+  if (receivedRazorpayOrderId && savedRazorpayOrderId && receivedRazorpayOrderId !== savedRazorpayOrderId) {
+    throw new Error("Razorpay order ID does not match this order.");
+  }
+
+  const paymentId = clean(payload?.razorpayPaymentId || payload?.razorpay_payment_id);
+  order.paymentStatus = "failed";
+  if (!order.inventoryCommitted && !["cancelled", "canceled"].includes(String(order.status || ""))) {
+    order.status = "pending_payment";
+    order.fulfillmentState = "failed";
+  }
+  order.payment = {
+    ...payment,
+    razorpayPaymentId: paymentId || (payment as any).razorpayPaymentId || "",
+    transactionId: paymentId || (payment as any).transactionId || "",
+  };
+  order.statusHistory.push({
+    status: "pending_payment",
+    message: "Razorpay checkout reported a failed payment.",
+    at: new Date(),
+  } as any);
   await order.save();
   return order;
 }

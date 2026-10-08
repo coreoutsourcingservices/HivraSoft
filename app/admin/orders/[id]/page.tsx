@@ -114,6 +114,36 @@ function statusLabel(value: unknown) {
     );
 }
 
+function paymentStatusMeta(value: unknown) {
+  const status = text(value, "pending").trim().toLowerCase();
+
+  if (status === "paid") {
+    return {
+      label: "Successful",
+      className: "border-green-200 bg-green-50 text-green-700",
+    };
+  }
+
+  if (status === "failed") {
+    return {
+      label: "Failed",
+      className: "border-red-200 bg-red-50 text-red-700",
+    };
+  }
+
+  if (status === "refunded") {
+    return {
+      label: "Refunded",
+      className: "border-sky-200 bg-sky-50 text-sky-700",
+    };
+  }
+
+  return {
+    label: "Pending",
+    className: "border-amber-200 bg-amber-50 text-amber-700",
+  };
+}
+
 /* =========================================================
    Component
 ========================================================= */
@@ -335,6 +365,10 @@ export default function AdminOrderDetailsPage() {
     order.paymentMethod,
     "—"
   ).toUpperCase();
+
+  const paymentState = paymentStatusMeta(
+    order.paymentStatus
+  );
 
   const paymentId = text(
     payment.razorpayPaymentId ??
@@ -703,6 +737,18 @@ export default function AdminOrderDetailsPage() {
               <div className="mt-2">
                 <span className="inline-flex rounded-[7px] bg-[#F4EFED] px-3 py-1.5 text-[10px] font-bold text-[#241C19]">
                   {paymentMethod}
+                </span>
+              </div>
+
+              <div className="mt-4">
+                <p className="text-[9px] font-medium uppercase tracking-[0.12em] text-[#241C19]/35">
+                  Payment Status
+                </p>
+
+                <span
+                  className={`mt-2 inline-flex rounded-full border px-3 py-1.5 text-[9px] font-bold uppercase tracking-wide ${paymentState.className}`}
+                >
+                  {paymentState.label}
                 </span>
               </div>
 

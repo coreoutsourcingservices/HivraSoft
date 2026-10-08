@@ -209,7 +209,16 @@ export type RazorpayVerifyInput = {
 
   razorpay_signature: string;
 
+  internalOrderId?: string;
+
+  // Backward compatibility with older checkout builds.
   orderId?: string;
+};
+
+export type RazorpayFailedInput = {
+  internalOrderId: string;
+  razorpayOrderId?: string;
+  razorpayPaymentId?: string;
 };
 
 /* =========================================================
@@ -2533,6 +2542,23 @@ export async function verifyRazorpayPayment(
 
         body:
           payload,
+      }
+    );
+
+  return normalizeOrder(
+    response
+  );
+}
+
+export async function markRazorpayPaymentFailed(
+  payload: RazorpayFailedInput
+): Promise<OrderResult> {
+  const response =
+    await apiFetch<unknown>(
+      "/api/orders/razorpay/failed",
+      {
+        method: "POST",
+        body: payload,
       }
     );
 
