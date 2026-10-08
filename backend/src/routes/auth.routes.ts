@@ -23,9 +23,7 @@ const router = Router();
 ========================================================= */
 
 const otpSendLimiter = rateLimit({
-  windowMs: 10 * 60 * 1000,
-
-  limit: 5,
+ 
 
   standardHeaders: true,
 
