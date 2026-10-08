@@ -1,6 +1,12 @@
 import SupportShell from "@/components/SupportShell";
+import type { ReactNode } from "react";
 
-const InfoCard = ({ title, children }) => (
+type InfoCardProps = {
+  title: string;
+  children: ReactNode;
+};
+const InfoCard = ({ title, children }: InfoCardProps) => (
+
   <div className="rounded-3xl border border-slate-200 bg-slate-50/70 p-5 sm:p-6">
     <h2 className="text-lg font-black text-slate-950">{title}</h2>
     <div className="mt-3 text-sm leading-7 text-slate-600 sm:text-base">{children}</div>

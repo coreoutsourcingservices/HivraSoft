@@ -600,23 +600,20 @@ function normalizeItem(
 
     subtotal,
 
-    availableStock:
-      Math.max(
-        0,
-        num(
-          item.availableStock,
-          size.stock
-        )
-      ),
+   availableStock: Math.max(
+  0,
+  num(
+    item.availableStock,
+    num(size.stock)
+  )
+),
 
-    available:
-      item.available !==
-      false,
+available: item.available !== false,
 
-    offerContext:
-      offerId
-        ? {
-            offerId,
+offerContext:
+  offerId
+    ? {
+        offerId,
 
             offerType:
               text(

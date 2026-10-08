@@ -1,11 +1,20 @@
+
 import Link from "next/link";
+import type { ReactNode } from "react";
+
+interface SupportShellProps {
+  eyebrow?: string;
+  title: string;
+  description?: string;
+  children: ReactNode;
+}
 
 export default function SupportShell({
   eyebrow = "Hivrasoft Support",
   title,
   description,
   children,
-}) {
+}: SupportShellProps) {
   return (
     <main className="min-h-screen bg-[#fffafc] text-slate-900">
       <div className="pointer-events-none fixed inset-x-0 top-0 h-[420px] bg-[radial-gradient(circle_at_top_left,_rgba(244,114,182,0.20),_transparent_36%),radial-gradient(circle_at_top_right,_rgba(139,92,246,0.16),_transparent_35%)]" />
@@ -28,6 +37,7 @@ export default function SupportShell({
             >
               Help Center
             </Link>
+
             <Link
               href="/contact"
               className="rounded-full bg-slate-950 px-4 py-2 text-sm font-bold text-white transition hover:bg-rose-600"
@@ -44,15 +54,18 @@ export default function SupportShell({
             href="/help"
             className="mb-5 inline-flex items-center gap-2 text-sm font-semibold text-rose-600 hover:text-rose-700"
           >
-            <span aria-hidden>←</span> Back to Help Center
+            <span aria-hidden="true">←</span>
+            Back to Help Center
           </Link>
 
           <p className="mb-3 text-xs font-black uppercase tracking-[0.28em] text-rose-500">
             {eyebrow}
           </p>
+
           <h1 className="text-4xl font-black tracking-tight text-slate-950 sm:text-5xl">
             {title}
           </h1>
+
           {description ? (
             <p className="mt-5 max-w-2xl text-base leading-8 text-slate-600 sm:text-lg">
               {description}
@@ -66,11 +79,15 @@ export default function SupportShell({
 
         <div className="mt-8 flex flex-col gap-3 rounded-3xl border border-slate-200 bg-slate-950 p-6 text-white sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-sm font-bold text-rose-300">Still need help?</p>
+            <p className="text-sm font-bold text-rose-300">
+              Still need help?
+            </p>
+
             <p className="mt-1 text-sm text-slate-300">
               Our support team is available at support@hivrasoft.com.
             </p>
           </div>
+
           <a
             href="mailto:support@hivrasoft.com"
             className="inline-flex w-fit rounded-full bg-white px-5 py-2.5 text-sm font-black text-slate-950 transition hover:bg-rose-100"

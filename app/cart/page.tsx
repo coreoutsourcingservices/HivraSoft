@@ -1062,20 +1062,13 @@ export default function CartPage() {
 
 
 
-  const deliveryCharge =
-
-    cart?.deliveryCharge;
-
-
+const deliveryCharge = cart?.deliveryCharge ?? null;
 
   const total =
 
     cart?.total ||
 
     0;
-
-
-
   /* =======================================================
 
      RENDER
