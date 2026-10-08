@@ -78,6 +78,6 @@ export default async function BlogDetailPage({ params }: Props) {
         </aside>
       </div>
     </main>
-    <Footer />
+  
   </>;
 }
