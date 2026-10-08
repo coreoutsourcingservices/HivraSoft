@@ -48,7 +48,7 @@ export default async function BlogDetailPage({ params }: Props) {
           <div className="mt-6 flex flex-wrap gap-3 text-xs text-[#816C69]">
             <span>{label(blog.category)}</span><span>•</span>
             <time>{dateText(blog.publishedAt || blog.scheduledAt || blog.createdAt)}</time><span>•</span>
-            <span>{readMinutes(blog.content)} min read</span>
+           
           </div>
           <h1 className="mt-4 w-full text-[clamp(2rem,4vw,4.5rem)] font-semibold leading-[1.12] tracking-tight">{blog.title}</h1>
           {blog.excerpt && <p className="mt-5 max-w-5xl text-base leading-8 text-[#786965] sm:text-lg">{blog.excerpt}</p>}
