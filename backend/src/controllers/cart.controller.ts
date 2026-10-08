@@ -82,6 +82,7 @@ export const addToCartController =
         colorId,
         sizeId,
         quantity,
+        offerContext,
       } = req.body;
 
       const cart =
@@ -107,6 +108,19 @@ export const addToCartController =
               ),
 
             quantity,
+
+            /*
+             * null:
+             * normal storefront.
+             *
+             * buy_get_page:
+             * only Buy/Get catalog.
+             *
+             * Validation cart.service me hoti hai.
+             */
+            offerContext:
+              offerContext ??
+              null,
           }
         );
 
@@ -380,23 +394,93 @@ export const clearCartController =
     }
   };
 
+/* =========================================================
+   APPLY DISCOUNT CODE
+========================================================= */
 
-export const applyDiscountCodeController = async (req: Request, res: Response) => {
-  try {
-    const userId = getAuthenticatedUserId(req);
-    const cart = await applyCartDiscountCode(userId, req.body?.code);
-    return res.status(200).json({ success: true, message: "Discount code applied.", cart });
-  } catch (error) {
-    return res.status(400).json({ success: false, message: error instanceof Error ? error.message : "Unable to apply discount code." });
-  }
-};
+export const applyDiscountCodeController =
+  async (
+    req: Request,
+    res: Response
+  ) => {
+    try {
+      const userId =
+        getAuthenticatedUserId(
+          req
+        );
 
-export const removeDiscountCodeController = async (req: Request, res: Response) => {
-  try {
-    const userId = getAuthenticatedUserId(req);
-    const cart = await removeCartDiscountCode(userId);
-    return res.status(200).json({ success: true, message: "Discount code removed.", cart });
-  } catch (error) {
-    return res.status(400).json({ success: false, message: error instanceof Error ? error.message : "Unable to remove discount code." });
-  }
-};
+      const cart =
+        await applyCartDiscountCode(
+          userId,
+          req.body?.code
+        );
+
+      return res
+        .status(200)
+        .json({
+          success: true,
+
+          message:
+            "Discount code applied.",
+
+          cart,
+        });
+    } catch (error) {
+      return res
+        .status(400)
+        .json({
+          success: false,
+
+          message:
+            error instanceof
+            Error
+              ? error.message
+              : "Unable to apply discount code.",
+        });
+    }
+  };
+
+/* =========================================================
+   REMOVE DISCOUNT CODE
+========================================================= */
+
+export const removeDiscountCodeController =
+  async (
+    req: Request,
+    res: Response
+  ) => {
+    try {
+      const userId =
+        getAuthenticatedUserId(
+          req
+        );
+
+      const cart =
+        await removeCartDiscountCode(
+          userId
+        );
+
+      return res
+        .status(200)
+        .json({
+          success: true,
+
+          message:
+            "Discount code removed.",
+
+          cart,
+        });
+    } catch (error) {
+      return res
+        .status(400)
+        .json({
+          success: false,
+
+          message:
+            error instanceof
+            Error
+              ? error.message
+              : "Unable to remove discount code.",
+        });
+    }
+  };

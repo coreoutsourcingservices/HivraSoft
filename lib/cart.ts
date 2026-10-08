@@ -6,25 +6,85 @@ import {
    TYPES
 ========================================================= */
 
+export type CartOfferType =
+  | "buy_get"
+  | "fixed_price_bundle";
+
+export type CartOfferSource =
+  | "buy_get_page"
+  | "fixed_price_bundle";
+
+export type CartOfferContext = {
+  offerId: string;
+
+  offerType:
+    CartOfferType;
+
+  source:
+    CartOfferSource;
+
+  /*
+   * DISPLAY-ONLY DATA
+   *
+   * Backend pricing ke liye in values ko trust nahi karega.
+   * Ye sirf frontend notification/progress ke liye hain.
+   */
+  offerName?: string;
+
+  requiredQuantity?: number;
+
+  getQuantity?: number;
+
+  fixedPrice?: number;
+};
+
+export type CartResponseOfferContext = {
+  offerId?: string;
+
+  offerType?: string;
+
+  source?: string;
+};
+
+export type AddToCartResponse = {
+  success?: boolean;
+
+  message?: string;
+
+  cart?: {
+    items?: Array<{
+      _id?: string;
+
+      quantity?: number;
+
+      offerContext?:
+        | CartResponseOfferContext
+        | null;
+    }>;
+
+    totalItems?: number;
+  };
+};
+
 export type AddToCartInput = {
   productId: string;
   colorId: string;
   sizeId: string;
   quantity?: number;
+
+  offerContext?:
+    | CartOfferContext
+    | null;
 };
 
 type CartCountResponse = {
   count?: number;
-
   cartCount?: number;
-
   totalItems?: number;
 
   data?: {
     count?: number;
-
     cartCount?: number;
-
     totalItems?: number;
   };
 };
@@ -97,9 +157,33 @@ export async function getCartCount(): Promise<number> {
 
 export async function addToCart(
   input: AddToCartInput
-) {
+): Promise<AddToCartResponse> {
+  /*
+   * IMPORTANT:
+   *
+   * Backend ko sirf trusted identifiers/source bhejenge.
+   * offerName / requiredQuantity / fixedPrice frontend display data hai.
+   * Actual offer values backend apne Offer collection se verify karega.
+   */
+  const secureOfferContext =
+    input.offerContext
+      ? {
+          offerId:
+            input.offerContext
+              .offerId,
+
+          offerType:
+            input.offerContext
+              .offerType,
+
+          source:
+            input.offerContext
+              .source,
+        }
+      : null;
+
   const response =
-    await apiFetch(
+    await apiFetch<AddToCartResponse>(
       "/api/cart",
       {
         method: "POST",
@@ -117,6 +201,9 @@ export async function addToCart(
           quantity:
             input.quantity ??
             1,
+
+          offerContext:
+            secureOfferContext,
         },
       }
     );

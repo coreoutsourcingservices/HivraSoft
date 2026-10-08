@@ -4,6 +4,10 @@ import ResponsiveCatalog from "@/src/components/Storefront/ResponsiveCatalog";
 
 import CategoryOfferStrip from "@/src/components/Offers/CategoryOfferStrip";
 
+import {
+  FixedPriceOfferScope,
+} from "@/src/components/Offers/FixedPriceOfferScope";
+
 import type {
   StorefrontCategoryNode,
 } from "@/src/services/categories";
@@ -57,54 +61,49 @@ export default function MenCatalog({
   categoryPath,
   fixedPriceOffer,
 }: Props) {
+  const offer =
+    fixedPriceOffer &&
+    fixedPriceOffer.offerType ===
+      "fixed_price_bundle"
+      ? fixedPriceOffer
+      : null;
+
   return (
     <>
-      {/* ===================================================
-          FIXED PRICE OFFER
-
-          Sirf selected category page par.
-      =================================================== */}
-
       <CategoryOfferStrip
         offer={
-          fixedPriceOffer ||
-          null
+          offer
         }
       />
 
-      {/* ===================================================
-          NORMAL CATALOG
-
-          Women ke same:
-          banner
-          categories
-          filters
-          sort
-          StorefrontProductCard
-      =================================================== */}
-
-      <ResponsiveCatalog
-        basePath="/men"
-        allLabel="All Men"
-        products={
-          products
+      <FixedPriceOfferScope
+        offer={
+          offer
         }
-        banners={
-          banners
-        }
-        title={
-          title
-        }
-        description={
-          description
-        }
-        categoryRoot={
-          categoryRoot
-        }
-        categoryPath={
-          categoryPath
-        }
-      />
+      >
+        <ResponsiveCatalog
+          basePath="/men"
+          allLabel="All Men"
+          products={
+            products
+          }
+          banners={
+            banners
+          }
+          title={
+            title
+          }
+          description={
+            description
+          }
+          categoryRoot={
+            categoryRoot
+          }
+          categoryPath={
+            categoryPath
+          }
+        />
+      </FixedPriceOfferScope>
     </>
   );
 }

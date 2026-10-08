@@ -1,1643 +1,4753 @@
 "use client";
 
+
+
 import Link from "next/link";
 
+
+
 import {
+
   useCallback,
+
   useEffect,
-  useMemo,
+
   useState,
+
 } from "react";
 
+
+
 import {
+
+  BadgePercent,
+
+  CircleCheckBig,
+
+  Gift,
+
+  Loader2,
+
   Minus,
+
   Plus,
+
+  ReceiptText,
+
+  ShieldCheck,
+
   ShoppingBag,
+
+  Tag,
+
   Trash2,
+
+  Truck,
+
 } from "lucide-react";
 
+
+
 import Header from "@/src/components/Header/Header";
+
+
+
 import AccountSidebar from "@/app/account/components/AccountSidebar";
 
+
+
 import {
+
   useStorefrontCommerce,
+
 } from "@/src/components/Storefront/StorefrontCommerceProvider";
 
+
+
 import {
+
+  applyDiscountCode,
+
   getCart,
+
   removeCartItem,
+
+  removeDiscountCode,
+
   updateCartItem,
+
 } from "@/lib/cart";
 
-/* =========================================================
-   TYPES
-========================================================= */
 
-type CartDisplayItem = {
-  id: string;
 
-  productId: string;
-  colorId: string;
-  sizeId: string;
+import {
 
-  name: string;
-  slug: string;
+  normalizeCartResponse,
 
-  color: string;
-  size: string;
+  type CartView,
 
-  image1: string;
-  image2: string;
+  type CartViewItem,
 
-  showPrice: number;
-  originalPrice: number;
+} from "@/src/services/cart-view";
 
-  quantity: number;
-};
+
 
 /* =========================================================
-   HELPERS
-========================================================= */
 
-function asObject(
-  value: unknown,
-): Record<string, unknown> {
-  if (
-    value &&
-    typeof value === "object" &&
-    !Array.isArray(value)
-  ) {
-    return value as Record<
-      string,
-      unknown
-    >;
-  }
-
-  return {};
-}
-
-function asArray(
-  value: unknown,
-): unknown[] {
-  return Array.isArray(value)
-    ? value
-    : [];
-}
-
-function firstString(
-  ...values: unknown[]
-): string {
-  for (const value of values) {
-    if (
-      typeof value === "string" &&
-      value.trim()
-    ) {
-      return value.trim();
-    }
-  }
-
-  return "";
-}
-
-function positiveNumber(
-  ...values: unknown[]
-) {
-  for (const value of values) {
-    if (
-      value === null ||
-      value === undefined ||
-      value === ""
-    ) {
-      continue;
-    }
-
-    const parsed =
-      Number(value);
-
-    if (
-      Number.isFinite(parsed) &&
-      parsed > 0
-    ) {
-      return parsed;
-    }
-  }
-
-  return 0;
-}
-
-function getId(
-  value: unknown,
-) {
-  if (
-    typeof value === "string"
-  ) {
-    return value.trim();
-  }
-
-  const object =
-    asObject(value);
-
-  return firstString(
-    object._id,
-    object.id,
-  );
-}
-
-function getImageUrl(
-  value: unknown,
-) {
-  if (
-    typeof value === "string"
-  ) {
-    return value.trim();
-  }
-
-  const object =
-    asObject(value);
-
-  return firstString(
-    object.url,
-    object.src,
-    object.image,
-    object.imageUrl,
-  );
-}
-
-function getImageUrls(
-  value: unknown,
-) {
-  const images =
-    asArray(value);
-
-  const sorted = [
-    ...images.filter(
-      (image) =>
-        asObject(image)
-          .isDefault === true,
-    ),
-
-    ...images.filter(
-      (image) =>
-        asObject(image)
-          .isDefault !== true,
-    ),
-  ];
-
-  return Array.from(
-    new Set(
-      sorted
-        .map(getImageUrl)
-        .filter(Boolean),
-    ),
-  );
-}
-
-function findById(
-  list: unknown,
-  targetId: string,
-) {
-  if (!targetId) {
-    return {};
-  }
-
-  for (
-    const value of asArray(list)
-  ) {
-    const object =
-      asObject(value);
-
-    if (
-      getId(object) ===
-      targetId
-    ) {
-      return object;
-    }
-  }
-
-  return {};
-}
-
-/* =========================================================
-   NORMALIZE CART ITEM
-========================================================= */
-
-function normalizeCartItem(
-  rawValue: unknown,
-): CartDisplayItem | null {
-  const item =
-    asObject(rawValue);
-
-  const product =
-    asObject(item.product);
-
-  const productId =
-    firstString(
-      getId(item.product),
-      item.productId,
-    );
-
-  const directColor =
-    asObject(
-      item.color ||
-        item.selectedColor,
-    );
-
-  const colorId =
-    firstString(
-      getId(item.colorId),
-      getId(directColor),
-    );
-
-  const productColor =
-    findById(
-      product.colors,
-      colorId,
-    );
-
-  const color =
-    Object.keys(
-      directColor,
-    ).length > 0
-      ? directColor
-      : productColor;
-
-  const directSize =
-    asObject(
-      item.size ||
-        item.selectedSize,
-    );
-
-  const sizeId =
-    firstString(
-      getId(item.sizeId),
-      getId(directSize),
-    );
-
-  const colorSize =
-    findById(
-      color.sizes,
-      sizeId,
-    );
-
-  const size =
-    Object.keys(
-      directSize,
-    ).length > 0
-      ? directSize
-      : colorSize;
-
-  const showPrice =
-    positiveNumber(
-      size.showPrice,
-      size.sellingPrice,
-      color.showPrice,
-      color.sellingPrice,
-      item.showPrice,
-      item.sellingPrice,
-      item.unitPrice,
-      item.priceAtAdd,
-      item.price,
-      product.showPrice,
-    );
-
-  const originalPrice =
-    positiveNumber(
-      size.originalPrice,
-      size.mrp,
-      color.originalPrice,
-      color.mrp,
-      item.originalPrice,
-      item.mrp,
-      product.originalPrice,
-      showPrice,
-    );
-
-  const colorImages =
-    getImageUrls(
-      color.images,
-    );
-
-  const productImages =
-    getImageUrls(
-      product.mainImages ||
-        product.images,
-    );
-
-  const directImage =
-    firstString(
-      item.image,
-      item.imageUrl,
-    );
-
-  const images =
-    Array.from(
-      new Set(
-        [
-          directImage,
-          ...colorImages,
-          ...productImages,
-        ].filter(Boolean),
-      ),
-    );
-
-  const name =
-    firstString(
-      color.nameProduct,
-      item.nameProduct,
-      item.productName,
-      product.nameProduct,
-      product.name,
-      "Product",
-    );
-
-  const slug =
-    firstString(
-      color.slugProduct,
-      item.slugProduct,
-      item.slug,
-      product.slugProduct,
-      product.slug,
-    );
-
-  const colorName =
-    firstString(
-      color.nameColor,
-      item.colorName,
-    );
-
-  const sizeName =
-    firstString(
-      size.size,
-      size.name,
-      item.sizeLabel,
-      item.sizeName,
-    );
-
-  const quantity =
-    Math.max(
-      1,
-      Math.floor(
-        positiveNumber(
-          item.quantity,
-          1,
-        ),
-      ),
-    );
-
-  const id =
-    firstString(
-      getId(item),
-    );
-
-  if (!id) {
-    return null;
-  }
-
-  return {
-    id,
-
-    productId,
-    colorId,
-    sizeId,
-
-    name,
-    slug,
-
-    color:
-      colorName,
-
-    size:
-      sizeName,
-
-    image1:
-      images[0] || "",
-
-    image2:
-      images[1] ||
-      images[0] ||
-      "",
-
-    showPrice,
-
-    originalPrice:
-      Math.max(
-        originalPrice,
-        showPrice,
-      ),
-
-    quantity,
-  };
-}
-
-function normalizeCart(
-  response: unknown,
-): CartDisplayItem[] {
-  const root =
-    asObject(response);
-
-  const data =
-    asObject(root.data);
-
-  const cart =
-    asObject(
-      root.cart ||
-        data.cart ||
-        data,
-    );
-
-  const rawItems =
-    Array.isArray(
-      cart.items,
-    )
-      ? cart.items
-      : Array.isArray(
-            root.items,
-          )
-        ? root.items
-        : [];
-
-  return rawItems
-    .map(
-      normalizeCartItem,
-    )
-    .filter(
-      (
-        item,
-      ): item is CartDisplayItem =>
-        Boolean(item),
-    );
-}
-
-/* =========================================================
    MONEY
+
 ========================================================= */
+
+
 
 function money(
-  value: number,
+
+  value:
+
+    number
+
 ) {
-  return `₹${Number(
-    value || 0,
+
+  return `₹${Math.max(
+
+    0,
+
+    Number(
+
+      value ||
+
+        0
+
+    )
+
   ).toLocaleString(
+
     "en-IN",
+
     {
+
       maximumFractionDigits:
+
         2,
-    },
+
+    }
+
   )}`;
+
 }
 
+
+
 /* =========================================================
-   PAGE
+
+   API RESPONSE -> CART
+
 ========================================================= */
 
+
+
+function cartFromMutation(
+
+  response:
+
+    unknown
+
+) {
+
+  return normalizeCartResponse(
+
+    response
+
+  );
+
+}
+
+
+
+/* =========================================================
+
+   PAGE
+
+========================================================= */
+
+
+
 export default function CartPage() {
+
   const commerce =
+
     useStorefrontCommerce();
 
-  const [
-    items,
-    setItems,
-  ] =
-    useState<
-      CartDisplayItem[]
-    >([]);
+
 
   const [
+
+    cart,
+
+    setCart,
+
+  ] =
+
+    useState<CartView | null>(
+
+      null
+
+    );
+
+
+
+  const [
+
     loading,
+
     setLoading,
+
   ] =
-    useState(true);
+
+    useState(
+
+      true
+
+    );
+
+
 
   const [
+
     busyItemId,
+
     setBusyItemId,
+
   ] =
+
     useState<
+
       string | null
+
     >(null);
 
+
+
+  const [
+
+    error,
+
+    setError,
+
+  ] =
+
+    useState(
+
+      ""
+
+    );
+
+
+
+  const [
+
+    discountCode,
+
+    setDiscountCode,
+
+  ] =
+
+    useState(
+
+      ""
+
+    );
+
+
+
+  const [
+
+    applyingCode,
+
+    setApplyingCode,
+
+  ] =
+
+    useState(
+
+      false
+
+    );
+
+
+
+  /* =======================================================
+
+     LOAD CART
+
+
+
+     initial=true:
+
+     loader dikhana hai.
+
+
+
+     initial=false:
+
+     background sync only, UI ko blank nahi karna.
+
+  ======================================================= */
+
+
+
   const loadCart =
+
     useCallback(
-      async () => {
+
+      async (
+
+        initial =
+
+          false
+
+      ) => {
+
         if (
+
           commerce.isAuthenticated !==
+
           true
+
         ) {
-          setItems([]);
-          setLoading(false);
+
+          setCart(
+
+            null
+
+          );
+
+
+
+          if (
+
+            initial
+
+          ) {
+
+            setLoading(
+
+              false
+
+            );
+
+          }
+
+
+
           return;
+
         }
+
+
 
         try {
-          setLoading(true);
+
+          if (
+
+            initial
+
+          ) {
+
+            setLoading(
+
+              true
+
+            );
+
+          }
+
+
 
           const response =
+
             await getCart();
 
-          setItems(
-            normalizeCart(
-              response,
-            ),
-          );
-        } catch (error) {
-          console.error(
-            "LOAD CART ERROR:",
-            error,
+
+
+          setCart(
+
+            normalizeCartResponse(
+
+              response
+
+            )
+
           );
 
-          setItems([]);
+
+
+          setError(
+
+            ""
+
+          );
+
+        } catch (
+
+          loadError
+
+        ) {
+
+          console.error(
+
+            "LOAD CART ERROR:",
+
+            loadError
+
+          );
+
+
+
+          setError(
+
+            loadError instanceof
+
+            Error
+
+              ? loadError.message
+
+              : "Unable to load your cart."
+
+          );
+
         } finally {
-          setLoading(false);
+
+          if (
+
+            initial
+
+          ) {
+
+            setLoading(
+
+              false
+
+            );
+
+          }
+
         }
+
       },
+
       [
+
         commerce.isAuthenticated,
-      ],
+
+      ]
+
     );
 
-  useEffect(() => {
-    void loadCart();
-  }, [loadCart]);
+
+
+  /* =======================================================
+
+     INITIAL LOAD
+
+  ======================================================= */
+
+
 
   useEffect(() => {
+
+    if (
+
+      commerce.isAuthenticated ===
+
+      true
+
+    ) {
+
+      void loadCart(
+
+        true
+
+      );
+
+    } else if (
+
+      commerce.isAuthenticated ===
+
+      false
+
+    ) {
+
+      setLoading(
+
+        false
+
+      );
+
+
+
+      setCart(
+
+        null
+
+      );
+
+    }
+
+  }, [
+
+    commerce.isAuthenticated,
+
+    loadCart,
+
+  ]);
+
+
+
+  /* =======================================================
+
+     CART EVENT
+
+
+
+     Add-to-bag kisi aur component se hua to background sync.
+
+     Full loading state trigger nahi hota.
+
+  ======================================================= */
+
+
+
+  useEffect(() => {
+
     const handleUpdate =
+
       () => {
-        void loadCart();
+
+        void loadCart(
+
+          false
+
+        );
+
       };
 
+
+
     window.addEventListener(
+
       "hivrasoft-cart-updated",
-      handleUpdate,
+
+      handleUpdate
+
     );
+
+
 
     return () => {
+
       window.removeEventListener(
+
         "hivrasoft-cart-updated",
-        handleUpdate,
+
+        handleUpdate
+
       );
+
     };
-  }, [loadCart]);
 
-  const totalItems =
-    useMemo(
-      () =>
-        items.reduce(
-          (
-            total,
-            item,
-          ) =>
-            total +
-            item.quantity,
-          0,
-        ),
-      [items],
-    );
+  }, [
 
-  const subtotal =
-    useMemo(
-      () =>
-        items.reduce(
-          (
-            total,
-            item,
-          ) =>
-            total +
-            item.showPrice *
-              item.quantity,
-          0,
-        ),
-      [items],
-    );
+    loadCart,
+
+  ]);
+
+
+
+  /* =======================================================
+
+     QUANTITY CHANGE
+
+
+
+     IMPORTANT:
+
+     mutation response directly state me.
+
+     No loadCart() after +/-.
+
+  ======================================================= */
+
+
 
   async function changeQuantity(
-    item: CartDisplayItem,
-    nextQuantity: number,
+
+    item:
+
+      CartViewItem,
+
+    nextQuantity:
+
+      number
+
   ) {
+
     if (
-      nextQuantity < 1
+
+      busyItemId ||
+
+      nextQuantity <
+
+        1 ||
+
+      nextQuantity >
+
+        99
+
     ) {
+
       return;
+
     }
+
+
+
+    if (
+
+      item.availableStock >
+
+        0 &&
+
+      nextQuantity >
+
+        item.availableStock
+
+    ) {
+
+      setError(
+
+        `Only ${item.availableStock} item(s) available in stock.`
+
+      );
+
+
+
+      return;
+
+    }
+
+
 
     try {
+
       setBusyItemId(
-        item.id,
+
+        item.id
+
       );
 
-      await updateCartItem(
-        item.id,
-        nextQuantity,
+
+
+      setError(
+
+        ""
+
       );
 
-      await loadCart();
 
-      await commerce.refreshCommerce();
+
+      const response =
+
+        await updateCartItem(
+
+          item.id,
+
+          nextQuantity
+
+        );
+
+
+
+      /*
+
+       * Server ne discounts + offers + tax dobara calculate
+
+       * kiye hain. Wahi response directly UI me lagao.
+
+       */
+
+      setCart(
+
+        cartFromMutation(
+
+          response
+
+        )
+
+      );
+
+    } catch (
+
+      updateError
+
+    ) {
+
+      setError(
+
+        updateError instanceof
+
+        Error
+
+          ? updateError.message
+
+          : "Unable to update quantity."
+
+      );
+
     } finally {
-      setBusyItemId(null);
+
+      setBusyItemId(
+
+        null
+
+      );
+
     }
+
   }
+
+
+
+  /* =======================================================
+
+     REMOVE ITEM
+
+
+
+     No page refresh / no re-loader.
+
+  ======================================================= */
+
+
 
   async function removeItem(
-    itemId: string,
+
+    itemId:
+
+      string
+
   ) {
-    try {
-      setBusyItemId(
-        itemId,
-      );
 
-      await removeCartItem(
-        itemId,
-      );
+    if (
 
-      await loadCart();
+      busyItemId
 
-      await commerce.refreshCommerce();
-    } finally {
-      setBusyItemId(null);
+    ) {
+
+      return;
+
     }
+
+
+
+    try {
+
+      setBusyItemId(
+
+        itemId
+
+      );
+
+
+
+      setError(
+
+        ""
+
+      );
+
+
+
+      const response =
+
+        await removeCartItem(
+
+          itemId
+
+        );
+
+
+
+      setCart(
+
+        cartFromMutation(
+
+          response
+
+        )
+
+      );
+
+    } catch (
+
+      removeError
+
+    ) {
+
+      setError(
+
+        removeError instanceof
+
+        Error
+
+          ? removeError.message
+
+          : "Unable to remove item."
+
+      );
+
+    } finally {
+
+      setBusyItemId(
+
+        null
+
+      );
+
+    }
+
   }
 
+
+
+  /* =======================================================
+
+     APPLY DISCOUNT CODE
+
+
+
+     Existing offers + automatic discount ke baad bhi
+
+     user code enter kar sakta hai. Backend stacking rule
+
+     final authority hai.
+
+  ======================================================= */
+
+
+
+  async function handleApplyDiscountCode(
+    rawCode?:
+      string
+  ) {
+    const code =
+      String(
+        rawCode ??
+          discountCode
+      )
+        .trim()
+        .toUpperCase();
+
+
+
+    if (
+
+      !code ||
+
+      applyingCode
+
+    ) {
+
+      return;
+
+    }
+
+
+
+    try {
+
+      setApplyingCode(
+
+        true
+
+      );
+
+
+
+      setError(
+
+        ""
+
+      );
+
+
+
+      const response =
+
+        await applyDiscountCode(
+
+          code
+
+        );
+
+
+
+      setCart(
+
+        normalizeCartResponse(
+
+          response
+
+        )
+
+      );
+
+
+
+      setDiscountCode(
+
+        ""
+
+      );
+
+    } catch (
+
+      applyError
+
+    ) {
+
+      setError(
+
+        applyError instanceof
+
+        Error
+
+          ? applyError.message
+
+          : "Unable to apply discount code."
+
+      );
+
+    } finally {
+
+      setApplyingCode(
+
+        false
+
+      );
+
+    }
+
+  }
+
+
+
+  async function handleRemoveDiscountCode() {
+
+    if (
+
+      applyingCode
+
+    ) {
+
+      return;
+
+    }
+
+
+
+    try {
+
+      setApplyingCode(
+
+        true
+
+      );
+
+
+
+      setError(
+
+        ""
+
+      );
+
+
+
+      const response =
+
+        await removeDiscountCode();
+
+
+
+      setCart(
+
+        normalizeCartResponse(
+
+          response
+
+        )
+
+      );
+
+    } catch (
+
+      removeCodeError
+
+    ) {
+
+      setError(
+
+        removeCodeError instanceof
+
+        Error
+
+          ? removeCodeError.message
+
+          : "Unable to remove discount code."
+
+      );
+
+    } finally {
+
+      setApplyingCode(
+
+        false
+
+      );
+
+    }
+
+  }
+
+
+
+  /* =======================================================
+
+     VALUES
+
+  ======================================================= */
+
+
+
+  const items =
+
+    cart?.items ||
+
+    [];
+
+
+
+  const totalItems =
+
+    cart?.totalItems ||
+
+    0;
+
+
+
+  const subtotal =
+
+    cart?.subtotal ||
+
+    0;
+
+
+
+  const totalDiscount =
+
+    cart?.discount ||
+
+    0;
+
+
+
+  const deliveryCharge =
+
+    cart?.deliveryCharge;
+
+
+
+  const total =
+
+    cart?.total ||
+
+    0;
+
+
+
+  /* =======================================================
+
+     RENDER
+
+  ======================================================= */
+
+
+
   return (
+
     <>
+
       <Header />
 
+
+
       <div
+
         className="
+
           min-h-screen
-          bg-[#FDFCFB]
+
+          bg-[#FBF8F6]
+
         "
+
       >
+
         <div
+
           className="
+
             mx-auto
+
             flex
+
             w-full
+
             max-w-[1600px]
+
             flex-col
 
+
+
             lg:flex-row
+
             lg:items-start
+
           "
+
         >
+
           <AccountSidebar />
 
+
+
           <main
+
             className="
+
               min-w-0
+
               w-full
+
               max-w-full
+
               flex-1
+
               overflow-x-hidden
+
+
+
               px-3
-              pb-10
-              pt-4
+
+              pb-12
+
+              pt-5
+
+
 
               sm:px-5
 
+
+
               lg:px-7
+
+              lg:pt-7
+
             "
+
           >
-            {/* HERO */}
 
-            <div
+            {/* =============================================
+
+                TOP
+
+            ============================================= */}
+
+
+
+            <section
+
               className="
-                grid
-                grid-cols-1
-                gap-[18px]
 
-                xl:grid-cols-[minmax(0,1.7fr)_minmax(300px,1fr)]
+                overflow-hidden
+
+                rounded-[20px]
+
+                border
+
+                border-[#EADFDB]
+
+                bg-white
+
+                shadow-[0_12px_35px_rgba(67,34,27,.05)]
+
               "
+
             >
-              <section
+
+              <div
+
                 className="
-                  relative
-                  min-h-[165px]
-                  overflow-hidden
-                  rounded-[12px]
+
+                  bg-[linear-gradient(100deg,#FFF2F4_0%,#FFF9F8_55%,#F8ECE8_100%)]
+
                   px-5
+
                   py-6
 
-                  sm:px-[30px]
+
+
+                  sm:px-7
+
+                  sm:py-7
+
                 "
-                style={{
-                  background: `
-                    radial-gradient(circle at 84% 28%, rgba(255,255,255,.90) 0 7%, rgba(255,255,255,0) 22%),
-                    radial-gradient(circle at 94% 80%, rgba(223,154,165,.22) 0 7%, rgba(223,154,165,0) 20%),
-                    linear-gradient(90deg, #FAEDEB 0%, #FBEFED 54%, #F7E4E5 100%)
-                  `,
-                }}
+
               >
-                <div
-                  className="
-                    text-[10px]
-                    font-semibold
-                    tracking-[0.5px]
-                    text-[#282221]
-                  "
-                >
-                  MY ACCOUNT &gt; Cart
-                </div>
-
-                <h1
-                  className="
-                    mt-[14px]
-                    font-serif
-                    text-[37px]
-                    font-normal
-                    leading-none
-                    text-[#171313]
-
-                    sm:text-[44px]
-                  "
-                >
-                  My Cart
-                </h1>
 
                 <p
-                  className="
-                    mt-3
-                    max-w-[470px]
-                    text-[12px]
-                    font-medium
-                    leading-[1.6]
-                    text-[#332E2C]
-                  "
-                >
-                  Your selected
-                  styles are waiting
-                  for you. Review your
-                  items and continue
-                  when you&apos;re
-                  ready.
-                </p>
-              </section>
 
-              <section
-                className="
-                  min-h-[165px]
-                  rounded-[12px]
-                  border
-                  border-[#E7DEDA]
-                  bg-white
-                  p-5
-                "
-              >
-                <div
                   className="
-                    flex
-                    items-center
-                    gap-3
+
+                    text-[9px]
+
+                    font-bold
+
+                    uppercase
+
+                    tracking-[0.18em]
+
+                    text-[#B31345]
+
                   "
+
                 >
-                  <div
-                    className="
-                      grid
-                      h-12
-                      w-12
-                      place-items-center
-                      rounded-full
-                      bg-[#FCEAEA]
-                      text-[#AD2348]
-                    "
-                  >
-                    <ShoppingBag
-                      size={22}
-                    />
-                  </div>
+
+                  My Account / Cart
+
+                </p>
+
+
+
+                <div
+
+                  className="
+
+                    mt-2
+
+                    flex
+
+                    flex-col
+
+                    gap-4
+
+
+
+                    sm:flex-row
+
+                    sm:items-end
+
+                    sm:justify-between
+
+                  "
+
+                >
 
                   <div>
-                    <div
+
+                    <h1
+
                       className="
+
                         font-serif
-                        text-[17px]
-                        text-[#171313]
-                      "
-                    >
-                      Cart Summary
-                    </div>
 
-                    <div
-                      className="
-                        mt-1
-                        text-[10px]
-                        font-semibold
-                        text-[#625753]
-                      "
-                    >
-                      {totalItems}{" "}
-                      {totalItems ===
-                      1
-                        ? "item"
-                        : "items"}
-                    </div>
-                  </div>
-                </div>
+                        text-[34px]
 
-                <div
-                  className="
-                    mt-6
-                    grid
-                    grid-cols-2
-                    divide-x
-                    divide-[#ECE7E4]
-                  "
-                >
-                  <div
-                    className="
-                      text-center
-                    "
-                  >
-                    <strong
-                      className="
-                        block
-                        font-serif
-                        text-[18px]
-                        text-[#111111]
-                      "
-                    >
-                      {totalItems}
-                    </strong>
+                        leading-none
 
-                    <span
-                      className="
-                        mt-1
-                        block
-                        text-[9px]
-                        font-semibold
-                        text-[#443A37]
+                        text-[#211817]
+
+
+
+                        sm:text-[42px]
+
                       "
+
                     >
-                      Items
-                    </span>
+
+                      My Cart
+
+                    </h1>
+
+
+
+                    <p
+
+                      className="
+
+                        mt-3
+
+                        max-w-[560px]
+
+                        text-[11px]
+
+                        leading-5
+
+                        text-black/50
+
+                      "
+
+                    >
+
+                      Offers, automatic
+
+                      discounts, coupon
+
+                      codes and taxes below
+
+                      are calculated from
+
+                      your live cart API.
+
+                    </p>
+
                   </div>
 
+
+
                   <div
+
                     className="
-                      text-center
+
+                      flex
+
+                      gap-2
+
                     "
+
                   >
-                    <strong
-                      className="
-                        block
-                        font-serif
-                        text-[18px]
-                        text-[#111111]
-                      "
-                    >
-                      {money(
-                        subtotal,
+
+                    <MiniStat
+
+                      label="Items"
+
+                      value={String(
+
+                        totalItems
+
                       )}
-                    </strong>
 
-                    <span
-                      className="
-                        mt-1
-                        block
-                        text-[9px]
-                        font-semibold
-                        text-[#443A37]
-                      "
-                    >
-                      Subtotal
-                    </span>
+                    />
+
+
+
+                    <MiniStat
+
+                      label="Payable"
+
+                      value={money(
+
+                        total
+
+                      )}
+
+                    />
+
                   </div>
+
                 </div>
-              </section>
-            </div>
+
+              </div>
+
+            </section>
+
+
+
+            {/* ERROR */}
+
+
+
+            {error ? (
+
+              <div
+
+                className="
+
+                  mt-4
+
+                  rounded-[14px]
+
+                  border
+
+                  border-red-200
+
+                  bg-red-50
+
+                  px-4
+
+                  py-3
+
+                  text-[11px]
+
+                  text-red-700
+
+                "
+
+              >
+
+                {error}
+
+              </div>
+
+            ) : null}
+
+
+
+            {/* AUTH CHECK */}
+
+
 
             {commerce.isAuthenticated ===
-              null && (
+
+            null ? (
+
               <StateBox>
+
                 Checking your
+
                 account...
+
               </StateBox>
-            )}
+
+            ) : null}
+
+
+
+            {/* LOGIN */}
+
+
 
             {commerce.isAuthenticated ===
-              false && (
-              <div
-                className="
-                  mt-[18px]
-                  rounded-[12px]
-                  border
-                  border-[#E7DEDA]
-                  bg-white
-                  px-6
-                  py-16
-                  text-center
-                "
-              >
-                <div
-                  className="
-                    mx-auto
-                    grid
-                    h-16
-                    w-16
-                    place-items-center
-                    rounded-full
-                    bg-[#FCEAEA]
-                    text-[#A90D3B]
-                  "
-                >
-                  <ShoppingBag />
-                </div>
 
-                <h2
-                  className="
-                    mt-5
-                    font-serif
-                    text-[27px]
-                    text-[#171313]
-                  "
-                >
-                  Login to check
-                  your cart
-                </h2>
+            false ? (
 
-                <p
-                  className="
-                    mx-auto
-                    mt-3
-                    max-w-[420px]
-                    text-[12px]
-                    leading-6
-                    text-[#443A37]
-                  "
-                >
-                  Sign in to view
-                  products in your
-                  shopping bag.
-                </p>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    commerce.openLoginPrompt(
-                      "cart",
-                    )
-                  }
-                  className="
-                    mt-6
-                    h-11
-                    rounded-[8px]
-                    bg-[#A90D3B]
-                    px-8
-                    text-[11px]
-                    font-bold
-                    text-white
-                  "
-                >
-                  Login / Sign Up
-                </button>
-              </div>
-            )}
-
-            {commerce.isAuthenticated ===
-              true &&
-              loading && (
               <StateBox>
-                Loading your
-                cart...
-              </StateBox>
-            )}
 
-            {commerce.isAuthenticated ===
-              true &&
-              !loading &&
-              items.length ===
-                0 && (
-              <div
-                className="
-                  mt-[18px]
-                  rounded-[12px]
-                  border
-                  border-[#E7DEDA]
-                  bg-white
-                  px-5
-                  py-20
-                  text-center
-                "
-              >
                 <div
+
                   className="
-                    mx-auto
-                    grid
-                    h-20
-                    w-20
-                    place-items-center
-                    rounded-full
-                    bg-[#FCEAEA]
-                    text-[#A90D3B]
+
+                    text-center
+
                   "
+
                 >
+
                   <ShoppingBag
-                    size={32}
+
+                    className="
+
+                      mx-auto
+
+                      text-[#B31345]
+
+                    "
+
+                    size={30}
+
                   />
+
+
+
+                  <h2
+
+                    className="
+
+                      mt-4
+
+                      font-serif
+
+                      text-[26px]
+
+                      text-[#211817]
+
+                    "
+
+                  >
+
+                    Login to check your
+
+                    cart
+
+                  </h2>
+
+
+
+                  <button
+
+                    type="button"
+
+                    onClick={() =>
+
+                      commerce.openLoginPrompt(
+
+                        "cart"
+
+                      )
+
+                    }
+
+                    className="
+
+                      mt-5
+
+                      rounded-full
+
+                      bg-[#B31345]
+
+                      px-7
+
+                      py-3
+
+                      text-[10px]
+
+                      font-bold
+
+                      uppercase
+
+                      tracking-[0.08em]
+
+                      text-white
+
+                    "
+
+                  >
+
+                    Login / Sign Up
+
+                  </button>
+
                 </div>
 
-                <h2
-                  className="
-                    mt-5
-                    font-serif
-                    text-[28px]
-                    text-[#171313]
-                  "
-                >
-                  Your cart is empty
-                </h2>
+              </StateBox>
 
-                <p
-                  className="
-                    mt-2
-                    text-[12px]
-                    font-medium
-                    text-[#4A403D]
-                  "
-                >
-                  Add something you
-                  love and it will
-                  appear here.
-                </p>
+            ) : null}
 
-                <Link
-                  href="/"
-                  className="
-                    mt-6
-                    inline-flex
-                    h-11
-                    items-center
-                    justify-center
-                    rounded-[8px]
-                    bg-[#A90D3B]
-                    px-7
-                    text-[11px]
-                    font-bold
-                    text-white
-                    no-underline
-                  "
-                >
-                  Continue Shopping
-                </Link>
-              </div>
-            )}
+
+
+            {/* LOADING */}
+
+
 
             {commerce.isAuthenticated ===
+
               true &&
-              !loading &&
-              items.length >
-                0 && (
+
+            loading ? (
+
+              <StateBox>
+
+                <Loader2
+
+                  className="
+
+                    animate-spin
+
+                    text-[#B31345]
+
+                  "
+
+                  size={22}
+
+                />
+
+
+
+                <span
+
+                  className="
+
+                    ml-2
+
+                  "
+
+                >
+
+                  Loading your cart...
+
+                </span>
+
+              </StateBox>
+
+            ) : null}
+
+
+
+            {/* EMPTY */}
+
+
+
+            {commerce.isAuthenticated ===
+
+              true &&
+
+            !loading &&
+
+            items.length ===
+
+              0 ? (
+
+              <StateBox>
+
+                <div
+
+                  className="
+
+                    text-center
+
+                  "
+
+                >
+
+                  <ShoppingBag
+
+                    className="
+
+                      mx-auto
+
+                      text-[#B31345]
+
+                    "
+
+                    size={34}
+
+                  />
+
+
+
+                  <h2
+
+                    className="
+
+                      mt-4
+
+                      font-serif
+
+                      text-[28px]
+
+                      text-[#211817]
+
+                    "
+
+                  >
+
+                    Your cart is empty
+
+                  </h2>
+
+
+
+                  <p
+
+                    className="
+
+                      mt-2
+
+                      text-[11px]
+
+                      text-black/45
+
+                    "
+
+                  >
+
+                    Add something you
+
+                    love and it will
+
+                    appear here.
+
+                  </p>
+
+
+
+                  <Link
+
+                    href="/women"
+
+                    className="
+
+                      mt-5
+
+                      inline-flex
+
+                      rounded-full
+
+                      bg-[#B31345]
+
+                      px-7
+
+                      py-3
+
+                      text-[10px]
+
+                      font-bold
+
+                      text-white
+
+                    "
+
+                  >
+
+                    Continue Shopping
+
+                  </Link>
+
+                </div>
+
+              </StateBox>
+
+            ) : null}
+
+
+
+            {/* =============================================
+
+                CART
+
+            ============================================= */}
+
+
+
+            {commerce.isAuthenticated ===
+
+              true &&
+
+            !loading &&
+
+            items.length >
+
+              0 ? (
+
               <div
+
                 className="
-                  mt-[18px]
+
+                  mt-5
+
                   grid
+
                   min-w-0
+
                   gap-5
 
-                  xl:grid-cols-[minmax(0,1fr)_330px]
+
+
+                  xl:grid-cols-[minmax(0,1fr)_380px]
+
                 "
+
               >
+
+                {/* ITEMS */}
+
+
+
                 <section
+
                   className="
+
                     min-w-0
+
                     overflow-hidden
-                    rounded-[12px]
+
+                    rounded-[18px]
+
                     border
+
                     border-[#E9DFDB]
+
                     bg-white
+
                   "
+
                 >
+
+                  <div
+
+                    className="
+
+                      flex
+
+                      items-center
+
+                      justify-between
+
+                      border-b
+
+                      border-[#EFE6E2]
+
+                      px-4
+
+                      py-4
+
+
+
+                      sm:px-5
+
+                    "
+
+                  >
+
+                    <div>
+
+                      <p
+
+                        className="
+
+                          text-[8px]
+
+                          font-bold
+
+                          uppercase
+
+                          tracking-[0.16em]
+
+                          text-[#B31345]
+
+                        "
+
+                      >
+
+                        Shopping Bag
+
+                      </p>
+
+
+
+                      <h2
+
+                        className="
+
+                          mt-1
+
+                          font-serif
+
+                          text-[21px]
+
+                          text-[#211817]
+
+                        "
+
+                      >
+
+                        {totalItems}{" "}
+
+                        {totalItems ===
+
+                        1
+
+                          ? "item"
+
+                          : "items"}
+
+                      </h2>
+
+                    </div>
+
+
+
+                    <div
+
+                      className="
+
+                        rounded-full
+
+                        bg-[#F8F2F0]
+
+                        px-3
+
+                        py-1.5
+
+                        text-[9px]
+
+                        font-semibold
+
+                        text-black/45
+
+                      "
+
+                    >
+
+                      Live pricing
+
+                    </div>
+
+                  </div>
+
+
+
                   {items.map(
+
                     (
+
                       item,
-                      index,
-                    ) => {
-                      const hasDiscount =
-                        item.originalPrice >
-                        item.showPrice;
 
-                      return (
-                        <article
-                          key={
+                      index
+
+                    ) => (
+
+                      <CartItemRow
+
+                        key={
+
+                          item.id
+
+                        }
+
+                        item={
+
+                          item
+
+                        }
+
+                        busy={
+
+                          busyItemId ===
+
+                          item.id
+
+                        }
+
+                        last={
+
+                          index ===
+
+                          items.length -
+
+                            1
+
+                        }
+
+                        onMinus={() =>
+
+                          void changeQuantity(
+
+                            item,
+
+                            item.quantity -
+
+                              1
+
+                          )
+
+                        }
+
+                        onPlus={() =>
+
+                          void changeQuantity(
+
+                            item,
+
+                            item.quantity +
+
+                              1
+
+                          )
+
+                        }
+
+                        onRemove={() =>
+
+                          void removeItem(
+
                             item.id
-                          }
-                          className={`
-                            grid
-                            min-w-0
-                            grid-cols-[82px_minmax(0,1fr)]
-                            gap-4
-                            px-4
-                            py-5
 
-                            sm:grid-cols-[105px_minmax(0,1fr)_auto]
-                            sm:px-5
+                          )
 
-                            ${
-                              index !==
-                              items.length -
-                                1
-                                ? "border-b border-[#EEE5E1]"
-                                : ""
-                            }
-                          `}
-                        >
-                          <Link
-                            href={
-                              item.slug
-                                ? `/product/${encodeURIComponent(
-                                    item.slug,
-                                  )}`
-                                : "#"
-                            }
-                            className="
-                              relative
-                              h-[100px]
-                              w-[82px]
-                              overflow-hidden
-                              rounded-[10px]
-                              border
-                              border-[#EEE4E0]
-                              bg-[#F5F1EF]
+                        }
 
-                              sm:h-[125px]
-                              sm:w-[105px]
-                            "
-                          >
-                            {item.image1 ? (
-                              <img
-                                src={
-                                  item.image1
-                                }
-                                alt={
-                                  item.name
-                                }
-                                className="
-                                  h-full
-                                  w-full
-                                  object-cover
-                                "
-                              />
-                            ) : (
-                              <div
-                                className="
-                                  grid
-                                  h-full
-                                  w-full
-                                  place-items-center
-                                  text-[#A90D3B]
-                                "
-                              >
-                                <ShoppingBag
-                                  size={25}
-                                />
-                              </div>
-                            )}
-                          </Link>
+                      />
 
-                          <div
-                            className="
-                              min-w-0
-                            "
-                          >
-                            <Link
-                              href={
-                                item.slug
-                                  ? `/product/${encodeURIComponent(
-                                      item.slug,
-                                    )}`
-                                  : "#"
-                              }
-                              className="
-                                line-clamp-2
-                                font-serif
-                                text-[15px]
-                                font-medium
-                                leading-5
-                                text-[#171313]
-                                no-underline
+                    )
 
-                                sm:text-[16px]
-                              "
-                            >
-                              {
-                                item.name
-                              }
-                            </Link>
-
-                            <p
-                              className="
-                                mt-2
-                                text-[11px]
-                                font-medium
-                                text-[#403734]
-                              "
-                            >
-                              {item.color &&
-                                `Color: ${item.color}`}
-
-                              {item.color &&
-                                item.size &&
-                                " • "}
-
-                              {item.size &&
-                                `Size: ${item.size}`}
-                            </p>
-
-                            <div
-                              className="
-                                mt-3
-                                flex
-                                items-center
-                                gap-2
-
-                                sm:hidden
-                              "
-                            >
-                              <strong
-                                className="
-                                  text-[15px]
-                                  text-black
-                                "
-                              >
-                                {money(
-                                  item.showPrice,
-                                )}
-                              </strong>
-
-                              {hasDiscount && (
-                                <span
-                                  className="
-                                    text-[10px]
-                                    text-[#716763]
-                                    line-through
-                                  "
-                                >
-                                  {money(
-                                    item.originalPrice,
-                                  )}
-                                </span>
-                              )}
-                            </div>
-
-                            <div
-                              className="
-                                mt-4
-                                flex
-                                flex-wrap
-                                items-center
-                                gap-3
-                              "
-                            >
-                              <div
-                                className="
-                                  flex
-                                  h-9
-                                  overflow-hidden
-                                  rounded-[8px]
-                                  border
-                                  border-[#DDD1CD]
-                                "
-                              >
-                                <button
-                                  type="button"
-                                  disabled={
-                                    busyItemId ===
-                                      item.id ||
-                                    item.quantity <=
-                                      1
-                                  }
-                                  onClick={() =>
-                                    void changeQuantity(
-                                      item,
-                                      item.quantity -
-                                        1,
-                                    )
-                                  }
-                                  className="
-                                    grid
-                                    w-9
-                                    place-items-center
-                                    bg-white
-                                    text-[#171313]
-
-                                    disabled:opacity-30
-                                  "
-                                >
-                                  <Minus
-                                    size={14}
-                                  />
-                                </button>
-
-                                <span
-                                  className="
-                                    grid
-                                    min-w-[38px]
-                                    place-items-center
-                                    border-x
-                                    border-[#DDD1CD]
-                                    text-[11px]
-                                    font-bold
-                                    text-[#171313]
-                                  "
-                                >
-                                  {
-                                    item.quantity
-                                  }
-                                </span>
-
-                                <button
-                                  type="button"
-                                  disabled={
-                                    busyItemId ===
-                                    item.id
-                                  }
-                                  onClick={() =>
-                                    void changeQuantity(
-                                      item,
-                                      item.quantity +
-                                        1,
-                                    )
-                                  }
-                                  className="
-                                    grid
-                                    w-9
-                                    place-items-center
-                                    bg-white
-                                    text-[#171313]
-
-                                    disabled:opacity-30
-                                  "
-                                >
-                                  <Plus
-                                    size={14}
-                                  />
-                                </button>
-                              </div>
-
-                              <button
-                                type="button"
-                                disabled={
-                                  busyItemId ===
-                                  item.id
-                                }
-                                onClick={() =>
-                                  void removeItem(
-                                    item.id,
-                                  )
-                                }
-                                className="
-                                  inline-flex
-                                  h-9
-                                  items-center
-                                  gap-1.5
-                                  rounded-[8px]
-                                  border
-                                  border-[#E5C8CE]
-                                  bg-[#FFF7F8]
-                                  px-3
-                                  text-[10px]
-                                  font-bold
-                                  text-[#A90D3B]
-
-                                  disabled:opacity-40
-                                "
-                              >
-                                <Trash2
-                                  size={13}
-                                />
-                                Remove
-                              </button>
-                            </div>
-                          </div>
-
-                          <div
-                            className="
-                              hidden
-                              min-w-[110px]
-                              text-right
-
-                              sm:block
-                            "
-                          >
-                            <strong
-                              className="
-                                block
-                                font-serif
-                                text-[17px]
-                                text-black
-                              "
-                            >
-                              {money(
-                                item.showPrice *
-                                  item.quantity,
-                              )}
-                            </strong>
-
-                            {hasDiscount && (
-                              <span
-                                className="
-                                  mt-1
-                                  block
-                                  text-[10px]
-                                  text-[#716763]
-                                  line-through
-                                "
-                              >
-                                {money(
-                                  item.originalPrice *
-                                    item.quantity,
-                                )}
-                              </span>
-                            )}
-                          </div>
-                        </article>
-                      );
-                    },
                   )}
+
                 </section>
 
+
+
+                {/* SUMMARY */}
+
+
+
                 <aside
+
                   className="
+
                     h-fit
+
                     min-w-0
-                    rounded-[12px]
+
+                    rounded-[18px]
+
                     border
+
                     border-[#E9DFDB]
+
                     bg-white
+
                     p-5
 
+                    shadow-[0_14px_40px_rgba(58,28,21,.05)]
+
+
+
                     xl:sticky
+
                     xl:top-[105px]
+
                   "
+
                 >
-                  <h2
+
+                  <div
+
                     className="
-                      font-serif
-                      text-[20px]
-                      text-[#171313]
+
+                      flex
+
+                      items-center
+
+                      gap-3
+
                     "
+
                   >
-                    Price Details
-                  </h2>
+
+                    <span
+
+                      className="
+
+                        grid
+
+                        h-10
+
+                        w-10
+
+                        place-items-center
+
+                        rounded-full
+
+                        bg-[#FFF0F4]
+
+                        text-[#B31345]
+
+                      "
+
+                    >
+
+                      <ReceiptText
+
+                        size={18}
+
+                      />
+
+                    </span>
+
+
+
+                    <div>
+
+                      <h2
+
+                        className="
+
+                          font-serif
+
+                          text-[21px]
+
+                          text-[#211817]
+
+                        "
+
+                      >
+
+                        Price Details
+
+                      </h2>
+
+
+
+                      <p
+
+                        className="
+
+                          mt-0.5
+
+                          text-[8px]
+
+                          text-black/35
+
+                        "
+
+                      >
+
+                        Calculated by
+
+                        server cart
+
+                      </p>
+
+                    </div>
+
+                  </div>
+
+
+
+                  {/* OFFER PROGRESS */}
+
+
+
+                  {cart?.offerProgress
+
+                    ?.length ? (
+
+                    <div
+
+                      className="
+
+                        mt-5
+
+                        space-y-3
+
+                      "
+
+                    >
+
+                      {cart.offerProgress.map(
+
+                        (
+
+                          progress
+
+                        ) => {
+
+                          const selectedInCurrentGroup =
+
+                            progress.unlocked &&
+
+                            progress.remainingQuantity ===
+
+                              0
+
+                              ? progress.requiredQuantity
+
+                              : progress.selectedQuantity %
+
+                                  progress.requiredQuantity;
+
+
+
+                          const shownSelected =
+
+                            progress.unlocked &&
+
+                            progress.remainingQuantity ===
+
+                              0
+
+                              ? progress.requiredQuantity
+
+                              : selectedInCurrentGroup;
+
+
+
+                          return (
+
+                            <div
+
+                              key={
+
+                                progress.offerId
+
+                              }
+
+                              className={`
+
+                                rounded-[14px]
+
+                                border
+
+                                p-3.5
+
+
+
+                                ${
+
+                                  progress.unlocked
+
+                                    ? "border-emerald-200 bg-emerald-50/80"
+
+                                    : "border-[#B31345]/15 bg-[#FFF4F7]"
+
+                                }
+
+                              `}
+
+                            >
+
+                              <div
+
+                                className="
+
+                                  flex
+
+                                  items-start
+
+                                  justify-between
+
+                                  gap-3
+
+                                "
+
+                              >
+
+                                <div
+
+                                  className="
+
+                                    min-w-0
+
+                                  "
+
+                                >
+
+                                  <p
+
+                                    className={`
+
+                                      text-[8px]
+
+                                      font-bold
+
+                                      uppercase
+
+                                      tracking-[0.1em]
+
+
+
+                                      ${
+
+                                        progress.unlocked
+
+                                          ? "text-emerald-700"
+
+                                          : "text-[#B31345]"
+
+                                      }
+
+                                    `}
+
+                                  >
+
+                                    {progress.unlocked
+
+                                      ? "Offer Unlocked"
+
+                                      : "Bundle Progress"}
+
+                                  </p>
+
+
+
+                                  <strong
+
+                                    className="
+
+                                      mt-1
+
+                                      block
+
+                                      truncate
+
+                                      text-[11px]
+
+                                      text-[#211817]
+
+                                    "
+
+                                  >
+
+                                    {progress.name}
+
+                                  </strong>
+
+                                </div>
+
+
+
+                                {progress.fixedPrice >
+
+                                0 ? (
+
+                                  <strong
+
+                                    className="
+
+                                      shrink-0
+
+                                      text-[11px]
+
+                                      text-[#B31345]
+
+                                    "
+
+                                  >
+
+                                    {money(
+
+                                      progress.fixedPrice
+
+                                    )}
+
+                                  </strong>
+
+                                ) : null}
+
+                              </div>
+
+
+
+                              <div
+
+                                className="
+
+                                  mt-3
+
+                                  flex
+
+                                  gap-1.5
+
+                                "
+
+                              >
+
+                                {Array.from({
+
+                                  length:
+
+                                    progress.requiredQuantity,
+
+                                }).map(
+
+                                  (
+
+                                    _,
+
+                                    index
+
+                                  ) => (
+
+                                    <span
+
+                                      key={
+
+                                        index
+
+                                      }
+
+                                      className={`
+
+                                        h-1.5
+
+                                        flex-1
+
+                                        rounded-full
+
+
+
+                                        ${
+
+                                          index <
+
+                                          shownSelected
+
+                                            ? progress.unlocked
+
+                                              ? "bg-emerald-500"
+
+                                              : "bg-[#B31345]"
+
+                                            : "bg-black/10"
+
+                                        }
+
+                                      `}
+
+                                    />
+
+                                  )
+
+                                )}
+
+                              </div>
+
+
+
+                              <div
+
+                                className="
+
+                                  mt-2.5
+
+                                  flex
+
+                                  items-center
+
+                                  justify-between
+
+                                  gap-3
+
+                                  text-[9px]
+
+                                "
+
+                              >
+
+                                <span
+
+                                  className="
+
+                                    text-black/45
+
+                                  "
+
+                                >
+
+                                  {shownSelected}/
+
+                                  {
+
+                                    progress.requiredQuantity
+
+                                  }{" "}
+
+                                  selected
+
+                                </span>
+
+
+
+                                <strong
+
+                                  className={
+
+                                    progress.unlocked
+
+                                      ? "text-emerald-700"
+
+                                      : "text-[#B31345]"
+
+                                  }
+
+                                >
+
+                                  {progress.unlocked
+
+                                    ? "Offer applied ✓"
+
+                                    : `Add ${progress.remainingQuantity} more`}
+
+                                </strong>
+
+                              </div>
+
+                            </div>
+
+                          );
+
+                        }
+
+                      )}
+
+                    </div>
+
+                  ) : null}
+
+
+
+                  {/* APPLIED OFFERS */}
+
+
+
+                  {cart?.appliedOffers
+
+                    .length ? (
+
+                    <div
+
+                      className="
+
+                        mt-5
+
+                        rounded-[14px]
+
+                        border
+
+                        border-emerald-100
+
+                        bg-emerald-50/70
+
+                        p-3
+
+                      "
+
+                    >
+
+                      <div
+
+                        className="
+
+                          flex
+
+                          items-center
+
+                          gap-2
+
+                          text-[9px]
+
+                          font-bold
+
+                          uppercase
+
+                          tracking-[0.08em]
+
+                          text-emerald-700
+
+                        "
+
+                      >
+
+                        <Gift
+
+                          size={14}
+
+                        />
+
+
+
+                        Applied Offers
+
+                      </div>
+
+
+
+                      <div
+
+                        className="
+
+                          mt-2
+
+                          space-y-2
+
+                        "
+
+                      >
+
+                        {cart.appliedOffers.map(
+
+                          (
+
+                            offer
+
+                          ) => (
+
+                            <div
+
+                              key={`${offer.offerId}-${offer.name}`}
+
+                              className="
+
+                                flex
+
+                                items-center
+
+                                justify-between
+
+                                gap-3
+
+                                text-[10px]
+
+                              "
+
+                            >
+
+                              <span
+
+                                className="
+
+                                  min-w-0
+
+                                  truncate
+
+                                  text-emerald-800
+
+                                "
+
+                              >
+
+                                {
+
+                                  offer.name
+
+                                }
+
+                              </span>
+
+
+
+                              <strong
+
+                                className="
+
+                                  shrink-0
+
+                                  text-emerald-700
+
+                                "
+
+                              >
+
+                                -
+
+                                {money(
+
+                                  offer.amount
+
+                                )}
+
+                              </strong>
+
+                            </div>
+
+                          )
+
+                        )}
+
+                      </div>
+
+                    </div>
+
+                  ) : null}
+
+
+
+                  {/* PRICE ROWS */}
+
+
+
+                  <div
+
+                    className="
+
+                      mt-5
+
+                      space-y-3
+
+                      text-[11px]
+
+                    "
+
+                  >
+
+                    <SummaryRow
+
+                      label={`Subtotal (${totalItems})`}
+
+                      value={money(
+
+                        subtotal
+
+                      )}
+
+                    />
+
+
+
+                    {cart &&
+
+                    cart.offerDiscount >
+
+                      0 ? (
+
+                      <SummaryRow
+
+                        positive
+
+                        label="Offer discount"
+
+                        value={`-${money(
+
+                          cart.offerDiscount
+
+                        )}`}
+
+                      />
+
+                    ) : null}
+
+
+
+                    {cart &&
+
+                    cart.automaticDiscount >
+
+                      0 ? (
+
+                      <SummaryRow
+
+                        positive
+
+                        label={
+
+                          cart.automatic
+
+                            ?.percentage
+
+                            ? `${
+
+                                cart.automatic
+
+                                  .name ||
+
+                                "Automatic discount"
+
+                              } (${cart.automatic.percentage}%)`
+
+                            : cart.automatic
+
+                                ?.name ||
+
+                              "Automatic discount"
+
+                        }
+
+                        value={`-${money(
+
+                          cart.automaticDiscount
+
+                        )}`}
+
+                      />
+
+                    ) : null}
+
+
+
+                    {cart &&
+
+                    cart.codeDiscount >
+
+                      0 ? (
+
+                      <SummaryRow
+
+                        positive
+
+                        label={`Coupon ${cart.appliedDiscountCode}`}
+
+                        value={`-${money(
+
+                          cart.codeDiscount
+
+                        )}`}
+
+                      />
+
+                    ) : null}
+
+
+
+                    {cart &&
+
+                    cart.tax >
+
+                      0 ? (
+
+                      <SummaryRow
+
+                        label={
+
+                          cart.taxPercentage >
+
+                          0
+
+                            ? `${cart.taxName} (${cart.taxPercentage}%)`
+
+                            : cart.taxName
+
+                        }
+
+                        value={`+${money(
+
+                          cart.tax
+
+                        )}`}
+
+                      />
+
+                    ) : null}
+
+
+
+                    <SummaryRow
+
+                      label="Delivery"
+
+                      value={
+
+                        deliveryCharge ===
+
+                        null
+
+                          ? "Calculated at checkout"
+
+                          : deliveryCharge >
+
+                              0
+
+                            ? `+${money(
+
+                                deliveryCharge
+
+                              )}`
+
+                            : "FREE"
+
+                      }
+
+                    />
+
+                  </div>
+
+
+
+                  {/* =================================================
+                      DYNAMIC COUPONS
+                  ================================================= */}
 
                   <div
                     className="
                       mt-5
-                      space-y-4
-                      text-[12px]
+                      rounded-[15px]
+                      border
+                      border-[#B31345]/10
+                      bg-[#FFF8FA]
+                      p-3.5
                     "
                   >
-                    <SummaryRow
-                      label={`Items (${totalItems})`}
-                      value={money(
-                        subtotal,
-                      )}
-                    />
+                    <div
+                      className="
+                        flex
+                        items-center
+                        justify-between
+                        gap-3
+                      "
+                    >
+                      <div
+                        className="
+                          flex
+                          items-center
+                          gap-2
+                        "
+                      >
+                        <Tag
+                          size={13}
+                          className="
+                            text-[#B31345]
+                          "
+                        />
 
-                    <SummaryRow
-                      label="Delivery"
-                      value="Calculated at checkout"
-                    />
+                        <span
+                          className="
+                            text-[9px]
+                            font-extrabold
+                            uppercase
+                            tracking-[0.09em]
+                            text-[#211817]
+                          "
+                        >
+                          Discount Code
+                        </span>
+                      </div>
+
+                      {cart
+                        ?.availableDiscountCodes
+                        ?.length ? (
+                        <span
+                          className="
+                            rounded-full
+                            bg-[#FBE7ED]
+                            px-2.5
+                            py-1
+                            text-[7px]
+                            font-extrabold
+                            uppercase
+                            tracking-[0.06em]
+                            text-[#B31345]
+                          "
+                        >
+                          {
+                            cart.availableDiscountCodes
+                              .length
+                          }{" "}
+                          Available
+                        </span>
+                      ) : null}
+                    </div>
+
+                    {cart
+                      ?.appliedDiscountCode ? (
+                      <div
+                        className="
+                          mt-3
+                          flex
+                          items-center
+                          justify-between
+                          gap-3
+                          rounded-[11px]
+                          border
+                          border-emerald-200
+                          bg-emerald-50
+                          px-3
+                          py-3
+                        "
+                      >
+                        <div
+                          className="
+                            min-w-0
+                          "
+                        >
+                          <span
+                            className="
+                              block
+                              text-[7px]
+                              font-bold
+                              uppercase
+                              tracking-[0.08em]
+                              text-emerald-700/70
+                            "
+                          >
+                            Coupon Applied
+                          </span>
+
+                          <strong
+                            className="
+                              mt-0.5
+                              block
+                              truncate
+                              text-[14px]
+                              font-black
+                              tracking-[0.08em]
+                              text-emerald-700
+                            "
+                          >
+                            {
+                              cart.appliedDiscountCode
+                            }
+                          </strong>
+
+                          {cart.codeDiscount >
+                          0 ? (
+                            <span
+                              className="
+                                mt-1
+                                block
+                                text-[8px]
+                                font-bold
+                                text-emerald-700
+                              "
+                            >
+                              You saved{" "}
+                              {money(
+                                cart.codeDiscount
+                              )}
+                            </span>
+                          ) : null}
+                        </div>
+
+                        <button
+                          type="button"
+                          disabled={
+                            applyingCode
+                          }
+                          onClick={() =>
+                            void handleRemoveDiscountCode()
+                          }
+                          className="
+                            shrink-0
+                            rounded-[8px]
+                            border
+                            border-emerald-200
+                            bg-white
+                            px-3
+                            py-2
+                            text-[8px]
+                            font-extrabold
+                            uppercase
+                            text-emerald-700
+                            disabled:opacity-40
+                          "
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        {cart
+                          ?.availableDiscountCodes
+                          ?.length ? (
+                          <div
+                            className="
+                              mt-3
+                              space-y-2
+                            "
+                          >
+                            {cart.availableDiscountCodes
+                              .slice(
+                                0,
+                                3
+                              )
+                              .map(
+                                (
+                                  coupon
+                                ) => (
+                                  <div
+                                    key={
+                                      coupon._id ||
+                                      coupon.code
+                                    }
+                                    className="
+                                      flex
+                                      w-full
+                                      items-center
+                                      justify-between
+                                      gap-3
+                                      rounded-[11px]
+                                      border
+                                      border-dashed
+                                      border-[#B31345]/30
+                                      bg-white
+                                      px-3
+                                      py-2.5
+                                    "
+                                  >
+                                    <div
+                                      className="
+                                        min-w-0
+                                      "
+                                    >
+                                      <span
+                                        className="
+                                          block
+                                          text-[7px]
+                                          font-bold
+                                          uppercase
+                                          tracking-[0.08em]
+                                          text-black/40
+                                        "
+                                      >
+                                        Available Coupon
+                                      </span>
+
+                                      <strong
+                                        className="
+                                          mt-0.5
+                                          block
+                                          truncate
+                                          text-[14px]
+                                          font-black
+                                          tracking-[0.08em]
+                                          text-[#B31345]
+                                        "
+                                      >
+                                        {
+                                          coupon.code
+                                        }
+                                      </strong>
+                                    </div>
+
+                                    <button
+                                      type="button"
+                                      disabled={
+                                        applyingCode
+                                      }
+                                      onClick={() =>
+                                        void handleApplyDiscountCode(
+                                          coupon.code
+                                        )
+                                      }
+                                      className="
+                                        shrink-0
+                                        rounded-full
+                                        bg-[#B31345]
+                                        px-3
+                                        py-2
+                                        text-[7px]
+                                        font-extrabold
+                                        uppercase
+                                        tracking-[0.05em]
+                                        text-white
+                                        transition
+                                        hover:bg-[#96103A]
+                                        disabled:opacity-40
+                                      "
+                                    >
+                                      {applyingCode
+                                        ? "..."
+                                        : "Use Code"}
+                                    </button>
+                                  </div>
+                                )
+                              )}
+                          </div>
+                        ) : (
+                          <p
+                            className="
+                              mt-3
+                              rounded-[10px]
+                              border
+                              border-black/5
+                              bg-white
+                              px-3
+                              py-2.5
+                              text-[8px]
+                              leading-4
+                              text-black/40
+                            "
+                          >
+                            No active coupon is
+                            available right now.
+                          </p>
+                        )}
+
+                        <div
+                          className="
+                            mt-3
+                            flex
+                            gap-2
+                          "
+                        >
+                          <input
+                            value={
+                              discountCode
+                            }
+                            onChange={(
+                              event
+                            ) =>
+                              setDiscountCode(
+                                event.target.value.toUpperCase()
+                              )
+                            }
+                            onKeyDown={(
+                              event
+                            ) => {
+                              if (
+                                event.key ===
+                                "Enter"
+                              ) {
+                                void handleApplyDiscountCode();
+                              }
+                            }}
+                            placeholder="ENTER COUPON CODE"
+                            className="
+                              h-10
+                              min-w-0
+                              flex-1
+                              rounded-[10px]
+                              border
+                              border-black/10
+                              bg-white
+                              px-3
+                              text-[10px]
+                              font-extrabold
+                              uppercase
+                              tracking-[0.05em]
+                              text-[#211817]
+                              outline-none
+                              transition
+                              placeholder:font-semibold
+                              placeholder:text-black/25
+                              focus:border-[#B31345]/40
+                            "
+                          />
+
+                          <button
+                            type="button"
+                            disabled={
+                              applyingCode ||
+                              !discountCode.trim()
+                            }
+                            onClick={() =>
+                              void handleApplyDiscountCode()
+                            }
+                            className="
+                              min-w-[76px]
+                              rounded-[10px]
+                              bg-[#211817]
+                              px-4
+                              text-[8px]
+                              font-extrabold
+                              uppercase
+                              tracking-[0.04em]
+                              text-white
+                              transition
+                              hover:bg-[#B31345]
+                              disabled:cursor-not-allowed
+                              disabled:opacity-40
+                            "
+                          >
+                            {applyingCode
+                              ? "..."
+                              : "Apply"}
+                          </button>
+                        </div>
+                      </>
+                    )}
+
+                    <p
+                      className="
+                        mt-2.5
+                        text-[7px]
+                        leading-4
+                        text-black/35
+                      "
+                    >
+                      Available codes are
+                      loaded dynamically
+                      from the backend.
+                      Final cart eligibility
+                      is checked when you
+                      apply the coupon.
+                    </p>
                   </div>
 
-                  <div
-                    className="
-                      my-5
-                      border-t
-                      border-dashed
-                      border-[#DCCFCC]
-                    "
-                  />
+{/* SAVINGS */}
 
-                  <div
-                    className="
-                      flex
-                      items-center
-                      justify-between
-                      gap-4
-                    "
-                  >
-                    <span
-                      className="
-                        text-[13px]
-                        font-bold
-                        text-[#171313]
-                      "
-                    >
-                      Total
-                    </span>
 
-                    <strong
+
+                  {totalDiscount >
+
+                  0 ? (
+
+                    <div
+
                       className="
-                        font-serif
-                        text-[21px]
-                        text-black
+
+                        mt-4
+
+                        flex
+
+                        items-center
+
+                        gap-2
+
+                        rounded-[12px]
+
+                        bg-emerald-50
+
+                        px-3
+
+                        py-2.5
+
+                        text-[10px]
+
+                        font-semibold
+
+                        text-emerald-700
+
                       "
+
                     >
+
+                      <CircleCheckBig
+
+                        size={14}
+
+                      />
+
+
+
+                      You save{" "}
+
                       {money(
-                        subtotal,
-                      )}
-                    </strong>
+
+                        totalDiscount
+
+                      )}{" "}
+
+                      on this cart
+
+                    </div>
+
+                  ) : null}
+
+
+
+                  {/* TOTAL */}
+
+
+
+                  <div
+
+                    className="
+
+                      mt-5
+
+                      border-t
+
+                      border-dashed
+
+                      border-[#DCCFCC]
+
+                      pt-4
+
+                    "
+
+                  >
+
+                    <div
+
+                      className="
+
+                        flex
+
+                        items-end
+
+                        justify-between
+
+                        gap-4
+
+                      "
+
+                    >
+
+                      <div>
+
+                        <span
+
+                          className="
+
+                            text-[13px]
+
+                            font-bold
+
+                            text-[#211817]
+
+                          "
+
+                        >
+
+                          Estimated Total
+
+                        </span>
+
+
+
+                        <p
+
+                          className="
+
+                            mt-1
+
+                            text-[8px]
+
+                            text-black/35
+
+                          "
+
+                        >
+
+                          Includes current
+
+                          tax and
+
+                          discounts
+
+                        </p>
+
+                      </div>
+
+
+
+                      <strong
+
+                        className="
+
+                          font-serif
+
+                          text-[24px]
+
+                          text-[#211817]
+
+                        "
+
+                      >
+
+                        {money(
+
+                          total
+
+                        )}
+
+                      </strong>
+
+                    </div>
+
                   </div>
+
+
 
                   <Link
+
                     href="/account/checkout"
+
                     className="
-                      mt-6
+
+                      mt-5
+
                       flex
+
                       h-12
+
                       w-full
+
                       items-center
+
                       justify-center
-                      rounded-[8px]
-                      bg-[#A90D3B]
-                      text-[11px]
+
+                      gap-2
+
+                      rounded-[11px]
+
+                      bg-[#B31345]
+
+                      text-[10px]
+
                       font-bold
+
+                      uppercase
+
+                      tracking-[0.06em]
+
                       text-white
-                      no-underline
+
                       transition
 
-                      hover:bg-[#851033]
+
+
+                      hover:bg-[#97103A]
+
                     "
+
                   >
+
+                    <ShieldCheck
+
+                      size={15}
+
+                    />
+
+
+
                     Proceed to Checkout
+
                   </Link>
+
+
+
+                  <div
+
+                    className="
+
+                      mt-3
+
+                      flex
+
+                      items-center
+
+                      justify-center
+
+                      gap-2
+
+                      text-[8px]
+
+                      text-black/35
+
+                    "
+
+                  >
+
+                    <Truck
+
+                      size={12}
+
+                    />
+
+
+
+                    Delivery charges,
+
+                    if applicable, are
+
+                    finalized by
+
+                    checkout.
+
+                  </div>
+
                 </aside>
+
               </div>
-            )}
+
+            ) : null}
+
           </main>
+
         </div>
+
       </div>
+
     </>
+
   );
+
 }
+
+
 
 /* =========================================================
-   SMALL COMPONENTS
+
+   CART ITEM
+
 ========================================================= */
 
-function StateBox({
-  children,
+
+
+function CartItemRow({
+
+  item,
+
+  busy,
+
+  last,
+
+  onMinus,
+
+  onPlus,
+
+  onRemove,
+
 }: {
-  children:
-    React.ReactNode;
+
+  item:
+
+    CartViewItem;
+
+
+
+  busy:
+
+    boolean;
+
+
+
+  last:
+
+    boolean;
+
+
+
+  onMinus:
+
+    () => void;
+
+
+
+  onPlus:
+
+    () => void;
+
+
+
+  onRemove:
+
+    () => void;
+
 }) {
+
+  const hasLineDiscount =
+
+    item.discount.totalDiscount >
+
+    0;
+
+
+
+  const actualOfferName =
+
+    item.discount.offerName;
+
+
+
+  const selectionLabel =
+
+    item.offerContext
+
+      ?.offerType ===
+
+      "fixed_price_bundle"
+
+      ? "Bundle selection"
+
+      : item.offerContext
+
+          ?.offerType ===
+
+          "buy_get"
+
+        ? "Buy/Get selection"
+
+        : "";
+
+
+
   return (
-    <div
-      className="
-        mt-[18px]
-        flex
-        min-h-[180px]
-        items-center
-        justify-center
-        rounded-[12px]
-        border
-        border-[#E7DEDA]
-        bg-white
-        px-5
-        text-center
-        text-[13px]
-        font-semibold
-        text-[#171313]
-      "
+
+    <article
+
+      className={`
+
+        grid
+
+        min-w-0
+
+        grid-cols-[82px_minmax(0,1fr)]
+
+        gap-4
+
+        px-4
+
+        py-5
+
+
+
+        sm:grid-cols-[105px_minmax(0,1fr)_130px]
+
+        sm:px-5
+
+
+
+        ${
+
+          !last
+
+            ? "border-b border-[#EEE5E1]"
+
+            : ""
+
+        }
+
+      `}
+
     >
-      {children}
-    </div>
+
+      <Link
+
+        href={
+
+          item.slug
+
+            ? `/product/${encodeURIComponent(
+
+                item.slug
+
+              )}`
+
+            : "#"
+
+        }
+
+        className="
+
+          relative
+
+          h-[100px]
+
+          w-[82px]
+
+          overflow-hidden
+
+          rounded-[11px]
+
+          border
+
+          border-[#EEE4E0]
+
+          bg-[#F5F1EF]
+
+
+
+          sm:h-[125px]
+
+          sm:w-[105px]
+
+        "
+
+      >
+
+        {item.image ? (
+
+          <img
+
+            src={
+
+              item.image
+
+            }
+
+            alt={
+
+              item.name
+
+            }
+
+            className="
+
+              h-full
+
+              w-full
+
+              object-cover
+
+            "
+
+          />
+
+        ) : (
+
+          <div
+
+            className="
+
+              grid
+
+              h-full
+
+              w-full
+
+              place-items-center
+
+              text-[#B31345]
+
+            "
+
+          >
+
+            <ShoppingBag
+
+              size={24}
+
+            />
+
+          </div>
+
+        )}
+
+      </Link>
+
+
+
+      <div
+
+        className="
+
+          min-w-0
+
+        "
+
+      >
+
+        <Link
+
+          href={
+
+            item.slug
+
+              ? `/product/${encodeURIComponent(
+
+                  item.slug
+
+                )}`
+
+              : "#"
+
+          }
+
+          className="
+
+            line-clamp-2
+
+            font-serif
+
+            text-[15px]
+
+            leading-5
+
+            text-[#211817]
+
+
+
+            sm:text-[16px]
+
+          "
+
+        >
+
+          {item.name}
+
+        </Link>
+
+
+
+        <p
+
+          className="
+
+            mt-2
+
+            text-[10px]
+
+            text-black/45
+
+          "
+
+        >
+
+          {item.color
+
+            ? `Color: ${item.color}`
+
+            : ""}
+
+
+
+          {item.color &&
+
+          item.size
+
+            ? " • "
+
+            : ""}
+
+
+
+          {item.size
+
+            ? `Size: ${item.size}`
+
+            : ""}
+
+        </p>
+
+
+
+        {/* OFFER BADGES */}
+
+
+
+        <div
+
+          className="
+
+            mt-2
+
+            flex
+
+            flex-wrap
+
+            gap-1.5
+
+          "
+
+        >
+
+          {selectionLabel ? (
+
+            <span
+
+              className="
+
+                inline-flex
+
+                items-center
+
+                gap-1
+
+                rounded-full
+
+                bg-[#FFF0F4]
+
+                px-2
+
+                py-1
+
+                text-[8px]
+
+                font-bold
+
+                text-[#B31345]
+
+              "
+
+            >
+
+              <BadgePercent
+
+                size={11}
+
+              />
+
+
+
+              {selectionLabel}
+
+            </span>
+
+          ) : null}
+
+
+
+          {actualOfferName ? (
+
+            <span
+
+              className="
+
+                inline-flex
+
+                items-center
+
+                gap-1
+
+                rounded-full
+
+                bg-emerald-50
+
+                px-2
+
+                py-1
+
+                text-[8px]
+
+                font-bold
+
+                text-emerald-700
+
+              "
+
+            >
+
+              <Gift
+
+                size={11}
+
+              />
+
+
+
+              {actualOfferName}
+
+            </span>
+
+          ) : null}
+
+        </div>
+
+
+
+        {/* MOBILE PRICE */}
+
+
+
+        <div
+
+          className="
+
+            mt-3
+
+            flex
+
+            items-center
+
+            gap-2
+
+
+
+            sm:hidden
+
+          "
+
+        >
+
+          <strong
+
+            className="
+
+              text-[15px]
+
+              text-[#211817]
+
+            "
+
+          >
+
+            {money(
+
+              item.finalLineTotal
+
+            )}
+
+          </strong>
+
+
+
+          {hasLineDiscount ? (
+
+            <span
+
+              className="
+
+                text-[10px]
+
+                text-black/35
+
+                line-through
+
+              "
+
+            >
+
+              {money(
+
+                item.subtotal
+
+              )}
+
+            </span>
+
+          ) : null}
+
+        </div>
+
+
+
+        {/* ACTIONS */}
+
+
+
+        <div
+
+          className="
+
+            mt-4
+
+            flex
+
+            flex-wrap
+
+            items-center
+
+            gap-3
+
+          "
+
+        >
+
+          <div
+
+            className="
+
+              flex
+
+              h-9
+
+              overflow-hidden
+
+              rounded-[9px]
+
+              border
+
+              border-[#DDD1CD]
+
+            "
+
+          >
+
+            <button
+
+              type="button"
+
+              disabled={
+
+                busy ||
+
+                item.quantity <=
+
+                  1
+
+              }
+
+              onClick={
+
+                onMinus
+
+              }
+
+              className="
+
+                grid
+
+                w-9
+
+                place-items-center
+
+                bg-white
+
+                text-[#211817]
+
+                disabled:opacity-30
+
+              "
+
+            >
+
+              <Minus
+
+                size={14}
+
+              />
+
+            </button>
+
+
+
+            <span
+
+              className="
+
+                grid
+
+                min-w-[40px]
+
+                place-items-center
+
+                border-x
+
+                border-[#DDD1CD]
+
+                text-[11px]
+
+                font-bold
+
+                text-[#211817]
+
+              "
+
+            >
+
+              {busy ? (
+
+                <Loader2
+
+                  className="
+
+                    animate-spin
+
+                  "
+
+                  size={13}
+
+                />
+
+              ) : (
+
+                item.quantity
+
+              )}
+
+            </span>
+
+
+
+            <button
+
+              type="button"
+
+              disabled={
+
+                busy ||
+
+                (
+
+                  item.availableStock >
+
+                    0 &&
+
+                  item.quantity >=
+
+                    item.availableStock
+
+                )
+
+              }
+
+              onClick={
+
+                onPlus
+
+              }
+
+              className="
+
+                grid
+
+                w-9
+
+                place-items-center
+
+                bg-white
+
+                text-[#211817]
+
+                disabled:opacity-30
+
+              "
+
+            >
+
+              <Plus
+
+                size={14}
+
+              />
+
+            </button>
+
+          </div>
+
+
+
+          <button
+
+            type="button"
+
+            disabled={
+
+              busy
+
+            }
+
+            onClick={
+
+              onRemove
+
+            }
+
+            className="
+
+              inline-flex
+
+              h-9
+
+              items-center
+
+              gap-1.5
+
+              rounded-[9px]
+
+              border
+
+              border-[#E5C8CE]
+
+              bg-[#FFF7F8]
+
+              px-3
+
+              text-[9px]
+
+              font-bold
+
+              text-[#B31345]
+
+              disabled:opacity-40
+
+            "
+
+          >
+
+            <Trash2
+
+              size={13}
+
+            />
+
+
+
+            Remove
+
+          </button>
+
+        </div>
+
+
+
+        {hasLineDiscount ? (
+
+          <p
+
+            className="
+
+              mt-3
+
+              text-[9px]
+
+              font-semibold
+
+              text-emerald-700
+
+            "
+
+          >
+
+            You save{" "}
+
+            {money(
+
+              item.discount.totalDiscount
+
+            )}{" "}
+
+            on this item
+
+          </p>
+
+        ) : null}
+
+      </div>
+
+
+
+      {/* DESKTOP LINE PRICE */}
+
+
+
+      <div
+
+        className="
+
+          hidden
+
+          min-w-0
+
+          text-right
+
+
+
+          sm:block
+
+        "
+
+      >
+
+        <strong
+
+          className="
+
+            block
+
+            font-serif
+
+            text-[18px]
+
+            text-[#211817]
+
+          "
+
+        >
+
+          {money(
+
+            item.finalLineTotal
+
+          )}
+
+        </strong>
+
+
+
+        {hasLineDiscount ? (
+
+          <>
+
+            <span
+
+              className="
+
+                mt-1
+
+                block
+
+                text-[10px]
+
+                text-black/35
+
+                line-through
+
+              "
+
+            >
+
+              {money(
+
+                item.subtotal
+
+              )}
+
+            </span>
+
+
+
+            <span
+
+              className="
+
+                mt-1
+
+                block
+
+                text-[8px]
+
+                font-semibold
+
+                text-emerald-700
+
+              "
+
+            >
+
+              -
+
+              {money(
+
+                item.discount.totalDiscount
+
+              )}
+
+            </span>
+
+          </>
+
+        ) : null}
+
+      </div>
+
+    </article>
+
   );
+
 }
 
-function SummaryRow({
+
+
+/* =========================================================
+
+   SMALL COMPONENTS
+
+========================================================= */
+
+
+
+function MiniStat({
+
   label,
+
   value,
+
 }: {
-  label: string;
-  value: string;
+
+  label:
+
+    string;
+
+
+
+  value:
+
+    string;
+
 }) {
+
   return (
+
     <div
+
       className="
-        flex
-        items-start
-        justify-between
-        gap-5
+
+        min-w-[90px]
+
+        rounded-[13px]
+
+        border
+
+        border-white/80
+
+        bg-white/80
+
+        px-4
+
+        py-3
+
+        shadow-sm
+
+        backdrop-blur
+
       "
+
     >
-      <span
-        className="
-          font-medium
-          text-[#4D4340]
-        "
-      >
-        {label}
-      </span>
 
       <strong
+
         className="
-          text-right
-          text-[#171313]
+
+          block
+
+          text-[15px]
+
+          text-[#211817]
+
         "
+
       >
+
         {value}
+
       </strong>
+
+
+
+      <span
+
+        className="
+
+          mt-1
+
+          block
+
+          text-[8px]
+
+          font-semibold
+
+          uppercase
+
+          tracking-[0.08em]
+
+          text-black/35
+
+        "
+
+      >
+
+        {label}
+
+      </span>
+
     </div>
+
   );
+
+}
+
+
+
+function StateBox({
+
+  children,
+
+}: {
+
+  children:
+
+    React.ReactNode;
+
+}) {
+
+  return (
+
+    <div
+
+      className="
+
+        mt-5
+
+        flex
+
+        min-h-[190px]
+
+        items-center
+
+        justify-center
+
+        rounded-[18px]
+
+        border
+
+        border-[#E7DEDA]
+
+        bg-white
+
+        px-5
+
+        text-center
+
+        text-[12px]
+
+        font-semibold
+
+        text-[#211817]
+
+      "
+
+    >
+
+      {children}
+
+    </div>
+
+  );
+
+}
+
+
+
+function SummaryRow({
+
+  label,
+
+  value,
+
+  positive =
+
+    false,
+
+}: {
+
+  label:
+
+    string;
+
+
+
+  value:
+
+    string;
+
+
+
+  positive?:
+
+    boolean;
+
+}) {
+
+  return (
+
+    <div
+
+      className="
+
+        flex
+
+        items-start
+
+        justify-between
+
+        gap-5
+
+      "
+
+    >
+
+      <span
+
+        className="
+
+          min-w-0
+
+          text-black/55
+
+        "
+
+      >
+
+        {label}
+
+      </span>
+
+
+
+      <strong
+
+        className={`
+
+          shrink-0
+
+          text-right
+
+
+
+          ${
+
+            positive
+
+              ? "text-emerald-700"
+
+              : "text-[#211817]"
+
+          }
+
+        `}
+
+      >
+
+        {value}
+
+      </strong>
+
+    </div>
+
+  );
+
 }
