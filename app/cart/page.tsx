@@ -1064,7 +1064,7 @@ export default function CartPage() {
 
   const deliveryCharge =
 
-    cart?.deliveryCharge;
+    cart?.deliveryCharge ?? null;
 
 
 

@@ -1,6 +1,13 @@
-import SupportShell from "@/components/SupportShell";
+import SupportShell from "@/src/components/SupportShell";
+import type { ReactNode } from "react";
 
-const Section = ({ number, title, children }) => (
+type SectionProps = {
+  number: string;
+  title: string;
+  children: ReactNode;
+};
+
+const Section = ({ number, title, children }: SectionProps) => (
   <section className="border-b border-slate-100 py-7 first:pt-0 last:border-b-0 last:pb-0">
     <div className="flex gap-4">
       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-rose-50 text-sm font-black text-rose-600">

@@ -1,6 +1,13 @@
-import SupportShell from "@/components/SupportShell";
+import SupportShell from "@/src/components/SupportShell";
+import type { ReactNode } from "react";
 
-const Section = ({ number, title, children }) => (
+type SectionProps = {
+  number: string;
+  title: string;
+  children: ReactNode;
+};
+
+const Section = ({ number, title, children }: SectionProps) => (
   <section className="border-b border-slate-100 py-7 first:pt-0 last:border-b-0 last:pb-0">
     <p className="text-xs font-black uppercase tracking-[0.22em] text-rose-500">
       Section {number}

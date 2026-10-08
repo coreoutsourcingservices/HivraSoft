@@ -1,4 +1,4 @@
-import SupportShell from "@/components/SupportShell";
+import SupportShell from "@/src/components/SupportShell";
 
 const faqs = [
   {

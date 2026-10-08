@@ -605,7 +605,7 @@ function normalizeItem(
         0,
         num(
           item.availableStock,
-          size.stock
+          num(size.stock)
         )
       ),
 
