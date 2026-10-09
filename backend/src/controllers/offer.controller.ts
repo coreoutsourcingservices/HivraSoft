@@ -92,6 +92,7 @@ type OfferValues = {
   offerType: OfferType;
   buyQuantity: number;
   getQuantity: number;
+  getPrice: number;
   fixedPrice: number;
   appliesToAllProducts: boolean;
   productIds: string[];
@@ -100,9 +101,11 @@ type OfferValues = {
   isActive: boolean;
 };
 
-function defaultName(values: Pick<OfferValues, "offerType" | "buyQuantity" | "getQuantity" | "fixedPrice">) {
+function defaultName(values: Pick<OfferValues, "offerType" | "buyQuantity" | "getQuantity" | "getPrice" | "fixedPrice">) {
   if (values.offerType === "buy_get") {
-    return `Buy ${values.buyQuantity} Get ${values.getQuantity} Free`;
+    return values.getPrice === 0
+      ? `Buy ${values.buyQuantity} Get ${values.getQuantity} Free`
+      : `Buy ${values.buyQuantity} Get ${values.getQuantity} @ ₹${values.getPrice.toLocaleString("en-IN")} Each`;
   }
   return `Buy ${values.buyQuantity} @ ₹${values.fixedPrice.toLocaleString("en-IN")} Each`;
 }
@@ -119,14 +122,21 @@ function offerValues(body: any, expectedType: OfferType, current?: any): OfferVa
 
   const getQuantity = expectedType === "buy_get"
     ? body?.getQuantity !== undefined
-      ? wholeNumber(body.getQuantity, "Free quantity")
-      : wholeNumber(current?.getQuantity ?? 1, "Free quantity")
+      ? wholeNumber(body.getQuantity, "Get quantity")
+      : wholeNumber(current?.getQuantity ?? 1, "Get quantity")
     : 0;
 
   const fixedPrice = expectedType === "fixed_price_bundle"
     ? body?.fixedPrice !== undefined
       ? money(body.fixedPrice, "Fixed price")
       : money(current?.fixedPrice ?? 0, "Fixed price")
+    : 0;
+
+  // 0 means a free Get item; old Buy & Get offers remain free by default.
+  const getPrice = expectedType === "buy_get"
+    ? body?.getPrice !== undefined
+      ? money(body.getPrice, "Get product price")
+      : money(current?.getPrice ?? 0, "Get product price")
     : 0;
 
   if (expectedType === "fixed_price_bundle" && fixedPrice <= 0) {
@@ -161,6 +171,7 @@ function offerValues(body: any, expectedType: OfferType, current?: any): OfferVa
     offerType: expectedType,
     buyQuantity,
     getQuantity,
+    getPrice,
     fixedPrice,
     appliesToAllProducts,
     productIds,
@@ -172,7 +183,13 @@ function offerValues(body: any, expectedType: OfferType, current?: any): OfferVa
   };
 
   const enteredName = String(body?.name ?? current?.name ?? "").trim().slice(0, 140);
-  provisional.name = enteredName || defaultName(provisional);
+  const wasAutoNamed = current?.offerType === "buy_get" &&
+    (current?.name === defaultName({ ...provisional, buyQuantity: current.buyQuantity, getQuantity: current.getQuantity, getPrice: current.getPrice ?? 0 }) ||
+     /^Buy \d+ Get \d+ Free$/.test(String(current?.name || "")));
+  // Keep custom names. Refresh old auto-generated "Free" names when admin changes the price.
+  provisional.name = (!body?.name && wasAutoNamed) || (wasAutoNamed && enteredName === current?.name)
+    ? defaultName(provisional)
+    : enteredName || defaultName(provisional);
 
   const requestedSlug =
     body?.slug !== undefined ? String(body.slug || "") : String(current?.slug || "");
@@ -228,6 +245,7 @@ function historyEntry(action: OfferHistoryAction, values: OfferValues, req: Requ
     offerType: values.offerType,
     buyQuantity: values.buyQuantity,
     getQuantity: values.getQuantity,
+    getPrice: values.getPrice,
     fixedPrice: values.fixedPrice,
     appliesToAllProducts: values.appliesToAllProducts,
     productCount: values.productIds.length,
@@ -316,6 +334,7 @@ export function updateAdminOffer(offerType: OfferType) {
       offer.slug = values.slug;
       offer.buyQuantity = values.buyQuantity;
       offer.getQuantity = values.getQuantity;
+      offer.getPrice = values.getPrice;
       offer.fixedPrice = values.fixedPrice;
       offer.appliesToAllProducts = values.appliesToAllProducts;
       offer.productIds = values.productIds.map((id) => new mongoose.Types.ObjectId(id));
@@ -358,7 +377,7 @@ export function deleteAdminOffer(offerType: OfferType) {
 export async function listActiveOffers(_req: Request, res: Response) {
   try {
     const offers = await Offer.find({ isDeleted: { $ne: true }, isActive: true })
-      .select("name slug offerType buyQuantity getQuantity fixedPrice appliesToAllProducts productIds categoryIds image updatedAt")
+      .select("name slug offerType buyQuantity getQuantity getPrice fixedPrice appliesToAllProducts productIds categoryIds image updatedAt")
       .sort({ updatedAt: -1 })
       .lean();
 
@@ -572,6 +591,8 @@ export async function getFeaturedBuyGetOffer(
         getQuantity:
           offer.getQuantity,
 
+        getPrice: offer.getPrice ?? 0,
+
         fixedPrice:
           offer.fixedPrice,
 
@@ -696,6 +717,8 @@ export async function getStorefrontOfferBySlug(
 
         getQuantity:
           offer.getQuantity,
+
+        getPrice: offer.getPrice ?? 0,
 
         fixedPrice:
           offer.fixedPrice,

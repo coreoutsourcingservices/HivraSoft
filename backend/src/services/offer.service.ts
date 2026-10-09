@@ -42,19 +42,21 @@ function buyGetAllocation(offer: any, lines: OfferDiscountLine[], eligibleIndexe
     (sum, index) => sum + Math.max(0, Number(lines[index]?.quantity || 0)),
     0
   );
-  let freeUnits = Math.floor(totalQuantity / groupSize) * getQuantity;
-  if (freeUnits <= 0) return allocations;
+  let discountedUnits = Math.floor(totalQuantity / groupSize) * getQuantity;
+  const getPrice = Math.max(0, Number(offer?.getPrice ?? 0));
+  if (discountedUnits <= 0) return allocations;
 
   const cheapestFirst = eligibleIndexes
     .map((index) => ({ index, unitPrice: Math.max(0, Number(lines[index]?.unitPrice || 0)) }))
     .sort((a, b) => a.unitPrice - b.unitPrice || a.index - b.index);
 
   for (const item of cheapestFirst) {
-    if (freeUnits <= 0) break;
+    if (discountedUnits <= 0) break;
     const quantity = Math.max(0, Number(lines[item.index]?.quantity || 0));
-    const unitsHere = Math.min(quantity, freeUnits);
-    allocations[item.index] = roundMoney(unitsHere * item.unitPrice);
-    freeUnits -= unitsHere;
+    const unitsHere = Math.min(quantity, discountedUnits);
+    // Never raise the original item's price if it already costs less than Get price.
+    allocations[item.index] = roundMoney(unitsHere * Math.max(0, item.unitPrice - getPrice));
+    discountedUnits -= unitsHere;
   }
 
   return allocations;

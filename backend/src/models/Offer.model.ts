@@ -16,6 +16,7 @@ export interface IOfferHistory {
   offerType: OfferType;
   buyQuantity: number;
   getQuantity: number;
+  getPrice: number;
   fixedPrice: number;
   appliesToAllProducts: boolean;
   productCount: number;
@@ -33,6 +34,7 @@ export interface IOffer extends Document {
   offerType: OfferType;
   buyQuantity: number;
   getQuantity: number;
+  getPrice: number;
   fixedPrice: number;
   appliesToAllProducts: boolean;
   productIds: Types.ObjectId[];
@@ -61,6 +63,7 @@ const historySchema = new Schema<IOfferHistory>(
     },
     buyQuantity: { type: Number, min: 1, default: 1 },
     getQuantity: { type: Number, min: 0, default: 0 },
+    getPrice: { type: Number, min: 0, default: 0 },
     fixedPrice: { type: Number, min: 0, default: 0 },
     appliesToAllProducts: { type: Boolean, default: false },
     productCount: { type: Number, min: 0, default: 0 },
@@ -86,6 +89,7 @@ const offerSchema = new Schema<IOffer>(
     },
     buyQuantity: { type: Number, min: 1, max: 999, required: true },
     getQuantity: { type: Number, min: 0, max: 999, default: 0 },
+    getPrice: { type: Number, min: 0, default: 0 },
     fixedPrice: { type: Number, min: 0, default: 0 },
     appliesToAllProducts: { type: Boolean, default: false },
     productIds: [{ type: Schema.Types.ObjectId, ref: "Product" }],

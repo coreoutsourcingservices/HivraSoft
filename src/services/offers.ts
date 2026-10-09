@@ -53,6 +53,7 @@ export type StorefrontOffer = {
 
   buyQuantity: number;
   getQuantity: number;
+  getPrice?: number;
 
   fixedPrice: number;
 

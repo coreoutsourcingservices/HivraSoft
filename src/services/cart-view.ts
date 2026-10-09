@@ -107,6 +107,8 @@ export type CartOfferProgress = {
 
   getQuantity:
     number;
+
+  getPrice: number;
 };
 
 export type CartView = {
@@ -915,6 +917,8 @@ export function normalizeCartResponse(
                   progress.fixedPrice
                 )
               ),
+
+            getPrice: Math.max(0, num(progress.getPrice)),
 
             getQuantity:
               Math.max(

@@ -90,6 +90,8 @@ export type OfferProgress = {
 
   getQuantity: number;
 
+  getPrice: number;
+
 };
 
 export type ContextOfferPricingResult = {
@@ -467,6 +469,8 @@ function applyFixedBundle(
       fixedPrice,
 
       getQuantity: 0,
+
+      getPrice: 0,
 
     };
 
@@ -1024,6 +1028,8 @@ function applyBuyGet(
 
       getQuantity,
 
+      getPrice: money(offer.getPrice ?? 0),
+
     };
 
   if (
@@ -1048,11 +1054,13 @@ function applyBuyGet(
 
   }
 
-  const freeUnits =
+  const discountedUnits =
 
     completedBundles *
 
     getQuantity;
+
+  const getPrice = money(offer.getPrice ?? 0);
 
   /*
 
@@ -1086,9 +1094,9 @@ function applyBuyGet(
 
     );
 
-  let remainingFreeUnits =
+  let remainingDiscountedUnits =
 
-    freeUnits;
+    discountedUnits;
 
   let totalDiscount =
 
@@ -1104,7 +1112,7 @@ function applyBuyGet(
 
     if (
 
-      remainingFreeUnits <=
+      remainingDiscountedUnits <=
 
       0
 
@@ -1128,7 +1136,7 @@ function applyBuyGet(
 
         quantity,
 
-        remainingFreeUnits
+        remainingDiscountedUnits
 
       );
 
@@ -1144,19 +1152,11 @@ function applyBuyGet(
 
     }
 
-    const lineDiscount =
-
-      money(
-
-        freeQuantity *
-
-          money(
-
-            item.unitPrice
-
-          )
-
-      );
+    // Get items are charged at the admin price, not always free.
+    // Do not charge extra if a product's normal price is already lower.
+    const lineDiscount = money(
+      freeQuantity * Math.max(0, money(item.unitPrice) - getPrice)
+    );
 
     addLineDiscount(
 
@@ -1210,7 +1210,7 @@ function applyBuyGet(
 
       );
 
-    remainingFreeUnits -=
+    remainingDiscountedUnits -=
 
       freeQuantity;
 

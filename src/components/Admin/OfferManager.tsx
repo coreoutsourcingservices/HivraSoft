@@ -18,6 +18,7 @@ type Offer = {
   offerType: OfferType;
   buyQuantity: number;
   getQuantity: number;
+  getPrice?: number;
   fixedPrice: number;
   appliesToAllProducts: boolean;
   productIds: string[];
@@ -37,6 +38,7 @@ type HistoryItem = {
   offerType?: OfferType;
   buyQuantity?: number;
   getQuantity?: number;
+  getPrice?: number;
   fixedPrice?: number;
   appliesToAllProducts?: boolean;
   productCount?: number;
@@ -90,7 +92,7 @@ export default function OfferManager({ type }: Props) {
   const endpoint = isBuyGet ? "buy-get" : "fixed-price-bundle";
   const title = isBuyGet ? "Buy & Get Offer" : "Fixed Price Bundle";
   const description = isBuyGet
-    ? "Set how many eligible products a customer buys and how many products become free. The cheapest eligible units are made free."
+    ? "Set Buy/Get quantities and the price of each Get item (₹0 = Free). The cheapest eligible items receive the special price."
     : "Set the minimum eligible product quantity and the fixed per-product price. Once the quantity is reached, every eligible cart unit uses the fixed price when it gives the customer a discount.";
 
   const [offers, setOffers] = useState<Offer[]>([]);
@@ -100,6 +102,7 @@ export default function OfferManager({ type }: Props) {
   const [slug, setSlug] = useState("");
   const [buyQuantity, setBuyQuantity] = useState(isBuyGet ? "3" : "4");
   const [getQuantity, setGetQuantity] = useState("1");
+  const [getPrice, setGetPrice] = useState("0");
   const [fixedPrice, setFixedPrice] = useState("499");
   const [appliesToAllProducts, setAppliesToAllProducts] = useState(false);
   const [productIds, setProductIds] = useState<string[]>([]);
@@ -116,11 +119,12 @@ export default function OfferManager({ type }: Props) {
   const preview = useMemo(() => {
     const buy = Math.max(0, Number(buyQuantity || 0));
     if (isBuyGet) {
-      const free = Math.max(0, Number(getQuantity || 0));
-      return `Buy ${buy || "X"} + Get ${free || "Y"} Free`;
+      const get = Math.max(0, Number(getQuantity || 0));
+      const price = Number(getPrice || 0);
+      return `Buy ${buy || "X"} + Get ${get || "Y"} ${price === 0 ? "Free" : `@ ${money(price)} each`}`;
     }
     return `Buy ${buy || "X"}+ → ${money(Number(fixedPrice || 0))} each`;
-  }, [buyQuantity, fixedPrice, getQuantity, isBuyGet]);
+  }, [buyQuantity, fixedPrice, getQuantity, getPrice, isBuyGet]);
 
   async function loadOffers() {
     try {
@@ -151,6 +155,7 @@ export default function OfferManager({ type }: Props) {
     setSlug("");
     setBuyQuantity(isBuyGet ? "3" : "4");
     setGetQuantity("1");
+    setGetPrice("0");
     setFixedPrice("499");
     setAppliesToAllProducts(false);
     setProductIds([]);
@@ -165,6 +170,7 @@ export default function OfferManager({ type }: Props) {
     setSlug(offer.slug || slugify(offer.name || ""));
     setBuyQuantity(String(offer.buyQuantity || (isBuyGet ? 3 : 4)));
     setGetQuantity(String(offer.getQuantity || 1));
+    setGetPrice(String(offer.getPrice ?? 0));
     setFixedPrice(String(offer.fixedPrice || 0));
     setAppliesToAllProducts(Boolean(offer.appliesToAllProducts));
     setProductIds(Array.isArray(offer.productIds) ? offer.productIds.map(String) : []);
@@ -184,13 +190,17 @@ export default function OfferManager({ type }: Props) {
 
       if (uploadingImage) throw new Error("Wait for the Cloudinary upload to finish.");
       const buy = Number(buyQuantity);
-      const free = Number(getQuantity);
+      const get = Number(getQuantity);
+      const getItemPrice = Number(getPrice);
       const price = Number(fixedPrice);
       if (!Number.isInteger(buy) || buy < 1 || buy > 999) {
         throw new Error("Buy quantity must be a whole number between 1 and 999.");
       }
-      if (isBuyGet && (!Number.isInteger(free) || free < 1 || free > 999)) {
-        throw new Error("Free quantity must be a whole number between 1 and 999.");
+      if (isBuyGet && (!Number.isInteger(get) || get < 1 || get > 999)) {
+        throw new Error("Get quantity must be a whole number between 1 and 999.");
+      }
+      if (isBuyGet && (getPrice.trim() === "" || !Number.isFinite(getItemPrice) || getItemPrice < 0)) {
+        throw new Error("Get product price must be ₹0 or greater.");
       }
       if (!isBuyGet && (!Number.isFinite(price) || price <= 0)) {
         throw new Error("Fixed price must be greater than 0.");
@@ -212,7 +222,8 @@ export default function OfferManager({ type }: Props) {
             name: name.trim(),
             slug: slugify(slug || name),
             buyQuantity: buy,
-            getQuantity: isBuyGet ? free : 0,
+            getQuantity: isBuyGet ? get : 0,
+            getPrice: isBuyGet ? getItemPrice : 0,
             fixedPrice: isBuyGet ? 0 : price,
             appliesToAllProducts,
             productIds: appliesToAllProducts ? [] : productIds,
@@ -345,7 +356,7 @@ export default function OfferManager({ type }: Props) {
                 onBlur={() => {
                   if (!slug) setSlug(slugify(name));
                 }}
-                placeholder={isBuyGet ? "Buy 3 Get 1 Free" : "Any 4 @ ₹499 Each"}
+                placeholder={isBuyGet ? "Buy 3 Get 1 @ ₹1" : "Any 4 @ ₹499 Each"}
                 className="h-12 w-full rounded-[14px] border border-[#211A18]/10 bg-[#FAF8F6] px-4 text-[12px] outline-none focus:border-[#A51D45]/40"
               />
             </Field>
@@ -355,7 +366,7 @@ export default function OfferManager({ type }: Props) {
                 <input
                   value={slug}
                   onChange={(event) => setSlug(slugify(event.target.value))}
-                  placeholder={isBuyGet ? "buy-3-get-1-free" : "any-4-at-499-each"}
+                  placeholder={isBuyGet ? "buy-3-get-1-at-1" : "any-4-at-499-each"}
                   className="h-12 w-full rounded-[14px] border border-[#211A18]/10 bg-[#FAF8F6] px-4 text-[12px] outline-none focus:border-[#A51D45]/40"
                 />
                 <p className="mt-1.5 text-[9px] leading-4 text-[#211A18]/40">
@@ -376,7 +387,7 @@ export default function OfferManager({ type }: Props) {
                 />
               </Field>
               {isBuyGet ? (
-                <Field label="Free quantity">
+                <Field label="Get quantity">
                   <input
                     type="number"
                     min={1}
@@ -402,6 +413,24 @@ export default function OfferManager({ type }: Props) {
                 </Field>
               )}
             </div>
+
+            {isBuyGet && (
+              <Field label="Price per Get product (₹0 = Free)">
+                <div className="flex h-12 items-center rounded-[14px] border border-[#211A18]/10 bg-[#FAF8F6] px-4">
+                  <span className="mr-2 text-[12px]">₹</span>
+                  <input
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    value={getPrice}
+                    onChange={(event) => setGetPrice(event.target.value)}
+                    placeholder="0 / 1 / 100"
+                    className="min-w-0 flex-1 bg-transparent text-[12px] outline-none"
+                  />
+                </div>
+                <p className="mt-1 text-[10px] text-[#211A18]/50">Example: Buy 3 + Get 1 for ₹1 or ₹100. Use ₹0 for free.</p>
+              </Field>
+            )}
 
             <OfferImageField
               value={image}
@@ -489,7 +518,7 @@ export default function OfferManager({ type }: Props) {
                     </td>
                     <td className="px-3 py-4 font-medium">
                       {offer.offerType === "buy_get"
-                        ? `Buy ${offer.buyQuantity} + Get ${offer.getQuantity} Free`
+                        ? `Buy ${offer.buyQuantity} + Get ${offer.getQuantity} ${Number(offer.getPrice ?? 0) === 0 ? "Free" : `@ ${money(Number(offer.getPrice))} each`}`
                         : `Buy ${offer.buyQuantity}+ @ ${money(offer.fixedPrice)} each`}
                     </td>
                     <td className="px-3 py-4 text-[#211A18]/60">
@@ -572,7 +601,7 @@ export default function OfferManager({ type }: Props) {
                     </td>
                     <td className="px-3 py-4">
                       {item.offerType === "buy_get"
-                        ? `Buy ${item.buyQuantity || 0} + Get ${item.getQuantity || 0}`
+                        ? `Buy ${item.buyQuantity || 0} + Get ${item.getQuantity || 0} ${Number(item.getPrice ?? 0) === 0 ? "Free" : `@ ${money(Number(item.getPrice))} each`}`
                         : `Buy ${item.buyQuantity || 0}+ @ ${money(Number(item.fixedPrice || 0))}`}
                     </td>
                     <td className="px-3 py-4 text-[#211A18]/55">
