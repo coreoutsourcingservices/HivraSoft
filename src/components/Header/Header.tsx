@@ -1234,7 +1234,7 @@ function HeaderSearch() {
           {loading ? (
             <div
               className="
-                px-4
+                px-3
                 py-3
                 text-[10px]
                 text-black/45
@@ -1579,6 +1579,56 @@ export default function Header() {
     useState(
       false
     );
+
+  /* =======================================================
+     MOBILE AUTH SYNC
+
+     IMPORTANT:
+     - OTP success par drawer immediately close NAHI hoga.
+       Isse success video mounted rahegi aur poori chalegi.
+     - Video end ya modal cross/close hone ke baad
+       LoginModal "hivrasoft-auth-modal-closed" event bhejega.
+       Tab drawer close hoga.
+     - Logout par drawer normal close hoga.
+  ======================================================= */
+
+  useEffect(() => {
+    const handleAuthModalClosed =
+      () => {
+        setMobileOpen(
+          false
+        );
+      };
+
+    const handleAuthLogout =
+      () => {
+        setMobileOpen(
+          false
+        );
+      };
+
+    window.addEventListener(
+      "hivrasoft-auth-modal-closed",
+      handleAuthModalClosed
+    );
+
+    window.addEventListener(
+      "hivrasoft-auth-logout",
+      handleAuthLogout
+    );
+
+    return () => {
+      window.removeEventListener(
+        "hivrasoft-auth-modal-closed",
+        handleAuthModalClosed
+      );
+
+      window.removeEventListener(
+        "hivrasoft-auth-logout",
+        handleAuthLogout
+      );
+    };
+  }, []);
 
   const [
     categories,
@@ -2218,12 +2268,23 @@ export default function Header() {
       >
           <div
             className="
+              relative
+
               mx-auto
+
               flex
+
               h-[68px]
+
               w-full
               max-w-[1600px]
+
+              min-w-0
+
               items-center
+
+              overflow-hidden
+
               px-2
 
               sm:px-4
@@ -2270,31 +2331,52 @@ export default function Header() {
             <Link
               href="/"
               className="
-                relative
-                ml-1
+                absolute
+
+                left-1/2
+                top-1/2
+
+                z-10
+
                 block
-                shrink-0
+
+                -translate-x-1/2
+                -translate-y-1/2
+
+                xl:static
                 xl:ml-0
+                xl:translate-x-0
+                xl:translate-y-0
               "
             >
-              {/* MOBILE */}
+              {/* MOBILE / TABLET
+                  Desktop logo use kar rahe hain, compact size me.
+              */}
 
               <div
                 className="
                   relative
-                  h-[48px]
-                  w-[62px]
+
+                  h-[44px]
+                  w-[126px]
+
+                  sm:h-[46px]
+                  sm:w-[138px]
+
+                  md:h-[48px]
+                  md:w-[148px]
+
                   xl:hidden
                 "
               >
                 <Image
                   src={
-                    MOBILE_LOGO_SRC
+                    DESKTOP_LOGO_SRC
                   }
                   alt="HivraSoft"
                   fill
                   priority
-                  sizes="62px"
+                  sizes="148px"
                   className="
                     object-contain
                   "
@@ -2389,34 +2471,21 @@ export default function Header() {
 
             <div
               className="
+                relative
+                z-20
+
                 ml-auto
+
                 flex
                 shrink-0
+
                 items-center
-                gap-1
+
+                gap-0.5
+
                 xl:hidden
               "
             >
-              {/* SEARCH */}
-
-              <button
-                type="button"
-                aria-label="Search"
-                onClick={() => {
-                  window.location.href =
-                    "/search";
-                }}
-                className="
-                  grid
-                  h-10
-                  w-10
-                  place-items-center
-                  text-black
-                "
-              >
-                <SearchIcon />
-              </button>
-
               {/* WISHLIST */}
 
               <button
@@ -2445,19 +2514,6 @@ export default function Header() {
                   />
                 ) : null}
               </button>
-
-              {/* ACCOUNT */}
-
-              <div
-                className="
-                  hidden
-                  min-w-[40px]
-                  place-items-center
-                  md:grid
-                "
-              >
-                <Account />
-              </div>
 
               {/* CART */}
 
@@ -2528,11 +2584,17 @@ export default function Header() {
               absolute
               left-0
               top-0
+
               h-full
-              w-[86vw]
-              max-w-[390px]
+
+              w-[92vw]
+              max-w-[420px]
+
+              overflow-x-hidden
               overflow-y-auto
+
               bg-white
+
               shadow-2xl
             "
           >
@@ -2540,13 +2602,19 @@ export default function Header() {
 
             <div
               className="
+                relative
+
                 flex
-                h-[70px]
+
+                h-[82px]
+
                 items-center
-                justify-between
+                justify-center
+
                 border-b
                 border-black/10
-                px-4
+
+                px-14
               "
             >
               <Link
@@ -2558,17 +2626,20 @@ export default function Header() {
                 }
                 className="
                   relative
-                  h-[48px]
-                  w-[66px]
+
+                  h-[52px]
+                  w-[156px]
+
+                  shrink-0
                 "
               >
                 <Image
                   src={
-                    MOBILE_LOGO_SRC
+                    DESKTOP_LOGO_SRC
                   }
                   alt="HivraSoft"
                   fill
-                  sizes="66px"
+                  sizes="156px"
                   className="
                     object-contain
                   "
@@ -2584,17 +2655,203 @@ export default function Header() {
                   )
                 }
                 className="
+                  absolute
+
+                  right-4
+                  top-1/2
+
                   grid
+
                   h-10
                   w-10
+
+                  -translate-y-1/2
+
                   place-items-center
+
                   rounded-full
+
                   bg-black/5
+
                   text-[24px]
                   text-black
                 "
               >
                 ×
+              </button>
+            </div>
+
+            {/* MOBILE ACCOUNT / WISHLIST / CART */}
+
+            <div
+              className="
+                grid
+                grid-cols-3
+                gap-1.5
+
+                border-b
+                border-black/10
+
+                bg-[#FFFDFC]
+
+                px-4
+                py-3
+              "
+            >
+              <button
+                type="button"
+                aria-label="Wishlist"
+                onClick={() => {
+                  setMobileOpen(
+                    false
+                  );
+
+                  void commerce.openWishlist();
+                }}
+                className="
+                  relative
+
+                  flex
+                  min-h-[58px]
+                  flex-col
+
+                  items-center
+                  justify-center
+
+                  gap-1
+
+                  rounded-[10px]
+
+                  border
+                  border-black/[0.08]
+
+                  bg-white
+
+                  text-[#8C1839]
+                "
+              >
+                <HeartIcon />
+
+                <span
+                  className="
+                    text-[7px]
+                    font-semibold
+
+                    uppercase
+
+                    tracking-[0.06em]
+                  "
+                >
+                  Wishlist
+                </span>
+
+                {commerce.wishlistCount >
+                0 ? (
+                  <CountBadge
+                    count={
+                      commerce.wishlistCount
+                    }
+                  />
+                ) : null}
+              </button>
+
+              <div
+                className="
+                  flex
+                  min-h-[58px]
+
+                  flex-col
+
+                  items-center
+                  justify-center
+
+                  gap-1
+
+                  rounded-[10px]
+
+                  border
+                  border-black/[0.08]
+
+                  bg-white
+                "
+              >
+                <Account
+                  mobile
+                />
+
+                <span
+                  className="
+                    -mt-1
+
+                    text-[7px]
+                    font-semibold
+
+                    uppercase
+
+                    tracking-[0.06em]
+
+                    text-[#211817]
+                  "
+                >
+                  Account
+                </span>
+              </div>
+
+              <button
+                type="button"
+                aria-label="Cart"
+                onClick={() => {
+                  setMobileOpen(
+                    false
+                  );
+
+                  void commerce.openCart();
+                }}
+                className="
+                  relative
+
+                  flex
+                  min-h-[58px]
+                  flex-col
+
+                  items-center
+                  justify-center
+
+                  gap-1
+
+                  rounded-[10px]
+
+                  border
+                  border-black/[0.08]
+
+                  bg-white
+
+                  text-black
+                "
+              >
+                <BagIcon />
+
+                <span
+                  className="
+                    text-[7px]
+                    font-semibold
+
+                    uppercase
+
+                    tracking-[0.06em]
+                  "
+                >
+                  Cart
+                </span>
+
+                {commerce.cartCount >
+                0 ? (
+                  <CountBadge
+                    count={
+                      commerce.cartCount
+                    }
+                  />
+                ) : null}
               </button>
             </div>
 
