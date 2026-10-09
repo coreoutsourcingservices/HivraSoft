@@ -4,6 +4,7 @@ import { softDeleteEntity } from "../services/admin-trash.service";
 import Offer, {
   type OfferHistoryAction,
   type OfferType,
+  type IOfferImage,
 } from "../models/Offer.model";
 import Product from "../models/Product.model";
 import Category from "../models/Category.model";
@@ -57,6 +58,29 @@ const money = (value: unknown, field: string) => {
   return roundMoney(number);
 };
 
+// The file must come from the authenticated Cloudinary uploader (not a data URL).
+// Empty/null removes the offer's image association without destroying media.
+function normalizeOfferImage(value: unknown): IOfferImage | null {
+  if (value === null || value === "") return null;
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("Invalid offer image. Upload an image first.");
+  }
+  const image = value as Record<string, unknown>;
+  const url = typeof image.url === "string" ? image.url.trim() : "";
+  const publicId = typeof image.publicId === "string" ? image.publicId.trim() : "";
+  let validUrl = false;
+  try {
+    const parsed = new URL(url);
+    validUrl = parsed.protocol === "https:" &&
+      parsed.hostname === "res.cloudinary.com" &&
+      /^\/[^/]+\/image\/upload\//.test(parsed.pathname);
+  } catch { /* invalid URL */ }
+  if (!validUrl || !/^hivrasoft\/offers\/[a-z0-9/_-]+$/i.test(publicId)) {
+    throw new Error("Offer image must be uploaded to the Offers Cloudinary folder.");
+  }
+  return { url, publicId };
+}
+
 const adminObjectId = (req: Request) =>
   req.user?._id && mongoose.Types.ObjectId.isValid(String(req.user._id))
     ? new mongoose.Types.ObjectId(String(req.user._id))
@@ -72,6 +96,7 @@ type OfferValues = {
   appliesToAllProducts: boolean;
   productIds: string[];
   categoryIds: string[];
+  image: IOfferImage | null;
   isActive: boolean;
 };
 
@@ -140,6 +165,9 @@ function offerValues(body: any, expectedType: OfferType, current?: any): OfferVa
     appliesToAllProducts,
     productIds,
     categoryIds,
+    image: body?.image !== undefined
+      ? normalizeOfferImage(body.image)
+      : current?.image ? normalizeOfferImage(current.image) : null,
     isActive,
   };
 
@@ -205,6 +233,8 @@ function historyEntry(action: OfferHistoryAction, values: OfferValues, req: Requ
     productCount: values.productIds.length,
     categoryCount: values.categoryIds.length,
     isActive: values.isActive,
+    imageUrl: values.image?.url || "",
+    imagePublicId: values.image?.publicId || "",
     changedAt: new Date(),
     changedBy: adminObjectId(req),
   };
@@ -290,6 +320,7 @@ export function updateAdminOffer(offerType: OfferType) {
       offer.appliesToAllProducts = values.appliesToAllProducts;
       offer.productIds = values.productIds.map((id) => new mongoose.Types.ObjectId(id));
       offer.categoryIds = values.categoryIds.map((id) => new mongoose.Types.ObjectId(id));
+      offer.image = values.image;
       offer.isActive = values.isActive;
       offer.history.push(historyEntry(statusOnly ? "status_changed" : "updated", values, req) as any);
       await offer.save();
@@ -327,7 +358,7 @@ export function deleteAdminOffer(offerType: OfferType) {
 export async function listActiveOffers(_req: Request, res: Response) {
   try {
     const offers = await Offer.find({ isDeleted: { $ne: true }, isActive: true })
-      .select("name slug offerType buyQuantity getQuantity fixedPrice appliesToAllProducts productIds categoryIds updatedAt")
+      .select("name slug offerType buyQuantity getQuantity fixedPrice appliesToAllProducts productIds categoryIds image updatedAt")
       .sort({ updatedAt: -1 })
       .lean();
 
@@ -559,6 +590,8 @@ export async function getFeaturedBuyGetOffer(
               String(id)
           ),
 
+        image: offer.image || null,
+
         isActive:
           offer.isActive,
       },
@@ -681,6 +714,8 @@ export async function getStorefrontOfferBySlug(
             (id: any) =>
               String(id)
           ),
+
+        image: offer.image || null,
 
         isActive:
           offer.isActive,

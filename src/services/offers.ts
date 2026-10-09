@@ -65,6 +65,8 @@ export type StorefrontOffer = {
   categoryIds:
     string[];
 
+  image?: { url: string; publicId: string } | null;
+
   isActive:
     boolean;
 
@@ -340,6 +342,12 @@ export function getOfferBanners(
 
   const used =
     new Set<string>();
+
+  // Admin-uploaded Cloudinary artwork is the primary offer banner.
+  if (offer.image?.url) {
+    used.add(offer.image.url);
+    result.push({ image: offer.image.url, alt: `${offer.name} Offer`, redirect });
+  }
 
   categories.forEach(
     (

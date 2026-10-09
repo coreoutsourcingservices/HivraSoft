@@ -126,11 +126,16 @@ const htmlEscape = (text: string) => text.replace(/&/g, "&amp;").replace(/</g, "
 // Existing once/minute notification scheduler calls this. Website inbox only.
 export async function runDuePersonalPromotions() {
   const now = new Date();
+  // Recover a crashed worker without sending the same message twice (dedupe keys below).
+  await CustomerPromotionMessage.updateMany(
+    { status: "processing", processingAt: { $lt: new Date(now.getTime() - 10 * 60_000) } },
+    { $set: { status: "pending" } }
+  );
   const due = await CustomerPromotionMessage.find({ status: "pending", scheduledFor: { $lte: now } })
     .sort({ scheduledFor: 1 }).limit(50).lean();
   let sent = 0;
   for (const row of due) {
-    const claimed = await CustomerPromotionMessage.findOneAndUpdate({ _id: row._id, status: "pending" }, { $set: { status: "processing" } }, { new: true });
+    const claimed = await CustomerPromotionMessage.findOneAndUpdate({ _id: row._id, status: "pending" }, { $set: { status: "processing", processingAt: now } }, { new: true });
     if (!claimed) continue;
     try {
       const owner = await User.findOne({ _id: claimed.user, role: "customer", isActive: true, accountStatus: "active" }).select("_id").lean();

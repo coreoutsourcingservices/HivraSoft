@@ -16,6 +16,7 @@ import Account from "../models/user/account.model";
 import { hashPassword, verifyPassword } from "../utils/password";
 import { getUserActivities, trackUserActivity } from "../services/activity.service";
 import Notification from "../models/Notification.model";
+import CustomerPromotionMessage from "../models/CustomerPromotionMessage.model";
 import Otp from "../models/Otp.model";
 import { listAdminCustomers } from "../services/customer-admin.service";
 import { addItemToCart, clearUserCart, removeCartItem, updateCartItem, getUserCart } from "../services/cart.service";
@@ -767,6 +768,12 @@ export async function getAdminCustomerDetails(req: Request, res: Response) {
       }),
     ]);
 
+    // Read only: messages authored by this customer. No admin mutation route is added.
+    const scheduledPromotions = await CustomerPromotionMessage.find({ user: userObjectId })
+      .sort({ scheduledFor: -1, createdAt: -1 })
+      .select("date title message status scheduledFor sentAt createdAt")
+      .lean();
+
     const productIds = Array.from(
       new Set([
         ...((cart?.items || []).map((item: any) => String(item.product || ""))),
@@ -972,6 +979,12 @@ export async function getAdminCustomerDetails(req: Request, res: Response) {
             _id: String((account as any)._id),
           }
         : null,
+      scheduledPromotions: scheduledPromotions.map((item) => ({
+        ...item,
+        message: Array.isArray(item.message)
+          ? item.message
+          : [{ id: 1, text: String(item.message || "") }],
+      })),
       summary: {
         totalOrders: normalizedOrders.length,
         deliveredOrders: deliveredOrders.length,

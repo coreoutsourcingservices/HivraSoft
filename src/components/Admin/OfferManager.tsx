@@ -5,6 +5,7 @@ import { confirmAdminAction } from "@/src/components/Admin/AdminConfirmProvider"
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Gift, IndianRupee, Pencil, Trash2 } from "lucide-react";
 import OfferTargetSelector from "./OfferTargetSelector";
+import OfferImageField, { type OfferImage } from "./OfferImageField";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -21,6 +22,7 @@ type Offer = {
   appliesToAllProducts: boolean;
   productIds: string[];
   categoryIds: string[];
+  image?: OfferImage | null;
   isActive: boolean;
   createdAt?: string;
   updatedAt?: string;
@@ -103,6 +105,8 @@ export default function OfferManager({ type }: Props) {
   const [productIds, setProductIds] = useState<string[]>([]);
   const [categoryIds, setCategoryIds] = useState<string[]>([]);
   const [isActive, setIsActive] = useState(true);
+  const [image, setImage] = useState<OfferImage | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [busyId, setBusyId] = useState("");
@@ -152,6 +156,7 @@ export default function OfferManager({ type }: Props) {
     setProductIds([]);
     setCategoryIds([]);
     setIsActive(true);
+    setImage(null);
   }
 
   function editOffer(offer: Offer) {
@@ -165,6 +170,7 @@ export default function OfferManager({ type }: Props) {
     setProductIds(Array.isArray(offer.productIds) ? offer.productIds.map(String) : []);
     setCategoryIds(Array.isArray(offer.categoryIds) ? offer.categoryIds.map(String) : []);
     setIsActive(offer.isActive === true);
+    setImage(offer.image?.url && offer.image?.publicId ? offer.image : null);
     setError("");
     setSuccess("");
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -176,6 +182,7 @@ export default function OfferManager({ type }: Props) {
       setError("");
       setSuccess("");
 
+      if (uploadingImage) throw new Error("Wait for the Cloudinary upload to finish.");
       const buy = Number(buyQuantity);
       const free = Number(getQuantity);
       const price = Number(fixedPrice);
@@ -211,6 +218,7 @@ export default function OfferManager({ type }: Props) {
             productIds: appliesToAllProducts ? [] : productIds,
             categoryIds: appliesToAllProducts ? [] : categoryIds,
             isActive,
+            image,
           }),
         }
       );
@@ -323,7 +331,7 @@ export default function OfferManager({ type }: Props) {
               <p className="mt-1 text-[10px] text-[#211A18]/45">Preview: {preview}</p>
             </div>
             {editingId && (
-              <button type="button" onClick={resetForm} className="text-[10px] font-semibold text-[#A51D45]">
+              <button type="button" disabled={saving || uploadingImage} onClick={resetForm} className="text-[10px] font-semibold text-[#A51D45] disabled:opacity-50">
                 Cancel edit
               </button>
             )}
@@ -395,6 +403,14 @@ export default function OfferManager({ type }: Props) {
               )}
             </div>
 
+            <OfferImageField
+              value={image}
+              onChange={setImage}
+              offerType={type}
+              disabled={saving}
+              onUploadingChange={setUploadingImage}
+            />
+
             <label className="flex cursor-pointer items-center justify-between gap-4 rounded-[16px] bg-[#FAF8F6] px-4 py-4">
               <span>
                 <span className="block text-[12px] font-semibold">Active</span>
@@ -410,11 +426,11 @@ export default function OfferManager({ type }: Props) {
 
             <button
               type="button"
-              disabled={saving}
+              disabled={saving || uploadingImage}
               onClick={() => void saveOffer()}
               className="h-12 w-full rounded-[14px] bg-[#A51D45] text-[11px] font-semibold uppercase tracking-[0.08em] text-white disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {saving ? "Saving..." : editingId ? "Update Offer" : "Add Offer"}
+              {uploadingImage ? "Uploading image..." : saving ? "Saving..." : editingId ? "Update Offer" : "Add Offer"}
             </button>
           </div>
         </section>
@@ -461,7 +477,13 @@ export default function OfferManager({ type }: Props) {
                 offers.map((offer) => (
                   <tr key={offer._id} className="border-b border-[#211A18]/6 text-[11px] last:border-0">
                     <td className="px-3 py-4">
-                      <p className="font-semibold">{offer.name}</p>
+                      <div className="flex items-center gap-3">
+                        {offer.image?.url ? (
+                          <img src={offer.image.url} alt={offer.name} className="h-12 w-12 shrink-0 rounded-xl border border-[#211A18]/10 object-cover" />
+                        ) : null}
+                        <div className="min-w-0"><p className="font-semibold">{offer.name}</p>
+                        {offer.image?.publicId ? <p className="mt-1 max-w-[190px] truncate text-[9px] text-[#211A18]/40" title={offer.image.publicId}>{offer.image.publicId}</p> : null}</div>
+                      </div>
                       <p className="mt-1 text-[9px] text-[#A51D45]/70">/{offer.slug || slugify(offer.name || "")}</p>
                       <p className="mt-1 text-[9px] text-[#211A18]/40">Updated {dateTime(offer.updatedAt)}</p>
                     </td>
@@ -478,7 +500,7 @@ export default function OfferManager({ type }: Props) {
                     <td className="px-3 py-4">
                       <button
                         type="button"
-                        disabled={busyId === offer._id}
+                        disabled={busyId === offer._id || uploadingImage || saving}
                         onClick={() => void toggleOffer(offer)}
                         className={`rounded-full px-3 py-1.5 text-[9px] font-semibold ${
                           offer.isActive ? "bg-emerald-50 text-emerald-700" : "bg-[#F2EEEA] text-[#211A18]/50"
@@ -491,15 +513,16 @@ export default function OfferManager({ type }: Props) {
                       <div className="flex justify-end gap-2">
                         <button
                           type="button"
+                          disabled={uploadingImage || saving}
                           onClick={() => editOffer(offer)}
-                          className="grid h-9 w-9 place-items-center rounded-[10px] border border-[#211A18]/10 hover:bg-[#FAF8F6]"
+                          className="grid h-9 w-9 place-items-center rounded-[10px] border border-[#211A18]/10 hover:bg-[#FAF8F6] disabled:opacity-50"
                           title="Edit offer"
                         >
                           <Pencil size={14} />
                         </button>
                         <button
                           type="button"
-                          disabled={busyId === offer._id}
+                          disabled={busyId === offer._id || uploadingImage || saving}
                           onClick={() => void deleteOffer(offer)}
                           className="grid h-9 w-9 place-items-center rounded-[10px] border border-red-100 text-red-600 hover:bg-red-50 disabled:opacity-50"
                           title="Delete offer"

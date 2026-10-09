@@ -4,6 +4,11 @@ import mongoose, { Schema, Document, Model, Types } from "mongoose";
 export type OfferType = "buy_get" | "fixed_price_bundle";
 export type OfferHistoryAction = "created" | "updated" | "status_changed" | "deleted";
 
+export interface IOfferImage {
+  url: string;
+  publicId: string;
+}
+
 export interface IOfferHistory {
   action: OfferHistoryAction;
   name: string;
@@ -16,6 +21,8 @@ export interface IOfferHistory {
   productCount: number;
   categoryCount: number;
   isActive: boolean;
+  imageUrl?: string;
+  imagePublicId?: string;
   changedAt: Date;
   changedBy?: Types.ObjectId | null;
 }
@@ -30,6 +37,7 @@ export interface IOffer extends Document {
   appliesToAllProducts: boolean;
   productIds: Types.ObjectId[];
   categoryIds: Types.ObjectId[];
+  image: IOfferImage | null;
   isActive: boolean;
   isDeleted: boolean;
   history: IOfferHistory[];
@@ -58,6 +66,8 @@ const historySchema = new Schema<IOfferHistory>(
     productCount: { type: Number, min: 0, default: 0 },
     categoryCount: { type: Number, min: 0, default: 0 },
     isActive: { type: Boolean, default: true },
+    imageUrl: { type: String, trim: true, default: "" },
+    imagePublicId: { type: String, trim: true, default: "" },
     changedAt: { type: Date, default: Date.now },
     changedBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
   },
@@ -80,6 +90,13 @@ const offerSchema = new Schema<IOffer>(
     appliesToAllProducts: { type: Boolean, default: false },
     productIds: [{ type: Schema.Types.ObjectId, ref: "Product" }],
     categoryIds: [{ type: Schema.Types.ObjectId, ref: "Category" }],
+    image: {
+      type: new Schema<IOfferImage>({
+        url: { type: String, trim: true, required: true },
+        publicId: { type: String, trim: true, required: true },
+      }, { _id: false }),
+      default: null,
+    },
     isActive: { type: Boolean, default: true, index: true },
     isDeleted: { type: Boolean, default: false, index: true },
     history: { type: [historySchema], default: [] },

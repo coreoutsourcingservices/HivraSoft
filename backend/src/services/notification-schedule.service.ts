@@ -7,6 +7,7 @@ import User from "../models/User.model";
 import { matchingCustomerIds } from "./customer-admin.service";
 import { sendEmail } from "./mail.service";
 import { runDueCustomerPromotions, indiaDate, selectedDates } from "./promotion-date.service";
+import { runDuePersonalPromotions } from "./customer-promotion-message.service";
 
 const MINUTE_MS = 60_000;
 const INDIA_OFFSET = "+05:30";
@@ -193,6 +194,8 @@ export function startNotificationScheduleWorker() {
     try {
       const delivered = await runDueCustomerPromotions();
       if (delivered > 0) console.log(`🔔 ${delivered} customer-date promotion delivery(s).`);
+      const personal = await runDuePersonalPromotions();
+      if (personal > 0) console.log(`🔔 ${personal} customer-authored promotional notification(s) sent.`);
       const processed = await runDueNotificationSchedules(); if (processed > 0) console.log(`🔔 Notification scheduler processed ${processed} schedule(s).`);
     }
     catch (error) { console.error("NOTIFICATION SCHEDULER ERROR:", error); }
