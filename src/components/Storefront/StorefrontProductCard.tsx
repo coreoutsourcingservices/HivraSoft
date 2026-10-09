@@ -18,6 +18,10 @@ import {
   useFixedPriceOfferScope,
 } from "@/src/components/Offers/FixedPriceOfferScope";
 
+/* =========================================================
+   TYPES
+========================================================= */
+
 type Props = {
   product:
     CatalogProduct;
@@ -30,9 +34,15 @@ type Props = {
     | null;
 };
 
+/* =========================================================
+   PRODUCT CARD
+========================================================= */
+
 export default function StorefrontProductCard({
   product,
+
   overlay = false,
+
   offerContext = null,
 }: Props) {
   const commerce =
@@ -41,13 +51,13 @@ export default function StorefrontProductCard({
   const fixedPriceOffer =
     useFixedPriceOfferScope();
 
-  /*
-   * Explicit context Buy/Get page se aa sakta hai.
-   *
-   * Agar explicit context nahi hai aur current category
-   * Fixed Price Bundle scope ke andar hai, to bundle context
-   * automatically card se cart tak jayega.
-   */
+  /* =======================================================
+     OFFER CONTEXT
+
+     Fixed Price Bundle page par automatically
+     bundle context cart ko pass hoga.
+  ======================================================= */
+
   const resolvedOfferContext:
     | CartOfferContext
     | null =
@@ -82,6 +92,10 @@ export default function StorefrontProductCard({
         : null
     );
 
+  /* =======================================================
+     WISHLIST
+  ======================================================= */
+
   const wished =
     commerce.isWishlisted(
       product
@@ -92,6 +106,10 @@ export default function StorefrontProductCard({
       product
     );
 
+  /* =======================================================
+     IMAGES
+  ======================================================= */
+
   const hasSecondImage =
     Boolean(
       product.image2 &&
@@ -99,19 +117,27 @@ export default function StorefrontProductCard({
           product.image1
     );
 
+  /* =======================================================
+     PRICE
+  ======================================================= */
+
   const hasDiscount =
     product.originalPrice >
       product.showPrice &&
-    product.showPrice > 0;
+    product.showPrice >
+      0;
 
   return (
     <article
       className={`
         group/card
+
         w-full
         min-w-0
         max-w-full
+
         overflow-hidden
+
         bg-white
 
         ${
@@ -121,15 +147,21 @@ export default function StorefrontProductCard({
         }
       `}
     >
-      {/* IMAGE */}
+      {/* ===================================================
+          IMAGE
+      =================================================== */}
 
       <div
         className="
           relative
+
           w-full
           min-w-0
+
           overflow-hidden
+
           rounded-t-[13px]
+
           bg-[#F4F1EF]
         "
       >
@@ -139,10 +171,15 @@ export default function StorefrontProductCard({
           )}`}
           className="
             group/image
+
             relative
+
             block
+
             w-full
+
             cursor-pointer
+
             aspect-[0.78]
           "
         >
@@ -158,9 +195,12 @@ export default function StorefrontProductCard({
                 className={`
                   absolute
                   inset-0
+
                   h-full
                   w-full
+
                   object-cover
+
                   transition-all
                   duration-500
 
@@ -181,12 +221,17 @@ export default function StorefrontProductCard({
                   className="
                     absolute
                     inset-0
+
                     h-full
                     w-full
+
                     object-cover
+
                     opacity-0
+
                     transition-opacity
                     duration-500
+
                     md:group-hover/image:opacity-100
                   "
                 />
@@ -196,11 +241,15 @@ export default function StorefrontProductCard({
             <div
               className="
                 flex
+
                 h-full
                 w-full
+
                 items-center
                 justify-center
+
                 text-xs
+
                 text-black/35
               "
             >
@@ -209,25 +258,38 @@ export default function StorefrontProductCard({
           )}
         </Link>
 
-        {/* DISCOUNT */}
+        {/* =================================================
+            DISCOUNT
+        ================================================= */}
 
         {product.discountPercent >
         0 ? (
           <span
             className="
               absolute
+
               left-0
               top-3
+
               z-10
+
               rounded-r-[6px]
+
               bg-[#FF7545]
+
               px-2
               py-1.5
+
               text-[8px]
+
               font-bold
+
               whitespace-nowrap
+
               text-white
+
               sm:text-[9px]
+
               lg:px-2.5
               lg:text-[10px]
             "
@@ -239,7 +301,9 @@ export default function StorefrontProductCard({
           </span>
         ) : null}
 
-        {/* WISHLIST */}
+        {/* =================================================
+            WISHLIST
+        ================================================= */}
 
         <button
           type="button"
@@ -258,6 +322,7 @@ export default function StorefrontProductCard({
             event
           ) => {
             event.preventDefault();
+
             event.stopPropagation();
 
             void commerce.toggleWishlist(
@@ -266,25 +331,40 @@ export default function StorefrontProductCard({
           }}
           className="
             absolute
+
             right-2.5
             top-2.5
+
             z-20
+
             flex
+
             h-[32px]
             w-[32px]
+
             cursor-pointer
+
             items-center
             justify-center
+
             rounded-full
+
             border
             border-black/[0.06]
+
             bg-white/95
+
             p-0
+
             shadow-[0_2px_10px_rgba(0,0,0,.10)]
+
             transition-all
+
             hover:scale-105
             hover:bg-white
+
             disabled:cursor-default
+
             sm:right-3
             sm:top-3
             sm:h-[34px]
@@ -299,19 +379,25 @@ export default function StorefrontProductCard({
         </button>
       </div>
 
-      {/* DETAILS */}
+      {/* ===================================================
+          DETAILS
+      =================================================== */}
 
       <div
         className="
           min-w-0
+
           px-2.5
           pb-2.5
           pt-2.5
+
           sm:px-3
           sm:pt-3
         "
       >
-        {/* PRODUCT NAME */}
+        {/* =================================================
+            PRODUCT NAME
+        ================================================= */}
 
         <Link
           href={`/product/${encodeURIComponent(
@@ -322,15 +408,24 @@ export default function StorefrontProductCard({
           }
           className="
             block
+
             w-full
             min-w-0
+
             cursor-pointer
+
             truncate
+
             text-[10px]
+
             font-medium
+
             text-[#111111]
+
             min-[360px]:text-[11px]
+
             sm:text-[12px]
+
             lg:text-[13px]
           "
         >
@@ -339,15 +434,21 @@ export default function StorefrontProductCard({
           }
         </Link>
 
-        {/* PRICE + ADD TO BAG */}
+        {/* =================================================
+            PRICE + ADD TO BAG
+        ================================================= */}
 
         <div
           className="
             mt-2
+
             flex
+
             w-full
             min-w-0
+
             items-center
+
             gap-2
           "
         >
@@ -356,26 +457,36 @@ export default function StorefrontProductCard({
           <div
             className="
               flex
+
               min-w-0
               flex-1
+
               items-center
+
               gap-1
             "
           >
             <strong
               className="
                 shrink-0
+
                 text-[14px]
+
                 font-bold
+
                 text-black
+
                 min-[360px]:text-[15px]
+
                 sm:text-[16px]
+
                 lg:text-[17px]
               "
             >
               ₹
               {product.showPrice.toLocaleString(
                 "en-IN",
+
                 {
                   maximumFractionDigits:
                     2,
@@ -387,17 +498,24 @@ export default function StorefrontProductCard({
               <span
                 className="
                   min-w-0
+
                   truncate
+
                   text-[8px]
+
                   text-black/35
+
                   line-through
+
                   min-[390px]:text-[9px]
+
                   sm:text-[10px]
                 "
               >
                 ₹
                 {product.originalPrice.toLocaleString(
                   "en-IN",
+
                   {
                     maximumFractionDigits:
                       2,
@@ -407,7 +525,9 @@ export default function StorefrontProductCard({
             ) : null}
           </div>
 
-          {/* ADD TO BAG */}
+          {/* =================================================
+              ADD TO BAG
+          ================================================= */}
 
           <button
             type="button"
@@ -415,36 +535,57 @@ export default function StorefrontProductCard({
               event
             ) => {
               event.preventDefault();
+
               event.stopPropagation();
 
               void commerce.openAddToBag(
                 product,
+
                 resolvedOfferContext
               );
             }}
             className="
               flex
+
               h-[38px]
+
               w-[48%]
+
               shrink-0
+
               cursor-pointer
+
               items-center
               justify-center
+
               rounded-[5px]
+
               bg-[#EC4F83]
+
               px-2
+
               text-[8px]
+
               font-bold
+
               uppercase
+
               tracking-[0.02em]
+
               whitespace-nowrap
+
               text-white
+
               transition-colors
+
               hover:bg-[#B31345]
+
               min-[360px]:h-[40px]
               min-[360px]:text-[9px]
+
               sm:h-[42px]
               sm:text-[10px]
+
               lg:h-[44px]
               lg:text-[11px]
             "
@@ -464,7 +605,8 @@ export default function StorefrontProductCard({
 function HeartIcon({
   filled,
 }: {
-  filled: boolean;
+  filled:
+    boolean;
 }) {
   return (
     <svg
@@ -483,6 +625,7 @@ function HeartIcon({
       aria-hidden="true"
       className="
         block
+
         transition-all
         duration-200
       "

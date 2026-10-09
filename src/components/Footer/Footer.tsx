@@ -24,9 +24,6 @@ type FooterLink = {
 
 /* =========================================================
    CUSTOMER SUPPORT
-
-   Ye category data nahi hai,
-   isliye static rahega.
 ========================================================= */
 
 const CUSTOMER_SUPPORT = [
@@ -95,16 +92,6 @@ function categoryHref(
 
 /* =========================================================
    COLLECT SUBCATEGORIES
-
-   Example:
-
-   Women
-   ├── Bra
-   │   ├── Sports Bra
-   │   └── Padded Bra
-   └── Panty
-
-   Sab correct path ke saath aayenge.
 ========================================================= */
 
 function collectSubCategoryLinks(
@@ -165,27 +152,18 @@ function collectSubCategoryLinks(
 
 /* =========================================================
    FOOTER
-
-   SERVER COMPONENT
-
-   Category API client par nahi chalegi.
-   Server render se pehle data ready hoga.
 ========================================================= */
 
 export default async function Footer() {
   /* =======================================================
      SERVER SIDE CATEGORY FETCH
-
-     NO useEffect
-     NO setState
-     NO client-side layout jump
   ======================================================= */
 
   const categoryTree =
     await getActiveCategoryTree();
 
   /* =======================================================
-     ONLY ACTIVE REAL ROOTS
+     ACTIVE ROOT CATEGORIES
   ======================================================= */
 
   const categories =
@@ -211,13 +189,7 @@ export default async function Footer() {
       );
 
   /* =======================================================
-     FIND MORE
-
-     Admin me More create nahi kiya:
-     null.
-
-     Inactive hai:
-     active API tree me nahi hoga.
+     MORE CATEGORY
   ======================================================= */
 
   const moreCategory =
@@ -234,10 +206,6 @@ export default async function Footer() {
 
   /* =======================================================
      QUICK LINKS
-
-     - main/root categories
-     - More khud show nahi hoga
-     - More ke children show honge
   ======================================================= */
 
   const quickLinks:
@@ -298,10 +266,6 @@ export default async function Footer() {
 
   /* =======================================================
      SHOP CATEGORIES
-
-     All subcategories / nested subcategories.
-
-     More excluded.
   ======================================================= */
 
   const allShopLinks:
@@ -365,8 +329,11 @@ export default async function Footer() {
     <footer
       className="
         w-full
+
         overflow-hidden
+
         bg-[#FFFDFC]
+
         text-[#302527]
       "
     >
@@ -377,7 +344,9 @@ export default async function Footer() {
       <section
         className="
           relative
+
           w-full
+
           overflow-hidden
 
           border-t
@@ -386,7 +355,7 @@ export default async function Footer() {
           bg-[#FBE9E6]
         "
       >
-        {/* BACKGROUND IMAGE */}
+        {/* BACKGROUND */}
 
         <div
           className="
@@ -405,11 +374,10 @@ export default async function Footer() {
             "
           />
 
-          {/* CENTER READABILITY */}
-
           <div
             className="
               absolute
+
               inset-y-0
               left-1/2
 
@@ -418,11 +386,15 @@ export default async function Footer() {
               -translate-x-1/2
 
               bg-gradient-to-r
+
               from-transparent
+
               via-[#FFF8F5]/80
+
               to-transparent
 
               max-md:w-full
+
               max-md:via-[#FFF8F5]/88
             "
           />
@@ -438,7 +410,9 @@ export default async function Footer() {
             mx-auto
 
             flex
+
             min-h-[350px]
+
             max-w-[1600px]
 
             items-center
@@ -457,6 +431,7 @@ export default async function Footer() {
           <div
             className="
               w-full
+
               max-w-[610px]
 
               text-center
@@ -465,8 +440,11 @@ export default async function Footer() {
             <p
               className="
                 text-[8px]
+
                 font-semibold
+
                 uppercase
+
                 tracking-[0.38em]
 
                 text-[#B84058]
@@ -484,7 +462,9 @@ export default async function Footer() {
                 font-serif
 
                 text-[26px]
+
                 leading-[1.06]
+
                 tracking-[-0.03em]
 
                 text-[#2B2224]
@@ -507,10 +487,13 @@ export default async function Footer() {
             <p
               className="
                 mx-auto
+
                 mt-4
+
                 max-w-[485px]
 
                 text-[10px]
+
                 leading-5
 
                 text-[#675D5F]
@@ -524,8 +507,6 @@ export default async function Footer() {
               from Hivra Soft.
             </p>
 
-            {/* CLIENT FORM ONLY */}
-
             <NewsletterForm />
           </div>
         </div>
@@ -538,6 +519,7 @@ export default async function Footer() {
       <section
         className="
           border-t
+
           border-[#F1D9DC]
 
           bg-[#FFFDFC]
@@ -557,6 +539,9 @@ export default async function Footer() {
             mx-auto
 
             grid
+
+            w-full
+
             max-w-[1500px]
 
             gap-x-8
@@ -574,127 +559,173 @@ export default async function Footer() {
           <div
             className="
               min-w-0
+
+              text-center
+
+              sm:col-span-2
+
+              lg:col-span-1
+
+              lg:text-left
             "
           >
+            {/* LOGO */}
+
             <Link
               href="/"
               className="
-                inline-block
+                flex
+
+                w-full
+
+                justify-center
+
+                lg:w-auto
+
+                lg:justify-start
               "
             >
               <Image
-                src="/images/logos/hivra-soft-logo.png"
-                alt="Hivra Soft"
-                width={220}
-                height={90}
+                src="/images/logos/hivra-desktop.png.png"
+                alt="HivraSoft"
+                width={230}
+                height={62}
                 className="
                   h-auto
-                  w-[165px]
+
+                  w-[190px]
+
+                  sm:w-[205px]
 
                   lg:w-[185px]
                 "
               />
             </Link>
 
+            {/* TAGLINE */}
+
             <p
               className="
                 mt-5
 
                 text-[8px]
+
                 font-bold
+
                 uppercase
+
                 tracking-[0.30em]
 
                 text-[#A52C47]
               "
             >
-              Fashion Lives In
-              Kindness
+              Fashion Lives In Kindness
             </p>
+
+            {/* DESCRIPTION */}
 
             <p
               className="
+                mx-auto
+
                 mt-4
-                max-w-[300px]
+
+                max-w-[320px]
 
                 text-[11px]
+
                 leading-6
 
                 text-[#65595B]
+
+                lg:mx-0
               "
             >
               Hivra Soft brings you
-              comfortable, stylish
-              and confidence-boosting
-              innerwear and apparel
-              for every you. Because
-              feeling good is always
-              in fashion.
+              comfortable, stylish and
+              confidence-boosting
+              innerwear and apparel for
+              every you. Because feeling
+              good is always in fashion.
             </p>
+
+            {/* SOCIAL ICONS */}
 
             <div
               className="
                 mt-5
 
                 flex
+
                 flex-wrap
-                gap-2
+
+                justify-center
+
+                gap-2.5
+
+                lg:justify-start
               "
             >
               <SocialLink
-                href="#"
+                href="https://www.instagram.com/hivrasoft/"
                 label="Instagram"
               >
                 IG
               </SocialLink>
 
               <SocialLink
-                href="#"
+                href="https://www.facebook.com/hivrasoft/"
                 label="Facebook"
               >
                 f
               </SocialLink>
 
               <SocialLink
-                href="#"
+                href="https://www.youtube.com/@HivraSoft"
                 label="YouTube"
               >
                 ▶
               </SocialLink>
 
               <SocialLink
-                href="#"
+                href="https://in.pinterest.com/HivraSoft/"
                 label="Pinterest"
               >
                 P
-              </SocialLink>
-
-              <SocialLink
-                href="#"
-                label="X"
-              >
-                X
               </SocialLink>
             </div>
           </div>
 
           {/* =================================================
               QUICK LINKS
-
-              BACKEND ROOT CATEGORIES
-              + MORE CHILDREN
           ================================================= */}
 
           <DynamicFooterColumn
             title="Quick Links"
-            links={[...quickLinks.filter((link) => link.href !== "/blog"), { id: "footer-blog", name: "Blog", href: "/blog" }]}
+            links={[
+              ...quickLinks.filter(
+                (
+                  link,
+                ) =>
+                  link.href !==
+                  "/blog",
+              ),
+
+              {
+                id:
+                  "footer-blog",
+
+                name:
+                  "Blog",
+
+                href:
+                  "/blog",
+              },
+            ]}
           />
 
           {/* =================================================
               SHOP CATEGORIES
-
-              BACKEND SUBCATEGORIES
-              2 COLUMNS
           ================================================= */}
 
           <DynamicFooterColumn
@@ -706,23 +737,250 @@ export default async function Footer() {
           />
 
           {/* =================================================
+              MOBILE ONLY
+
+              LEFT:
               CUSTOMER SUPPORT
-          ================================================= */}
 
-          <StaticFooterColumn
-            title="Customer Support"
-            links={
-              CUSTOMER_SUPPORT
-            }
-          />
-
-          {/* =================================================
+              RIGHT:
               CONTACT US
           ================================================= */}
 
           <div
             className="
+              w-full
+
               min-w-0
+              max-w-full
+
+              sm:col-span-2
+
+              lg:hidden
+            "
+          >
+            <div
+              className="
+                grid
+
+                w-full
+
+                min-w-0
+
+                grid-cols-[minmax(0,1fr)_minmax(0,1fr)]
+
+                gap-x-3
+
+                min-[390px]:gap-x-5
+
+                sm:gap-x-8
+              "
+            >
+              {/* =============================================
+                  LEFT - CUSTOMER SUPPORT
+              ============================================= */}
+
+              <div
+                className="
+                  min-w-0
+                "
+              >
+                <FooterTitle>
+                  Customer Support
+                </FooterTitle>
+
+                <ul
+                  className="
+                    mt-5
+
+                    flex
+
+                    min-w-0
+
+                    flex-col
+
+                    gap-2.5
+                  "
+                >
+                  {CUSTOMER_SUPPORT.map(
+                    (
+                      link,
+                    ) => (
+                      <li
+                        key={`mobile-support-${link.name}`}
+                        className="
+                          min-w-0
+                        "
+                      >
+                        <Link
+                          href={
+                            link.href
+                          }
+                          className="
+                            block
+
+                            min-w-0
+
+                            break-words
+
+                            text-[8.5px]
+
+                            leading-[1.55]
+
+                            text-[#655A5C]
+
+                            transition
+
+                            hover:text-[#B32E4D]
+
+                            hover:underline
+
+                            hover:underline-offset-2
+
+                            min-[390px]:text-[9.5px]
+
+                            sm:text-[11px]
+                          "
+                        >
+                          {
+                            link.name
+                          }
+                        </Link>
+                      </li>
+                    ),
+                  )}
+                </ul>
+              </div>
+
+              {/* =============================================
+                  RIGHT - CONTACT US
+              ============================================= */}
+
+              <div
+                className="
+                  min-w-0
+                "
+              >
+                <FooterTitle>
+                  Contact Us
+                </FooterTitle>
+
+                <div
+                  className="
+                    mt-5
+
+                    flex
+
+                    min-w-0
+
+                    flex-col
+
+                    gap-4
+                  "
+                >
+                  {/* CALL */}
+
+                  <MobileContactItem
+                    icon={
+                      <PhoneIcon />
+                    }
+                  >
+                    <strong>
+                      Call Us:-
+                    </strong>
+
+                    <a
+                      href="tel:+919420980536"
+                      className="
+                        break-words
+
+                        font-semibold
+                      "
+                    >
+                      +91 9420980536
+                    </a>
+                  </MobileContactItem>
+
+                  {/* EMAIL */}
+
+                  <MobileContactItem
+                    icon={
+                      <MailIcon />
+                    }
+                  >
+                    <strong>
+                      Email:-
+                    </strong>
+
+                    <a
+                      href="mailto:support@hivrasoft.com"
+                      className="
+                        break-all
+
+                        font-semibold
+                      "
+                    >
+                      support@hivrasoft.com
+                    </a>
+                  </MobileContactItem>
+
+                  {/* ADDRESS */}
+
+                  <MobileContactItem
+                    icon={
+                      <LocationIcon />
+                    }
+                  >
+                    <strong>
+                      Address:-
+                    </strong>
+
+                    <span
+                      className="
+                        break-words
+                      "
+                    >
+                      E 2, Sector 63,
+                      Noida, Uttar
+                      Pradesh, 201301
+                    </span>
+                  </MobileContactItem>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* =================================================
+              DESKTOP CUSTOMER SUPPORT
+          ================================================= */}
+
+          <div
+            className="
+              hidden
+
+              min-w-0
+
+              lg:block
+            "
+          >
+            <StaticFooterColumn
+              title="Customer Support"
+              links={
+                CUSTOMER_SUPPORT
+              }
+            />
+          </div>
+
+          {/* =================================================
+              DESKTOP CONTACT
+          ================================================= */}
+
+          <div
+            className="
+              hidden
+
+              min-w-0
+
+              lg:block
             "
           >
             <FooterTitle>
@@ -732,41 +990,27 @@ export default async function Footer() {
             <div
               className="
                 mt-5
+
                 space-y-5
               "
             >
               <ContactItem
                 icon={
-                  <LocationIcon />
-                }
-              >
-                <strong>
-                  Hivra Soft
-                </strong>
-
-                <span>
-                  India
-                </span>
-              </ContactItem>
-
-              <ContactItem
-                icon={
                   <PhoneIcon />
                 }
               >
+                <strong>
+                  Call Us:-
+                </strong>
+
                 <a
-                  href="tel:+919876543210"
+                  href="tel:+919420980536"
                   className="
                     font-semibold
                   "
                 >
-                  +91 98765 43210
+                  +91 9420980536
                 </a>
-
-                <span>
-                  Mon - Sat,
-                  10 AM - 6 PM
-                </span>
               </ContactItem>
 
               <ContactItem
@@ -774,10 +1018,15 @@ export default async function Footer() {
                   <MailIcon />
                 }
               >
+                <strong>
+                  Email:-
+                </strong>
+
                 <a
                   href="mailto:support@hivrasoft.com"
                   className="
                     break-all
+
                     font-semibold
                   "
                 >
@@ -787,16 +1036,21 @@ export default async function Footer() {
 
               <ContactItem
                 icon={
-                  <ChatIcon />
+                  <LocationIcon />
                 }
               >
                 <strong>
-                  Live Chat
+                  Address:-
                 </strong>
 
-                <span>
-                  We&apos;re here
-                  to help!
+                <span
+                  className="
+                    break-words
+                  "
+                >
+                  E 2, Sector 63,
+                  Noida, Uttar Pradesh,
+                  201301
                 </span>
               </ContactItem>
             </div>
@@ -811,6 +1065,7 @@ export default async function Footer() {
       <section
         className="
           border-y
+
           border-[#EFD4D7]
 
           bg-[#FFF6F3]
@@ -828,6 +1083,7 @@ export default async function Footer() {
             mx-auto
 
             grid
+
             max-w-[1450px]
 
             grid-cols-2
@@ -879,8 +1135,11 @@ export default async function Footer() {
       <section
         className="
           bg-gradient-to-r
+
           from-[#C8818C]
+
           via-[#D39AA1]
+
           to-[#C8818C]
 
           px-4
@@ -898,9 +1157,11 @@ export default async function Footer() {
             mx-auto
 
             flex
+
             max-w-[1450px]
 
             flex-col
+
             items-center
             justify-between
 
@@ -909,12 +1170,14 @@ export default async function Footer() {
             text-center
 
             lg:flex-row
+
             lg:text-left
           "
         >
           <p
             className="
               text-[8px]
+
               text-white/95
 
               sm:text-[9px]
@@ -927,7 +1190,9 @@ export default async function Footer() {
           <div
             className="
               flex
+
               flex-wrap
+
               justify-center
 
               gap-x-4
@@ -968,6 +1233,7 @@ export default async function Footer() {
           <p
             className="
               text-[8px]
+
               text-white/95
 
               sm:text-[9px]
@@ -992,7 +1258,8 @@ function DynamicFooterColumn({
   links,
   columns = 1,
 }: {
-  title: string;
+  title:
+    string;
 
   links:
     FooterLink[];
@@ -1017,9 +1284,11 @@ function DynamicFooterColumn({
             mt-5
 
             ${
-              columns === 2
+              columns ===
+              2
                 ? `
                   grid
+
                   grid-cols-2
 
                   gap-x-5
@@ -1029,7 +1298,9 @@ function DynamicFooterColumn({
                 `
                 : `
                   flex
+
                   flex-col
+
                   gap-2.5
                 `
             }
@@ -1057,12 +1328,15 @@ function DynamicFooterColumn({
                     break-words
 
                     text-[10px]
+
                     leading-[1.5]
 
                     text-[#655A5C]
 
                     hover:text-[#B32E4D]
+
                     hover:underline
+
                     hover:underline-offset-2
 
                     sm:text-[11px]
@@ -1086,6 +1360,7 @@ function DynamicFooterColumn({
             mt-5
 
             text-[10px]
+
             text-black/35
           "
         >
@@ -1130,6 +1405,7 @@ function StaticFooterColumn({
           mt-5
 
           flex
+
           flex-col
 
           gap-2.5
@@ -1152,12 +1428,15 @@ function StaticFooterColumn({
                   min-h-[18px]
 
                   text-[10px]
+
                   leading-[1.5]
 
                   text-[#655A5C]
 
                   hover:text-[#B32E4D]
+
                   hover:underline
+
                   hover:underline-offset-2
 
                   sm:text-[11px]
@@ -1191,13 +1470,17 @@ function FooterTitle({
     <>
       <h3
         className="
-          text-[10px]
+          text-[9px]
+
           font-bold
 
           uppercase
-          tracking-[0.18em]
+
+          tracking-[0.14em]
 
           text-[#A62B47]
+
+          min-[390px]:text-[10px]
 
           sm:text-[11px]
         "
@@ -1208,9 +1491,11 @@ function FooterTitle({
       <span
         className="
           mt-2
+
           block
 
           h-[2px]
+
           w-8
 
           bg-[#DF5E76]
@@ -1240,16 +1525,20 @@ function SocialLink({
 }) {
   return (
     <a
-      href={href}
+      href={
+        href
+      }
       aria-label={
         label
       }
       target="_blank"
-      rel="noreferrer"
+      rel="noopener noreferrer"
       className="
         grid
+
         h-9
         w-9
+
         place-items-center
 
         rounded-full
@@ -1257,10 +1546,15 @@ function SocialLink({
         bg-[#FBE5E5]
 
         text-[12px]
+
         font-bold
+
         text-[#B52C4A]
 
+        transition
+
         hover:bg-[#B52C4A]
+
         hover:text-white
       "
     >
@@ -1270,10 +1564,13 @@ function SocialLink({
 }
 
 /* =========================================================
-   CONTACT
+   MOBILE CONTACT
+
+   Mobile me compact rakha hai
+   taaki right column screen se bahar na nikle.
 ========================================================= */
 
-function ContactItem({
+function MobileContactItem({
   icon,
   children,
 }: {
@@ -1287,14 +1584,21 @@ function ContactItem({
     <div
       className="
         flex
-        gap-3
+
+        w-full
+
+        min-w-0
+
+        gap-2
       "
     >
       <span
         className="
           flex
-          h-8
-          w-8
+
+          h-7
+          w-7
+
           shrink-0
 
           items-center
@@ -1313,10 +1617,90 @@ function ContactItem({
       <div
         className="
           flex
+
           min-w-0
+
+          flex-1
+
+          flex-col
+
+          text-[8px]
+
+          leading-[1.55]
+
+          text-[#4D4143]
+
+          min-[390px]:text-[9px]
+
+          sm:text-[10px]
+        "
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================
+   DESKTOP CONTACT
+========================================================= */
+
+function ContactItem({
+  icon,
+  children,
+}: {
+  icon:
+    ReactNode;
+
+  children:
+    ReactNode;
+}) {
+  return (
+    <div
+      className="
+        flex
+
+        w-full
+
+        min-w-0
+
+        gap-3
+      "
+    >
+      <span
+        className="
+          flex
+
+          h-8
+          w-8
+
+          shrink-0
+
+          items-center
+          justify-center
+
+          rounded-full
+
+          bg-[#FCE3E4]
+
+          text-[#C23B57]
+        "
+      >
+        {icon}
+      </span>
+
+      <div
+        className="
+          flex
+
+          min-w-0
+
+          flex-1
+
           flex-col
 
           text-[10px]
+
           leading-5
 
           text-[#4D4143]
@@ -1350,12 +1734,14 @@ function Benefit({
     <div
       className="
         flex
+
         items-center
         justify-center
 
         gap-3
 
         md:border-r
+
         md:border-[#ECCED2]
 
         md:last:border-r-0
@@ -1364,8 +1750,10 @@ function Benefit({
       <span
         className="
           flex
+
           h-10
           w-10
+
           shrink-0
 
           items-center
@@ -1385,6 +1773,7 @@ function Benefit({
         <p
           className="
             text-[10px]
+
             font-semibold
 
             sm:text-[11px]
@@ -1398,6 +1787,7 @@ function Benefit({
             mt-0.5
 
             text-[8px]
+
             text-black/50
 
             sm:text-[9px]
@@ -1426,9 +1816,12 @@ function BottomLink({
 }) {
   return (
     <Link
-      href={href}
+      href={
+        href
+      }
       className="
         text-[8px]
+
         text-white/95
 
         hover:underline
@@ -1448,14 +1841,15 @@ function BottomLink({
 function MailIcon() {
   return (
     <svg
-      width="18"
-      height="18"
+      width="17"
+      height="17"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
       strokeWidth="1.8"
       strokeLinecap="round"
       strokeLinejoin="round"
+      aria-hidden="true"
     >
       <rect
         x="3"
@@ -1473,14 +1867,15 @@ function MailIcon() {
 function LocationIcon() {
   return (
     <svg
-      width="18"
-      height="18"
+      width="17"
+      height="17"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
       strokeWidth="1.8"
       strokeLinecap="round"
       strokeLinejoin="round"
+      aria-hidden="true"
     >
       <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" />
 
@@ -1496,33 +1891,17 @@ function LocationIcon() {
 function PhoneIcon() {
   return (
     <svg
-      width="18"
-      height="18"
+      width="17"
+      height="17"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
       strokeWidth="1.8"
       strokeLinecap="round"
       strokeLinejoin="round"
+      aria-hidden="true"
     >
       <path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.7 2.6a2 2 0 0 1-.5 2.1L8 9.7a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.8.3 1.7.6 2.6.7a2 2 0 0 1 2 2.3Z" />
-    </svg>
-  );
-}
-
-function ChatIcon() {
-  return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z" />
     </svg>
   );
 }
@@ -1538,6 +1917,7 @@ function TruckIcon() {
       strokeWidth="1.8"
       strokeLinecap="round"
       strokeLinejoin="round"
+      aria-hidden="true"
     >
       <path d="M3 5h11v11H3Z" />
 
@@ -1569,6 +1949,7 @@ function PackageIcon() {
       strokeWidth="1.8"
       strokeLinecap="round"
       strokeLinejoin="round"
+      aria-hidden="true"
     >
       <path d="m12 2 9 5-9 5-9-5 9-5Z" />
 
@@ -1592,6 +1973,7 @@ function RefreshIcon() {
       strokeWidth="1.8"
       strokeLinecap="round"
       strokeLinejoin="round"
+      aria-hidden="true"
     >
       <path d="M20 6v5h-5" />
 
@@ -1615,6 +1997,7 @@ function ShieldIcon() {
       strokeWidth="1.8"
       strokeLinecap="round"
       strokeLinejoin="round"
+      aria-hidden="true"
     >
       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
 

@@ -7,17 +7,25 @@ import "./globals.css";
 import Loader from "@/src/components/Loader/Loader";
 
 import Footer from "@/src/components/Footer/Footer";
+
 import StorefrontFooter from "@/src/components/Footer/StorefrontFooter";
 
 import {
   StorefrontCommerceProvider,
 } from "@/src/components/Storefront/StorefrontCommerceProvider";
 
+import MonthlyPromotionReminder from "@/src/components/Storefront/MonthlyPromotionReminder";
+
+import ProfileCompletionPrompt from "@/src/components/Storefront/ProfileCompletionPrompt";
+
 import TrafficSourceCapture from "@/src/components/Storefront/TrafficSourceCapture";
+
+import ScrollToTopOnRefresh from "@/src/components/Storefront/ScrollToTopOnRefresh";
 
 export const metadata: Metadata =
   {
-    title: "HivraSoft",
+    title:
+      "HivraSoft",
 
     description:
       "HivraSoft online store",
@@ -39,25 +47,43 @@ export default function RootLayout({
           min-h-screen
         "
       >
-        {/* ===============================================
-            HOME PAGE LOADER
+        {/* =============================================
+            GLOBAL REFRESH SCROLL FIX
 
-            Loader.tsx ke andar pathname check hai.
-            Sirf "/" par show hoga.
+            Refresh hone par page top se open hoga.
+        ============================================= */}
 
-            /account/thanks par show nahi hoga.
-        =============================================== */}
+        <ScrollToTopOnRefresh />
 
         <Loader />
-
-        {/* ===============================================
-            STOREFRONT
-        =============================================== */}
 
         <StorefrontCommerceProvider>
           <TrafficSourceCapture />
 
           {children}
+
+          {/* =============================================
+              MONTHLY PROMOTION REMINDER
+          ============================================= */}
+
+          <MonthlyPromotionReminder />
+
+          {/* =============================================
+              PROFILE COMPLETION NOTIFICATIONS
+
+              Birthday
+              Anniversary
+              Gender
+          ============================================= */}
+
+          <ProfileCompletionPrompt />
+
+          {/* =============================================
+              FOOTER
+
+              Thanks page hide logic
+              StorefrontFooter ke andar hai.
+          ============================================= */}
 
           <StorefrontFooter>
             <Footer />

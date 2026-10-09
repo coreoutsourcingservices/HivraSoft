@@ -2774,6 +2774,11 @@ export default function Header() {
                   border-black/[0.08]
 
                   bg-white
+
+                  [&_button]:!bg-transparent
+                  [&_button]:!text-black
+                  [&_button]:!shadow-none
+                  [&_button>span]:!text-black
                 "
               >
                 <Account
