@@ -2,13 +2,19 @@
 
 import {
   FormEvent,
-  useState,
   type ReactNode,
 } from "react";
 
+import {
+  useState,
+} from "react";
+
 /* =========================================================
-   NEWSLETTER FORM
+   NEWSLETTER / MAIL FORM
 ========================================================= */
+
+const SUPPORT_EMAIL =
+  "support@hivrasoft.com";
 
 export default function NewsletterForm() {
   const [
@@ -17,34 +23,41 @@ export default function NewsletterForm() {
   ] =
     useState("");
 
-  const [
-    success,
-    setSuccess,
-  ] =
-    useState(false);
-
   function handleSubscribe(
     event:
       FormEvent<HTMLFormElement>,
   ) {
     event.preventDefault();
 
+    const userEmail =
+      email.trim();
+
     if (
-      !email.trim()
+      !userEmail
     ) {
       return;
     }
 
-    /*
-     * Later yaha newsletter API
-     * connect kar sakte ho.
-     */
+    const subject =
+      "HivraSoft Website Enquiry";
 
-    setSuccess(
-      true,
-    );
+    const body =
+      `Hi HivraSoft,\n\n` +
+      `I would like to get in touch with you.\n\n` +
+      `My email: ${userEmail}\n\n` +
+      `Thank you.`;
 
-    setEmail("");
+    const mailToUrl =
+      `mailto:${SUPPORT_EMAIL}` +
+      `?subject=${encodeURIComponent(
+        subject,
+      )}` +
+      `&body=${encodeURIComponent(
+        body,
+      )}`;
+
+    window.location.href =
+      mailToUrl;
   }
 
   return (
@@ -148,7 +161,7 @@ export default function NewsletterForm() {
             sm:text-[10px]
           "
         >
-          Subscribe
+          Mail To Us
 
           <span
             className="
@@ -207,22 +220,6 @@ export default function NewsletterForm() {
           Style Tips & More
         </MiniFeature>
       </div>
-
-      {success ? (
-        <p
-          className="
-            mt-3
-
-            text-[9px]
-            font-medium
-
-            text-[#AD304C]
-          "
-        >
-          Thanks for joining
-          Hivra Soft!
-        </p>
-      ) : null}
     </>
   );
 }

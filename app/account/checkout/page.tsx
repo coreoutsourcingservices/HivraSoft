@@ -2,6 +2,11 @@
 
 import Link from "next/link";
 
+import {
+  loadRazorpayScript,
+  razorpayFailureMessage,
+} from "@/lib/razorpay-loader";
+
 
 import {
   useEffect,
@@ -32,18 +37,106 @@ import Header from "@/src/components/Header/Header";
 import AddressModal from "@/src/components/Checkout/AddressModal";
 
 import {
+  clearCheckoutDraft,
   createCheckoutAddress,
   createCodOrder,
+  createRazorpayOrder,
   getCheckoutAddresses,
   getCheckoutCart,
   previewDeliveryCharge,
-  saveCheckoutDraft,
   saveLastOrder,
   setDefaultCheckoutAddress,
+  verifyRazorpayPayment,
   type CheckoutAddress,
   type CheckoutCart,
   type PaymentMethod,
 } from "@/lib/checkout";
+
+/* =========================================================
+   RAZORPAY TYPES
+========================================================= */
+
+type RazorpaySuccessResponse = {
+  razorpay_payment_id:
+    string;
+
+  razorpay_order_id:
+    string;
+
+  razorpay_signature:
+    string;
+};
+
+type RazorpayOptions = {
+  key:
+    string;
+
+  amount:
+    number;
+
+  currency:
+    string;
+
+  name:
+    string;
+
+  description:
+    string;
+
+  order_id:
+    string;
+
+  prefill?: {
+    name?:
+      string;
+
+    email?:
+      string;
+
+    contact?:
+      string;
+  };
+
+  theme?: {
+    color?:
+      string;
+  };
+
+  handler: (
+    response:
+      RazorpaySuccessResponse
+  ) => void;
+
+  modal?: {
+    ondismiss?:
+      () => void;
+  };
+};
+
+type RazorpayInstance = {
+  open:
+    () => void;
+
+  on?: (
+    event:
+      string,
+
+    callback: (
+      response:
+        unknown
+    ) => void
+  ) => void;
+};
+
+declare global {
+  interface Window {
+    Razorpay?: new (
+      options:
+        RazorpayOptions
+    ) =>
+      RazorpayInstance;
+  }
+}
 
 /* =========================================================
    EMPTY ADDRESS
@@ -819,28 +912,221 @@ export default function CheckoutPage() {
 
       /* ===================================================
          ONLINE PAYMENT
+         DIRECT RAZORPAY FROM CHECKOUT
       =================================================== */
 
       if (
         paymentMethod ===
         "online"
       ) {
-        saveCheckoutDraft({
-          address:
-            selectedAddress,
+        try {
+          setSubmitting(
+            true
+          );
 
-          paymentMethod:
-            "online",
+          setError(
+            ""
+          );
 
-          savedAt:
-            Date.now(),
-        });
+          const loaded =
+            await loadRazorpayScript();
 
-        router.push(
-          "/account/payment"
-        );
+          if (
+            !loaded ||
+            !window.Razorpay
+          ) {
+            throw new Error(
+              "Unable to load the payment gateway. Please check your connection and try again."
+            );
+          }
 
-        return;
+          const paymentOrder =
+            await createRazorpayOrder(
+              selectedAddress
+            );
+
+          const key =
+            paymentOrder.key ||
+            process.env
+              .NEXT_PUBLIC_RAZORPAY_KEY_ID ||
+            "";
+
+          if (
+            !paymentOrder
+              .razorpayOrderId
+          ) {
+            throw new Error(
+              "Razorpay order ID was not returned by server."
+            );
+          }
+
+          if (
+            !key
+          ) {
+            throw new Error(
+              "Razorpay public key is not configured."
+            );
+          }
+
+          const instance =
+            new window.Razorpay({
+              key,
+
+              amount:
+                paymentOrder.amount,
+
+              currency:
+                paymentOrder.currency ||
+                "INR",
+
+              name:
+                "HivraSoft",
+
+              description:
+                paymentOrder.orderNumber
+                  ? `Order ${paymentOrder.orderNumber}`
+                  : "HivraSoft Order",
+
+              order_id:
+                paymentOrder.razorpayOrderId,
+
+              prefill: {
+                name:
+                  selectedAddress.name,
+
+                contact:
+                  selectedAddress.phone,
+              },
+
+              theme: {
+                color:
+                  "#B31345",
+              },
+
+              handler:
+                async (
+                  response
+                ) => {
+                  try {
+                    const verified =
+                      await verifyRazorpayPayment(
+                        {
+                          razorpay_order_id:
+                            response.razorpay_order_id,
+
+                          razorpay_payment_id:
+                            response.razorpay_payment_id,
+
+                          razorpay_signature:
+                            response.razorpay_signature,
+
+                          internalOrderId:
+                            paymentOrder.internalOrderId ||
+                            undefined,
+                        }
+                      );
+
+                    saveLastOrder(
+                      verified
+                    );
+
+                    clearCheckoutDraft();
+
+                    window.dispatchEvent(
+                      new Event(
+                        "hivrasoft-cart-updated"
+                      )
+                    );
+
+                    window.dispatchEvent(
+                      new Event(
+                        "hivra:store-changed"
+                      )
+                    );
+
+                    const orderId =
+                      verified.id ||
+                      paymentOrder.internalOrderId;
+
+                    router.replace(
+                      orderId
+                        ? `/account/thanks?orderId=${encodeURIComponent(
+                            orderId
+                          )}`
+                        : "/account/thanks"
+                    );
+                  } catch (
+                    verifyError
+                  ) {
+                    console.error(
+                      "RAZORPAY VERIFY ERROR:",
+                      verifyError
+                    );
+
+                    setSubmitting(
+                      false
+                    );
+
+                    setError(
+                      verifyError instanceof
+                        Error
+                        ? verifyError.message
+                        : "Payment verification failed."
+                    );
+                  }
+                },
+
+              modal: {
+                ondismiss:
+                  () => {
+                    setSubmitting(
+                      false
+                    );
+                  },
+              },
+            });
+
+          instance.on?.(
+            "payment.failed",
+            (
+              response
+            ) => {
+              setSubmitting(
+                false
+              );
+
+              setError(
+                razorpayFailureMessage(
+                  response
+                )
+              );
+            }
+          );
+
+          instance.open();
+
+          return;
+        } catch (
+          paymentError
+        ) {
+          console.error(
+            "START RAZORPAY ERROR:",
+            paymentError
+          );
+
+          setSubmitting(
+            false
+          );
+
+          setError(
+            paymentError instanceof
+              Error
+              ? paymentError.message
+              : "Unable to start payment."
+          );
+
+          return;
+        }
       }
 
       /* ===================================================
@@ -1586,7 +1872,7 @@ export default function CheckoutPage() {
                             deliveryCharge
                           )}.`
                         : "Cash on Delivery selected. No COD charge is applicable for this order."
-                    : "Online payment will continue securely to the payment page."}
+                    : "Online payment will open Razorpay securely from checkout."}
                 </p>
               </div>
             </CheckoutCard>

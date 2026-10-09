@@ -1,10 +1,6 @@
 "use client";
 
-
-
 import Link from "next/link";
-
-
 
 import {
 
@@ -15,8 +11,6 @@ import {
   useState,
 
 } from "react";
-
-
 
 import {
 
@@ -2845,16 +2839,26 @@ export default function CartPage() {
 
 
                   {/* =================================================
-                      DYNAMIC COUPONS
+                      DISCOUNT CODE
+
+                      IMPORTANT:
+                      - Available coupon codes cart page par show nahi honge.
+                      - User khud code enter karega.
+                      - Apply hone ke baad backend se jo actual codeDiscount
+                        aayega wahi yahan aur Price Details me show hoga.
                   ================================================= */}
 
                   <div
                     className="
                       mt-5
+
                       rounded-[15px]
+
                       border
                       border-[#B31345]/10
+
                       bg-[#FFF8FA]
+
                       p-3.5
                     "
                   >
@@ -2862,60 +2866,31 @@ export default function CartPage() {
                       className="
                         flex
                         items-center
-                        justify-between
-                        gap-3
+
+                        gap-2
                       "
                     >
-                      <div
+                      <Tag
+                        size={13}
                         className="
-                          flex
-                          items-center
-                          gap-2
+                          text-[#B31345]
+                        "
+                      />
+
+                      <span
+                        className="
+                          text-[9px]
+                          font-extrabold
+
+                          uppercase
+
+                          tracking-[0.09em]
+
+                          text-[#211817]
                         "
                       >
-                        <Tag
-                          size={13}
-                          className="
-                            text-[#B31345]
-                          "
-                        />
-
-                        <span
-                          className="
-                            text-[9px]
-                            font-extrabold
-                            uppercase
-                            tracking-[0.09em]
-                            text-[#211817]
-                          "
-                        >
-                          Discount Code
-                        </span>
-                      </div>
-
-                      {cart
-                        ?.availableDiscountCodes
-                        ?.length ? (
-                        <span
-                          className="
-                            rounded-full
-                            bg-[#FBE7ED]
-                            px-2.5
-                            py-1
-                            text-[7px]
-                            font-extrabold
-                            uppercase
-                            tracking-[0.06em]
-                            text-[#B31345]
-                          "
-                        >
-                          {
-                            cart.availableDiscountCodes
-                              .length
-                          }{" "}
-                          Available
-                        </span>
-                      ) : null}
+                        Discount Code
+                      </span>
                     </div>
 
                     {cart
@@ -2923,14 +2898,20 @@ export default function CartPage() {
                       <div
                         className="
                           mt-3
+
                           flex
                           items-center
                           justify-between
+
                           gap-3
+
                           rounded-[11px]
+
                           border
                           border-emerald-200
+
                           bg-emerald-50
+
                           px-3
                           py-3
                         "
@@ -2943,10 +2924,14 @@ export default function CartPage() {
                           <span
                             className="
                               block
+
                               text-[7px]
                               font-bold
+
                               uppercase
+
                               tracking-[0.08em]
+
                               text-emerald-700/70
                             "
                           >
@@ -2956,11 +2941,15 @@ export default function CartPage() {
                           <strong
                             className="
                               mt-0.5
+
                               block
                               truncate
+
                               text-[14px]
                               font-black
+
                               tracking-[0.08em]
+
                               text-emerald-700
                             "
                           >
@@ -2974,9 +2963,12 @@ export default function CartPage() {
                             <span
                               className="
                                 mt-1
+
                                 block
+
                                 text-[8px]
                                 font-bold
+
                                 text-emerald-700
                               "
                             >
@@ -2998,16 +2990,24 @@ export default function CartPage() {
                           }
                           className="
                             shrink-0
+
                             rounded-[8px]
+
                             border
                             border-emerald-200
+
                             bg-white
+
                             px-3
                             py-2
+
                             text-[8px]
                             font-extrabold
+
                             uppercase
+
                             text-emerald-700
+
                             disabled:opacity-40
                           "
                         >
@@ -3015,233 +3015,113 @@ export default function CartPage() {
                         </button>
                       </div>
                     ) : (
-                      <>
-                        {cart
-                          ?.availableDiscountCodes
-                          ?.length ? (
-                          <div
-                            className="
-                              mt-3
-                              space-y-2
-                            "
-                          >
-                            {cart.availableDiscountCodes
-                              .slice(
-                                0,
-                                3
-                              )
-                              .map(
-                                (
-                                  coupon
-                                ) => (
-                                  <div
-                                    key={
-                                      coupon._id ||
-                                      coupon.code
-                                    }
-                                    className="
-                                      flex
-                                      w-full
-                                      items-center
-                                      justify-between
-                                      gap-3
-                                      rounded-[11px]
-                                      border
-                                      border-dashed
-                                      border-[#B31345]/30
-                                      bg-white
-                                      px-3
-                                      py-2.5
-                                    "
-                                  >
-                                    <div
-                                      className="
-                                        min-w-0
-                                      "
-                                    >
-                                      <span
-                                        className="
-                                          block
-                                          text-[7px]
-                                          font-bold
-                                          uppercase
-                                          tracking-[0.08em]
-                                          text-black/40
-                                        "
-                                      >
-                                        Available Coupon
-                                      </span>
+                      <div
+                        className="
+                          mt-3
 
-                                      <strong
-                                        className="
-                                          mt-0.5
-                                          block
-                                          truncate
-                                          text-[14px]
-                                          font-black
-                                          tracking-[0.08em]
-                                          text-[#B31345]
-                                        "
-                                      >
-                                        {
-                                          coupon.code
-                                        }
-                                      </strong>
-                                    </div>
+                          flex
 
-                                    <button
-                                      type="button"
-                                      disabled={
-                                        applyingCode
-                                      }
-                                      onClick={() =>
-                                        void handleApplyDiscountCode(
-                                          coupon.code
-                                        )
-                                      }
-                                      className="
-                                        shrink-0
-                                        rounded-full
-                                        bg-[#B31345]
-                                        px-3
-                                        py-2
-                                        text-[7px]
-                                        font-extrabold
-                                        uppercase
-                                        tracking-[0.05em]
-                                        text-white
-                                        transition
-                                        hover:bg-[#96103A]
-                                        disabled:opacity-40
-                                      "
-                                    >
-                                      {applyingCode
-                                        ? "..."
-                                        : "Use Code"}
-                                    </button>
-                                  </div>
-                                )
-                              )}
-                          </div>
-                        ) : (
-                          <p
-                            className="
-                              mt-3
-                              rounded-[10px]
-                              border
-                              border-black/5
-                              bg-white
-                              px-3
-                              py-2.5
-                              text-[8px]
-                              leading-4
-                              text-black/40
-                            "
-                          >
-                            No active coupon is
-                            available right now.
-                          </p>
-                        )}
-
-                        <div
+                          gap-2
+                        "
+                      >
+                        <input
+                          value={
+                            discountCode
+                          }
+                          onChange={(
+                            event
+                          ) =>
+                            setDiscountCode(
+                              event.target.value.toUpperCase()
+                            )
+                          }
+                          onKeyDown={(
+                            event
+                          ) => {
+                            if (
+                              event.key ===
+                              "Enter"
+                            ) {
+                              void handleApplyDiscountCode();
+                            }
+                          }}
+                          placeholder="ENTER COUPON CODE"
                           className="
-                            mt-3
-                            flex
-                            gap-2
+                            h-10
+
+                            min-w-0
+                            flex-1
+
+                            rounded-[10px]
+
+                            border
+                            border-black/10
+
+                            bg-white
+
+                            px-3
+
+                            text-[10px]
+                            font-extrabold
+
+                            uppercase
+
+                            tracking-[0.05em]
+
+                            text-[#211817]
+
+                            outline-none
+
+                            transition
+
+                            placeholder:font-semibold
+                            placeholder:text-black/25
+
+                            focus:border-[#B31345]/40
+                          "
+                        />
+
+                        <button
+                          type="button"
+                          disabled={
+                            applyingCode ||
+                            !discountCode.trim()
+                          }
+                          onClick={() =>
+                            void handleApplyDiscountCode()
+                          }
+                          className="
+                            min-w-[76px]
+
+                            rounded-[10px]
+
+                            bg-[#211817]
+
+                            px-4
+
+                            text-[8px]
+                            font-extrabold
+
+                            uppercase
+
+                            tracking-[0.04em]
+
+                            text-white
+
+                            transition
+
+                            hover:bg-[#B31345]
+
+                            disabled:cursor-not-allowed
+                            disabled:opacity-40
                           "
                         >
-                          <input
-                            value={
-                              discountCode
-                            }
-                            onChange={(
-                              event
-                            ) =>
-                              setDiscountCode(
-                                event.target.value.toUpperCase()
-                              )
-                            }
-                            onKeyDown={(
-                              event
-                            ) => {
-                              if (
-                                event.key ===
-                                "Enter"
-                              ) {
-                                void handleApplyDiscountCode();
-                              }
-                            }}
-                            placeholder="ENTER COUPON CODE"
-                            className="
-                              h-10
-                              min-w-0
-                              flex-1
-                              rounded-[10px]
-                              border
-                              border-black/10
-                              bg-white
-                              px-3
-                              text-[10px]
-                              font-extrabold
-                              uppercase
-                              tracking-[0.05em]
-                              text-[#211817]
-                              outline-none
-                              transition
-                              placeholder:font-semibold
-                              placeholder:text-black/25
-                              focus:border-[#B31345]/40
-                            "
-                          />
-
-                          <button
-                            type="button"
-                            disabled={
-                              applyingCode ||
-                              !discountCode.trim()
-                            }
-                            onClick={() =>
-                              void handleApplyDiscountCode()
-                            }
-                            className="
-                              min-w-[76px]
-                              rounded-[10px]
-                              bg-[#211817]
-                              px-4
-                              text-[8px]
-                              font-extrabold
-                              uppercase
-                              tracking-[0.04em]
-                              text-white
-                              transition
-                              hover:bg-[#B31345]
-                              disabled:cursor-not-allowed
-                              disabled:opacity-40
-                            "
-                          >
-                            {applyingCode
-                              ? "..."
-                              : "Apply"}
-                          </button>
-                        </div>
-                      </>
+                          {applyingCode
+                            ? "..."
+                            : "Apply"}
+                        </button>
+                      </div>
                     )}
-
-                    <p
-                      className="
-                        mt-2.5
-                        text-[7px]
-                        leading-4
-                        text-black/35
-                      "
-                    >
-                      Available codes are
-                      loaded dynamically
-                      from the backend.
-                      Final cart eligibility
-                      is checked when you
-                      apply the coupon.
-                    </p>
                   </div>
 
 {/* SAVINGS */}
