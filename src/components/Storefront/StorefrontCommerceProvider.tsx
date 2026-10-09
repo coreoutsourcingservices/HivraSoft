@@ -150,7 +150,9 @@ type CommerceContextValue = {
 const CommerceContext =
   createContext<
     CommerceContextValue | undefined
-  >(undefined);
+  >(
+    undefined
+  );
 
 /* =========================================================
    AUTH
@@ -567,6 +569,7 @@ function getBundleProgress(
   const requiredQuantity =
     Math.max(
       1,
+
       Number(
         context.requiredQuantity ||
           1
@@ -611,6 +614,7 @@ function getBundleProgress(
     items.reduce(
       (
         total,
+
         item
       ) => {
         const itemContext =
@@ -635,8 +639,10 @@ function getBundleProgress(
 
         return (
           total +
+
           Math.max(
             0,
+
             Number(
               item.quantity ||
                 0
@@ -668,6 +674,7 @@ function getBundleProgress(
       ? 0
       : Math.max(
           0,
+
           requiredQuantity -
             currentGroupQuantity
         );
@@ -707,8 +714,10 @@ function GlobalToast({
     <div
       className="
         fixed
+
         right-4
         top-[90px]
+
         z-[10000]
 
         flex
@@ -884,8 +893,11 @@ function GlobalToast({
 
 function GlobalSizeModal({
   product,
+
   busy,
+
   onClose,
+
   onSelect,
 }: {
   product:
@@ -911,7 +923,9 @@ function GlobalSizeModal({
     <div
       className="
         fixed
+
         inset-0
+
         z-[9999]
 
         flex
@@ -957,7 +971,9 @@ function GlobalSizeModal({
         <div
           className="
             flex
+
             items-start
+
             gap-4
           "
         >
@@ -1222,14 +1238,18 @@ export function StorefrontCommerceProvider({
 
   const [
     isAuthenticated,
+
     setIsAuthenticated,
   ] =
     useState<
       boolean | null
-    >(null);
+    >(
+      null
+    );
 
   const [
     loginPrompt,
+
     setLoginPrompt,
   ] =
     useState<LoginPromptType>(
@@ -1238,6 +1258,7 @@ export function StorefrontCommerceProvider({
 
   const [
     toast,
+
     setToast,
   ] =
     useState<ToastState>(
@@ -1249,26 +1270,35 @@ export function StorefrontCommerceProvider({
       ReturnType<
         typeof setTimeout
       > | null
-    >(null);
+    >(
+      null
+    );
 
   const [
     selectedProduct,
+
     setSelectedProduct,
   ] =
     useState<
       CatalogProduct | null
-    >(null);
+    >(
+      null
+    );
 
   const [
     selectedOfferContext,
+
     setSelectedOfferContext,
   ] =
     useState<
       CartOfferContext | null
-    >(null);
+    >(
+      null
+    );
 
   const [
     cartBusy,
+
     setCartBusy,
   ] =
     useState(
@@ -1277,14 +1307,18 @@ export function StorefrontCommerceProvider({
 
   const [
     wishlistBusyKey,
+
     setWishlistBusyKey,
   ] =
     useState<
       string | null
-    >(null);
+    >(
+      null
+    );
 
   const [
     cartCount,
+
     setCartCount,
   ] =
     useState(
@@ -1293,6 +1327,7 @@ export function StorefrontCommerceProvider({
 
   const [
     wishlistCount,
+
     setWishlistCount,
   ] =
     useState(
@@ -1301,6 +1336,7 @@ export function StorefrontCommerceProvider({
 
   const [
     wishlistVariantKeys,
+
     setWishlistVariantKeys,
   ] =
     useState<
@@ -1312,6 +1348,7 @@ export function StorefrontCommerceProvider({
 
   const [
     wishlistProductIds,
+
     setWishlistProductIds,
   ] =
     useState<
@@ -1350,8 +1387,11 @@ export function StorefrontCommerceProvider({
 
         setToast({
           title,
+
           type,
+
           subtitle,
+
           image,
         });
 
@@ -1450,6 +1490,7 @@ export function StorefrontCommerceProvider({
                 variantKeys.add(
                   makeWishlistKey(
                     productId,
+
                     colorId
                   )
                 );
@@ -1457,6 +1498,7 @@ export function StorefrontCommerceProvider({
                 variantKeys.add(
                   makeWishlistKey(
                     productId,
+
                     "default"
                   )
                 );
@@ -1528,11 +1570,13 @@ export function StorefrontCommerceProvider({
 
         await Promise.all([
           loadCartCount(),
+
           loadWishlist(),
         ]);
       },
       [
         loadCartCount,
+
         loadWishlist,
       ]
     );
@@ -1551,12 +1595,14 @@ export function StorefrontCommerceProvider({
 
     window.addEventListener(
       "hivrasoft-auth-changed",
+
       authChanged
     );
 
     return () => {
       window.removeEventListener(
         "hivrasoft-auth-changed",
+
         authChanged
       );
     };
@@ -1581,27 +1627,32 @@ export function StorefrontCommerceProvider({
 
     window.addEventListener(
       "hivrasoft-cart-updated",
+
       cartUpdated
     );
 
     window.addEventListener(
       "hivrasoft-wishlist-updated",
+
       wishlistUpdated
     );
 
     return () => {
       window.removeEventListener(
         "hivrasoft-cart-updated",
+
         cartUpdated
       );
 
       window.removeEventListener(
         "hivrasoft-wishlist-updated",
+
         wishlistUpdated
       );
     };
   }, [
     loadCartCount,
+
     loadWishlist,
   ]);
 
@@ -1703,6 +1754,7 @@ export function StorefrontCommerceProvider({
         const quantity =
           Math.max(
             1,
+
             Number(
               input.quantity ??
                 1
@@ -1717,9 +1769,15 @@ export function StorefrontCommerceProvider({
             quantity
         );
 
+        /* ===============================================
+           NORMAL ADD TO BAG NOTIFICATION
+        =============================================== */
+
         showToast(
           "Added to bag",
+
           "success",
+
           [
             input.name,
 
@@ -1735,6 +1793,7 @@ export function StorefrontCommerceProvider({
             .join(
               " • "
             ),
+
           input.image
         );
 
@@ -1763,6 +1822,8 @@ export function StorefrontCommerceProvider({
 
           /* =================================================
              FIXED PRICE BUNDLE PROGRESS
+
+             Circle/card notification + global notification.
           ================================================= */
 
           if (
@@ -1773,6 +1834,7 @@ export function StorefrontCommerceProvider({
             const progress =
               getBundleProgress(
                 response,
+
                 input.offerContext
               );
 
@@ -1785,6 +1847,7 @@ export function StorefrontCommerceProvider({
               const fixedPrice =
                 Math.max(
                   0,
+
                   Number(
                     input.offerContext
                       .fixedPrice ||
@@ -1792,12 +1855,60 @@ export function StorefrontCommerceProvider({
                   )
                 );
 
+              /* =============================================
+                 CARD CIRCLE / PILL EVENT
+              ============================================= */
+
+              window.dispatchEvent(
+                new CustomEvent(
+                  "hivrasoft-bundle-progress",
+
+                  {
+                    detail: {
+                      productId:
+                        input.productId,
+
+                      colorId:
+                        input.colorId,
+
+                      selectedQuantity:
+                        progress.selectedQuantity,
+
+                      requiredQuantity:
+                        progress.requiredQuantity,
+
+                      remainingQuantity:
+                        progress.remainingQuantity,
+
+                      unlocked:
+                        progress.unlocked,
+
+                      completedBundles:
+                        progress.completedBundles,
+
+                      fixedPrice,
+
+                      offerName,
+                    },
+                  }
+                )
+              );
+
+              /* =============================================
+                 GLOBAL BUNDLE NOTIFICATION
+
+                 Isko remove nahi kiya hai.
+                 Isliye notification definitely aayegi.
+              ============================================= */
+
               if (
                 progress.unlocked
               ) {
                 showToast(
-                  "Offer unlocked! 🎉",
+                  "Bundle unlocked! 🎉",
+
                   "success",
+
                   [
                     `${progress.requiredQuantity}/${progress.requiredQuantity} selected`,
 
@@ -1805,6 +1916,7 @@ export function StorefrontCommerceProvider({
                     0
                       ? `${offerName} • ₹${fixedPrice.toLocaleString(
                           "en-IN",
+
                           {
                             maximumFractionDigits:
                               2,
@@ -1818,6 +1930,7 @@ export function StorefrontCommerceProvider({
                     .join(
                       " • "
                     ),
+
                   input.image
                 );
               } else {
@@ -1826,9 +1939,12 @@ export function StorefrontCommerceProvider({
                   progress.requiredQuantity;
 
                 showToast(
-                  `Add ${progress.remainingQuantity} more to unlock offer`,
+                  `Add ${progress.remainingQuantity} more to unlock`,
+
                   "success",
+
                   `${nextSelected}/${progress.requiredQuantity} selected • ${offerName}`,
+
                   input.image
                 );
               }
@@ -1847,6 +1963,7 @@ export function StorefrontCommerceProvider({
             ) =>
               Math.max(
                 0,
+
                 current -
                   quantity
               )
@@ -1875,11 +1992,14 @@ export function StorefrontCommerceProvider({
 
           showToast(
             "Unable to add product",
+
             "error",
+
             error instanceof
               Error
               ? error.message
               : "Please try again.",
+
             input.image
           );
 
@@ -1892,7 +2012,9 @@ export function StorefrontCommerceProvider({
       },
       [
         isAuthenticated,
+
         loadCartCount,
+
         showToast,
       ]
     );
@@ -1940,8 +2062,11 @@ export function StorefrontCommerceProvider({
         ) {
           showToast(
             "Size unavailable",
+
             "error",
+
             "No size information is available for this product.",
+
             product.image1
           );
 
@@ -1960,8 +2085,11 @@ export function StorefrontCommerceProvider({
         if (!hasStock) {
           showToast(
             "Out of stock",
+
             "error",
+
             `${product.name} is currently unavailable.`,
+
             product.image1
           );
 
@@ -1978,6 +2106,7 @@ export function StorefrontCommerceProvider({
       },
       [
         isAuthenticated,
+
         showToast,
       ]
     );
@@ -2044,7 +2173,9 @@ export function StorefrontCommerceProvider({
       },
       [
         selectedProduct,
+
         selectedOfferContext,
+
         addVariantToCart,
       ]
     );
@@ -2067,6 +2198,7 @@ export function StorefrontCommerceProvider({
         return wishlistVariantKeys.has(
           makeWishlistKey(
             product.productId,
+
             colorId
           )
         );
@@ -2087,6 +2219,7 @@ export function StorefrontCommerceProvider({
           wishlistBusyKey ===
           makeWishlistKey(
             product.productId,
+
             product.colorId ||
               "default"
           )
@@ -2133,6 +2266,7 @@ export function StorefrontCommerceProvider({
         const key =
           makeWishlistKey(
             product.productId,
+
             product.colorId ||
               "default"
           );
@@ -2224,6 +2358,7 @@ export function StorefrontCommerceProvider({
             ) =>
               Math.max(
                 0,
+
                 current -
                   1
               )
@@ -2231,8 +2366,11 @@ export function StorefrontCommerceProvider({
 
           showToast(
             "Removed from wishlist",
+
             "success",
+
             product.name,
+
             product.image1
           );
         } else {
@@ -2299,8 +2437,11 @@ export function StorefrontCommerceProvider({
 
           showToast(
             "Added to wishlist",
+
             "success",
+
             product.name,
+
             product.image1
           );
         }
@@ -2323,6 +2464,7 @@ export function StorefrontCommerceProvider({
 
             await addToWishlist(
               product.productId,
+
               {
                 colorId:
                   product.colorId ||
@@ -2370,11 +2512,14 @@ export function StorefrontCommerceProvider({
 
           showToast(
             "Wishlist update failed",
+
             "error",
+
             error instanceof
               Error
               ? error.message
               : "Please try again.",
+
             product.image1
           );
         } finally {
@@ -2385,11 +2530,17 @@ export function StorefrontCommerceProvider({
       },
       [
         isAuthenticated,
+
         wishlistBusyKey,
+
         wishlistVariantKeys,
+
         wishlistProductIds,
+
         wishlistCount,
+
         loadWishlist,
+
         showToast,
       ]
     );
@@ -2433,17 +2584,28 @@ export function StorefrontCommerceProvider({
 
         refreshCommerce,
       }),
+
       [
         isAuthenticated,
+
         cartCount,
+
         wishlistCount,
+
         openCart,
+
         openWishlist,
+
         openAddToBag,
+
         addVariantToCart,
+
         toggleWishlist,
+
         isWishlisted,
+
         isWishlistBusy,
+
         refreshCommerce,
       ]
     );
@@ -2466,7 +2628,9 @@ export function StorefrontCommerceProvider({
           cartBusy
         }
         onClose={() => {
-          if (!cartBusy) {
+          if (
+            !cartBusy
+          ) {
             setSelectedProduct(
               null
             );
@@ -2569,4 +2733,4 @@ function BagIcon() {
       <path d="M9 8V6a3 3 0 0 1 6 0v2" />
     </svg>
   );
-}
+} 
