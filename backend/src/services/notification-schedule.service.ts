@@ -6,6 +6,7 @@ import NotificationDelivery from "../models/NotificationDelivery.model";
 import User from "../models/User.model";
 import { matchingCustomerIds } from "./customer-admin.service";
 import { sendEmail } from "./mail.service";
+import { runDueCustomerPromotions, indiaDate, selectedDates } from "./promotion-date.service";
 
 const MINUTE_MS = 60_000;
 const INDIA_OFFSET = "+05:30";
@@ -56,7 +57,9 @@ export async function resolveScheduleRecipients(schedule: any, runAt: Date, days
   const ids = await baseRecipientIds(schedule);
   if (!ids.length) return [] as any[];
   if (schedule.eventType === "none") {
-    return User.find({ _id: { $in: ids.map((id: string) => new Types.ObjectId(id)) }, role: "customer", isActive: true }).select("name email birthday anniversary").lean();
+    const recipients = await User.find({ _id: { $in: ids.map((id: string) => new Types.ObjectId(id)) }, role: "customer", isActive: true }).select("name email birthday anniversary sendNdata").lean();
+    // Existing order and reminder schedule types retain their normal delivery rules.
+    return schedule.type === "promotion" ? recipients.filter((user: any) => selectedDates(user.sendNdata).includes(indiaDate(runAt))) : recipients;
   }
 
   const target = targetDate(runAt, daysBefore);
@@ -187,7 +190,11 @@ let timer: NodeJS.Timeout | null = null;
 export function startNotificationScheduleWorker() {
   if (process.env.NOTIFICATION_SCHEDULES_ENABLED === "false" || timer) return;
   const run = async () => {
-    try { const processed = await runDueNotificationSchedules(); if (processed > 0) console.log(`🔔 Notification scheduler processed ${processed} schedule(s).`); }
+    try {
+      const delivered = await runDueCustomerPromotions();
+      if (delivered > 0) console.log(`🔔 ${delivered} customer-date promotion delivery(s).`);
+      const processed = await runDueNotificationSchedules(); if (processed > 0) console.log(`🔔 Notification scheduler processed ${processed} schedule(s).`);
+    }
     catch (error) { console.error("NOTIFICATION SCHEDULER ERROR:", error); }
   };
   void run();

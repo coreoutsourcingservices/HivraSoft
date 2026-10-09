@@ -36,7 +36,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
-        <link rel="stylesheet" href="/chatbot/chatbot.css" />
+        <link rel="stylesheet" href="/chatbot/chatbot.css?v=product-first-20261009" />
       </head>
       <body
         className="

@@ -18,6 +18,8 @@ export interface IUser extends Document {
   gender: "male" | "female" | "other";
   birthday?: Date | null;
   anniversary?: Date | null;
+  // Customer-selected dates for promotional notifications only (Asia/Kolkata).
+  sendNdata: { date: string }[];
 
   role: UserRole;
 
@@ -77,6 +79,11 @@ const userSchema = new Schema<IUser>(
       type: Date,
       default: null,
       index: true,
+    },
+
+    sendNdata: {
+      type: [{ date: { type: String, required: true, match: /^\d{4}-\d{2}-\d{2}$/ } }],
+      default: [],
     },
 
     role: {

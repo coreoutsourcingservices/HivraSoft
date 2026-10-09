@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document, Model, Types } from "mongoose";
 
 export type NotificationDeliveryChannel = "email" | "website";
-export type NotificationDeliveryStatus = "pending" | "sent" | "failed" | "cancelled";
+export type NotificationDeliveryStatus = "pending" | "processing" | "sent" | "failed" | "cancelled";
 
 export interface INotificationDelivery extends Document {
   notification?: Types.ObjectId | null;
@@ -27,7 +27,7 @@ const schema = new Schema<INotificationDelivery>({
   schedule: { type: Schema.Types.ObjectId, ref: "NotificationSchedule", default: null, index: true },
   user: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
   channel: { type: String, enum: ["email", "website"], required: true, index: true },
-  status: { type: String, enum: ["pending", "sent", "failed", "cancelled"], default: "pending", index: true },
+  status: { type: String, enum: ["pending", "processing", "sent", "failed", "cancelled"], default: "pending", index: true },
   scheduledFor: { type: Date, required: true, index: true },
   processedAt: { type: Date, default: null },
   sentAt: { type: Date, default: null },

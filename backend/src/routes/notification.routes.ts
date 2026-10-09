@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { authenticate } from "../middleware/auth.middleware";
+import { getMyPromotionDates, saveMyPromotionDates } from "../services/promotion-date.service";
 
 import {
   getMyNotifications,
@@ -13,6 +14,9 @@ import {
 const router = Router();
 
 router.use(authenticate);
+
+router.get("/promotion-dates", getMyPromotionDates);
+router.put("/promotion-dates", saveMyPromotionDates);
 
 router.get(
   "/",

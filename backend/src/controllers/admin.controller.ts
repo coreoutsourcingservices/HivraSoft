@@ -742,7 +742,7 @@ export async function getAdminCustomerDetails(req: Request, res: Response) {
     const userObjectId = new Types.ObjectId(customerId);
 
     const customer = await User.findOne({ _id: userObjectId, role: "customer" })
-      .select("name username email phone gender birthday anniversary role emailVerified isActive accountStatus lastActiveAt avatar createdAt updatedAt")
+      .select("name username email phone gender birthday anniversary role emailVerified isActive accountStatus lastActiveAt avatar sendNdata createdAt updatedAt")
       .lean();
 
     if (!customer) {

@@ -7,6 +7,7 @@ import { softDeleteEntity } from "../services/admin-trash.service";
 import NotificationDelivery from "../models/NotificationDelivery.model";
 import { sendEmail } from "../services/mail.service";
 import { sanitizeNotificationHtml } from "../services/notification-html.service";
+import { queueCustomerPromotions } from "../services/promotion-date.service";
 
 
 function currentUserId(req: Request) {
@@ -70,8 +71,24 @@ export async function createAdminNotification(req: Request, res: Response) {
       userIds: audience === "all" ? [] : userIds,
       filters: audience === "filtered" ? filters : {}, recipientCount: userIds.length, link,
       deliveryEmail, deliveryWebsite, isActive: deliveryWebsite && req.body?.isActive !== false,
-      createdBy: req.user?._id || null, source: "admin", metadata: { channels: { email: deliveryEmail, website: deliveryWebsite } },
+      createdBy: req.user?._id || null, source: "admin", metadata: { channels: { email: deliveryEmail, website: deliveryWebsite }, ...(type === "promotion" ? { customerScheduledPromotion: true } : {}) },
     });
+
+    // Promotion ONLY: respect dates chosen by customers and queue for 10 AM IST.
+    // Order, reminder, general and other notification types stay as before.
+    if (type === "promotion") {
+      const users = await User.find({ _id: { $in: userIds }, role: "customer", isActive: true, accountStatus: "active" }).select("_id email sendNdata").lean();
+      const scheduled = await queueCustomerPromotions(notification, users as any, { website: deliveryWebsite, email: deliveryEmail });
+      return res.status(201).json({
+        success: true,
+        message: `Promotion queued for ${scheduled.scheduledCustomers} customer(s) on their chosen date(s).`,
+        matchedCount: userIds.length,
+        scheduledCount: scheduled.scheduledCustomers,
+        queuedDeliveries: scheduled.queuedDeliveries,
+        delivery: { websiteSent: 0, emailSent: 0, emailFailed: 0 },
+        notification,
+      });
+    }
 
     const now = new Date();
     let websiteSent = 0;
@@ -236,6 +253,17 @@ export async function listAdminNotificationDeliveries(req: Request, res: Respons
   }
 }
 
+async function promotionVisibilityFilter(userId: mongoose.Types.ObjectId) {
+  const ids = await NotificationDelivery.distinct("notification", {
+    user: userId, channel: "website", status: "sent", notification: { $ne: null },
+  });
+  return { $or: [
+    { type: { $ne: "promotion" } },
+    { type: "promotion", "metadata.customerScheduledPromotion": { $ne: true } },
+    { type: "promotion", "metadata.customerScheduledPromotion": true, _id: { $in: ids } },
+  ] };
+}
+
 /* =========================================================
    USER - MY NOTIFICATIONS
 ========================================================= */
@@ -248,6 +276,7 @@ export async function getMyNotifications(req: Request, res: Response) {
     const notifications = await Notification.find({
       isActive: true,
       deletedBy: { $ne: userObjectId },
+      $and: [await promotionVisibilityFilter(userObjectId)],
       $or: [
         { audience: "all" },
         { audience: { $in: ["selected", "filtered"] }, userIds: userObjectId },
@@ -289,6 +318,7 @@ export async function getMyUnreadNotificationCount(req: Request, res: Response) 
     const unreadCount = await Notification.countDocuments({
       isActive: true,
       deletedBy: { $ne: userObjectId },
+      $and: [await promotionVisibilityFilter(userObjectId)],
       $or: [
         { audience: "all" },
         { audience: { $in: ["selected", "filtered"] }, userIds: userObjectId },
@@ -321,6 +351,7 @@ export async function markNotificationRead(req: Request, res: Response) {
         _id: notificationId,
         isActive: true,
         deletedBy: { $ne: userObjectId },
+        $and: [await promotionVisibilityFilter(userObjectId)],
         $or: [
           { audience: "all" },
           { audience: { $in: ["selected", "filtered"] }, userIds: userObjectId },
@@ -352,6 +383,7 @@ export async function markAllNotificationsRead(req: Request, res: Response) {
       {
         isActive: true,
         deletedBy: { $ne: userObjectId },
+        $and: [await promotionVisibilityFilter(userObjectId)],
         $or: [
           { audience: "all" },
           { audience: { $in: ["selected", "filtered"] }, userIds: userObjectId },
@@ -396,6 +428,7 @@ export async function deleteMyNotification(req: Request, res: Response) {
         _id: notificationId,
         isActive: true,
         deletedBy: { $ne: userObjectId },
+        $and: [await promotionVisibilityFilter(userObjectId)],
         $or: [
           { audience: "all" },
           { audience: { $in: ["selected", "filtered"] }, userIds: userObjectId },
@@ -437,6 +470,7 @@ export async function deleteAllMyNotifications(req: Request, res: Response) {
       {
         isActive: true,
         deletedBy: { $ne: userObjectId },
+        $and: [await promotionVisibilityFilter(userObjectId)],
         $or: [
           { audience: "all" },
           { audience: { $in: ["selected", "filtered"] }, userIds: userObjectId },
