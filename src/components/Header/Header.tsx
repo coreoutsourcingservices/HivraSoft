@@ -2284,6 +2284,7 @@ export default function Header() {
               items-center
 
               overflow-hidden
+              xl:overflow-visible
 
               px-2
 

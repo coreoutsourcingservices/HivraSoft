@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import mongoose from "mongoose";
-import Notification from "../models/Notification.model";
+import Notification, { type INotification } from "../models/Notification.model";
 import User from "../models/User.model";
 import { matchingCustomerIds } from "../services/customer-admin.service";
 import { softDeleteEntity } from "../services/admin-trash.service";
@@ -253,7 +253,9 @@ export async function listAdminNotificationDeliveries(req: Request, res: Respons
   }
 }
 
-async function promotionVisibilityFilter(userId: mongoose.Types.ObjectId) {
+async function promotionVisibilityFilter(
+  userId: mongoose.Types.ObjectId
+): Promise<mongoose.QueryFilter<INotification>> {
   const ids = await NotificationDelivery.distinct("notification", {
     user: userId, channel: "website", status: "sent", notification: { $ne: null },
   });
