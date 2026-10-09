@@ -9,13 +9,18 @@ import categoryRoutes from "./routes/category.routes";
 
 import productRoutes from "./routes/product.routes";
 import uploadRoutes from "./routes/upload.routes";
-import  addressRoutes from "./routes/user/address.routes"
+import addressRoutes from "./routes/user/address.routes";
 import bannerRoutes from "./routes/banner.routes";
 import wishlistRoutes from "./routes/wishlist.routes";
 import cartRoutes from "./routes/cart.routes";
 import orderRoutes from "./routes/order.routes";
 import blogRoutes from "./routes/blog.routes";
-import { blogCategoryRoutes, blogTagRoutes } from "./routes/blog-taxonomy.routes";
+
+import {
+  blogCategoryRoutes,
+  blogTagRoutes,
+} from "./routes/blog-taxonomy.routes";
+
 import searchRoutes from "./routes/search.routes";
 import notificationRoutes from "./routes/notification.routes";
 import reviewRoutes from "./routes/review.routes";
@@ -23,15 +28,39 @@ import userSettingsRoutes from "./routes/user-settings.routes";
 import homepageRoutes from "./routes/homepage.routes";
 import offerRoutes from "./routes/offer.routes";
 import leadFormRoutes from "./routes/lead-form.routes";
-import { razorpayWebhookController } from "./controllers/order.controller";
+
+/* =========================================================
+   DISCOUNT ROUTES
+========================================================= */
+
+import discountRoutes from "./routes/discount.routes";
+
+import {
+  razorpayWebhookController,
+} from "./controllers/order.controller";
+
+/* =========================================================
+   APP
+========================================================= */
 
 const app =
   express();
 
-// Hostinger forwards requests through its reverse proxy. Trust only the
-// nearest hop so client-supplied earlier X-Forwarded-For entries are ignored.
-if (process.env.NODE_ENV === "production") {
-  app.set("trust proxy", 1);
+/* =========================================================
+   TRUST PROXY
+
+   Hostinger forwards requests through its reverse proxy.
+   Trust only the nearest hop.
+========================================================= */
+
+if (
+  process.env.NODE_ENV ===
+  "production"
+) {
+  app.set(
+    "trust proxy",
+    1
+  );
 }
 
 /* =========================================================
@@ -51,14 +80,29 @@ app.use(
 );
 
 /* =========================================================
-   BODY PARSER
+   RAZORPAY WEBHOOK
+
+   IMPORTANT:
+   express.raw() must stay before express.json()
 ========================================================= */
 
 app.post(
   "/api/payments/razorpay/webhook",
-  express.raw({ type: "application/json", limit: "2mb" }),
+
+  express.raw({
+    type:
+      "application/json",
+
+    limit:
+      "2mb",
+  }),
+
   razorpayWebhookController
 );
+
+/* =========================================================
+   BODY PARSER
+========================================================= */
 
 app.use(
   express.json({
@@ -96,7 +140,9 @@ app.get(
     res
   ) => {
     return res
-      .status(200)
+      .status(
+        200
+      )
       .json({
         success:
           true,
@@ -115,7 +161,11 @@ app.use(
   "/api/auth",
   authRoutes
 );
-app.use("/api/admin", adminRoutes);
+
+app.use(
+  "/api/admin",
+  adminRoutes
+);
 
 /* =========================================================
    CATEGORIES
@@ -144,50 +194,150 @@ app.use(
   searchRoutes
 );
 
+/* =========================================================
+   UPLOADS
+========================================================= */
+
 app.use(
   "/api/uploads",
   uploadRoutes
 );
+
+/* =========================================================
+   ADDRESS
+========================================================= */
+
 app.use(
   "/api/address",
   addressRoutes
 );
 
+/* =========================================================
+   BANNERS
+========================================================= */
 
 app.use(
   "/api/banners",
   bannerRoutes
 );
+
+/* =========================================================
+   WISHLIST
+========================================================= */
+
 app.use(
   "/api/wishlist",
   wishlistRoutes
 );
+
+/* =========================================================
+   CART
+========================================================= */
+
 app.use(
   "/api/cart",
   cartRoutes
 );
+
+/* =========================================================
+   ORDERS
+========================================================= */
+
 app.use(
   "/api/orders",
   orderRoutes
 );
 
-app.use("/api/blogs", blogRoutes);
-app.use("/api/blog-categories", blogCategoryRoutes);
-app.use("/api/blog-tags", blogTagRoutes);
+/* =========================================================
+   BLOGS
+========================================================= */
+
+app.use(
+  "/api/blogs",
+  blogRoutes
+);
+
+app.use(
+  "/api/blog-categories",
+  blogCategoryRoutes
+);
+
+app.use(
+  "/api/blog-tags",
+  blogTagRoutes
+);
+
+/* =========================================================
+   NOTIFICATIONS
+========================================================= */
 
 app.use(
   "/api/notifications",
   notificationRoutes
 );
 
-app.use("/api/reviews", reviewRoutes);
-app.use("/api/user-settings", userSettingsRoutes);
-app.use("/api", homepageRoutes);
-app.use("/api/offers", offerRoutes);
-app.use("/api", leadFormRoutes);
+/* =========================================================
+   REVIEWS
+========================================================= */
+
+app.use(
+  "/api/reviews",
+  reviewRoutes
+);
+
+/* =========================================================
+   USER SETTINGS
+========================================================= */
+
+app.use(
+  "/api/user-settings",
+  userSettingsRoutes
+);
+
+/* =========================================================
+   HOMEPAGE
+========================================================= */
+
+app.use(
+  "/api",
+  homepageRoutes
+);
+
+/* =========================================================
+   OFFERS
+========================================================= */
+
+app.use(
+  "/api/offers",
+  offerRoutes
+);
+
+/* =========================================================
+   DISCOUNT CODES
+
+   Final endpoint:
+   GET /api/discounts/active
+========================================================= */
+
+app.use(
+  "/api/discounts",
+  discountRoutes
+);
+
+/* =========================================================
+   LEAD FORMS
+========================================================= */
+
+app.use(
+  "/api",
+  leadFormRoutes
+);
 
 /* =========================================================
    404
+
+   IMPORTANT:
+   Always keep this LAST.
 ========================================================= */
 
 app.use(
@@ -196,7 +346,9 @@ app.use(
     res
   ) => {
     return res
-      .status(404)
+      .status(
+        404
+      )
       .json({
         success:
           false,
@@ -206,5 +358,9 @@ app.use(
       });
   }
 );
+
+/* =========================================================
+   EXPORT
+========================================================= */
 
 export default app;
