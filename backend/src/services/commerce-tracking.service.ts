@@ -318,6 +318,8 @@ export async function listCommerceTracking(kind: CommerceTrackingKind, query: Co
         reminder20MinSent: false,
         reminder24HourSent: false,
         reminder48HourSent: false,
+        reminder24HourError: "",
+        reminder48HourError: "",
       },
     };
   });
@@ -370,6 +372,8 @@ export async function listCommerceTracking(kind: CommerceTrackingKind, query: Co
       row.email.reminder20MinSent = related.some((notification: any) => Number(notification?.metadata?.stageMinutes) === 20 && Boolean(notification?.metadata?.emailSentAt));
       row.email.reminder24HourSent = related.some((notification: any) => Number(notification?.metadata?.stageMinutes) === 1440 && Boolean(notification?.metadata?.emailSentAt));
       row.email.reminder48HourSent = related.some((notification: any) => Number(notification?.metadata?.stageMinutes) === 2880 && Boolean(notification?.metadata?.emailSentAt));
+      row.email.reminder24HourError = String(related.find((n: any) => Number(n?.metadata?.stageMinutes) === 1440)?.metadata?.emailLastError || "");
+      row.email.reminder48HourError = String(related.find((n: any) => Number(n?.metadata?.stageMinutes) === 2880)?.metadata?.emailLastError || "");
     }
   }
 

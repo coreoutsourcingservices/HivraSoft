@@ -123,7 +123,7 @@ export async function executeNotificationSchedule(scheduleId: string, runAt = ne
               link: schedule.link || "", isActive: true, deliveryEmail: false, deliveryWebsite: true, createdBy: schedule.createdBy || null,
               source: "system", dedupeKey: masterKey, metadata: { scheduleId: String(schedule._id), scheduleName: schedule.name, eventType: schedule.eventType, daysBefore, eventYear },
             } },
-            { upsert: true, new: true }
+            { upsert: true, returnDocument: "after" }
           );
           notificationIds.push(String(notification._id));
           const docs = websiteUsers.map((user: any) => ({ notification: notification._id, schedule: schedule._id, user: user._id, channel: "website", status: "sent", scheduledFor: runAt, processedAt: new Date(), sentAt: new Date(), failureReason: "", dedupeKey: deliveryKey(scheduleId, String(user._id), "website", eventYear, daysBefore), eventType: schedule.eventType, eventYear, daysBefore, metadata: { scheduleName: schedule.name } }));
@@ -178,7 +178,7 @@ export async function runDueNotificationSchedules() {
     const recurrence = row.eventType && row.eventType !== "none" ? "daily" : row.recurrence;
     let nextRunAt = nextOccurrence(new Date(row.nextRunAt), recurrence);
     while (nextRunAt.getTime() <= now.getTime()) nextRunAt = nextOccurrence(nextRunAt, recurrence);
-    const claimed = await NotificationSchedule.findOneAndUpdate({ _id: row._id, isActive: true, nextRunAt: row.nextRunAt }, { $set: { nextRunAt, lastRunAt: now }, $inc: { runCount: 1 } }, { new: true });
+    const claimed = await NotificationSchedule.findOneAndUpdate({ _id: row._id, isActive: true, nextRunAt: row.nextRunAt }, { $set: { nextRunAt, lastRunAt: now }, $inc: { runCount: 1 } }, { returnDocument: "after" });
     if (!claimed) continue;
     try { await executeNotificationSchedule(String(row._id), now); }
     catch (error) { console.error("NOTIFICATION SCHEDULE RUN ERROR:", error); }

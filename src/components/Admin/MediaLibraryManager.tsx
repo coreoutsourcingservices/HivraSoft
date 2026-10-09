@@ -8,9 +8,11 @@ import {
   Pencil,
   RefreshCw,
   Search,
+  Trash2,
   Upload,
   X,
 } from "lucide-react";
+import { confirmAdminAction } from "./AdminConfirmProvider";
 import type { MediaLibraryImage } from "./MediaLibraryPicker";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
@@ -68,6 +70,7 @@ export default function MediaLibraryManager() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [selectedId, setSelectedId] = useState("");
@@ -188,6 +191,37 @@ export default function MediaLibraryManager() {
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
+  const moveToTrash = async (image: MediaLibraryImage) => {
+    if (deletingId) return;
+    const confirmed = await confirmAdminAction({
+      title: "Move image to Trash?",
+      itemName: image.name || image.publicId,
+      description: "You can restore it for 30 days. Deleting it permanently from Trash (or after 30 days) also removes it from Cloudinary.",
+      confirmLabel: "OK - Move to Trash",
+      cancelLabel: "Cancel",
+    });
+    if (!confirmed) return;
+    setDeletingId(image.publicId);
+    setError("");
+    setSuccess("");
+    try {
+      const response = await fetch(`${API_URL}/api/uploads/image/trash`, {
+        method: "POST", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ publicId: image.publicId }),
+      });
+      const data = await readJson(response);
+      if (!response.ok) throw new Error(data?.message || "Unable to move image to Trash.");
+      setImages((current) => current.filter((item) => item.publicId !== image.publicId));
+      if (selectedId === image.publicId) setSelectedId("");
+      setSuccess("Image moved to Trash. Restore it within 30 days from Admin → Trash.");
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : "Unable to move image to Trash.");
+    } finally {
+      setDeletingId("");
     }
   };
 
@@ -313,22 +347,12 @@ export default function MediaLibraryManager() {
         <>
           <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
             {pagedImages.map((image) => (
-              <button
-                key={image.publicId}
-                type="button"
-                onClick={() => openDetails(image)}
-                aria-label="Open image details"
-                className="group relative aspect-square overflow-hidden rounded-2xl border border-black/5 bg-[#F3EEE8] text-left shadow-[0_8px_30px_rgba(33,26,24,0.04)] transition hover:-translate-y-0.5 hover:border-[#8C1839]/25 hover:shadow-[0_12px_34px_rgba(33,26,24,0.08)]"
-              >
-                <img
-                  src={image.url}
-                  alt={image.alt || image.name || "Gallery image"}
-                  className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.025]"
-                />
-                <span className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full border border-white/70 bg-white/90 text-[#211A18] opacity-0 shadow-sm transition group-hover:opacity-100">
-                  <Pencil size={14} />
-                </span>
-              </button>
+              <div key={image.publicId} className="group relative aspect-square overflow-hidden rounded-2xl border border-black/5 bg-[#F3EEE8] text-left shadow-[0_8px_30px_rgba(33,26,24,0.04)] transition hover:-translate-y-0.5 hover:border-[#8C1839]/25 hover:shadow-[0_12px_34px_rgba(33,26,24,0.08)]">
+                <img src={image.url} alt={image.alt || image.name || "Gallery image"} className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.025]" />
+                <button type="button" onClick={() => openDetails(image)} aria-label="Open image details" className="absolute inset-0 z-10 h-full w-full focus-visible:outline-[#8C1839]" />
+                <span className="pointer-events-none absolute right-12 top-2 z-10 grid h-8 w-8 place-items-center rounded-full border border-white/70 bg-white/90 text-[#211A18] opacity-0 shadow-sm transition group-hover:opacity-100 group-focus-within:opacity-100"><Pencil size={14}/></span>
+                <button type="button" onClick={() => void moveToTrash(image)} disabled={Boolean(deletingId)} title="Move to Trash" aria-label="Move image to Trash" className="absolute right-2 top-2 z-20 grid h-8 w-8 place-items-center rounded-full border border-red-100 bg-white/95 text-red-600 opacity-0 shadow-sm transition hover:bg-red-50 group-hover:opacity-100 group-focus-within:opacity-100 disabled:opacity-50">{deletingId === image.publicId ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}</button>
+              </div>
             ))}
           </div>
 
@@ -428,6 +452,7 @@ export default function MediaLibraryManager() {
                 </button>
               </div>
 
+              <button type="button" disabled={Boolean(deletingId)} onClick={() => void moveToTrash(selectedImage)} className="mt-3 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 text-xs font-semibold text-red-700 disabled:opacity-50"><Trash2 size={14}/> Move to Trash</button>
               <div className="mt-4 rounded-2xl border border-black/5 bg-white p-4 text-xs text-[#211A18]/60">
                 <div className="grid grid-cols-2 gap-3">
                   <Detail label="Dimensions" value={selectedImage.width && selectedImage.height ? `${selectedImage.width} × ${selectedImage.height}` : "—"} />

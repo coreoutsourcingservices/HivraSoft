@@ -176,7 +176,7 @@ export const sendRegisterOtp =
       },
       {
         upsert: true,
-        new: true,
+        returnDocument: "after",
         setDefaultsOnInsert:
           true,
       }
@@ -413,7 +413,7 @@ export const sendLoginOtp =
       },
       {
         upsert: true,
-        new: true,
+        returnDocument: "after",
         setDefaultsOnInsert:
           true,
       }

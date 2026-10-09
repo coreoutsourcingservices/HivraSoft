@@ -360,7 +360,7 @@ export async function markNotificationRead(req: Request, res: Response) {
         ],
       },
       { $addToSet: { readBy: userObjectId } },
-      { new: true }
+      { returnDocument: "after" }
     );
 
     if (!notification) {
@@ -437,7 +437,7 @@ export async function deleteMyNotification(req: Request, res: Response) {
         ],
       },
       { $addToSet: { deletedBy: userObjectId } },
-      { new: true }
+      { returnDocument: "after" }
     );
 
     if (!notification) {

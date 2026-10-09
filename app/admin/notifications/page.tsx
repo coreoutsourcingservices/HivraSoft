@@ -35,13 +35,14 @@ export default function AdminNotificationsPage() {
   const [title, setTitle] = useState("");
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
-  const [messageMode, setMessageMode] = useState<"visual" | "html">("visual");
   const [deliveryEmail, setDeliveryEmail] = useState(false);
   const [deliveryWebsite, setDeliveryWebsite] = useState(true);
   const [type, setType] = useState("general");
   const [link, setLink] = useState("");
   const [audience, setAudience] = useState<Audience>("all");
   const [filters, setFilters] = useState<TargetFilters>(emptyTargetFilters);
+  // Only applied filters are used for preview/sending; editing inputs never clears existing selections.
+  const [appliedFilters, setAppliedFilters] = useState<TargetFilters>(emptyTargetFilters);
   const [presetUser, setPresetUser] = useState<Customer | null>(null);
   const [matchedCount, setMatchedCount] = useState(0);
   const [previewCustomers, setPreviewCustomers] = useState<Customer[]>([]);
@@ -92,7 +93,7 @@ export default function AdminNotificationsPage() {
     if (audience === "selected" && presetUser) { setMatchedCount(1); setPreviewCustomers([presetUser]); return; }
     const timer = window.setTimeout(() => void previewAudience(), audience === "filtered" ? 350 : 0);
     return () => window.clearTimeout(timer);
-  }, [audience, filters, presetUser]);
+  }, [audience, appliedFilters, presetUser]);
 
   async function previewAudience() {
     try {
@@ -100,7 +101,7 @@ export default function AdminNotificationsPage() {
       setError("");
       const response = await fetch(`${API_URL}/api/admin/notifications/preview`, {
         method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ audienceType: audience, filters: audience === "filtered" ? filters : {}, userIds: audience === "selected" && presetUser ? [presetUser._id] : [] }),
+        body: JSON.stringify({ audienceType: audience, filters: audience === "filtered" ? appliedFilters : {}, userIds: audience === "selected" && presetUser ? [presetUser._id] : [] }),
       });
       const data = await readJson(response);
       if (!response.ok) throw new Error(data?.message || "Unable to preview audience.");
@@ -127,7 +128,7 @@ export default function AdminNotificationsPage() {
       if (audience !== "all" && matchedCount === 0) throw new Error("No customers match this audience.");
       const response = await fetch(`${API_URL}/api/admin/notifications`, {
         method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: title.trim(), subject: (subject || title).trim(), message: message.trim(), deliveryEmail, deliveryWebsite, type, link: link.trim(), audienceType: audience, filters: audience === "filtered" ? filters : {}, userIds: audience === "selected" && presetUser ? [presetUser._id] : [], isActive: true }),
+        body: JSON.stringify({ title: title.trim(), subject: (subject || title).trim(), message: message.trim(), deliveryEmail, deliveryWebsite, type, link: link.trim(), audienceType: audience, filters: audience === "filtered" ? appliedFilters : {}, userIds: audience === "selected" && presetUser ? [presetUser._id] : [], isActive: true }),
       });
       const data = await readJson(response);
       if (!response.ok) throw new Error(data?.message || "Unable to send notification.");
@@ -173,7 +174,7 @@ export default function AdminNotificationsPage() {
           <Field label="Title"><input value={title} maxLength={160} onChange={(e) => { setTitle(e.target.value); if (!subject) setSubject(e.target.value); }} placeholder="Complete your order" className={inputClass}/></Field>
           <Field label="Email Subject"><input value={subject} maxLength={200} onChange={(e) => setSubject(e.target.value)} placeholder="Complete your order" className={inputClass}/></Field>
           <Field label="Delivery Channels"><div className="grid grid-cols-2 gap-2"><button type="button" onClick={()=>setDeliveryEmail(v=>!v)} className={`flex h-12 items-center justify-center gap-2 rounded-xl border text-[10px] font-semibold ${deliveryEmail?"border-[#8C1839]/30 bg-[#FFF3F7] text-[#8C1839]":"border-[#211A18]/10"}`}><Mail size={14}/> Send to Email · {deliveryEmail?"ON":"OFF"}</button><button type="button" onClick={()=>setDeliveryWebsite(v=>!v)} className={`flex h-12 items-center justify-center gap-2 rounded-xl border text-[10px] font-semibold ${deliveryWebsite?"border-[#8C1839]/30 bg-[#FFF3F7] text-[#8C1839]":"border-[#211A18]/10"}`}><Globe2 size={14}/> Send to Website · {deliveryWebsite?"ON":"OFF"}</button></div></Field>
-          <Field label="Message"><div className="mb-3 flex gap-2"><button type="button" onClick={()=>setMessageMode("visual")} className={`h-9 rounded-lg px-3 text-[9px] font-semibold ${messageMode==="visual"?"bg-[#8C1839] text-white":"bg-[#FAF8F6]"}`}>Visual Editor</button><button type="button" onClick={()=>setMessageMode("html")} className={`h-9 rounded-lg px-3 text-[9px] font-semibold ${messageMode==="html"?"bg-[#8C1839] text-white":"bg-[#FAF8F6]"}`}>HTML</button></div>{messageMode==="visual"?<WordBlogEditor value={message} onChange={setMessage} onImageUpload={uploadBlogImage}/>:<textarea value={message} onChange={(e)=>setMessage(e.target.value)} spellCheck={false} className={`${inputClass} min-h-[420px] resize-y bg-[#171717] py-4 font-mono text-[#F5F5F5]`}/>}<div className="mt-3 rounded-xl border border-[#211A18]/10 bg-white p-3"><p className="mb-2 text-[8px] font-semibold uppercase text-[#211A18]/35">Final Preview</p><iframe title="Notification HTML preview" sandbox="" srcDoc={message} className="min-h-40 w-full rounded-lg border-0 bg-white" /></div></Field>
+          <Field label="Message"><WordBlogEditor value={message} onChange={setMessage} onImageUpload={uploadBlogImage}/><div className="mt-3 rounded-xl border border-[#211A18]/10 bg-white p-3"><p className="mb-2 text-[8px] font-semibold uppercase text-[#211A18]/35">Live Preview — updates while typing</p><iframe title="Notification live preview" sandbox="" srcDoc={message} className="min-h-44 w-full rounded-lg border-0 bg-white"/></div></Field>
           <div className="grid gap-3 sm:grid-cols-2"><Field label="Type"><select value={type} onChange={(e) => setType(e.target.value)} className={inputClass}><option value="general">General</option><option value="promotion">Promotion</option><option value="order">Order</option><option value="account">Account</option><option value="system">System</option></select></Field><Field label="Optional Link"><input value={link} onChange={(e) => setLink(e.target.value)} placeholder="/account/card" className={inputClass}/></Field></div>
           <div className="rounded-2xl bg-[#FAF8F6] px-4 py-3"><p className="text-[9px] uppercase tracking-[0.08em] text-[#211A18]/40">Preview</p><p className="mt-1 text-[14px] font-semibold text-[#211A18]">{previewing ? "Matching users..." : `${matchedCount} user${matchedCount === 1 ? "" : "s"} matched`}</p></div>
           <button type="button" disabled={saving || previewing || matchedCount === 0} onClick={() => void sendNotification()} className="h-14 w-full rounded-[14px] bg-[#A51D45] text-[11px] font-semibold uppercase tracking-[0.09em] text-white disabled:opacity-40">{saving ? "Sending..." : audience === "all" ? "Send To All Users" : `Send To ${matchedCount} Matched Users`}</button>
@@ -210,7 +211,8 @@ export default function AdminNotificationsPage() {
             <SelectField label="Coupon Used" value={filters.couponUsed} onChange={(v) => setFilters((f) => ({...f,couponUsed:v}))} options={[['','Any'],['true','Used'],['false','Never Used']]}/>
             <SelectField label="Discount Used" value={filters.discountUsed} onChange={(v) => setFilters((f) => ({...f,discountUsed:v}))} options={[['','Any'],['true','Yes'],['false','No']]}/>
           </div>
-          <div className="mt-5 flex items-center justify-between rounded-2xl bg-[#FAF8F6] px-4 py-3"><p className="text-[10px] text-[#211A18]/45">{activeFilterCount} targeting filter{activeFilterCount === 1 ? "" : "s"} active</p><button type="button" onClick={() => setFilters(emptyTargetFilters)} className="text-[10px] font-semibold text-[#8C1839]">Clear Filters</button></div>
+          <div className="mt-5 flex items-center justify-between rounded-2xl bg-[#FAF8F6] px-4 py-3"><p className="text-[10px] text-[#211A18]/45">{activeFilterCount} targeting filter{activeFilterCount === 1 ? "" : "s"} active</p><button type="button" onClick={() => { setFilters({...emptyTargetFilters}); setAppliedFilters({...emptyTargetFilters}); }} className="text-[10px] font-semibold text-[#8C1839]">Clear Filters</button></div>
+          <div className="mt-4 flex flex-wrap items-center justify-end gap-2"><button type="button" onClick={() => { setAppliedFilters({ ...filters }); setShowMatchedUsers(true); }} className="rounded-xl border border-[#8C1839]/30 bg-[#FFF3F7] px-4 py-2.5 text-[9px] font-semibold text-[#8C1839]">Apply Filters</button></div>
           <div className="mt-4 flex justify-end"><button type="button" onClick={() => { setShowMatchedUsers(true); void previewAudience(); }} className="rounded-xl bg-[#211A18] px-4 py-2.5 text-[9px] font-semibold text-white">Show Matched Users</button></div>{showMatchedUsers && previewCustomers.length > 0 && <div className="mt-4"><p className="mb-2 text-[9px] font-semibold uppercase tracking-[0.08em] text-[#211A18]/40">Sample matched users</p><div className="max-h-44 space-y-2 overflow-y-auto">{previewCustomers.slice(0,8).map((customer) => <div key={customer._id} className="rounded-xl border border-[#211A18]/8 px-3 py-2"><p className="text-[10px] font-semibold">{customer.name}</p><p className="mt-0.5 text-[9px] text-[#211A18]/40">{customer.email}</p></div>)}</div></div>}
         </>}
       </section>

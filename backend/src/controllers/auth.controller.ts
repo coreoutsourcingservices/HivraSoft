@@ -595,7 +595,7 @@ export const updateAccountInfo = async (
       }
     }
 
-    const user = await User.findByIdAndUpdate(req.user._id, { $set: updateData }, { new: true, runValidators: true })
+    const user = await User.findByIdAndUpdate(req.user._id, { $set: updateData }, { returnDocument: "after", runValidators: true })
       .select("name email phone gender birthday anniversary role avatar createdAt updatedAt")
       .lean();
     if (!user) return res.status(404).json({ success: false, message: "User not found." });

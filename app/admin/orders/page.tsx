@@ -11,7 +11,9 @@ import {
   getAdminOrders,
   setAdminOrderStatus,
   setAdminOrdersStatus,
+  syncAdminRazorpayPayment,
 } from "@/lib/admin-api";
+import { adminPaymentStatus } from "@/lib/admin-payment-status";
 
 function text(value: unknown, fallback = "—") {
   return typeof value === "string" || typeof value === "number"
@@ -76,36 +78,6 @@ function statusClass(status: SimpleOrderStatus) {
   if (status === "completed") return "border-green-200 bg-green-50 text-green-700";
   if (status === "cancelled") return "border-red-200 bg-red-50 text-red-700";
   return "border-amber-200 bg-amber-50 text-amber-700";
-}
-
-function paymentStatusMeta(value: unknown) {
-  const status = text(value, "pending").trim().toLowerCase();
-
-  if (status === "paid") {
-    return {
-      label: "Successful",
-      className: "border-green-200 bg-green-50 text-green-700",
-    };
-  }
-
-  if (status === "failed") {
-    return {
-      label: "Failed",
-      className: "border-red-200 bg-red-50 text-red-700",
-    };
-  }
-
-  if (status === "refunded") {
-    return {
-      label: "Refunded",
-      className: "border-sky-200 bg-sky-50 text-sky-700",
-    };
-  }
-
-  return {
-    label: "Pending",
-    className: "border-amber-200 bg-amber-50 text-amber-700",
-  };
 }
 
 function sourceLabel(value: unknown) {
@@ -200,6 +172,21 @@ export default function AdminOrdersPage() {
         ? [...new Set([...current, id])]
         : current.filter((value) => value !== id)
     );
+  }
+
+  async function checkPayment(id: string) {
+    setBusyId(`payment-${id}`);
+    setError("");
+    setActionMessage("");
+    try {
+      const result = await syncAdminRazorpayPayment(id);
+      setActionMessage(result.message);
+      await loadOrders();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to check Razorpay payment.");
+    } finally {
+      setBusyId("");
+    }
   }
 
   async function downloadInvoice(order: Record<string, unknown>) {
@@ -402,9 +389,7 @@ export default function AdminOrdersPage() {
           >
             <option value="">All payment status</option>
             <option value="paid">Successful</option>
-            <option value="pending">Pending</option>
             <option value="failed">Failed</option>
-            <option value="refunded">Refunded</option>
           </select>
         </div>
 
@@ -481,7 +466,7 @@ export default function AdminOrdersPage() {
                     0
                   );
                   const status = simpleOrderStatus(order.status);
-                  const paymentState = paymentStatusMeta(order.paymentStatus);
+                  const paymentState = adminPaymentStatus(order);
                   const origin = record(order.origin);
                   const source = sourceLabel(origin.source);
                   const sourceDetails = [
@@ -557,11 +542,17 @@ export default function AdminOrdersPage() {
                         <p className="text-[10px] font-semibold uppercase text-[#211A18]">
                           {text(order.paymentMethod)}
                         </p>
-                        <span
+                        <span title={paymentState.hint}
                           className={`mt-1.5 inline-flex rounded-full border px-2 py-1 text-[8px] font-bold uppercase tracking-wide ${paymentState.className}`}
                         >
                           {paymentState.label}
                         </span>
+                        {paymentState.canSync && (
+                          <button type="button" onClick={() => void checkPayment(id)} disabled={busyId === `payment-${id}`}
+                            className="mt-1 block text-[9px] font-semibold text-[#8C1839] underline disabled:opacity-50">
+                            {busyId === `payment-${id}` ? "Checking..." : "Check Payment"}
+                          </button>
+                        )}
                       </td>
 
                       <td className="px-3 py-4">

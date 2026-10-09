@@ -19,6 +19,7 @@ import {
   listImagesController,
   updateImageDetailsController,
   deleteImageController,
+  trashGalleryImageController,
 } from "../controllers/upload.controller";
 
 const router =
@@ -53,6 +54,9 @@ router.patch(
   requireAdmin,
   updateImageDetailsController
 );
+
+// Only the Gallery admin uses this soft-delete route. Other upload APIs are unchanged.
+router.post("/image/trash", authenticate, requireAdmin, trashGalleryImageController);
 
 /* =========================================================
    DELETE
