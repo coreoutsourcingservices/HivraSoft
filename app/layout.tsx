@@ -19,9 +19,14 @@ import MonthlyPromotionReminder from "@/src/components/Storefront/MonthlyPromoti
 import ProfileCompletionPrompt from "@/src/components/Storefront/ProfileCompletionPrompt";
 
 import TrafficSourceCapture from "@/src/components/Storefront/TrafficSourceCapture";
-import ChatbotWidget from "@/src/components/Chatbot/ChatbotWidget";
 
 import ScrollToTopOnRefresh from "@/src/components/Storefront/ScrollToTopOnRefresh";
+
+import FestiveCrackerEffects from "@/src/components/Storefront/FestiveCrackerEffects";
+
+/* =========================================================
+   METADATA
+========================================================= */
 
 export const metadata: Metadata =
   {
@@ -31,6 +36,10 @@ export const metadata: Metadata =
     description:
       "HivraSoft online store",
   };
+
+/* =========================================================
+   ROOT LAYOUT
+========================================================= */
 
 export default function RootLayout({
   children,
@@ -43,52 +52,66 @@ export default function RootLayout({
       lang="en"
       suppressHydrationWarning
     >
-      <head>
-        <link rel="stylesheet" href="/chatbot/chatbot.css" />
-      </head>
       <body
         className="
           min-h-screen
         "
       >
-        {/* =============================================
-            GLOBAL REFRESH SCROLL FIX
-
-            Refresh hone par page top se open hoga.
-        ============================================= */}
+        {/* ================================================
+            PAGE REFRESH -> TOP
+        ================================================ */}
 
         <ScrollToTopOnRefresh />
 
+        {/* ================================================
+            FESTIVE CLICK + SCROLL CRACKERS
+
+            Component ke andar hi hidden hai:
+            /admin/*
+            /account/*
+            /cart/*
+            /wishlist/*
+            /checkout/*
+            /payment/*
+            /thanks/*
+        ================================================ */}
+
+        <FestiveCrackerEffects />
+
+        {/* ================================================
+            GLOBAL LOADER
+        ================================================ */}
+
         <Loader />
+
+        {/* ================================================
+            STOREFRONT
+        ================================================ */}
 
         <StorefrontCommerceProvider>
           <TrafficSourceCapture />
 
           {children}
-          <ChatbotWidget />
 
-          {/* =============================================
+          {/* ==============================================
               MONTHLY PROMOTION REMINDER
-          ============================================= */}
+
+              Iske apne hidden routes already hain.
+          ============================================== */}
 
           <MonthlyPromotionReminder />
 
-          {/* =============================================
-              PROFILE COMPLETION NOTIFICATIONS
+          {/* ==============================================
+              PROFILE COMPLETION PROMPT
 
-              Birthday
-              Anniversary
-              Gender
-          ============================================= */}
+              Iske apne hidden routes already hain.
+          ============================================== */}
 
           <ProfileCompletionPrompt />
 
-          {/* =============================================
+          {/* ==============================================
               FOOTER
-
-              Thanks page hide logic
-              StorefrontFooter ke andar hai.
-          ============================================= */}
+          ============================================== */}
 
           <StorefrontFooter>
             <Footer />
