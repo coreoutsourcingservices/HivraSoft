@@ -41,10 +41,10 @@ const API_URL =
   "http://localhost:5000";
 
 const LOGIN_IMAGE =
-  "/images/auth/login-side-fit.png";
+  "/images/auth/account-profile.jpeg";
 
 const SIGNUP_IMAGE =
-  "/images/auth/signup-side-fit.png";
+  "/images/auth/account-profile.jpeg";
 
 const SUCCESS_VIDEO =
   "/images/logos/hivralogin.mp4";
