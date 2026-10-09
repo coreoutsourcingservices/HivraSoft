@@ -355,7 +355,7 @@ export async function updateNotificationSchedule(
           $set: updateData,
         },
         {
-          new: true,
+          returnDocument: "after",
           runValidators: true,
         }
       );
@@ -406,7 +406,7 @@ export async function updateNotificationScheduleStatus(
           },
         },
         {
-          new: true,
+          returnDocument: "after",
         }
       );
 

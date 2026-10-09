@@ -493,7 +493,7 @@ async function finalizePaidOrder(orderId: string, paymentId: string, source: "ve
       status: { $ne: "cancelled" },
     },
     { $set: { fulfillmentState: "processing" } },
-    { new: true }
+    { returnDocument: "after" }
   );
 
   if (!claimed) {
@@ -542,7 +542,7 @@ async function finalizePaidOrder(orderId: string, paymentId: string, source: "ve
           },
         },
       },
-      { new: true }
+      { returnDocument: "after" }
     );
     if (!updated) throw new Error("Unable to finalize paid order.");
 

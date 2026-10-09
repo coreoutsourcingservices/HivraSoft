@@ -3,6 +3,10 @@ import {
   Response,
 } from "express";
 
+import GalleryMedia from "../models/GalleryMedia.model";
+import { softDeleteEntity } from "../services/admin-trash.service";
+import configureCloudinary from "../config/cloudinary";
+
 import {
   uploadImageBuffer,
   deleteCloudinaryImage,
@@ -292,9 +296,13 @@ export const listImagesController =
         nextCursor,
       });
 
+      const publicIds = result.images.map((image) => image.publicId);
+      const deleted = await GalleryMedia.find({ publicId: { $in: publicIds }, isDeleted: true }).select("publicId").lean();
+      const hidden = new Set(deleted.map((image: any) => image.publicId));
       return res.status(200).json({
         success: true,
         ...result,
+        images: result.images.filter((image) => !hidden.has(image.publicId)),
       });
     } catch (error) {
       return res.status(500).json({
@@ -423,3 +431,34 @@ export const deleteImageController =
         });
     }
   };
+
+/** Gallery soft delete: keep Cloudinary original until Trash expiry or explicit permanent delete. */
+export const trashGalleryImageController = async (req: Request, res: Response) => {
+  try {
+    const publicId = typeof req.body?.publicId === "string" ? req.body.publicId.trim() : "";
+    if (!publicId.startsWith("hivrasoft/") || publicId.length > 500) {
+      return res.status(400).json({ success: false, message: "Valid HivraSoft image publicId required." });
+    }
+    const existing = await GalleryMedia.findOne({ publicId });
+    if (existing?.isDeleted) return res.status(200).json({ success: true, message: "Image already in Trash." });
+    // Do not trust an arbitrary URL from the browser; obtain the actual Cloudinary resource.
+    const cloudinary = configureCloudinary();
+    const resource = await cloudinary.api.resource(publicId, { resource_type: "image", type: "upload" });
+    const url = String(resource.secure_url || "");
+    if (!url) throw new Error("Cloudinary image not found.");
+    const fallbackName = publicId.split("/").pop() || "Gallery image";
+    const record = existing || await GalleryMedia.findOneAndUpdate(
+      { publicId },
+      { $setOnInsert: { publicId, title: fallbackName, image: { publicId, url }, isDeleted: false } },
+      { upsert: true, returnDocument: "after", setDefaultsOnInsert: true }
+    );
+    if (!record) throw new Error("Unable to save gallery image.");
+    const actorId = req.user?._id ? String(req.user._id) : null;
+    const result = await softDeleteEntity("gallery_image", String(record._id), actorId);
+    return res.status(200).json({ success: true, message: result.message });
+  } catch (error: any) {
+    return res.status(error?.http_code === 404 ? 404 : 400).json({
+      success: false, message: error instanceof Error ? error.message : "Unable to move image to Trash."
+    });
+  }
+};

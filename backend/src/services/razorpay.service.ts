@@ -87,3 +87,35 @@ export function verifyRazorpayWebhookSignature(rawBody: Buffer, signature: strin
   if (!actual || actual.length !== expected.length) return false;
   return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(actual));
 }
+
+/** Query the payment provider using server credentials; do not infer success
+ * from the customer's browser or an unverified pending order record. */
+export async function lookupRazorpayOrderPayment(razorpayOrderId: string, expectedRupees: number) {
+  if (!/^order_[A-Za-z0-9]+$/.test(razorpayOrderId)) {
+    throw new Error("A valid Razorpay order ID is required to check payment.");
+  }
+  const { keyId, keySecret } = credentials();
+  const abort = new AbortController();
+  const timer = setTimeout(() => abort.abort(), 12000);
+  try {
+    const response = await fetch(`${API_BASE}/orders/${encodeURIComponent(razorpayOrderId)}/payments`, {
+      headers: { Authorization: basicAuth(keyId, keySecret), Accept: "application/json" },
+      signal: abort.signal,
+    });
+    const data = (await response.json().catch(() => ({}))) as any;
+    if (!response.ok) throw new Error(`Razorpay check failed: ${String(data?.error?.description || response.status)}`);
+    const payments = Array.isArray(data?.items) ? data.items : [];
+    const expectedPaise = Math.round(expectedRupees * 100);
+    const captured = payments.find((item: any) => item?.status === "captured" && Number(item.amount) >= expectedPaise);
+    if (captured) return { status: "paid" as const, paymentId: String(captured.id || "") };
+    // Authorised payments may still be captured later. Do not declare them failed.
+    if (payments.some((item: any) => ["authorized", "created", "pending"].includes(String(item?.status)))) {
+      return { status: "pending" as const, paymentId: "" };
+    }
+    const failed = payments.find((item: any) => item?.status === "failed");
+    if (failed) return { status: "failed" as const, paymentId: String(failed.id || "") };
+    return { status: "pending" as const, paymentId: "" };
+  } finally {
+    clearTimeout(timer);
+  }
+}

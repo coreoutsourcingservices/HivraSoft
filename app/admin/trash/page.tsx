@@ -46,6 +46,7 @@ type TrashResponse = {
 const filters = [
   ["all", "All"],
   ["product", "Products"],
+  ["gallery_image", "Gallery Images"],
   ["category", "Categories"],
   ["banner", "Banners"],
   ["blog", "Blogs"],

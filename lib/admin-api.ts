@@ -149,6 +149,13 @@ export async function getAdminOrder(id: string) {
   return result.order;
 }
 
+export async function syncAdminRazorpayPayment(id: string) {
+  return apiFetch<{ success: boolean; message: string; order: Record<string, unknown> }>(
+    `/api/admin/orders/${encodeURIComponent(id)}/sync-payment`,
+    { method: "POST" }
+  );
+}
+
 export async function setAdminOrderStatus(id: string, status: string, message?: string) {
   return apiFetch<{ success: boolean; order: Record<string, unknown> }>(
     `/api/admin/orders/${encodeURIComponent(id)}/status`,
@@ -323,6 +330,8 @@ export type CommerceTrackingRow = {
     reminder20MinSent: boolean;
     reminder24HourSent: boolean;
     reminder48HourSent: boolean;
+    reminder24HourError?: string;
+    reminder48HourError?: string;
   };
 };
 

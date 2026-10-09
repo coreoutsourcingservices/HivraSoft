@@ -351,7 +351,7 @@ export async function likePublicBlog(req: Request, res: Response) {
     const blog = await Blog.findOneAndUpdate(
       { slug, ...publicBlogMatch() },
       { $addToSet: { likes: new Types.ObjectId(userId) } },
-      { new: true }
+      { returnDocument: "after" }
     ).select("likes").lean();
 
     if (!blog) return res.status(404).json({ success: false, message: "Blog not found." });

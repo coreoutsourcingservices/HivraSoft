@@ -161,7 +161,7 @@ export async function adminForgotPasswordSendOtp(_req: Request, res: Response) {
         attempts: 0,
         expiresAt,
       },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
+      { upsert: true, returnDocument: "after", setDefaultsOnInsert: true }
     );
 
     await sendOtpEmail(ADMIN_PASSWORD_RESET_EMAIL, otp);
@@ -631,7 +631,7 @@ export async function updateAdminCustomer(req: Request, res: Response) {
     }
     if (req.body?.emailVerified !== undefined) update.emailVerified = Boolean(req.body.emailVerified);
     if (Object.values(update).some((value) => value === "")) return res.status(400).json({ success: false, message: "Updated fields cannot be empty." });
-    const customer = await User.findOneAndUpdate({ _id: id, role: "customer" }, { $set: update }, { new: true, runValidators: true })
+    const customer = await User.findOneAndUpdate({ _id: id, role: "customer" }, { $set: update }, { returnDocument: "after", runValidators: true })
       .select("name email phone gender birthday anniversary emailVerified isActive accountStatus lastActiveAt createdAt updatedAt");
     if (!customer) return res.status(404).json({ success: false, message: "Customer not found." });
     return res.json({ success: true, message: "Customer updated.", data: customer });
@@ -647,7 +647,7 @@ export async function updateAdminCustomerLastActive(req: Request, res: Response)
     if (!Types.ObjectId.isValid(id)) return res.status(400).json({ success: false, message: "Invalid customer id." });
     const value = req.body?.lastActiveAt ? new Date(req.body.lastActiveAt) : new Date();
     if (Number.isNaN(value.getTime())) return res.status(400).json({ success: false, message: "Invalid lastActiveAt date." });
-    const customer = await User.findOneAndUpdate({ _id: id, role: "customer" }, { $set: { lastActiveAt: value } }, { new: true })
+    const customer = await User.findOneAndUpdate({ _id: id, role: "customer" }, { $set: { lastActiveAt: value } }, { returnDocument: "after" })
       .select("name email phone lastActiveAt");
     if (!customer) return res.status(404).json({ success: false, message: "Customer not found." });
     return res.json({ success: true, message: "Last active updated.", data: customer });
@@ -1109,7 +1109,7 @@ export async function updateAdminCustomerStatus(req: Request, res: Response) {
     const customer = await User.findOneAndUpdate(
       { _id: id, role: "customer" },
       { $set: { isActive, accountStatus: rawStatus } },
-      { new: true }
+      { returnDocument: "after" }
     ).select("name email phone gender birthday anniversary emailVerified isActive accountStatus lastActiveAt createdAt updatedAt");
 
     if (!customer) return res.status(404).json({ success: false, message: "Customer not found." });
@@ -1721,7 +1721,7 @@ export async function updateAdminUserSettings(req: Request, res: Response) {
       return res.status(400).json({ success: false, message: "Name, gender or profile image is required." });
     }
 
-    const updated = await User.findByIdAndUpdate(req.user!._id, { $set: update }, { new: true, runValidators: true })
+    const updated = await User.findByIdAndUpdate(req.user!._id, { $set: update }, { returnDocument: "after", runValidators: true })
       .select("name email phone gender avatar role createdAt updatedAt")
       .lean();
 

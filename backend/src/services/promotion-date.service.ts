@@ -73,7 +73,7 @@ export async function saveMyPromotionDates(req: Request, res: Response) {
     const user = await User.findOneAndUpdate(
       { _id: req.user?._id, role: "customer" },
       { $set: { sendNdata: dates.map((date) => ({ date })) } },
-      { new: true }
+      { returnDocument: "after" }
     ).select("sendNdata");
     if (!user) return res.status(404).json({ success: false, message: "Customer not found." });
     // A customer's updates immediately reschedule any not-yet-sent promotions.
@@ -150,7 +150,7 @@ export async function runDueCustomerPromotions(): Promise<number> {
     }
     const claimed = await NotificationDelivery.findOneAndUpdate(
       { _id: row._id, status: "pending" },
-      { $set: { status: "processing", processedAt: now } }, { new: true }
+      { $set: { status: "processing", processedAt: now } }, { returnDocument: "after" }
     );
     if (!claimed) continue;
     if (row.channel === "email") {

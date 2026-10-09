@@ -42,6 +42,13 @@ import {
   getAdminCartTracking,
   getAdminWishlistTracking,
 } from "../controllers/tracking.controller";
+import { runAbandonedCartWishlistReminders } from "../services/reminder.service";
+import smtpTransporter from "../config/mail";
+import { sendEmail } from "../services/mail.service";
+import Order from "../models/Order.model";
+import { lookupRazorpayOrderPayment } from "../services/razorpay.service";
+import { finalizeRazorpayWebhookPayment, markRazorpayPaymentFailed } from "../services/order.service";
+import { Types } from "mongoose";
 import { getAdminOrderReport, exportAdminOrderReport } from "../controllers/order-report.controller";
 
 import {
@@ -234,6 +241,74 @@ router.get("/send-your-bra/:id", authenticateAdmin, getSendYourBraAdmin);
 router.get("/reseller-registration", authenticateAdmin, listResellerRegistrationsAdmin);
 router.get("/reseller-registration/:id", authenticateAdmin, getResellerRegistrationAdmin);
 
+// Admin-only verification: checks SMTP authorization, does not expose secrets or send test mail.
+router.get("/reminders/smtp-status", authenticateAdmin, async (_req, res) => {
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    return res.status(503).json({ success: false, message: "SMTP_USER / SMTP_PASS missing in backend environment." });
+  }
+  try {
+    await smtpTransporter.verify();
+    return res.json({ success: true, message: "Gmail SMTP login OK (no email sent). Use Send Test Email to check if SMTP accepts an actual message." });
+  } catch (error) {
+    console.error("REMINDER SMTP VERIFICATION FAILED:", error);
+    return res.status(503).json({ success: false, message: error instanceof Error ? error.message : "SMTP verification failed." });
+  }
+});
+// Admin test mail is rate limited to prevent sending repeatedly to arbitrary inboxes.
+const testReminderMailLimit = rateLimit({ windowMs: 15 * 60_000, limit: 5, standardHeaders: "draft-8", legacyHeaders: false });
+router.post("/reminders/test-email", authenticateAdmin, testReminderMailLimit, async (req, res) => {
+  const email = String(req.body?.email || "").trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) {
+    return res.status(400).json({ success: false, message: "Enter a valid recipient email address." });
+  }
+  try {
+    await sendEmail({
+      to: email,
+      subject: "HivraSoft test email – Cart/Wishlist reminders",
+      html: '<div style="font-family:Arial,sans-serif;padding:24px"><h2>HivraSoft Email Test</h2><p>Mail server accepted a test message from HivraSoft. Cart and Wishlist reminders are sent only 24h / 48h after the item was added, while it is still in the list.</p></div>',
+    });
+    return res.json({ success: true, message: `SMTP accepted a test email for ${email}. Check inbox and spam; final delivery cannot be verified by SMTP.` });
+  } catch (error) {
+    console.error("ADMIN REMINDER TEST EMAIL FAILED:", error);
+    return res.status(503).json({ success: false, message: error instanceof Error ? error.message : "Test email was not accepted by SMTP." });
+  }
+});
+router.post("/reminders/run-due", authenticateAdmin, async (_req, res) => {
+  try {
+    const result = await runAbandonedCartWishlistReminders();
+    return res.json({ success: true, message: `Due reminder run completed. ${result.emailsSent} email(s) accepted by SMTP.`, ...result });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error instanceof Error ? error.message : "Reminder run failed." });
+  }
+});
+// Only provider-verified captured/failed attempts change payment status.
+router.post("/orders/:id/sync-payment", authenticateAdmin, async (req, res) => {
+  try {
+    const id = String(req.params.id || "");
+    if (!Types.ObjectId.isValid(id)) return res.status(400).json({ success: false, message: "Invalid order ID." });
+    const order = await Order.findById(id);
+    if (!order) return res.status(404).json({ success: false, message: "Order not found." });
+    if (order.paymentMethod !== "razorpay") return res.status(400).json({ success: false, message: "Only Razorpay payments can be checked with the payment gateway." });
+    if (order.paymentStatus === "refunded") return res.json({ success: true, message: "Payment was refunded.", order });
+    if (order.paymentStatus === "paid") return res.json({ success: true, message: "Payment is already successful.", order });
+    const gatewayId = String((order.payment as any)?.razorpayOrderId || "");
+    if (!gatewayId) return res.status(409).json({ success: false, message: "Razorpay order ID missing. This order cannot be checked automatically." });
+    const verified = await lookupRazorpayOrderPayment(gatewayId, Number(order.total));
+    if (verified.status === "paid") {
+      const updated = await finalizeRazorpayWebhookPayment(gatewayId, verified.paymentId);
+      if (!updated) return res.status(409).json({ success: false, message: "Payment captured but local order could not be finalized; check server logs." });
+      return res.json({ success: true, message: "Razorpay confirmed successful payment.", order: updated });
+    }
+    if (verified.status === "failed") {
+      const updated = await markRazorpayPaymentFailed(gatewayId, verified.paymentId);
+      return res.json({ success: true, message: "Razorpay confirmed a failed payment attempt.", order: updated });
+    }
+    return res.json({ success: true, message: "No captured or failed payment found at Razorpay yet. This order is not confirmed as failed.", order });
+  } catch (error) {
+    console.error("ADMIN RAZORPAY PAYMENT CHECK FAILED:", error);
+    return res.status(502).json({ success: false, message: error instanceof Error ? error.message : "Unable to verify payment with Razorpay." });
+  }
+});
 router.get("/notification-deliveries", authenticateAdmin, listAdminNotificationDeliveries);
 router.get("/notification-schedules/calendar", authenticateAdmin, getNotificationScheduleCalendar);
 router.get("/notification-schedules", authenticateAdmin, listNotificationSchedules);

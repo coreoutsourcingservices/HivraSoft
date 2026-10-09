@@ -2466,7 +2466,7 @@ export const updateProductRatingSummary =
           },
         },
         {
-          new: true,
+          returnDocument: "after",
 
           runValidators:
             true,

@@ -1,6 +1,7 @@
 import mongoose, { Schema, type Document, type Model, type Types } from "mongoose";
 
 export type TrashEntityType =
+  | "gallery_image"
   | "product"
   | "category"
   | "banner"
@@ -36,6 +37,7 @@ const adminTrashSchema = new Schema<IAdminTrash>(
       type: String,
       required: true,
       enum: [
+        "gallery_image",
         "product",
         "category",
         "banner",

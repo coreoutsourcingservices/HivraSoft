@@ -19,7 +19,9 @@ import {
 import {
   downloadAdminInvoice,
   getAdminOrder,
+  syncAdminRazorpayPayment,
 } from "@/lib/admin-api";
+import { adminPaymentStatus } from "@/lib/admin-payment-status";
 
 /* =========================================================
    Helpers
@@ -114,36 +116,6 @@ function statusLabel(value: unknown) {
     );
 }
 
-function paymentStatusMeta(value: unknown) {
-  const status = text(value, "pending").trim().toLowerCase();
-
-  if (status === "paid") {
-    return {
-      label: "Successful",
-      className: "border-green-200 bg-green-50 text-green-700",
-    };
-  }
-
-  if (status === "failed") {
-    return {
-      label: "Failed",
-      className: "border-red-200 bg-red-50 text-red-700",
-    };
-  }
-
-  if (status === "refunded") {
-    return {
-      label: "Refunded",
-      className: "border-sky-200 bg-sky-50 text-sky-700",
-    };
-  }
-
-  return {
-    label: "Pending",
-    className: "border-amber-200 bg-amber-50 text-amber-700",
-  };
-}
-
 /* =========================================================
    Component
 ========================================================= */
@@ -172,6 +144,24 @@ export default function AdminOrderDetailsPage() {
 
   const [error, setError] =
     useState("");
+  const [checkingPayment, setCheckingPayment] = useState(false);
+  const [paymentCheckMessage, setPaymentCheckMessage] = useState("");
+
+  async function checkPayment() {
+    if (!id || checkingPayment) return;
+    setCheckingPayment(true);
+    setPaymentCheckMessage("");
+    try {
+      const result = await syncAdminRazorpayPayment(id);
+      setPaymentCheckMessage(result.message);
+      // Reload from database to include the final persisted payment state.
+      setOrder(await getAdminOrder(id));
+    } catch (err) {
+      setPaymentCheckMessage(err instanceof Error ? err.message : "Unable to check Razorpay payment.");
+    } finally {
+      setCheckingPayment(false);
+    }
+  }
 
   /* =======================================================
      Load Order
@@ -366,9 +356,7 @@ export default function AdminOrderDetailsPage() {
     "—"
   ).toUpperCase();
 
-  const paymentState = paymentStatusMeta(
-    order.paymentStatus
-  );
+  const paymentState = adminPaymentStatus(order);
 
   const paymentId = text(
     payment.razorpayPaymentId ??
@@ -758,6 +746,14 @@ export default function AdminOrderDetailsPage() {
                 >
                   {paymentState.label}
                 </span>
+                <p title={paymentState.hint} className="mt-1 text-[10px] text-[#241C19]/50">{paymentState.hint}</p>
+                {paymentState.canSync && (
+                  <button type="button" onClick={() => void checkPayment()} disabled={checkingPayment}
+                    className="mt-2 block rounded-lg border border-[#8C1839]/30 px-3 py-1.5 text-[10px] font-semibold text-[#8C1839] disabled:opacity-50">
+                    {checkingPayment ? "Checking Razorpay..." : "Check Payment with Razorpay"}
+                  </button>
+                )}
+                {paymentCheckMessage && <p role="status" className="mt-2 text-[10px] text-[#241C19]/70">{paymentCheckMessage}</p>}
               </div>
 
               {paymentId && (

@@ -219,7 +219,7 @@ export async function updateUserProfile(req: Request, res: Response) {
     const updated = await User.findByIdAndUpdate(
       userId,
       { $set: update },
-      { new: true, runValidators: true }
+      { returnDocument: "after", runValidators: true }
     )
       .select("name email phone gender birthday anniversary avatar emailVerified createdAt updatedAt")
       .lean();
@@ -325,7 +325,7 @@ export async function sendEmailChangeOtp(req: Request, res: Response) {
           userId: new mongoose.Types.ObjectId(userId),
         },
       },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
+      { upsert: true, returnDocument: "after", setDefaultsOnInsert: true }
     );
 
     try {
@@ -408,7 +408,7 @@ export async function verifyEmailChangeOtp(req: Request, res: Response) {
     const user = await User.findByIdAndUpdate(
       userId,
       { $set: { email, emailVerified: true } },
-      { new: true, runValidators: true }
+      { returnDocument: "after", runValidators: true }
     )
       .select("name email phone gender avatar emailVerified")
       .lean();

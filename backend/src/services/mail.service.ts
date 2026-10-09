@@ -14,6 +14,9 @@ export type SendEmailInput = {
 export const sendEmail = async (input: SendEmailInput): Promise<void> => {
   const to = String(input.to || "").trim();
   if (!to) throw new Error("Email recipient is required.");
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    throw new Error("SMTP_USER or SMTP_PASS is missing. Configure Gmail App Password on the backend server.");
+  }
 
   await transporter.sendMail({
     from: process.env.MAIL_FROM || process.env.SMTP_USER,

@@ -4,6 +4,7 @@ import AdminTrash, { type IAdminTrash, type TrashEntityType } from "../models/Ad
 export type { TrashEntityType } from "../models/AdminTrash.model";
 import AdminAuditLog from "../models/AdminAuditLog.model";
 import Product from "../models/Product.model";
+import GalleryMedia from "../models/GalleryMedia.model";
 import Category from "../models/Category.model";
 import Banner from "../models/Banner.model";
 import Blog from "../models/Blog.model";
@@ -31,6 +32,7 @@ type RegistryItem = {
 };
 
 export const trashRegistry: Record<TrashEntityType, RegistryItem> = {
+  gallery_image: { model: GalleryMedia, modelName: "GalleryMedia", label: "Gallery Image", adminBaseUrl: "/admin/gallery" },
   product: { model: Product, modelName: "Product", label: "Product", adminBaseUrl: "/admin/products" },
   category: { model: Category, modelName: "Category", label: "Category", adminBaseUrl: "/admin/categories" },
   banner: { model: Banner, modelName: "Banner", label: "Banner", adminBaseUrl: "/admin/banners" },
@@ -382,10 +384,10 @@ async function cleanupSnapshotMedia(snapshot: Record<string, unknown>) {
     )
   );
 
-  return {
-    total: unique.size,
-    failed: results.filter((result) => result.status === "rejected").length,
-  };
+  const failed = results.filter((result) => result.status === "rejected" ||
+    (result.status === "fulfilled" && result.value && !["ok", "not found"].includes(String((result.value as any).result)))).length;
+  if (failed) throw new Error(`Cloudinary deletion failed for ${failed} image(s). Trash entry retained for retry.`);
+  return { total: unique.size, failed };
 }
 
 async function permanentlyDeleteEntry(entry: IAdminTrash, adminId?: string | null) {

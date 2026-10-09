@@ -179,8 +179,22 @@ async function sendReminderOnce(input: {
   });
 
   if (!notification) return false;
-  const meta = (notification.metadata || {}) as Record<string, any>;
-  if (meta.emailSentAt) return false;
+  // Atomic temporary lease: multiple workers / overlapping intervals cannot mail the same stage twice.
+  const lockAt = new Date();
+  const acquired = await Notification.findOneAndUpdate(
+    {
+      _id: notification._id,
+      "metadata.emailSentAt": { $exists: false },
+      $or: [
+        { "metadata.emailSendLockAt": { $exists: false } },
+        { "metadata.emailSendLockAt": { $lt: new Date(Date.now() - 10 * MINUTE_MS) } },
+      ],
+    },
+    { $set: { "metadata.emailSendLockAt": lockAt, "metadata.emailAttemptedAt": lockAt },
+      $unset: { "metadata.emailLastError": "" } },
+    { returnDocument: "after" }
+  );
+  if (!acquired) return false;
 
   try {
     const sent = input.kind === "cart"
@@ -203,15 +217,22 @@ async function sendReminderOnce(input: {
     if (sent) {
       await Notification.updateOne(
         { _id: notification._id },
-        { $set: { "metadata.emailSentAt": new Date(), "metadata.emailAttemptedAt": new Date() } }
+        { $set: { "metadata.emailSentAt": new Date(), "metadata.emailAttemptedAt": new Date() },
+          $unset: { "metadata.emailSendLockAt": "", "metadata.emailLastError": "" } }
       );
       return true;
     }
+    await Notification.updateOne(
+      { _id: notification._id },
+      { $set: { "metadata.emailLastError": "Email was skipped: customer email or product unavailable." },
+        $unset: { "metadata.emailSendLockAt": "" } }
+    ).catch(() => undefined);
     return false;
   } catch (error) {
     await Notification.updateOne(
       { _id: notification._id },
-      { $set: { "metadata.emailAttemptedAt": new Date(), "metadata.emailLastError": error instanceof Error ? error.message : "Email failed" } }
+      { $set: { "metadata.emailAttemptedAt": new Date(), "metadata.emailLastError": error instanceof Error ? error.message : "Email failed" },
+        $unset: { "metadata.emailSendLockAt": "" } }
     ).catch(() => undefined);
     console.error(`${input.kind.toUpperCase()} REMINDER EMAIL ERROR:`, error);
     return false;

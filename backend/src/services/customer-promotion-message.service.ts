@@ -101,7 +101,7 @@ export async function editMyScheduledPromotion(req: Request, res: Response) {
     let data: ReturnType<typeof normalizePayload>;
     try { data = normalizePayload(req.body, row); }
     catch (error) { return res.status(400).json({ success: false, message: errorText(error) }); }
-    const notification = await CustomerPromotionMessage.findOneAndUpdate({ _id: id, user: userId(req), status: "pending" }, { $set: data }, { new: true, runValidators: true });
+    const notification = await CustomerPromotionMessage.findOneAndUpdate({ _id: id, user: userId(req), status: "pending" }, { $set: data }, { returnDocument: "after", runValidators: true });
     if (!notification) return res.status(409).json({ success: false, message: "Notification started processing; retry is not allowed." });
     return res.json({ success: true, message: "Notification updated.", notification: jsonPromotion(notification) });
   } catch (error) { return res.status(500).json({ success: false, message: errorText(error) }); }
@@ -135,7 +135,7 @@ export async function runDuePersonalPromotions() {
     .sort({ scheduledFor: 1 }).limit(50).lean();
   let sent = 0;
   for (const row of due) {
-    const claimed = await CustomerPromotionMessage.findOneAndUpdate({ _id: row._id, status: "pending" }, { $set: { status: "processing", processingAt: now } }, { new: true });
+    const claimed = await CustomerPromotionMessage.findOneAndUpdate({ _id: row._id, status: "pending" }, { $set: { status: "processing", processingAt: now } }, { returnDocument: "after" });
     if (!claimed) continue;
     try {
       const owner = await User.findOne({ _id: claimed.user, role: "customer", isActive: true, accountStatus: "active" }).select("_id").lean();
@@ -152,7 +152,7 @@ export async function runDuePersonalPromotions() {
           filters: {}, link: "", deliveryWebsite: true, deliveryEmail: false, isActive: true,
           createdBy: claimed.user, source: "system", dedupeKey: key,
           metadata: { customerScheduledPromotion: true, customerCreatedPromotion: true, selectedDate: claimed.date },
-        } }, { upsert: true, new: true }
+        } }, { upsert: true, returnDocument: "after" }
       );
       const deliveryKey = `${key}:website`;
       await NotificationDelivery.findOneAndUpdate(
@@ -162,7 +162,7 @@ export async function runDuePersonalPromotions() {
           scheduledFor: claimed.scheduledFor, processedAt: new Date(), sentAt: new Date(),
           dedupeKey: deliveryKey, eventType: "none", daysBefore: 0,
           metadata: { customerScheduledPromotion: true, customerCreatedPromotion: true, selectedDate: claimed.date },
-        } }, { upsert: true, new: true }
+        } }, { upsert: true, returnDocument: "after" }
       );
       await CustomerPromotionMessage.updateOne({ _id: claimed._id, status: "processing" }, { $set: { status: "sent", sentAt: new Date(), notification: notification._id } });
       sent++;

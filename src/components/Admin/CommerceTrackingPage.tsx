@@ -142,18 +142,18 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-function EmailBadge({ label, sent }: { label: string; sent: boolean }) {
+function EmailBadge({ label, sent, error }: { label: string; sent: boolean; error?: string }) {
   return (
-    <span
+    <span title={error || undefined}
       className={`inline-flex min-w-[112px] items-center justify-center whitespace-nowrap rounded-full border px-2.5 py-1 text-[8px] font-semibold uppercase tracking-wide ${
         sent
           ? "border-emerald-200 bg-emerald-100 text-emerald-800"
-          : "border-transparent bg-[#F7F3EF] text-[#211A18]/40"
+          : error ? "border-red-200 bg-red-50 text-red-700" : "border-transparent bg-[#F7F3EF] text-[#211A18]/40"
       }`}
     >
       <span>{label}</span>
       <span className="mx-1 opacity-45">·</span>
-      <span>{sent ? "Complete" : "Pending"}</span>
+      <span>{sent ? "Complete" : error ? "Failed" : "Pending"}</span>
     </span>
   );
 }
@@ -169,6 +169,10 @@ export default function CommerceTrackingPage({ kind }: { kind: "cart" | "wishlis
   const [dateTo, setDateTo] = useState("");
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+  const [remindersRunning, setRemindersRunning] = useState(false);
+  const [reminderMessage, setReminderMessage] = useState("");
+  const [testEmailAddress, setTestEmailAddress] = useState("");
+  const [testEmailBusy, setTestEmailBusy] = useState(false);
   const [error, setError] = useState("");
 
   const getTracking = useCallback((requestedPage: number, limit: number) => {
@@ -209,6 +213,52 @@ export default function CommerceTrackingPage({ kind }: { kind: "cart" | "wishlis
     };
   }, [load]);
 
+  async function checkSMTP() {
+    setReminderMessage("Checking SMTP login...");
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/admin/reminders/smtp-status`, {
+        credentials: "include", cache: "no-store",
+      });
+      const result = await response.json();
+      setReminderMessage(result?.message || (response.ok ? "SMTP verified" : "SMTP failed"));
+    } catch (error) {
+      setReminderMessage(error instanceof Error ? error.message : "SMTP check failed.");
+    }
+  }
+
+  async function sendTestEmail() {
+    if (!testEmailAddress.trim() || testEmailBusy) return;
+    setTestEmailBusy(true);
+    setReminderMessage("Sending test email...");
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/admin/reminders/test-email`, {
+        method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: testEmailAddress.trim() }),
+      });
+      const result = await response.json();
+      setReminderMessage(result.message || (response.ok ? "Test email accepted" : "Test email failed"));
+    } catch (err) {
+      setReminderMessage(err instanceof Error ? err.message : "Test email failed.");
+    } finally { setTestEmailBusy(false); }
+  }
+
+  async function runDueReminders() {
+    if (remindersRunning) return;
+    setRemindersRunning(true);
+    setReminderMessage("");
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/admin/reminders/run-due`, {
+        method: "POST", credentials: "include", headers: { "Accept": "application/json" },
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result?.message || "Reminder execution failed.");
+      setReminderMessage(result.message);
+      await load(true);
+    } catch (error) {
+      setReminderMessage(error instanceof Error ? error.message : "Unable to run reminders.");
+    } finally { setRemindersRunning(false); }
+  }
+
   async function exportFilteredRows() {
     try {
       setExporting(true);
@@ -243,6 +293,13 @@ export default function CommerceTrackingPage({ kind }: { kind: "cart" | "wishlis
   return (
     <section className="mx-auto w-full max-w-[1600px]">
       <div className="rounded-[24px] border border-[#211A18]/10 bg-white p-5 md:p-6">
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <button type="button" disabled={remindersRunning} onClick={() => void runDueReminders()} className="rounded-xl border border-[#8C1839]/30 bg-[#FFF3F7] px-4 py-2 text-[10px] font-semibold text-[#8C1839] disabled:opacity-50">{remindersRunning ? "Checking due reminders..." : "Run due 24h / 48h email reminders"}</button>
+          <button type="button" onClick={() => void checkSMTP()} className="rounded-xl border border-[#211A18]/10 bg-white px-4 py-2 text-[10px] font-semibold text-[#211A18]">Check SMTP / Gmail</button>
+          <input aria-label="Test email recipient" type="email" value={testEmailAddress} onChange={(event) => setTestEmailAddress(event.target.value)} placeholder="Enter test email address" className="h-9 min-w-[200px] rounded-xl border border-[#211A18]/10 bg-white px-3 text-[10px] outline-none" />
+          <button type="button" disabled={testEmailBusy || !testEmailAddress.trim()} onClick={() => void sendTestEmail()} className="rounded-xl border border-[#211A18]/10 bg-white px-4 py-2 text-[10px] font-semibold disabled:opacity-50">{testEmailBusy ? "Sending..." : "Send Test Email"}</button>
+          {reminderMessage && <p role="status" className="w-full text-[10px] text-[#211A18]/65">{reminderMessage}</p>}
+        </div>
         <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
           <div>
             <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-[#8C1839]">Customer Intelligence</p>
@@ -389,8 +446,8 @@ export default function CommerceTrackingPage({ kind }: { kind: "cart" | "wishlis
                   <td className="px-4 py-4 align-top"><StatusBadge status={row.status} /></td>
                   <td className="px-4 py-4 align-top">
                     <div className="grid w-fit gap-1.5">
-                      <EmailBadge label="24 Hour" sent={row.email.reminder24HourSent} />
-                      <EmailBadge label="48 Hr / 2 Day" sent={row.email.reminder48HourSent} />
+                      <EmailBadge label="24 Hour" sent={row.email.reminder24HourSent} error={row.email.reminder24HourError} />
+                      <EmailBadge label="48 Hr / 2 Day" sent={row.email.reminder48HourSent} error={row.email.reminder48HourError} />
                     </div>
                   </td>
                 </tr>
