@@ -13,6 +13,7 @@ import {
   listCloudinaryImages,
   updateCloudinaryImageDetails,
 } from "../services/cloudinary.service";
+import type { CloudinaryLibraryImage } from "../services/cloudinary.service";
 
 /* =========================================================
    SAFE TEXT -> CLOUDINARY SEGMENT
@@ -296,13 +297,13 @@ export const listImagesController =
         nextCursor,
       });
 
-      const publicIds = result.images.map((image) => image.publicId);
+      const publicIds = result.images.map((image: CloudinaryLibraryImage) => image.publicId);
       const deleted = await GalleryMedia.find({ publicId: { $in: publicIds }, isDeleted: true }).select("publicId").lean();
       const hidden = new Set(deleted.map((image: any) => image.publicId));
       return res.status(200).json({
         success: true,
         ...result,
-        images: result.images.filter((image) => !hidden.has(image.publicId)),
+        images: result.images.filter((image: CloudinaryLibraryImage) => !hidden.has(image.publicId)),
       });
     } catch (error) {
       return res.status(500).json({
