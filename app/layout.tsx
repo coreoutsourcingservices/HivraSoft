@@ -23,10 +23,10 @@ import ProfileCompletionPrompt from "@/src/components/Storefront/ProfileCompleti
 
 export const metadata: Metadata =
   {
-    title: "HivraSoft",
+    title: "Hivra Soft",
 
     description:
-      "HivraSoft online store",
+      "Hivra Soft online store",
   };
 
 export default function RootLayout({
