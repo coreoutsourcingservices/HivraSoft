@@ -1648,7 +1648,7 @@ export default function Loader({
             >
               <h2
                 data-brand-word
-                aria-label="HivraSoft"
+                aria-label="Hivra Soft"
                 className="
                   inline-block
 
@@ -1691,7 +1691,7 @@ export default function Loader({
                     "0.12em",
                 }}
               >
-                HivraSoft
+                Hivra Soft
               </h2>
             </div>
 
