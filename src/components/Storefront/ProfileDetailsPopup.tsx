@@ -101,7 +101,9 @@ export default function ProfileDetailsPopup() {
     setError("");
     setMessage("");
     try {
-      const body = field === "gender" ? { gender } : { [field]: date };
+      const body: Partial<Pick<Account, Field>> = field === "gender"
+        ? { gender: gender || undefined }
+        : { [field]: date };
       const updated = await apiFetch<AccountResponse>("/api/auth/account", { method: "PATCH", body });
       setAccount(updated.account ?? { ...account, ...body });
       setMessage(`${fieldLabels[field]} saved successfully.`);

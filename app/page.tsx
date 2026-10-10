@@ -2539,71 +2539,27 @@ function CommerceProductCard({
           {product.name}
         </Link>
 
-        <div
-          className="
-            mt-2
-            flex
-            flex-wrap
-            items-center
-            gap-2
-          "
-        >
-          <strong
-            className="
-              text-[13px]
-              text-[#111]
-            "
+        <div className="mt-3 flex min-w-0 items-center justify-between gap-2">
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
+            <strong className="text-[13px] font-bold text-[#111] lg:text-[17px]">
+              {money(product.showPrice)}
+            </strong>
+            {product.originalPrice > product.showPrice ? (
+              <span className="text-[9px] text-black/35 line-through lg:text-[11px]">
+                {money(product.originalPrice)}
+              </span>
+            ) : null}
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              void openAddToBag(product);
+            }}
+            className={`flex h-10 w-[48%] shrink-0 cursor-pointer items-center justify-center rounded-[8px] bg-[#EC477C] px-2 text-[9px] font-bold uppercase tracking-[0.04em] whitespace-nowrap text-white transition-colors hover:bg-[#D8396D] ${compact ? "lg:h-11 lg:text-[10px]" : "lg:h-14 lg:max-w-[185px] lg:text-[13px]"}`}
           >
-            {money(
-              product.showPrice,
-            )}
-          </strong>
-
-          {product.originalPrice >
-            product.showPrice ? (
-            <span
-              className="
-                text-[9px]
-                text-black/35
-                line-through
-              "
-            >
-              {money(
-                product.originalPrice,
-              )}
-            </span>
-          ) : null}
+            Add to Bag
+          </button>
         </div>
-
-        <button
-          type="button"
-          onClick={() => {
-            void openAddToBag(
-              product,
-            );
-          }}
-          className="
-            mt-3
-            flex
-            h-10
-            w-full
-            items-center
-            justify-center
-            rounded-[6px]
-            bg-[#EC477C]
-            px-3
-            text-[9px]
-            font-bold
-            uppercase
-            tracking-[0.08em]
-            text-white
-            transition
-
-            hover:bg-[#D8396D]
-          "
-        >
-          Add to Bag
-        </button>
       </div>
     </article>
   );
@@ -6634,23 +6590,6 @@ export default function HomePage() {
   );
   const homepagePopupImage = favouritePopupItems.find((item) => Boolean(item?.url?.trim()));
 
-  const findYourFit =
-    useMemo(
-      () =>
-        purposeBannerImages(
-          eligible,
-          [
-            "find your fit",
-            "find-your-fit",
-            "find-fit",
-          ],
-          "home_middle",
-        ),
-      [
-        eligible,
-      ],
-    );
-
   const bottom =
     useMemo(
       () =>
@@ -6759,15 +6698,6 @@ export default function HomePage() {
               favourites
             }
             type="favourites"
-          />
-
-          {/* FIND YOUR FIT */}
-
-          <PromoGrid
-            items={
-              findYourFit
-            }
-            type="fit"
           />
 
           {/* BOTTOM BANNER */}

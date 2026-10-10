@@ -558,9 +558,9 @@ export default function StorefrontProductCard({
               items-center
               justify-center
 
-              rounded-[5px]
+              rounded-[8px]
 
-              bg-[#EC4F83]
+              bg-[#EC477C]
 
               px-2
 
@@ -586,8 +586,9 @@ export default function StorefrontProductCard({
               sm:h-[42px]
               sm:text-[10px]
 
-              lg:h-[44px]
-              lg:text-[11px]
+              lg:h-[56px]
+              lg:max-w-[185px]
+              lg:text-[13px]
             "
           >
             Add To Bag
