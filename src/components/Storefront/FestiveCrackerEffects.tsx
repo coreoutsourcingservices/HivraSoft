@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -19,8 +20,7 @@ function randomBetween(
 ) {
   return (
     Math.floor(
-      Math.random() *
-        (max - min + 1),
+      Math.random() * (max - min + 1),
     ) + min
   );
 }
@@ -63,32 +63,25 @@ const SYMBOLS = [
 ========================================================= */
 
 export default function FestiveCrackerEffects() {
-  const pathname =
-    usePathname();
+  const pathname = usePathname();
 
   const overlayRef =
-    useRef<HTMLDivElement | null>(
-      null,
-    );
+    useRef<HTMLDivElement | null>(null);
 
-  const lastScrollBurst =
-    useRef(0);
+  const lastScrollBurst = useRef(0);
 
-  const lastPointerBurst =
-    useRef(0);
+  const lastPointerBurst = useRef(0);
 
-  const lastPointerPosition =
-    useRef({
-      x: 0,
-      y: 0,
-    });
+  const lastPointerPosition = useRef({
+    x: 0,
+    y: 0,
+  });
 
-  const currentPointer =
-    useRef({
-      x: 0,
-      y: 0,
-      active: false,
-    });
+  const currentPointer = useRef({
+    x: 0,
+    y: 0,
+    active: false,
+  });
 
   /* =======================================================
      HIDDEN ROUTES
@@ -96,53 +89,43 @@ export default function FestiveCrackerEffects() {
 
   const hiddenRoute =
     pathname === "/admin" ||
-    pathname.startsWith(
-      "/admin/",
-    ) ||
+    pathname.startsWith("/admin/") ||
     pathname === "/account" ||
-    pathname.startsWith(
-      "/account/",
-    ) ||
+    pathname.startsWith("/account/") ||
     pathname === "/cart" ||
-    pathname.startsWith(
-      "/cart/",
-    ) ||
+    pathname.startsWith("/cart/") ||
     pathname === "/wishlist" ||
-    pathname.startsWith(
-      "/wishlist/",
-    ) ||
+    pathname.startsWith("/wishlist/") ||
     pathname === "/checkout" ||
-    pathname.startsWith(
-      "/checkout/",
-    ) ||
+    pathname.startsWith("/checkout/") ||
     pathname === "/payment" ||
-    pathname.startsWith(
-      "/payment/",
-    ) ||
+    pathname.startsWith("/payment/") ||
     pathname === "/thanks" ||
-    pathname.startsWith(
-      "/thanks/",
-    );
+    pathname.startsWith("/thanks/");
 
   /* =======================================================
      EFFECTS
   ======================================================= */
 
   useEffect(() => {
-    if (
-      hiddenRoute
-    ) {
+    if (hiddenRoute) {
       return;
     }
 
-    const overlay =
-      overlayRef.current;
+    const overlay = overlayRef.current;
 
-    if (
-      !overlay
-    ) {
+    if (!overlay) {
       return;
     }
+
+    /*
+     * FIX:
+     * Keep a stable, non-null HTMLDivElement.
+     *
+     * Nested functions can safely access this
+     * reference without TS18047 errors.
+     */
+    const overlayElement: HTMLDivElement = overlay;
 
     /* =====================================================
        CREATE PARTICLE
@@ -168,23 +151,16 @@ export default function FestiveCrackerEffects() {
       symbol: string;
     }) {
       const particle =
-        document.createElement(
-          "span",
-        );
+        document.createElement("span");
 
       const radians =
-        (angle * Math.PI) /
-        180;
+        (angle * Math.PI) / 180;
 
       const moveX =
-        Math.cos(
-          radians,
-        ) * distance;
+        Math.cos(radians) * distance;
 
       const moveY =
-        Math.sin(
-          radians,
-        ) * distance;
+        Math.sin(radians) * distance;
 
       const color =
         COLORS[
@@ -197,20 +173,15 @@ export default function FestiveCrackerEffects() {
       particle.className =
         "hivra-festive-particle";
 
-      particle.textContent =
-        symbol;
+      particle.textContent = symbol;
 
-      particle.style.left =
-        `${x}px`;
+      particle.style.left = `${x}px`;
 
-      particle.style.top =
-        `${y}px`;
+      particle.style.top = `${y}px`;
 
-      particle.style.fontSize =
-        `${size}px`;
+      particle.style.fontSize = `${size}px`;
 
-      particle.style.color =
-        color;
+      particle.style.color = color;
 
       particle.style.setProperty(
         "--festive-x",
@@ -224,10 +195,7 @@ export default function FestiveCrackerEffects() {
 
       particle.style.setProperty(
         "--festive-rotate",
-        `${randomBetween(
-          -360,
-          360,
-        )}deg`,
+        `${randomBetween(-360, 360)}deg`,
       );
 
       particle.style.setProperty(
@@ -240,18 +208,12 @@ export default function FestiveCrackerEffects() {
         `${delay}ms`,
       );
 
-      overlay.appendChild(
-        particle,
-      );
+      /* FIX: Non-null overlay reference */
+      overlayElement.appendChild(particle);
 
-      window.setTimeout(
-        () => {
-          particle.remove();
-        },
-        duration +
-          delay +
-          150,
-      );
+      window.setTimeout(() => {
+        particle.remove();
+      }, duration + delay + 150);
     }
 
     /* =====================================================
@@ -261,38 +223,26 @@ export default function FestiveCrackerEffects() {
     function createFlash(
       x: number,
       y: number,
-      type:
-        | "big"
-        | "small",
+      type: "big" | "small",
     ) {
       const flash =
-        document.createElement(
-          "span",
-        );
+        document.createElement("span");
 
       flash.className =
         type === "big"
           ? "hivra-festive-flash"
           : "hivra-mini-flash";
 
-      flash.style.left =
-        `${x}px`;
+      flash.style.left = `${x}px`;
 
-      flash.style.top =
-        `${y}px`;
+      flash.style.top = `${y}px`;
 
-      overlay.appendChild(
-        flash,
-      );
+      /* FIX: Non-null overlay reference */
+      overlayElement.appendChild(flash);
 
-      window.setTimeout(
-        () => {
-          flash.remove();
-        },
-        type === "big"
-          ? 550
-          : 350,
-      );
+      window.setTimeout(() => {
+        flash.remove();
+      }, type === "big" ? 550 : 350);
     }
 
     /* =====================================================
@@ -307,25 +257,13 @@ export default function FestiveCrackerEffects() {
       y: number,
     ) {
       const mobile =
-        window.innerWidth <
-        768;
+        window.innerWidth < 768;
 
-      const count =
-        mobile
-          ? randomBetween(
-              45,
-              60,
-            )
-          : randomBetween(
-              60,
-              85,
-            );
+      const count = mobile
+        ? randomBetween(45, 60)
+        : randomBetween(60, 85);
 
-      createFlash(
-        x,
-        y,
-        "big",
-      );
+      createFlash(x, y, "big");
 
       for (
         let index = 0;
@@ -335,50 +273,29 @@ export default function FestiveCrackerEffects() {
         createParticle({
           x,
           y,
+          angle: randomBetween(0, 360),
 
-          angle:
-            randomBetween(
-              0,
-              360,
-            ),
+          distance: mobile
+            ? randomBetween(50, 170)
+            : randomBetween(70, 250),
 
-          distance:
-            mobile
-              ? randomBetween(
-                  50,
-                  170,
-                )
-              : randomBetween(
-                  70,
-                  250,
-                ),
+          size: randomBetween(
+            6,
+            mobile ? 15 : 19,
+          ),
 
-          size:
-            randomBetween(
-              6,
-              mobile
-                ? 15
-                : 19,
-            ),
+          duration: randomBetween(
+            550,
+            1050,
+          ),
 
-          duration:
-            randomBetween(
-              550,
-              1050,
-            ),
-
-          delay:
-            randomBetween(
-              0,
-              100,
-            ),
+          delay: randomBetween(0, 100),
 
           symbol:
             SYMBOLS[
               randomBetween(
                 0,
-                SYMBOLS.length -
-                  1,
+                SYMBOLS.length - 1,
               )
             ],
         });
@@ -399,17 +316,9 @@ export default function FestiveCrackerEffects() {
       x: number,
       y: number,
     ) {
-      const count =
-        randomBetween(
-          4,
-          6,
-        );
+      const count = randomBetween(4, 6);
 
-      createFlash(
-        x,
-        y,
-        "small",
-      );
+      createFlash(x, y, "small");
 
       for (
         let index = 0;
@@ -417,56 +326,28 @@ export default function FestiveCrackerEffects() {
         index += 1
       ) {
         createParticle({
-          x:
-            x +
-            randomBetween(
-              -7,
-              7,
-            ),
+          x: x + randomBetween(-7, 7),
 
-          y:
-            y +
-            randomBetween(
-              -7,
-              7,
-            ),
+          y: y + randomBetween(-7, 7),
 
-          angle:
-            randomBetween(
-              0,
-              360,
-            ),
+          angle: randomBetween(0, 360),
 
-          distance:
-            randomBetween(
-              20,
-              55,
-            ),
+          distance: randomBetween(20, 55),
 
-          size:
-            randomBetween(
-              4,
-              9,
-            ),
+          size: randomBetween(4, 9),
 
-          duration:
-            randomBetween(
-              350,
-              600,
-            ),
+          duration: randomBetween(
+            350,
+            600,
+          ),
 
-          delay:
-            randomBetween(
-              0,
-              30,
-            ),
+          delay: randomBetween(0, 30),
 
           symbol:
             SYMBOLS[
               randomBetween(
                 0,
-                SYMBOLS.length -
-                  1,
+                SYMBOLS.length - 1,
               )
             ],
         });
@@ -484,81 +365,48 @@ export default function FestiveCrackerEffects() {
 
     function createScrollBurst() {
       const mobile =
-        window.innerWidth <
-        768;
+        window.innerWidth < 768;
 
-      const width =
-        window.innerWidth;
+      const width = window.innerWidth;
 
-      const height =
-        window.innerHeight;
+      const height = window.innerHeight;
 
-      const count =
-        mobile
-          ? randomBetween(
-              3,
-              5,
-            )
-          : randomBetween(
-              5,
-              7,
-            );
+      const count = mobile
+        ? randomBetween(3, 5)
+        : randomBetween(5, 7);
 
       let centerX =
-        currentPointer.current
-          .active
-          ? currentPointer
-              .current.x
+        currentPointer.current.active
+          ? currentPointer.current.x
           : randomBetween(
-              Math.floor(
-                width * 0.3,
-              ),
-              Math.floor(
-                width * 0.7,
-              ),
+              Math.floor(width * 0.3),
+              Math.floor(width * 0.7),
             );
 
       let centerY =
-        currentPointer.current
-          .active
-          ? currentPointer
-              .current.y
+        currentPointer.current.active
+          ? currentPointer.current.y
           : randomBetween(
-              Math.floor(
-                height * 0.3,
-              ),
-              Math.floor(
-                height * 0.7,
-              ),
+              Math.floor(height * 0.3),
+              Math.floor(height * 0.7),
             );
 
-      centerX =
-        Math.max(
-          30,
-          Math.min(
-            width - 30,
-            centerX,
-          ),
-        );
+      centerX = Math.max(
+        30,
+        Math.min(width - 30, centerX),
+      );
 
-      centerY =
-        Math.max(
-          40,
-          Math.min(
-            height - 40,
-            centerY,
-          ),
-        );
+      centerY = Math.max(
+        40,
+        Math.min(height - 40, centerY),
+      );
 
       /*
        * Scroll par flash har baar nahi.
        * Randomly kabhi-kabhi.
        */
 
-      if (
-        Math.random() >
-        0.55
-      ) {
+      if (Math.random() > 0.55) {
         createFlash(
           centerX,
           centerY,
@@ -572,119 +420,74 @@ export default function FestiveCrackerEffects() {
         index += 1
       ) {
         const usePointerArea =
-          Math.random() <
-          0.7;
+          Math.random() < 0.7;
 
         let x: number;
         let y: number;
 
-        if (
-          usePointerArea
-        ) {
+        if (usePointerArea) {
           x =
             centerX +
             randomBetween(
-              mobile
-                ? -50
-                : -75,
-              mobile
-                ? 50
-                : 75,
+              mobile ? -50 : -75,
+              mobile ? 50 : 75,
             );
 
           y =
             centerY +
             randomBetween(
-              mobile
-                ? -55
-                : -75,
-              mobile
-                ? 55
-                : 75,
+              mobile ? -55 : -75,
+              mobile ? 55 : 75,
             );
         } else {
-          x =
-            randomBetween(
-              20,
-              width - 20,
-            );
+          x = randomBetween(
+            20,
+            width - 20,
+          );
 
-          y =
-            randomBetween(
-              Math.floor(
-                height * 0.18,
-              ),
-              Math.floor(
-                height * 0.85,
-              ),
-            );
+          y = randomBetween(
+            Math.floor(height * 0.18),
+            Math.floor(height * 0.85),
+          );
         }
 
-        x =
-          Math.max(
-            10,
-            Math.min(
-              width - 10,
-              x,
-            ),
-          );
+        x = Math.max(
+          10,
+          Math.min(width - 10, x),
+        );
 
-        y =
-          Math.max(
-            10,
-            Math.min(
-              height - 10,
-              y,
-            ),
-          );
+        y = Math.max(
+          10,
+          Math.min(height - 10, y),
+        );
 
         createParticle({
           x,
           y,
 
-          angle:
-            randomBetween(
-              0,
-              360,
-            ),
+          angle: randomBetween(0, 360),
 
-          distance:
-            mobile
-              ? randomBetween(
-                  20,
-                  55,
-                )
-              : randomBetween(
-                  25,
-                  65,
-                ),
+          distance: mobile
+            ? randomBetween(20, 55)
+            : randomBetween(25, 65),
 
-          size:
-            randomBetween(
-              4,
-              mobile
-                ? 8
-                : 10,
-            ),
+          size: randomBetween(
+            4,
+            mobile ? 8 : 10,
+          ),
 
-          duration:
-            randomBetween(
-              350,
-              600,
-            ),
+          duration: randomBetween(
+            350,
+            600,
+          ),
 
-          delay:
-            randomBetween(
-              0,
-              35,
-            ),
+          delay: randomBetween(0, 35),
 
           symbol:
             SYMBOLS[
               randomBetween(
                 0,
-                SYMBOLS.length -
-                  1,
+                SYMBOLS.length - 1,
               )
             ],
         });
@@ -711,45 +514,36 @@ export default function FestiveCrackerEffects() {
     function handlePointerMove(
       event: PointerEvent,
     ) {
-      currentPointer.current =
-        {
-          x: event.clientX,
-          y: event.clientY,
-          active: true,
-        };
+      currentPointer.current = {
+        x: event.clientX,
+        y: event.clientY,
+        active: true,
+      };
 
       /*
        * Mobile touch ko yahan
        * mouse burst nahi dena.
        */
 
-      if (
-        event.pointerType ===
-        "touch"
-      ) {
+      if (event.pointerType === "touch") {
         return;
       }
 
       const previous =
         lastPointerPosition.current;
 
-      const movementX =
-        Math.abs(
-          event.clientX -
-            previous.x,
-        );
+      const movementX = Math.abs(
+        event.clientX - previous.x,
+      );
 
-      const movementY =
-        Math.abs(
-          event.clientY -
-            previous.y,
-        );
+      const movementY = Math.abs(
+        event.clientY - previous.y,
+      );
 
-      lastPointerPosition.current =
-        {
-          x: event.clientX,
-          y: event.clientY,
-        };
+      lastPointerPosition.current = {
+        x: event.clientX,
+        y: event.clientY,
+      };
 
       /*
        * Very tiny movement par
@@ -763,8 +557,7 @@ export default function FestiveCrackerEffects() {
         return;
       }
 
-      const now =
-        Date.now();
+      const now = Date.now();
 
       /*
        * Cursor effect controlled.
@@ -772,15 +565,13 @@ export default function FestiveCrackerEffects() {
        */
 
       if (
-        now -
-          lastPointerBurst.current <
+        now - lastPointerBurst.current <
         100
       ) {
         return;
       }
 
-      lastPointerBurst.current =
-        now;
+      lastPointerBurst.current = now;
 
       createPointerBurst(
         event.clientX,
@@ -795,21 +586,17 @@ export default function FestiveCrackerEffects() {
     function handleTouchMove(
       event: TouchEvent,
     ) {
-      const touch =
-        event.touches[0];
+      const touch = event.touches[0];
 
-      if (
-        !touch
-      ) {
+      if (!touch) {
         return;
       }
 
-      currentPointer.current =
-        {
-          x: touch.clientX,
-          y: touch.clientY,
-          active: true,
-        };
+      currentPointer.current = {
+        x: touch.clientX,
+        y: touch.clientY,
+        active: true,
+      };
     }
 
     /* =====================================================
@@ -817,33 +604,28 @@ export default function FestiveCrackerEffects() {
     ===================================================== */
 
     function handleScroll() {
-      const now =
-        Date.now();
+      const now = Date.now();
 
       const mobile =
-        window.innerWidth <
-        768;
+        window.innerWidth < 768;
 
       /*
        * Scroll particles ab kam hain.
        * Gap bhi bada rakha hai.
        */
 
-      const throttle =
-        mobile
-          ? 280
-          : 240;
+      const throttle = mobile
+        ? 280
+        : 240;
 
       if (
-        now -
-          lastScrollBurst.current <
+        now - lastScrollBurst.current <
         throttle
       ) {
         return;
       }
 
-      lastScrollBurst.current =
-        now;
+      lastScrollBurst.current = now;
 
       createScrollBurst();
     }
@@ -906,20 +688,15 @@ export default function FestiveCrackerEffects() {
         handleScroll,
       );
 
-      overlay.innerHTML =
-        "";
+      overlayElement.innerHTML = "";
     };
-  }, [
-    hiddenRoute,
-  ]);
+  }, [hiddenRoute]);
 
   /* =======================================================
      HIDDEN
   ======================================================= */
 
-  if (
-    hiddenRoute
-  ) {
+  if (hiddenRoute) {
     return null;
   }
 
@@ -937,25 +714,18 @@ export default function FestiveCrackerEffects() {
 
           .hivra-festive-particle {
             position: absolute;
-
             display: block;
-
             pointer-events: none;
             user-select: none;
-
             width: auto;
             height: auto;
-
             line-height: 1;
-
             font-weight: 900;
-
             opacity: 0;
 
             filter:
               drop-shadow(
-                0 0 3px
-                currentColor
+                0 0 3px currentColor
               );
 
             text-shadow:
@@ -970,26 +740,19 @@ export default function FestiveCrackerEffects() {
               );
 
             transform:
-              translate(
-                -50%,
-                -50%
-              )
+              translate(-50%, -50%)
               scale(.15);
 
             animation:
               hivraFestiveParticle
-              var(
-                --festive-duration
-              )
+              var(--festive-duration)
               cubic-bezier(
                 .13,
                 .75,
                 .24,
                 1
               )
-              var(
-                --festive-delay
-              )
+              var(--festive-delay)
               forwards;
 
             will-change:
@@ -1002,10 +765,7 @@ export default function FestiveCrackerEffects() {
               opacity: 0;
 
               transform:
-                translate(
-                  -50%,
-                  -50%
-                )
+                translate(-50%, -50%)
                 scale(.1)
                 rotate(0deg);
             }
@@ -1014,10 +774,7 @@ export default function FestiveCrackerEffects() {
               opacity: 1;
 
               transform:
-                translate(
-                  -50%,
-                  -50%
-                )
+                translate(-50%, -50%)
                 scale(1.35)
                 rotate(25deg);
             }
@@ -1046,9 +803,7 @@ export default function FestiveCrackerEffects() {
                 )
                 scale(.25)
                 rotate(
-                  var(
-                    --festive-rotate
-                  )
+                  var(--festive-rotate)
                 );
             }
           }
@@ -1059,36 +814,25 @@ export default function FestiveCrackerEffects() {
 
           .hivra-festive-flash {
             position: absolute;
-
             width: 11px;
             height: 11px;
-
             pointer-events: none;
-
             border-radius: 999px;
-
             background: #ffffff;
 
             box-shadow:
-              0 0 8px 4px
-                #ffffff,
-              0 0 18px 8px
-                #ffd83d,
-              0 0 32px 13px
-                #ff981f,
-              0 0 52px 18px
-                rgba(
-                  255,
-                  39,
-                  119,
-                  .80
-                );
+              0 0 8px 4px #ffffff,
+              0 0 18px 8px #ffd83d,
+              0 0 32px 13px #ff981f,
+              0 0 52px 18px rgba(
+                255,
+                39,
+                119,
+                .80
+              );
 
             transform:
-              translate(
-                -50%,
-                -50%
-              )
+              translate(-50%, -50%)
               scale(0);
 
             animation:
@@ -1103,10 +847,7 @@ export default function FestiveCrackerEffects() {
               opacity: 1;
 
               transform:
-                translate(
-                  -50%,
-                  -50%
-                )
+                translate(-50%, -50%)
                 scale(0);
             }
 
@@ -1114,10 +855,7 @@ export default function FestiveCrackerEffects() {
               opacity: 1;
 
               transform:
-                translate(
-                  -50%,
-                  -50%
-                )
+                translate(-50%, -50%)
                 scale(3);
             }
 
@@ -1125,10 +863,7 @@ export default function FestiveCrackerEffects() {
               opacity: 0;
 
               transform:
-                translate(
-                  -50%,
-                  -50%
-                )
+                translate(-50%, -50%)
                 scale(6);
             }
           }
@@ -1139,34 +874,24 @@ export default function FestiveCrackerEffects() {
 
           .hivra-mini-flash {
             position: absolute;
-
             width: 5px;
             height: 5px;
-
             pointer-events: none;
-
             border-radius: 999px;
-
             background: #fff8ca;
 
             box-shadow:
-              0 0 5px 2px
-                #ffffff,
-              0 0 10px 4px
-                #ffd63c,
-              0 0 18px 6px
-                rgba(
-                  255,
-                  56,
-                  128,
-                  .55
-                );
+              0 0 5px 2px #ffffff,
+              0 0 10px 4px #ffd63c,
+              0 0 18px 6px rgba(
+                255,
+                56,
+                128,
+                .55
+              );
 
             transform:
-              translate(
-                -50%,
-                -50%
-              )
+              translate(-50%, -50%)
               scale(0);
 
             animation:
@@ -1181,10 +906,7 @@ export default function FestiveCrackerEffects() {
               opacity: .9;
 
               transform:
-                translate(
-                  -50%,
-                  -50%
-                )
+                translate(-50%, -50%)
                 scale(.2);
             }
 
@@ -1192,10 +914,7 @@ export default function FestiveCrackerEffects() {
               opacity: 1;
 
               transform:
-                translate(
-                  -50%,
-                  -50%
-                )
+                translate(-50%, -50%)
                 scale(2);
             }
 
@@ -1203,10 +922,7 @@ export default function FestiveCrackerEffects() {
               opacity: 0;
 
               transform:
-                translate(
-                  -50%,
-                  -50%
-                )
+                translate(-50%, -50%)
                 scale(3.4);
             }
           }
@@ -1222,17 +938,14 @@ export default function FestiveCrackerEffects() {
             .hivra-festive-particle,
             .hivra-festive-flash,
             .hivra-mini-flash {
-              display:
-                none !important;
+              display: none !important;
             }
           }
         `}
       </style>
 
       <div
-        ref={
-          overlayRef
-        }
+        ref={overlayRef}
         aria-hidden="true"
         className="
           pointer-events-none
