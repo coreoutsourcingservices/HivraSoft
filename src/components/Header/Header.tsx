@@ -1074,7 +1074,7 @@ function HeaderSearch() {
           try {
             const response =
               await apiFetch<unknown>(
-                `/api/search/suggestions?q=${encodeURIComponent(
+                `/api/search?limit=8&q=${encodeURIComponent(
                   searchText
                 )}`,
                 {
@@ -1176,7 +1176,7 @@ function HeaderSearch() {
           shadow-sm
         "
       >
-        <SearchIcon />
+        <button type="submit" aria-label="Search products" className="cursor-pointer p-1"><SearchIcon /></button>
 
         <input
           value={
@@ -1199,6 +1199,8 @@ function HeaderSearch() {
               );
             }
           }}
+          aria-label="Search products"
+          onKeyDown={(event) => { if (event.key === "Escape") setOpen(false); }}
           placeholder="Search..."
           className="
             h-full
