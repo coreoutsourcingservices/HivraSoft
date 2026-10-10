@@ -17,18 +17,17 @@ import sanitizeHtml from "sanitize-html";
 const MAX_DESCRIPTION_LENGTH =
   100_000;
 
-/* =========================================================
-   SAFE STYLE VALUE
+/* Explicit safe CSS values also allow product cards, background gradients,
+   shadows, flex layout, table spacing. No url(), JS or CSS injection. */
+const cssLength = String.raw`(?:auto|0|-?\d+(?:\.\d+)?(?:px|rem|em|%|vw|vh)?)`;
+const cssSpacing = new RegExp(`^${cssLength}(?:\\s+${cssLength}){0,3}$`, "i");
+const cssDimension = /^(?:auto|0|\d+(?:\.\d+)?(?:px|rem|em|%|vw|vh))$/i;
+const cssColor = /^(?:#[0-9a-f]{3,8}|rgba?\([0-9.,%\s]+\)|hsla?\([0-9.,%\s]+\)|[a-z]+)$/i;
+const cssGradient = /^(?!.*(?:url|expression|var|attr|image-set)\s*\()(?:repeating-)?(?:linear|radial)-gradient\([a-z0-9#(),.%\s+\-]+\)$/i;
+const cssShadow = /^(?!.*(?:url|expression|var|attr|image-set)\s*\()[a-z0-9#(),.%\s+\-]+$/i;
+const cssBorder = /^(?:none|0|\d+(?:\.\d+)?(?:px|rem|em)?\s+(?:solid|dashed|dotted|double)\s+(?:#[0-9a-f]{3,8}|rgba?\([0-9.,%\s]+\)|[a-z]+))$/i;
+const cssBorderRadius = /^(?:0|\d+(?:\.\d+)?(?:px|rem|em|%))(?:\s+(?:0|\d+(?:\.\d+)?(?:px|rem|em|%))){0,3}$/i;
 
-   This intentionally blocks:
-   - url(...)
-   - expression(...)
-   - braces
-   - semicolons inside a single parsed CSS value
-========================================================= */
-
-const SAFE_STYLE_VALUE =
-  /^(?!.*(?:url\s*\(|expression\s*\())[-#(),.%/\w\s]+$/i;
 
 /* =========================================================
    SANITIZE
@@ -166,155 +165,60 @@ export const sanitizeProductDescriptionHtml =
         allowProtocolRelative:
           false,
 
-        /*
-          Inline CSS whitelist.
-
-          Deliberately no:
-          - position
-          - z-index
-          - background-image
-          - behavior
-          - content
-          - filter
-          because those are unnecessary for product copy.
-        */
+        // Safe decorative CSS; prevent network URLs and executable CSS.
         allowedStyles: {
           "*": {
-            color: [
-              SAFE_STYLE_VALUE,
-            ],
-
-            "background-color": [
-              SAFE_STYLE_VALUE,
-            ],
-
-            "font-size": [
-              SAFE_STYLE_VALUE,
-            ],
-
-            "font-weight": [
-              SAFE_STYLE_VALUE,
-            ],
-
-            "font-style": [
-              SAFE_STYLE_VALUE,
-            ],
-
-            "font-family": [
-              SAFE_STYLE_VALUE,
-            ],
-
-            "text-decoration": [
-              SAFE_STYLE_VALUE,
-            ],
-
-            "text-align": [
-              SAFE_STYLE_VALUE,
-            ],
-
-            "text-transform": [
-              SAFE_STYLE_VALUE,
-            ],
-
-            "line-height": [
-              SAFE_STYLE_VALUE,
-            ],
-
-            "letter-spacing": [
-              SAFE_STYLE_VALUE,
-            ],
-
-            margin: [
-              SAFE_STYLE_VALUE,
-            ],
-
-            "margin-top": [
-              SAFE_STYLE_VALUE,
-            ],
-
-            "margin-right": [
-              SAFE_STYLE_VALUE,
-            ],
-
-            "margin-bottom": [
-              SAFE_STYLE_VALUE,
-            ],
-
-            "margin-left": [
-              SAFE_STYLE_VALUE,
-            ],
-
-            padding: [
-              SAFE_STYLE_VALUE,
-            ],
-
-            "padding-top": [
-              SAFE_STYLE_VALUE,
-            ],
-
-            "padding-right": [
-              SAFE_STYLE_VALUE,
-            ],
-
-            "padding-bottom": [
-              SAFE_STYLE_VALUE,
-            ],
-
-            "padding-left": [
-              SAFE_STYLE_VALUE,
-            ],
-
-            border: [
-              SAFE_STYLE_VALUE,
-            ],
-
-            "border-top": [
-              SAFE_STYLE_VALUE,
-            ],
-
-            "border-right": [
-              SAFE_STYLE_VALUE,
-            ],
-
-            "border-bottom": [
-              SAFE_STYLE_VALUE,
-            ],
-
-            "border-left": [
-              SAFE_STYLE_VALUE,
-            ],
-
-            "border-radius": [
-              SAFE_STYLE_VALUE,
-            ],
-
-            width: [
-              SAFE_STYLE_VALUE,
-            ],
-
-            "max-width": [
-              SAFE_STYLE_VALUE,
-            ],
-
-            height: [
-              SAFE_STYLE_VALUE,
-            ],
-
-            "max-height": [
-              SAFE_STYLE_VALUE,
-            ],
-
-            display: [
-              /^(?:block|inline|inline-block|table|table-row|table-cell|none)$/i,
-            ],
-
-            "vertical-align": [
-              SAFE_STYLE_VALUE,
-            ],
-
-            "list-style-type": [
-              SAFE_STYLE_VALUE,
-            ],
+            color: [cssColor],
+            background: [cssColor, cssGradient],
+            "background-color": [cssColor],
+            "background-image": [cssGradient],
+            "box-shadow": [cssShadow],
+            "font-size": [/^\d+(?:\.\d+)?(?:px|rem|em|%)$/],
+            "font-family": [/^[a-z0-9 ,\-\'"]+$/i],
+            "font-weight": [/^(normal|bold|bolder|lighter|[1-9]00)$/],
+            "font-style": [/^(normal|italic|oblique)$/],
+            "text-align": [/^(left|right|center|justify|start|end)$/],
+            "text-decoration": [/^(?:none|underline|line-through|overline)$/],
+            "text-transform": [/^(?:none|uppercase|lowercase|capitalize)$/],
+            "list-style-type": [/^(?:none|disc|circle|square|decimal|lower-alpha|upper-alpha|lower-roman|upper-roman)$/],
+            "line-height": [/^[\d.]+(?:px|rem|em|%)?$/],
+            "letter-spacing": [new RegExp(`^${cssLength}$`, "i")],
+            margin: [cssSpacing],
+            "margin-top": [cssSpacing],
+            "margin-bottom": [cssSpacing],
+            "margin-left": [cssSpacing, /^auto$/],
+            "margin-right": [cssSpacing, /^auto$/],
+            padding: [cssSpacing],
+            "padding-top": [cssSpacing],
+            "padding-bottom": [cssSpacing],
+            "padding-left": [cssSpacing],
+            "padding-right": [cssSpacing],
+            "border-radius": [cssBorderRadius],
+            border: [cssBorder],
+            "border-top": [cssBorder],
+            "border-bottom": [cssBorder],
+            "border-left": [cssBorder],
+            "border-right": [cssBorder],
+            "border-collapse": [/^(separate|collapse)$/],
+            "border-spacing": [cssSpacing],
+            width: [cssDimension],
+            "max-width": [cssDimension],
+            "min-width": [cssDimension],
+            height: [cssDimension],
+            "max-height": [cssDimension],
+            "min-height": [cssDimension],
+            display: [/^(?:block|inline|inline-block|flex|inline-flex|grid|inline-grid|none|table|table-cell)$/],
+            "vertical-align": [/^(?:top|middle|bottom|baseline|sub|super)$/],
+            "flex-wrap": [/^(?:wrap|nowrap|wrap-reverse)$/],
+            "flex-direction": [/^(?:row|column|row-reverse|column-reverse)$/],
+            "justify-content": [/^(?:flex-start|flex-end|center|space-between|space-around|space-evenly)$/],
+            "align-items": [/^(?:stretch|flex-start|flex-end|center|baseline)$/],
+            gap: [cssSpacing],
+            "row-gap": [cssSpacing],
+            "column-gap": [cssSpacing],
+            overflow: [/^(?:hidden|auto|scroll|visible)$/],
+            "overflow-x": [/^(?:hidden|auto|scroll|visible)$/],
+            "overflow-y": [/^(?:hidden|auto|scroll|visible)$/],
           },
         },
 

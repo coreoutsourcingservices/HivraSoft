@@ -123,6 +123,13 @@ const StyledImage = Image.extend({
   },
 });
 
+// TipTap is a document editor, not a full HTML/CSS editor.  Layout HTML must
+// remain in HTML mode or ProseMirror drops divs, gradients and inline styles.
+function hasDesignedHtml(html: string) {
+  return /<[a-z][^>]*\bstyle\s*=/i.test(html) ||
+    /<(?:div|section|article|table|figure|picture|iframe)\b/i.test(html);
+}
+
 function cleanPastedHtml(html: string) {
   if (typeof window === "undefined") return html;
   const document = new DOMParser().parseFromString(html, "text/html");
@@ -177,13 +184,16 @@ function setTextSize(editor: Editor, value: string) {
 
 export default function WordBlogEditor({ value, onChange, onImageUpload, disabled = false }: Props) {
   const [zoom, setZoom] = useState(100);
-  const [sourceMode, setSourceMode] = useState(false);
+  const [sourceMode, setSourceMode] = useState(() => hasDesignedHtml(value || ""));
+  const [htmlPreview, setHtmlPreview] = useState(false);
   const [sourceHtml, setSourceHtml] = useState(value || "");
   const [fullscreen, setFullscreen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadNotice, setUploadNotice] = useState("");
   const uploadNoticeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const sourceModeRef = useRef(sourceMode);
+  sourceModeRef.current = sourceMode;
 
   const extensions = useMemo(() => [
     StarterKit.configure({ heading: { levels: [1, 2, 3, 4, 5, 6] } }),
@@ -212,12 +222,35 @@ export default function WordBlogEditor({ value, onChange, onImageUpload, disable
     editable: !disabled,
     editorProps: {
       transformPastedHTML: cleanPastedHtml,
+      handlePaste: (_view, event) => {
+        const rawText = event.clipboardData?.getData("text/plain") || "";
+        const richHtml = event.clipboardData?.getData("text/html") || "";
+        // Pasting a full HTML snippet or a styled web layout must not invoke
+        // TipTap's lossy HTML-to-ProseMirror conversion.
+        const importedHtml = hasDesignedHtml(rawText) ? rawText : hasDesignedHtml(richHtml) ? richHtml : "";
+        if (!importedHtml) return false;
+        // Never replace an existing Word document without asking.
+        if (_view.state.doc.textContent.trim() && !window.confirm(
+          "Importing this custom HTML will replace the current Word-editor content. Continue?"
+        )) {
+          event.preventDefault();
+          return true;
+        }
+        event.preventDefault();
+        setSourceHtml(importedHtml);
+        setSourceMode(true);
+        sourceModeRef.current = true;
+        setHtmlPreview(false);
+        onChange(importedHtml);
+        return true;
+      },
       attributes: {
         class: "word-blog-prose focus:outline-none",
         spellcheck: "true",
       },
     },
     onUpdate: ({ editor: current }) => {
+      if (sourceModeRef.current) return; // Never overwrite raw HTML with TipTap's normalized HTML.
       const html = current.getHTML();
       setSourceHtml(html);
       onChange(html);
@@ -230,8 +263,13 @@ export default function WordBlogEditor({ value, onChange, onImageUpload, disable
   }, [disabled, editor]);
 
   useEffect(() => {
-    if (!editor || sourceMode) return;
+    if (!editor) return;
     const next = value || "";
+    if (sourceMode) {
+      // Synchronize saved/loaded content, but do NOT round-trip it through TipTap.
+      setSourceHtml((current) => current === next ? current : next);
+      return;
+    }
     if (next !== editor.getHTML()) {
       editor.commands.setContent(next, false);
       setSourceHtml(next);
@@ -267,12 +305,22 @@ export default function WordBlogEditor({ value, onChange, onImageUpload, disable
 
   const toggleSource = () => {
     if (sourceMode) {
+      if (hasDesignedHtml(sourceHtml) && !window.confirm(
+        "Converting custom HTML to the Word editor will remove some layout and CSS. " +
+        "Choose Cancel to keep your original HTML unchanged, or OK to convert it."
+      )) return;
+      // A deliberate conversion only; normal HTML preview/save never touches TipTap.
       editor.commands.setContent(sourceHtml || "", false);
-      onChange(editor.getHTML());
+      const converted = editor.getHTML();
+      sourceModeRef.current = false;
       setSourceMode(false);
+      setHtmlPreview(false);
+      onChange(converted);
     } else {
-      setSourceHtml(editor.getHTML());
+      setSourceHtml(value || editor.getHTML());
+      sourceModeRef.current = true;
       setSourceMode(true);
+      setHtmlPreview(false);
     }
   };
 
@@ -323,6 +371,7 @@ export default function WordBlogEditor({ value, onChange, onImageUpload, disable
     <div className={rootClass}>
       <div className="sticky top-0 z-20 border-b border-[#211A18]/10 bg-white/95 shadow-[0_6px_18px_rgba(33,26,24,0.05)] backdrop-blur">
         <div className="flex min-h-[54px] flex-wrap items-center gap-x-1 gap-y-1.5 px-2 py-2 sm:px-3">
+          {!sourceMode && <>
           <ToolButton title="Undo (Ctrl+Z)" disabled={!editor.can().undo()} onClick={() => editor.chain().focus().undo().run()}><Undo2 size={17} /></ToolButton>
           <ToolButton title="Redo (Ctrl+Shift+Z)" disabled={!editor.can().redo()} onClick={() => editor.chain().focus().redo().run()}><Redo2 size={17} /></ToolButton>
           <Divider />
@@ -409,10 +458,19 @@ export default function WordBlogEditor({ value, onChange, onImageUpload, disable
           <Divider />
 
           <ToolButton title="Clear formatting" onClick={() => editor.chain().focus().unsetAllMarks().clearNodes().run()}><Eraser size={17} /></ToolButton>
-          <ToolButton title="HTML source" active={sourceMode} onClick={toggleSource}><Braces size={17} /></ToolButton>
+          </>}
+          <button type="button" onClick={toggleSource} className="h-9 rounded-lg border border-[#A51D45]/20 px-3 text-[11px] font-semibold text-[#A51D45] hover:bg-[#FCEFF3]">
+            <Braces size={15} className="mr-1 inline-block" />{sourceMode ? "Convert to Word" : "HTML Source / Paste HTML"}
+          </button>
+          {sourceMode && <button type="button" onClick={() => setHtmlPreview((current) => !current)} className="h-9 rounded-lg border border-[#211A18]/15 bg-white px-3 text-[11px] font-semibold">
+            {htmlPreview ? "Edit HTML" : "Preview HTML"}
+          </button>}
           <ToolButton title={fullscreen ? "Exit fullscreen" : "Fullscreen"} active={fullscreen} onClick={() => setFullscreen((current) => !current)}><Fullscreen size={17} /></ToolButton>
         </div>
 
+        {sourceMode && <div className="border-t border-amber-200 bg-amber-50 px-4 py-2 text-[11px] text-amber-900">
+          HTML mode keeps custom gradients, spacing, cards and tables. Save directly from here. Converting to Word can lose styling.
+        </div>}
         {uploadNotice && (
           <div className={`border-t px-4 py-2 text-[10px] font-semibold ${uploadNotice.startsWith("Uploaded") ? "border-emerald-100 bg-emerald-50 text-emerald-700" : uploading ? "border-sky-100 bg-sky-50 text-sky-700" : "border-red-100 bg-red-50 text-red-700"}`}>
             {uploadNotice}
@@ -448,16 +506,22 @@ export default function WordBlogEditor({ value, onChange, onImageUpload, disable
             className="mx-auto origin-top overflow-hidden rounded-[10px] border border-black/[0.045] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.06),0_24px_70px_rgba(33,26,24,0.08)]"
             style={{ maxWidth: 900, minHeight: 900, zoom: zoom / 100 } as CSSProperties}
           >
-            {sourceMode ? (
+            {sourceMode ? htmlPreview ? (
+              <iframe
+                title="Sandboxed blog HTML preview"
+                sandbox=""
+                srcDoc={sourceHtml}
+                className="h-[900px] w-full border-0 bg-white"
+              />
+            ) : (
               <textarea
                 value={sourceHtml}
                 onChange={(event) => { setSourceHtml(event.target.value); onChange(event.target.value); }}
                 spellCheck={false}
+                placeholder="Paste the complete HTML here. Your original CSS and layout will be preserved on save."
                 className="min-h-[900px] w-full resize-none bg-[#171717] p-8 font-mono text-[13px] leading-6 text-[#F5F5F5] outline-none sm:p-12"
               />
-            ) : (
-              <EditorContent editor={editor} />
-            )}
+            ) : <EditorContent editor={editor} />}
           </div>
         </div>
       </div>

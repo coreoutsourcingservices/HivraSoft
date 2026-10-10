@@ -4346,6 +4346,13 @@ export default function ProductDetails({
 
 
 
+  // Recover presentation of the known pink HTML template saved by the old
+  // product sanitizer. Does not rewrite or alter the database content.
+  const legacyPinkDescription =
+    /max-width\s*:\s*900px/i.test(description) &&
+    /#a3134f/i.test(description) &&
+    /#ffd1e3/i.test(description);
+
   /* =======================================================
 
      PRICES
@@ -6856,7 +6863,7 @@ export default function ProductDetails({
 
             <div
 
-              className="
+              className={`
 
                 mx-auto
 
@@ -6946,7 +6953,8 @@ export default function ProductDetails({
 
                 [&_img]:rounded-xl
 
-              "
+                ${legacyPinkDescription ? "product-description--legacy-pink" : ""}
+              `}
 
               dangerouslySetInnerHTML={{
 

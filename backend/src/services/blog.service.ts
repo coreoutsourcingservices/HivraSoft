@@ -29,6 +29,17 @@ function cleanCss(value: unknown) {
     .slice(0, 20000);
 }
 
+// Keep the inline design of imported HTML.  Only allow CSS properties and
+// values that cannot fetch remote resources or inject a new declaration.
+const cssLength = String.raw`(?:auto|0|-?\d+(?:\.\d+)?(?:px|rem|em|%|vw|vh)?)`;
+const cssSpacing = new RegExp(`^${cssLength}(?:\\s+${cssLength}){0,3}$`, "i");
+const cssDimension = /^(?:auto|0|\d+(?:\.\d+)?(?:px|rem|em|%|vw|vh))$/i;
+const cssColor = /^(?:#[0-9a-f]{3,8}|rgba?\([0-9.,%\s]+\)|hsla?\([0-9.,%\s]+\)|[a-z]+)$/i;
+const cssGradient = /^(?!.*(?:url|expression|var|attr|image-set)\s*\()(?:repeating-)?(?:linear|radial)-gradient\([a-z0-9#(),.%\s+\-]+\)$/i;
+const cssShadow = /^(?!.*(?:url|expression|var|attr|image-set)\s*\()[a-z0-9#(),.%\s+\-]+$/i;
+const cssBorder = /^(?:none|0|\d+(?:\.\d+)?(?:px|rem|em)?\s+(?:solid|dashed|dotted|double)\s+(?:#[0-9a-f]{3,8}|rgba?\([0-9.,%\s]+\)|[a-z]+))$/i;
+const cssBorderRadius = /^(?:0|\d+(?:\.\d+)?(?:px|rem|em|%))(?:\s+(?:0|\d+(?:\.\d+)?(?:px|rem|em|%))){0,3}$/i;
+
 const sanitizeOptions: sanitizeHtml.IOptions = {
   allowedTags: [
     "h1", "h2", "h3", "h4", "h5", "h6", "p", "strong", "b", "em", "i", "u", "s", "del", "span", "br", "hr",
@@ -49,22 +60,55 @@ const sanitizeOptions: sanitizeHtml.IOptions = {
   allowedIframeHostnames: ["www.youtube.com", "youtube.com", "www.youtube-nocookie.com", "player.vimeo.com"],
   allowedStyles: {
     "*": {
-      color: [/^#[0-9a-f]{3,8}$/i, /^rgb/i, /^hsl/i, /^[a-z]+$/i],
-      "background-color": [/^#[0-9a-f]{3,8}$/i, /^rgb/i, /^hsl/i, /^[a-z]+$/i],
-      "font-size": [/^\d+(?:\.\d+)?(px|rem|em|%)$/],
+      color: [cssColor],
+      background: [cssColor, cssGradient],
+      "background-color": [cssColor],
+      "background-image": [cssGradient],
+      "box-shadow": [cssShadow],
+      "font-size": [/^\d+(?:\.\d+)?(?:px|rem|em|%)$/],
       "font-family": [/^[a-z0-9 ,\-\'"]+$/i],
-      "font-weight": [/^(normal|bold|[1-9]00)$/],
-      "text-align": [/^(left|right|center|justify)$/],
-      "line-height": [/^[\d.]+(px|rem|em|%)?$/],
-      margin: [/^(?:(?:auto|0|-?\d+(?:\.\d+)?(?:px|rem|em|%)?)(?:\s+|$)){1,4}$/],
-      "margin-left": [/^(?:auto|0|-?\d+(?:\.\d+)?(?:px|rem|em|%)?)$/],
-      "margin-right": [/^(?:auto|0|-?\d+(?:\.\d+)?(?:px|rem|em|%)?)$/],
-      padding: [/^[\d\s.-]+(px|rem|em|%)?$/],
-      "border-radius": [/^\d+(px|rem|em|%)$/],
-      width: [/^[\d.]+(px|rem|em|%)$/],
-      "max-width": [/^[\d.]+(px|rem|em|%)$/],
-      height: [/^(?:auto|[\d.]+(?:px|rem|em|%))$/],
-      display: [/^(?:block|inline|inline-block)$/],
+      "font-weight": [/^(normal|bold|bolder|lighter|[1-9]00)$/],
+      "font-style": [/^(normal|italic|oblique)$/],
+      "text-align": [/^(left|right|center|justify|start|end)$/],
+      "text-decoration": [/^(?:none|underline|line-through|overline)$/],
+      "line-height": [/^[\d.]+(?:px|rem|em|%)?$/],
+      "letter-spacing": [new RegExp(`^${cssLength}$`, "i")],
+      margin: [cssSpacing],
+      "margin-top": [cssSpacing],
+      "margin-bottom": [cssSpacing],
+      "margin-left": [cssSpacing, /^auto$/],
+      "margin-right": [cssSpacing, /^auto$/],
+      padding: [cssSpacing],
+      "padding-top": [cssSpacing],
+      "padding-bottom": [cssSpacing],
+      "padding-left": [cssSpacing],
+      "padding-right": [cssSpacing],
+      "border-radius": [cssBorderRadius],
+      border: [cssBorder],
+      "border-top": [cssBorder],
+      "border-bottom": [cssBorder],
+      "border-left": [cssBorder],
+      "border-right": [cssBorder],
+      "border-collapse": [/^(separate|collapse)$/],
+      "border-spacing": [cssSpacing],
+      width: [cssDimension],
+      "max-width": [cssDimension],
+      "min-width": [cssDimension],
+      height: [cssDimension],
+      "max-height": [cssDimension],
+      "min-height": [cssDimension],
+      display: [/^(?:block|inline|inline-block|flex|inline-flex|grid|inline-grid|none|table|table-cell)$/],
+      "vertical-align": [/^(?:top|middle|bottom|baseline|sub|super)$/],
+      "flex-wrap": [/^(?:wrap|nowrap|wrap-reverse)$/],
+      "flex-direction": [/^(?:row|column|row-reverse|column-reverse)$/],
+      "justify-content": [/^(?:flex-start|flex-end|center|space-between|space-around|space-evenly)$/],
+      "align-items": [/^(?:stretch|flex-start|flex-end|center|baseline)$/],
+      gap: [cssSpacing],
+      "row-gap": [cssSpacing],
+      "column-gap": [cssSpacing],
+      overflow: [/^(?:hidden|auto|scroll|visible)$/],
+      "overflow-x": [/^(?:hidden|auto|scroll|visible)$/],
+      "overflow-y": [/^(?:hidden|auto|scroll|visible)$/],
     },
   },
 };
