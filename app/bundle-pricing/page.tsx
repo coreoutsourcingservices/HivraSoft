@@ -17,28 +17,41 @@ import {
   productBelongsToCategory,
 } from "@/src/services/storefront-catalog";
 
-export const dynamic =
-  "force-dynamic";
+export const dynamic = "force-dynamic";
 
 /* =========================================================
    BUNDLE PRICING PAGE
 
-   IMPORTANT:
-   This is NORMAL CATEGORY behavior.
+   RULE:
 
-   NO OFFER PRODUCTS HERE.
+   Product MUST first belong to Bundle Pricing.
+
+   Then:
+
+   Bundle Pricing + Men
+   → Men tab
+
+   Bundle Pricing + Women
+   → Women tab
+
+   Bundle Pricing + Accessories
+   → Accessories tab
+
+   Offer-selected products are NOT automatically included.
 ========================================================= */
 
 export default async function BundlePricingPage() {
+  /* =======================================================
+     LOAD DATA
+  ======================================================= */
+
   const [
     categoryTree,
     allProducts,
-  ] =
-    await Promise.all([
-      getActiveCategoryTree(),
-
-      getActiveProducts(),
-    ]);
+  ] = await Promise.all([
+    getActiveCategoryTree(),
+    getActiveProducts(),
+  ]);
 
   /* =======================================================
      FIND BUNDLE PRICING CATEGORY
@@ -50,25 +63,64 @@ export default async function BundlePricingPage() {
       [
         "bundle-pricing",
         "bundle-price",
+        "bundle-prices",
         "bundle",
       ],
-    );
+    ) || null;
 
   /* =======================================================
-     PRODUCTS
+     FIND MEN CATEGORY
+  ======================================================= */
 
-     ONLY products assigned to Bundle Pricing category.
+  const menCategory =
+    findCategoryAnywhere(
+      categoryTree,
+      [
+        "men",
+        "mens",
+        "menswear",
+        "male",
+      ],
+    ) || null;
 
-     Fixed Price Offer ke selected products yahan
-     automatically add NAHI honge.
+  /* =======================================================
+     FIND WOMEN CATEGORY
+  ======================================================= */
+
+  const womenCategory =
+    findCategoryAnywhere(
+      categoryTree,
+      [
+        "women",
+        "womens",
+        "womenswear",
+        "female",
+      ],
+    ) || null;
+
+  /* =======================================================
+     FIND ACCESSORIES CATEGORY
+  ======================================================= */
+
+  const accessoriesCategory =
+    findCategoryAnywhere(
+      categoryTree,
+      [
+        "accessories",
+        "accessory",
+      ],
+    ) || null;
+
+  /* =======================================================
+     FIRST FILTER:
+
+     ONLY BUNDLE PRICING PRODUCTS
   ======================================================= */
 
   const bundleApiProducts =
     bundleCategory
       ? allProducts.filter(
-          (
-            product,
-          ) =>
+          (product) =>
             productBelongsToCategory(
               product,
               bundleCategory,
@@ -77,25 +129,90 @@ export default async function BundlePricingPage() {
       : [];
 
   /* =======================================================
-     NORMAL STOREFRONT PRODUCT CARDS
+     MEN PRODUCTS
 
-     Same mapper used by Men/Women/New Launch.
+     Product must belong to BOTH:
+
+     Bundle Pricing
+     +
+     Men
   ======================================================= */
 
-  const products =
-    bundleApiProducts.flatMap(
+  const menApiProducts =
+    menCategory
+      ? bundleApiProducts.filter(
+          (product) =>
+            productBelongsToCategory(
+              product,
+              menCategory,
+            ),
+        )
+      : [];
+
+  const menProducts =
+    menApiProducts.flatMap(
       mapProductToColorCards,
     );
 
   /* =======================================================
-     NORMAL CATEGORY BANNERS
+     WOMEN PRODUCTS
+
+     Product must belong to BOTH:
+
+     Bundle Pricing
+     +
+     Women
+  ======================================================= */
+
+  const womenApiProducts =
+    womenCategory
+      ? bundleApiProducts.filter(
+          (product) =>
+            productBelongsToCategory(
+              product,
+              womenCategory,
+            ),
+        )
+      : [];
+
+  const womenProducts =
+    womenApiProducts.flatMap(
+      mapProductToColorCards,
+    );
+
+  /* =======================================================
+     ACCESSORIES PRODUCTS
+
+     Product must belong to BOTH:
+
+     Bundle Pricing
+     +
+     Accessories
+  ======================================================= */
+
+  const accessoriesApiProducts =
+    accessoriesCategory
+      ? bundleApiProducts.filter(
+          (product) =>
+            productBelongsToCategory(
+              product,
+              accessoriesCategory,
+            ),
+        )
+      : [];
+
+  const accessoriesProducts =
+    accessoriesApiProducts.flatMap(
+      mapProductToColorCards,
+    );
+
+  /* =======================================================
+     BUNDLE PRICING BANNERS
 
      Admin:
      Categories
-       -> Bundle Pricing
-       -> Images
-
-     Multiple images supported.
+       → Bundle Pricing
+       → Images
   ======================================================= */
 
   const banners =
@@ -116,19 +233,19 @@ export default async function BundlePricingPage() {
       <Header />
 
       <BundlePricingCatalog
-        products={
-          products
-        }
-        banners={
-          banners
-        }
+        productGroups={{
+          men: menProducts,
+          women: womenProducts,
+          accessories:
+            accessoriesProducts,
+        }}
+        banners={banners}
         categoryName={
           bundleCategory?.name ||
           "Bundle Pricing"
         }
         description={
-          bundleCategory
-            ?.description ||
+          bundleCategory?.description?.trim() ||
           "Explore Hivra Soft bundle pricing collection."
         }
       />

@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -25,30 +26,75 @@ type SortValue =
   | "high-low"
   | "discount";
 
+type BundleSection =
+  | "men"
+  | "women"
+  | "accessories";
+
+type ProductGroups = {
+  men: CatalogProduct[];
+  women: CatalogProduct[];
+  accessories: CatalogProduct[];
+};
+
 type Props = {
-  products:
-    CatalogProduct[];
-
-  banners:
-    CatalogBanner[];
-
-  categoryName:
-    string;
-
-  description:
-    string;
+  productGroups: ProductGroups;
+  banners: CatalogBanner[];
+  categoryName: string;
+  description: string;
 };
 
 /* =========================================================
-   BANNER
+   CATEGORY TABS
+========================================================= */
+
+const categoryTabs: Array<{
+  key: BundleSection;
+  label: string;
+}> = [
+  {
+    key: "men",
+    label: "Men",
+  },
+  {
+    key: "women",
+    label: "Women",
+  },
+  {
+    key: "accessories",
+    label: "Accessories",
+  },
+];
+
+/* =========================================================
+   HEADER OFFSETS
+
+   MOBILE:
+   Tabs header ke neeche sticky rahenge.
+
+   DESKTOP:
+   Header + upper bars ke neeche sticky rahenge.
+
+   Desktop par hi scroll direction hide/show lagega.
+========================================================= */
+
+const MOBILE_STICKY_TOP = 50;
+
+const DESKTOP_STICKY_TOP = 154;
+
+/* =========================================================
+   BANNER SLIDER
 ========================================================= */
 
 function BannerSlider({
   banners,
 }: {
-  banners:
-    CatalogBanner[];
+  banners: CatalogBanner[];
 }) {
+  /* =======================================================
+     VALID BANNERS
+  ======================================================= */
+
   const validBanners =
     useMemo(
       () =>
@@ -65,6 +111,10 @@ function BannerSlider({
       ],
     );
 
+  /* =======================================================
+     ACTIVE BANNER
+  ======================================================= */
+
   const [
     active,
     setActive,
@@ -72,7 +122,7 @@ function BannerSlider({
     useState(0);
 
   /* =======================================================
-     AUTO SLIDE
+     AUTO SLIDER
   ======================================================= */
 
   useEffect(() => {
@@ -113,6 +163,10 @@ function BannerSlider({
     validBanners.length,
   ]);
 
+  /* =======================================================
+     NO BANNER
+  ======================================================= */
+
   if (
     validBanners.length ===
     0
@@ -120,19 +174,28 @@ function BannerSlider({
     return null;
   }
 
+  /* =======================================================
+     PREVIOUS
+  ======================================================= */
+
   const previous =
     () => {
       setActive(
         (
           current,
         ) =>
-          current === 0
+          current ===
+          0
             ? validBanners.length -
               1
             : current -
               1,
       );
     };
+
+  /* =======================================================
+     NEXT
+  ======================================================= */
 
   const next =
     () => {
@@ -147,6 +210,10 @@ function BannerSlider({
           validBanners.length,
       );
     };
+
+  /* =======================================================
+     RENDER
+  ======================================================= */
 
   return (
     <section
@@ -224,9 +291,15 @@ function BannerSlider({
         ),
       )}
 
+      {/* ===================================================
+          BANNER CONTROLS
+      =================================================== */}
+
       {validBanners.length >
       1 ? (
         <>
+          {/* PREVIOUS */}
+
           <button
             type="button"
             aria-label="Previous banner"
@@ -249,6 +322,7 @@ function BannerSlider({
               justify-center
 
               rounded-full
+
               bg-white/90
 
               text-[22px]
@@ -263,6 +337,8 @@ function BannerSlider({
           >
             ‹
           </button>
+
+          {/* NEXT */}
 
           <button
             type="button"
@@ -286,6 +362,7 @@ function BannerSlider({
               justify-center
 
               rounded-full
+
               bg-white/90
 
               text-[22px]
@@ -301,6 +378,8 @@ function BannerSlider({
             ›
           </button>
 
+          {/* DOTS */}
+
           <div
             className="
               absolute
@@ -309,6 +388,7 @@ function BannerSlider({
               z-30
 
               flex
+
               -translate-x-1/2
 
               gap-2
@@ -332,6 +412,7 @@ function BannerSlider({
                   }
                   className={`
                     h-[6px]
+
                     rounded-full
 
                     transition-all
@@ -360,15 +441,33 @@ function BannerSlider({
 }
 
 /* =========================================================
-   PAGE
+   BUNDLE PRICING CATALOG
 ========================================================= */
 
 export default function BundlePricingCatalog({
-  products,
+  productGroups,
   banners,
   categoryName,
   description,
 }: Props) {
+  /* =======================================================
+     ACTIVE CATEGORY
+
+     DEFAULT = MEN
+  ======================================================= */
+
+  const [
+    activeSection,
+    setActiveSection,
+  ] =
+    useState<BundleSection>(
+      "men",
+    );
+
+  /* =======================================================
+     SORT
+  ======================================================= */
+
   const [
     sort,
     setSort,
@@ -377,15 +476,115 @@ export default function BundlePricingCatalog({
       "featured",
     );
 
+  /* =======================================================
+     SCREEN TYPE
+
+     false:
+     mobile / tablet
+
+     true:
+     1024px+ desktop
+  ======================================================= */
+
+  const [
+    isDesktop,
+    setIsDesktop,
+  ] =
+    useState(false);
+
+  /* =======================================================
+     DESKTOP TAB VISIBILITY
+
+     IMPORTANT:
+
+     Ye sirf desktop/laptop ke scroll behavior ke liye hai.
+
+     Mobile par tabs always visible rahenge.
+  ======================================================= */
+
+  const [
+    tabsVisible,
+    setTabsVisible,
+  ] =
+    useState(true);
+
+  const [
+    tabsReachedSticky,
+    setTabsReachedSticky,
+  ] =
+    useState(false);
+
+  /* =======================================================
+     REFS
+  ======================================================= */
+
+  const tabsRef =
+    useRef<HTMLDivElement | null>(
+      null,
+    );
+
+  const tabsOriginalTopRef =
+    useRef(0);
+
+  const lastScrollYRef =
+    useRef(0);
+
+  const tickingRef =
+    useRef(false);
+
+  /* =======================================================
+     ACTIVE PRODUCTS
+  ======================================================= */
+
+  const activeProducts =
+    useMemo(
+      () =>
+        productGroups[
+          activeSection
+        ] || [],
+      [
+        productGroups,
+        activeSection,
+      ],
+    );
+
+  /* =======================================================
+     ACTIVE LABEL
+  ======================================================= */
+
+  const activeLabel =
+    useMemo(
+      () =>
+        categoryTabs.find(
+          (
+            tab,
+          ) =>
+            tab.key ===
+            activeSection,
+        )?.label ||
+        "Men",
+      [
+        activeSection,
+      ],
+    );
+
+  /* =======================================================
+     SORT PRODUCTS
+  ======================================================= */
+
   const sortedProducts =
     useMemo(() => {
       const result = [
-        ...products,
+        ...activeProducts,
       ];
 
       switch (
         sort
       ) {
+        /* -----------------------------------------------
+           PRICE LOW TO HIGH
+        ----------------------------------------------- */
+
         case "low-high":
           return result.sort(
             (
@@ -395,6 +594,10 @@ export default function BundlePricingCatalog({
               a.showPrice -
               b.showPrice,
           );
+
+        /* -----------------------------------------------
+           PRICE HIGH TO LOW
+        ----------------------------------------------- */
 
         case "high-low":
           return result.sort(
@@ -406,6 +609,10 @@ export default function BundlePricingCatalog({
               a.showPrice,
           );
 
+        /* -----------------------------------------------
+           BEST DISCOUNT
+        ----------------------------------------------- */
+
         case "discount":
           return result.sort(
             (
@@ -416,23 +623,395 @@ export default function BundlePricingCatalog({
               a.discountPercent,
           );
 
+        /* -----------------------------------------------
+           FEATURED
+        ----------------------------------------------- */
+
         default:
           return result;
       }
     }, [
-      products,
+      activeProducts,
       sort,
     ]);
+
+  /* =======================================================
+     CHECK MOBILE / DESKTOP
+
+     Tailwind lg breakpoint:
+
+     1024px+
+     = desktop behavior
+
+     below 1024
+     = mobile/tablet behavior
+  ======================================================= */
+
+  useEffect(() => {
+    const mediaQuery =
+      window.matchMedia(
+        "(min-width: 1024px)",
+      );
+
+    const updateDevice =
+      () => {
+        const desktop =
+          mediaQuery.matches;
+
+        setIsDesktop(
+          desktop,
+        );
+
+        /*
+         * IMPORTANT:
+         *
+         * Mobile / tablet par
+         * scroll direction hide/show reset.
+         */
+
+        if (
+          !desktop
+        ) {
+          setTabsVisible(
+            true,
+          );
+
+          setTabsReachedSticky(
+            false,
+          );
+        }
+      };
+
+    updateDevice();
+
+    mediaQuery.addEventListener(
+      "change",
+      updateDevice,
+    );
+
+    return () => {
+      mediaQuery.removeEventListener(
+        "change",
+        updateDevice,
+      );
+    };
+  }, []);
+
+  /* =======================================================
+     CALCULATE ORIGINAL TAB POSITION
+
+     Isse pata chalega tabs apni original page position
+     se sticky area tak kab pahunch gaye.
+  ======================================================= */
+
+  useEffect(() => {
+    const calculatePosition =
+      () => {
+        if (
+          !tabsRef.current
+        ) {
+          return;
+        }
+
+        tabsOriginalTopRef.current =
+          tabsRef.current.getBoundingClientRect()
+            .top +
+          window.scrollY;
+      };
+
+    /*
+     * Initial render ke baad calculate.
+     */
+
+    const frame =
+      window.requestAnimationFrame(
+        calculatePosition,
+      );
+
+    window.addEventListener(
+      "resize",
+      calculatePosition,
+    );
+
+    return () => {
+      window.cancelAnimationFrame(
+        frame,
+      );
+
+      window.removeEventListener(
+        "resize",
+        calculatePosition,
+      );
+    };
+  }, [
+    banners.length,
+  ]);
+
+  /* =======================================================
+     DESKTOP HEADER-LIKE SCROLL BEHAVIOR
+
+     IMPORTANT:
+
+     Ye effect ONLY desktop/laptop par chalega.
+
+     MOBILE:
+     ---------------------------------
+     tabs visible
+     tabs sticky
+     hide/show nahi
+
+     DESKTOP:
+     ---------------------------------
+     scroll down
+     ↓
+     tabs hide
+
+     scroll up
+     ↑
+     tabs show
+  ======================================================= */
+
+  useEffect(() => {
+    /* -----------------------------------------------------
+       MOBILE/TABLET
+
+       Scroll direction logic mat lagao.
+    ----------------------------------------------------- */
+
+    if (
+      !isDesktop
+    ) {
+      setTabsVisible(
+        true,
+      );
+
+      setTabsReachedSticky(
+        false,
+      );
+
+      return;
+    }
+
+    /* -----------------------------------------------------
+       DESKTOP INITIAL SCROLL POSITION
+    ----------------------------------------------------- */
+
+    lastScrollYRef.current =
+      Math.max(
+        window.scrollY,
+        0,
+      );
+
+    /* -----------------------------------------------------
+       PROCESS SCROLL
+    ----------------------------------------------------- */
+
+    const processScroll =
+      () => {
+        const currentScrollY =
+          Math.max(
+            window.scrollY,
+            0,
+          );
+
+        const previousScrollY =
+          lastScrollYRef.current;
+
+        const difference =
+          currentScrollY -
+          previousScrollY;
+
+        /* -----------------------------------------------
+           HAS TAB REACHED DESKTOP STICKY POSITION?
+        ----------------------------------------------- */
+
+        const stickyReached =
+          currentScrollY +
+            DESKTOP_STICKY_TOP >=
+          tabsOriginalTopRef.current;
+
+        setTabsReachedSticky(
+          stickyReached,
+        );
+
+        /* -----------------------------------------------
+           BEFORE STICKY POSITION
+
+           Tabs normal visible rahenge.
+        ----------------------------------------------- */
+
+        if (
+          !stickyReached
+        ) {
+          setTabsVisible(
+            true,
+          );
+
+          lastScrollYRef.current =
+            currentScrollY;
+
+          tickingRef.current =
+            false;
+
+          return;
+        }
+
+        /* -----------------------------------------------
+           IGNORE VERY SMALL SCROLL MOVEMENTS
+
+           Mouse / trackpad jitter avoid.
+        ----------------------------------------------- */
+
+        if (
+          Math.abs(
+            difference,
+          ) <
+          4
+        ) {
+          tickingRef.current =
+            false;
+
+          return;
+        }
+
+        /* -----------------------------------------------
+           SCROLL DOWN
+
+           Same feeling as Header:
+           tabs go up / hide.
+        ----------------------------------------------- */
+
+        if (
+          difference >
+          0
+        ) {
+          setTabsVisible(
+            false,
+          );
+        }
+
+        /* -----------------------------------------------
+           SCROLL UP
+
+           Same feeling as Header:
+           tabs come back.
+        ----------------------------------------------- */
+
+        if (
+          difference <
+          0
+        ) {
+          setTabsVisible(
+            true,
+          );
+        }
+
+        lastScrollYRef.current =
+          currentScrollY;
+
+        tickingRef.current =
+          false;
+      };
+
+    /* -----------------------------------------------------
+       SCROLL LISTENER
+
+       requestAnimationFrame used so scrolling smooth rahe.
+    ----------------------------------------------------- */
+
+    const handleScroll =
+      () => {
+        if (
+          tickingRef.current
+        ) {
+          return;
+        }
+
+        tickingRef.current =
+          true;
+
+        window.requestAnimationFrame(
+          processScroll,
+        );
+      };
+
+    window.addEventListener(
+      "scroll",
+      handleScroll,
+      {
+        passive: true,
+      },
+    );
+
+    return () => {
+      window.removeEventListener(
+        "scroll",
+        handleScroll,
+      );
+    };
+  }, [
+    isDesktop,
+  ]);
+
+  /* =======================================================
+     CATEGORY CHANGE
+  ======================================================= */
+
+  const handleCategoryChange =
+    (
+      section:
+        BundleSection,
+    ) => {
+      setActiveSection(
+        section,
+      );
+
+      /*
+       * Category change hone par sorting reset.
+       */
+
+      setSort(
+        "featured",
+      );
+
+      /*
+       * Desktop par user tab click kare
+       * to tabs visible rakho.
+       */
+
+      setTabsVisible(
+        true,
+      );
+    };
+
+  /* =======================================================
+     SHOULD DESKTOP TABS HIDE?
+
+     MOBILE par ye ALWAYS false hoga.
+  ======================================================= */
+
+  const hideDesktopTabs =
+    isDesktop &&
+    tabsReachedSticky &&
+    !tabsVisible;
+
+  /* =======================================================
+     RENDER
+  ======================================================= */
 
   return (
     <main
       className="
         min-h-screen
+
         bg-[#FCFAF8]
+
         text-[#292526]
       "
     >
-      {/* NORMAL BANNER */}
+      {/* ===================================================
+          BANNER
+      =================================================== */}
 
       <BannerSlider
         banners={
@@ -440,11 +1019,14 @@ export default function BundlePricingCatalog({
         }
       />
 
-      {/* PRODUCTS */}
+      {/* ===================================================
+          CONTENT
+      =================================================== */}
 
       <section
         className="
           mx-auto
+
           max-w-[1450px]
 
           px-3
@@ -457,6 +1039,10 @@ export default function BundlePricingCatalog({
           lg:py-14
         "
       >
+        {/* =================================================
+            HEADING + SORT
+        ================================================= */}
+
         <div
           className="
             flex
@@ -474,11 +1060,15 @@ export default function BundlePricingCatalog({
             sm:justify-between
           "
         >
+          {/* TITLE */}
+
           <div>
             <p
               className="
                 text-[8px]
+
                 font-semibold
+
                 uppercase
 
                 tracking-[0.24em]
@@ -494,6 +1084,7 @@ export default function BundlePricingCatalog({
                 mt-2
 
                 text-[28px]
+
                 font-semibold
 
                 tracking-[-0.03em]
@@ -509,9 +1100,11 @@ export default function BundlePricingCatalog({
             <p
               className="
                 mt-2
+
                 max-w-[600px]
 
                 text-[10px]
+
                 leading-5
 
                 text-black/45
@@ -521,24 +1114,13 @@ export default function BundlePricingCatalog({
             >
               {description}
             </p>
-
-            <p
-              className="
-                mt-2
-
-                text-[9px]
-
-                text-black/35
-              "
-            >
-              {
-                products.length
-              }{" "}
-              styles
-            </p>
           </div>
 
-          {products.length >
+          {/* =================================================
+              SORT
+          ================================================= */}
+
+          {activeProducts.length >
           0 ? (
             <select
               value={
@@ -554,6 +1136,7 @@ export default function BundlePricingCatalog({
               }
               className="
                 h-11
+
                 min-w-[180px]
 
                 rounded-full
@@ -568,6 +1151,10 @@ export default function BundlePricingCatalog({
                 text-[10px]
 
                 outline-none
+
+                transition-colors
+
+                hover:border-black/20
               "
             >
               <option value="featured">
@@ -588,6 +1175,214 @@ export default function BundlePricingCatalog({
             </select>
           ) : null}
         </div>
+
+        {/* =================================================
+            MEN / WOMEN / ACCESSORIES TABS
+
+            MOBILE:
+            ---------------------------------
+            always visible
+            sticky below mobile header
+            NO hide/show scroll behavior
+
+            DESKTOP:
+            ---------------------------------
+            centered
+            sticky below desktop header
+
+            scroll down
+            ↓
+            hide
+
+            scroll up
+            ↑
+            show
+        ================================================= */}
+
+        <div
+          ref={
+            tabsRef
+          }
+          className="
+            sticky
+
+            top-[50px]
+
+            z-40
+
+            -mx-3
+
+            mt-6
+
+            border-y
+            border-black/[0.07]
+
+            bg-[#FCFAF8]/95
+
+            px-3
+            py-2.5
+
+            shadow-[0_4px_12px_rgba(0,0,0,0.03)]
+
+            backdrop-blur-md
+
+            transition-transform
+
+            duration-300
+
+            ease-out
+
+            sm:-mx-5
+            sm:px-5
+
+            lg:-mx-8
+
+            lg:top-[154px]
+
+            lg:px-8
+            lg:py-3
+          "
+          style={{
+            transform:
+              hideDesktopTabs
+                ? `translateY(calc(-100% - ${DESKTOP_STICKY_TOP}px))`
+                : "translateY(0)",
+          }}
+        >
+          <div
+            className="
+              mx-auto
+
+              flex
+
+              w-full
+
+              items-center
+              justify-center
+
+              gap-2
+
+              overflow-x-auto
+
+              scrollbar-hide
+            "
+          >
+            {categoryTabs.map(
+              (
+                tab,
+              ) => {
+                const isActive =
+                  activeSection ===
+                  tab.key;
+
+                return (
+                  <button
+                    key={
+                      tab.key
+                    }
+                    type="button"
+                    onClick={() =>
+                      handleCategoryChange(
+                        tab.key,
+                      )
+                    }
+                    className={`
+                      shrink-0
+
+                      rounded-full
+
+                      border
+
+                      px-5
+                      py-2
+
+                      text-[10px]
+
+                      font-semibold
+
+                      transition-all
+
+                      duration-200
+
+                      sm:px-7
+
+                      lg:min-w-[112px]
+
+                      lg:px-8
+                      lg:py-2.5
+
+                      lg:text-[12px]
+
+                      ${
+                        isActive
+                          ? `
+                            border-[#B31345]
+
+                            bg-[#B31345]
+
+                            text-white
+
+                            shadow-sm
+                          `
+                          : `
+                            border-black/10
+
+                            bg-white
+
+                            text-black/60
+
+                            hover:border-[#B31345]/30
+
+                            hover:text-[#B31345]
+                          `
+                      }
+                    `}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              },
+            )}
+          </div>
+        </div>
+
+        {/* =================================================
+            ACTIVE CATEGORY TITLE
+
+            NO COUNTS
+            NO "9 styles"
+        ================================================= */}
+
+        <div
+          className="
+            mt-5
+
+            flex
+
+            items-center
+            justify-between
+
+            gap-4
+          "
+        >
+          <h2
+            className="
+              text-[15px]
+
+              font-semibold
+
+              text-[#292526]
+
+              sm:text-[17px]
+            "
+          >
+            {activeLabel}
+          </h2>
+        </div>
+
+        {/* =================================================
+            PRODUCT GRID
+        ================================================= */}
 
         {sortedProducts.length >
         0 ? (
@@ -625,19 +1420,49 @@ export default function BundlePricingCatalog({
             )}
           </div>
         ) : (
+          /* ===============================================
+             EMPTY CATEGORY
+          =============================================== */
+
           <div
             className="
               py-20
 
               text-center
-
-              text-[11px]
-              text-black/45
             "
           >
-            Bundle Pricing
-            category me abhi koi
-            active product nahi hai.
+            <p
+              className="
+                text-[14px]
+
+                font-semibold
+
+                text-[#292526]
+              "
+            >
+              No {activeLabel} products
+            </p>
+
+            <p
+              className="
+                mx-auto
+
+                mt-2
+
+                max-w-[420px]
+
+                text-[10px]
+
+                leading-5
+
+                text-black/45
+              "
+            >
+              Bundle Pricing category
+              me abhi koi active{" "}
+              {activeLabel} product
+              available nahi hai.
+            </p>
           </div>
         )}
       </section>
