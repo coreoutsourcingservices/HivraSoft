@@ -10,6 +10,7 @@ import {
 } from "react";
 
 import Header from "@/src/components/Header/Header";
+import HomeWelcomePopup from "@/src/components/Storefront/HomeWelcomePopup";
 
 import {
   useStorefrontCommerce,
@@ -2540,89 +2541,69 @@ function CommerceProductCard({
 
         <div
           className="
-            mt-2.5
+            mt-2
             flex
+            flex-wrap
             items-center
-            justify-between
             gap-2
           "
         >
-          <div
+          <strong
             className="
-              flex
-              min-w-0
-              flex-wrap
-              items-center
-              gap-1.5
+              text-[13px]
+              text-[#111]
             "
           >
-            <strong
+            {money(
+              product.showPrice,
+            )}
+          </strong>
+
+          {product.originalPrice >
+            product.showPrice ? (
+            <span
               className="
-                whitespace-nowrap
-                text-[13px]
-                text-[#111]
+                text-[9px]
+                text-black/35
+                line-through
               "
             >
               {money(
-                product.showPrice,
+                product.originalPrice,
               )}
-            </strong>
-
-            {product.originalPrice >
-              product.showPrice ? (
-              <span
-                className="
-                  whitespace-nowrap
-                  text-[8px]
-                  text-black/35
-                  line-through
-
-                  sm:text-[9px]
-                "
-              >
-                {money(
-                  product.originalPrice,
-                )}
-              </span>
-            ) : null}
-          </div>
-
-          <button
-            type="button"
-            onClick={() => {
-              void openAddToBag(
-                product,
-              );
-            }}
-            className="
-              flex
-              h-10
-              w-[46%]
-              min-w-[86px]
-              max-w-[138px]
-              shrink-0
-              items-center
-              justify-center
-              rounded-[6px]
-              bg-[#EC477C]
-              px-2
-              text-[8px]
-              font-bold
-              uppercase
-              tracking-[0.06em]
-              text-white
-              transition
-
-              hover:bg-[#D8396D]
-
-              sm:min-w-[112px]
-              sm:px-3
-              sm:text-[9px]
-            "
-          >
-            Add to Bag
-          </button>
+            </span>
+          ) : null}
         </div>
+
+        <button
+          type="button"
+          onClick={() => {
+            void openAddToBag(
+              product,
+            );
+          }}
+          className="
+            mt-3
+            flex
+            h-10
+            w-full
+            items-center
+            justify-center
+            rounded-[6px]
+            bg-[#EC477C]
+            px-3
+            text-[9px]
+            font-bold
+            uppercase
+            tracking-[0.08em]
+            text-white
+            transition
+
+            hover:bg-[#D8396D]
+          "
+        >
+          Add to Bag
+        </button>
       </div>
     </article>
   );
@@ -2707,7 +2688,7 @@ function AlwaysInItSection({
         ): product is CatalogProduct =>
           Boolean(product),
       )
-      .slice(0, 500);
+      .slice(0, 5);
 
   /* =========================================================
      RESET ON GENDER CHANGE
@@ -5838,168 +5819,285 @@ function ColorSection({
 }
 
 /* =========================================================
-   FAVOURITES FOR A LIMITED TIME POPUP
-
-   - Banner comes from the existing banner API data.
-   - Shows in the middle as a square popup.
-   - X closes it so the customer can continue shopping.
-   - Product card Add to Bag is aligned beside the price.
-   - Color section and all other homepage sections stay unchanged.
+   FAVOURITES / FIND YOUR FIT
 ========================================================= */
 
-function FavouriteLimitedPopup({
-  item,
+function PromoGrid({
+  items,
+  type,
 }: {
-  item?: BannerItem;
-}) {
-  /*
-   * Important:
-   * No localStorage / sessionStorage here.
-   * X press -> popup closes for this current page load only.
-   * Browser refresh -> component mounts again -> popup shows again.
-   */
-  const [open, setOpen] =
-    useState(true);
+  items: BannerItem[];
 
+  type:
+    | "favourites"
+    | "fit";
+}) {
   if (
-    !item?.url ||
-    !open
+    !items.length
   ) {
     return null;
   }
 
-  function closePopup() {
-    setOpen(false);
-  }
+  const fit =
+    type === "fit";
 
   return (
-    <div
-      className="
-        fixed
-        inset-0
-        z-[10050]
+    <section
+      className={`
+        px-3
+        py-12
 
-        flex
-        items-center
-        justify-center
+        sm:px-5
 
-        bg-black/55
+        lg:px-6
+        lg:py-20
 
-        px-4
-        py-6
-
-        backdrop-blur-[2px]
-      "
-      role="dialog"
-      aria-modal="true"
-      aria-label="Favourites for a limited time"
+        ${
+          fit
+            ? `
+              bg-[#1D1311]
+              text-white
+            `
+            : `
+              bg-[#F8F3EF]
+              text-[#211A18]
+            `
+        }
+      `}
     >
       <div
         className="
-          relative
-
-          w-full
-          max-w-[430px]
-
-          overflow-visible
+          mx-auto
+          max-w-[1450px]
         "
       >
-        {/* CLOSE */}
+        <p
+          className={`
+            mb-2
+            text-[7px]
+            uppercase
+            tracking-[0.35em]
 
-        <button
-          type="button"
-          aria-label="Close favourites popup"
-          onClick={
-            closePopup
-          }
+            sm:text-[8px]
+
+            ${
+              fit
+                ? `
+                  text-white/45
+                `
+                : `
+                  text-[#9A7463]
+                `
+            }
+          `}
+        >
+          {fit
+            ? "Discover"
+            : "Curated for you"}
+        </p>
+
+        <h2
           className="
-            absolute
-            -right-2
-            -top-2
-            z-30
-
-            grid
-            h-10
-            w-10
-
-            place-items-center
-
-            rounded-full
-
-            border
-            border-black/10
-
-            bg-white
-
-            text-[25px]
-            font-light
+            mb-5
+            text-[27px]
+            font-semibold
             leading-none
-            text-[#211A18]
 
-            shadow-[0_6px_22px_rgba(0,0,0,0.22)]
+            sm:text-[34px]
 
-            transition
-
-            hover:scale-105
-            hover:bg-[#EC477C]
-            hover:text-white
-
-            active:scale-95
+            lg:mb-9
+            lg:text-[48px]
           "
         >
-          ×
-        </button>
+          {fit
+            ? "Find your "
+            : "Your favourites for a "}
 
-        {/* SQUARE BANNER */}
-
-        <SmartLink
-          href={
-            bannerHref(
-              item,
-            )
-          }
-          newTab={
-            item.openInNewTab
-          }
-          className="
-            relative
-            block
-
-            aspect-square
-            w-full
-
-            overflow-hidden
-
-            rounded-[22px]
-
-            border
-            border-white/40
-
-            bg-white
-
-            shadow-[0_25px_80px_rgba(0,0,0,0.38)]
-          "
-        >
-          <img
-            src={
-              item.url
-            }
-            alt={
-              item.alt ||
-              item.title ||
-              "Favourites for a limited time"
-            }
+          <span
             className="
-              h-full
-              w-full
-
-              object-contain
-              object-center
+              font-serif
+              font-normal
+              italic
+              text-[#A41948]
             "
-          />
-        </SmartLink>
+          >
+            {fit
+              ? "fit."
+              : "limited time!"}
+          </span>
+        </h2>
+
+        <div
+          className={`
+            grid
+            gap-3
+
+            sm:gap-4
+
+            ${
+              fit
+                ? `
+                  grid-cols-2
+
+                  lg:grid-cols-4
+                `
+                : `
+                  grid-cols-1
+
+                  md:grid-cols-2
+                `
+            }
+          `}
+        >
+          {items
+            .slice(
+              0,
+              fit
+                ? 4
+                : 2,
+            )
+            .map(
+              (
+                item,
+                index,
+              ) => (
+                <SmartLink
+                  key={`${item.publicId || item.url}-${index}`}
+                  href={
+                    bannerHref(
+                      item,
+                    )
+                  }
+                  newTab={
+                    item.openInNewTab
+                  }
+                  className={`
+                    group
+                    relative
+                    overflow-hidden
+                    bg-[#E8DED7]
+
+                    ${
+                      fit
+                        ? `
+                          aspect-[3/4]
+                          rounded-[14px]
+
+                          sm:rounded-[16px]
+                        `
+                        : `
+                          aspect-[1.25/1]
+                          rounded-[16px]
+
+                          md:aspect-[1.35/1]
+                          md:rounded-[18px]
+                        `
+                    }
+                  `}
+                >
+                  {item.url ? (
+                    <img
+                      src={
+                        item.url
+                      }
+                      alt={
+                        item.alt ||
+                        item.title ||
+                        "Hivra Soft"
+                      }
+                      className="
+                        h-full
+                        w-full
+                        object-cover
+                        transition-transform
+                        duration-700
+
+                        group-hover:scale-105
+                      "
+                    />
+                  ) : null}
+
+                  <div
+                    className="
+                      absolute
+                      inset-0
+                      bg-gradient-to-t
+                      from-black/75
+                      via-transparent
+                      to-transparent
+                    "
+                  />
+
+                  <div
+                    className="
+                      absolute
+                      inset-x-0
+                      bottom-0
+                      p-3
+                      text-white
+
+                      sm:p-6
+                    "
+                  >
+                    <h3
+                      className={`
+                        font-serif
+                        leading-tight
+
+                        ${
+                          fit
+                            ? `
+                              text-[18px]
+
+                              sm:text-[26px]
+                            `
+                            : `
+                              text-[24px]
+
+                              sm:text-[34px]
+                            `
+                        }
+                      `}
+                    >
+                      {item.title ||
+                        (
+                          fit
+                            ? `Collection ${
+                                index +
+                                1
+                              }`
+                            : `Hivra Favourite ${
+                                index +
+                                1
+                              }`
+                        )}
+                    </h3>
+
+                    <span
+                      className="
+                        mt-2
+                        inline-flex
+                        text-[7px]
+                        font-bold
+                        uppercase
+                        tracking-[0.15em]
+
+                        sm:mt-3
+                        sm:text-[8px]
+                      "
+                    >
+                      {item.buttonText ||
+                        "Shop now"}{" "}
+
+                      →
+                    </span>
+                  </div>
+                </SmartLink>
+              ),
+            )}
+        </div>
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -6507,7 +6605,7 @@ export default function HomePage() {
       ],
     );
 
-  const favouritePopupItems =
+  const favourites =
     useMemo(
       () =>
         purposeBannerImages(
@@ -6516,6 +6614,35 @@ export default function HomePage() {
             "favourite",
             "favorite",
             "limited",
+          ],
+          "home_top",
+        ),
+      [
+        eligible,
+      ],
+    );
+
+  // Same Favourites/limited-time banner selection as the Main branch.
+  // If none exists or its URL fails, HomeWelcomePopup displays Prahlad's own image.
+  const favouritePopupItems = useMemo(
+    () => purposeBannerImages(
+      eligible,
+      ["favourite", "favorite", "limited", "popup"],
+      "home_middle",
+    ),
+    [eligible],
+  );
+  const homepagePopupImage = favouritePopupItems.find((item) => Boolean(item?.url?.trim()));
+
+  const findYourFit =
+    useMemo(
+      () =>
+        purposeBannerImages(
+          eligible,
+          [
+            "find your fit",
+            "find-your-fit",
+            "find-fit",
           ],
           "home_middle",
         ),
@@ -6546,6 +6673,15 @@ export default function HomePage() {
   return (
     <>
       <Header />
+      {/* Show the correct admin popup image after banner data loads; never a blank text-only card. */}
+      {!loading && (
+        <HomeWelcomePopup
+          imageUrl={homepagePopupImage?.url}
+          imageAlt={homepagePopupImage?.alt || homepagePopupImage?.title}
+          href={homepagePopupImage ? bannerHref(homepagePopupImage) : "/new-launch"}
+          newTab={homepagePopupImage?.openInNewTab}
+        />
+      )}
 
       {loading ? (
         <LoadingHome />
@@ -6558,14 +6694,6 @@ export default function HomePage() {
             text-[#211A18]
           "
         >
-          {/* FAVOURITES FOR A LIMITED TIME POPUP */}
-
-          <FavouriteLimitedPopup
-            item={
-              favouritePopupItems[0]
-            }
-          />
-
           {/* HOME BANNER */}
 
           <HeroBanner
@@ -6622,6 +6750,24 @@ export default function HomePage() {
             products={
               activeProducts
             }
+          />
+
+          {/* FAVOURITES */}
+
+          <PromoGrid
+            items={
+              favourites
+            }
+            type="favourites"
+          />
+
+          {/* FIND YOUR FIT */}
+
+          <PromoGrid
+            items={
+              findYourFit
+            }
+            type="fit"
           />
 
           {/* BOTTOM BANNER */}

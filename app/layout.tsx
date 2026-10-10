@@ -7,39 +7,27 @@ import "./globals.css";
 import Loader from "@/src/components/Loader/Loader";
 
 import Footer from "@/src/components/Footer/Footer";
-
 import StorefrontFooter from "@/src/components/Footer/StorefrontFooter";
 
 import {
   StorefrontCommerceProvider,
 } from "@/src/components/Storefront/StorefrontCommerceProvider";
 
-import MonthlyPromotionReminder from "@/src/components/Storefront/MonthlyPromotionReminder";
-
-import ProfileCompletionPrompt from "@/src/components/Storefront/ProfileCompletionPrompt";
-
 import TrafficSourceCapture from "@/src/components/Storefront/TrafficSourceCapture";
-
-import ScrollToTopOnRefresh from "@/src/components/Storefront/ScrollToTopOnRefresh";
-
+import ChatbotWidget from "@/src/components/Chatbot/ChatbotWidget";
+// Main branch's click/scroll festive effects, calendar and automatic profile prompt.
 import FestiveCrackerEffects from "@/src/components/Storefront/FestiveCrackerEffects";
-
-/* =========================================================
-   METADATA
-========================================================= */
+import ScrollToTopOnRefresh from "@/src/components/Storefront/ScrollToTopOnRefresh";
+import MonthlyPromotionReminder from "@/src/components/Storefront/MonthlyPromotionReminder";
+import ProfileCompletionPrompt from "@/src/components/Storefront/ProfileCompletionPrompt";
 
 export const metadata: Metadata =
   {
-    title:
-      "HivraSoft",
+    title: "HivraSoft",
 
     description:
       "HivraSoft online store",
   };
-
-/* =========================================================
-   ROOT LAYOUT
-========================================================= */
 
 export default function RootLayout({
   children,
@@ -52,66 +40,39 @@ export default function RootLayout({
       lang="en"
       suppressHydrationWarning
     >
+      <head>
+        <link rel="stylesheet" href="/chatbot/chatbot.css" />
+      </head>
       <body
         className="
           min-h-screen
         "
       >
-        {/* ================================================
-            PAGE REFRESH -> TOP
-        ================================================ */}
+        {/* ===============================================
+            HOME PAGE LOADER
+
+            Loader.tsx ke andar pathname check hai.
+            Sirf "/" par show hoga.
+
+            /account/thanks par show nahi hoga.
+        =============================================== */}
 
         <ScrollToTopOnRefresh />
-
-        {/* ================================================
-            FESTIVE CLICK + SCROLL CRACKERS
-
-            Component ke andar hi hidden hai:
-            /admin/*
-            /account/*
-            /cart/*
-            /wishlist/*
-            /checkout/*
-            /payment/*
-            /thanks/*
-        ================================================ */}
-
         <FestiveCrackerEffects />
-
-        {/* ================================================
-            GLOBAL LOADER
-        ================================================ */}
-
         <Loader />
 
-        {/* ================================================
+        {/* ===============================================
             STOREFRONT
-        ================================================ */}
+        =============================================== */}
 
         <StorefrontCommerceProvider>
           <TrafficSourceCapture />
 
           {children}
-
-          {/* ==============================================
-              MONTHLY PROMOTION REMINDER
-
-              Iske apne hidden routes already hain.
-          ============================================== */}
-
           <MonthlyPromotionReminder />
-
-          {/* ==============================================
-              PROFILE COMPLETION PROMPT
-
-              Iske apne hidden routes already hain.
-          ============================================== */}
-
           <ProfileCompletionPrompt />
-
-          {/* ==============================================
-              FOOTER
-          ============================================== */}
+          {/* Original Prahlad chatbot, including its existing launcher/login flows. */}
+          <ChatbotWidget />
 
           <StorefrontFooter>
             <Footer />
