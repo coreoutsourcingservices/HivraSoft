@@ -40,6 +40,13 @@ type ProductGroups = {
 type Props = {
   productGroups: ProductGroups;
   banners: CatalogBanner[];
+
+  /*
+   * page.tsx currently ye props pass karta hai,
+   * isliye type me rakhe hain.
+   *
+   * UI me inko ab show nahi karna.
+   */
   categoryName: string;
   description: string;
 };
@@ -67,20 +74,18 @@ const categoryTabs: Array<{
 ];
 
 /* =========================================================
-   HEADER OFFSETS
+   DESKTOP HEADER OFFSET
 
-   MOBILE:
-   Tabs header ke neeche sticky rahenge.
+   Desktop par:
+   scroll down → tabs hide
+   scroll up   → tabs show
 
-   DESKTOP:
-   Header + upper bars ke neeche sticky rahenge.
-
-   Desktop par hi scroll direction hide/show lagega.
+   Mobile/tablet:
+   tabs visible rahenge.
 ========================================================= */
 
-const MOBILE_STICKY_TOP = 50;
-
-const DESKTOP_STICKY_TOP = 154;
+const DESKTOP_STICKY_TOP =
+  154;
 
 /* =========================================================
    BANNER SLIDER
@@ -447,8 +452,6 @@ function BannerSlider({
 export default function BundlePricingCatalog({
   productGroups,
   banners,
-  categoryName,
-  description,
 }: Props) {
   /* =======================================================
      ACTIVE CATEGORY
@@ -480,10 +483,10 @@ export default function BundlePricingCatalog({
      SCREEN TYPE
 
      false:
-     mobile / tablet
+     mobile/tablet
 
      true:
-     1024px+ desktop
+     desktop 1024+
   ======================================================= */
 
   const [
@@ -493,13 +496,9 @@ export default function BundlePricingCatalog({
     useState(false);
 
   /* =======================================================
-     DESKTOP TAB VISIBILITY
+     TAB VISIBILITY
 
-     IMPORTANT:
-
-     Ye sirf desktop/laptop ke scroll behavior ke liye hai.
-
-     Mobile par tabs always visible rahenge.
+     Desktop only.
   ======================================================= */
 
   const [
@@ -582,7 +581,7 @@ export default function BundlePricingCatalog({
         sort
       ) {
         /* -----------------------------------------------
-           PRICE LOW TO HIGH
+           LOW → HIGH
         ----------------------------------------------- */
 
         case "low-high":
@@ -596,7 +595,7 @@ export default function BundlePricingCatalog({
           );
 
         /* -----------------------------------------------
-           PRICE HIGH TO LOW
+           HIGH → LOW
         ----------------------------------------------- */
 
         case "high-low":
@@ -636,15 +635,13 @@ export default function BundlePricingCatalog({
     ]);
 
   /* =======================================================
-     CHECK MOBILE / DESKTOP
-
-     Tailwind lg breakpoint:
+     DETECT DESKTOP
 
      1024px+
      = desktop behavior
 
-     below 1024
-     = mobile/tablet behavior
+     under 1024
+     = mobile/tablet
   ======================================================= */
 
   useEffect(() => {
@@ -663,10 +660,8 @@ export default function BundlePricingCatalog({
         );
 
         /*
-         * IMPORTANT:
-         *
-         * Mobile / tablet par
-         * scroll direction hide/show reset.
+         * Mobile/tablet par
+         * tabs never hide.
          */
 
         if (
@@ -699,9 +694,6 @@ export default function BundlePricingCatalog({
 
   /* =======================================================
      CALCULATE ORIGINAL TAB POSITION
-
-     Isse pata chalega tabs apni original page position
-     se sticky area tak kab pahunch gaye.
   ======================================================= */
 
   useEffect(() => {
@@ -714,14 +706,11 @@ export default function BundlePricingCatalog({
         }
 
         tabsOriginalTopRef.current =
-          tabsRef.current.getBoundingClientRect()
+          tabsRef.current
+            .getBoundingClientRect()
             .top +
           window.scrollY;
       };
-
-    /*
-     * Initial render ke baad calculate.
-     */
 
     const frame =
       window.requestAnimationFrame(
@@ -748,34 +737,19 @@ export default function BundlePricingCatalog({
   ]);
 
   /* =======================================================
-     DESKTOP HEADER-LIKE SCROLL BEHAVIOR
-
-     IMPORTANT:
-
-     Ye effect ONLY desktop/laptop par chalega.
+     DESKTOP HEADER-LIKE SCROLL
 
      MOBILE:
-     ---------------------------------
      tabs visible
-     tabs sticky
-     hide/show nahi
 
      DESKTOP:
-     ---------------------------------
-     scroll down
-     ↓
-     tabs hide
-
-     scroll up
-     ↑
-     tabs show
+     scroll down → hide
+     scroll up   → show
   ======================================================= */
 
   useEffect(() => {
     /* -----------------------------------------------------
-       MOBILE/TABLET
-
-       Scroll direction logic mat lagao.
+       MOBILE / TABLET
     ----------------------------------------------------- */
 
     if (
@@ -793,7 +767,7 @@ export default function BundlePricingCatalog({
     }
 
     /* -----------------------------------------------------
-       DESKTOP INITIAL SCROLL POSITION
+       INITIAL SCROLL
     ----------------------------------------------------- */
 
     lastScrollYRef.current =
@@ -822,7 +796,7 @@ export default function BundlePricingCatalog({
           previousScrollY;
 
         /* -----------------------------------------------
-           HAS TAB REACHED DESKTOP STICKY POSITION?
+           HAS TAB REACHED STICKY POSITION?
         ----------------------------------------------- */
 
         const stickyReached =
@@ -835,9 +809,7 @@ export default function BundlePricingCatalog({
         );
 
         /* -----------------------------------------------
-           BEFORE STICKY POSITION
-
-           Tabs normal visible rahenge.
+           BEFORE STICKY AREA
         ----------------------------------------------- */
 
         if (
@@ -857,9 +829,7 @@ export default function BundlePricingCatalog({
         }
 
         /* -----------------------------------------------
-           IGNORE VERY SMALL SCROLL MOVEMENTS
-
-           Mouse / trackpad jitter avoid.
+           IGNORE SMALL SCROLL JITTER
         ----------------------------------------------- */
 
         if (
@@ -876,9 +846,6 @@ export default function BundlePricingCatalog({
 
         /* -----------------------------------------------
            SCROLL DOWN
-
-           Same feeling as Header:
-           tabs go up / hide.
         ----------------------------------------------- */
 
         if (
@@ -892,9 +859,6 @@ export default function BundlePricingCatalog({
 
         /* -----------------------------------------------
            SCROLL UP
-
-           Same feeling as Header:
-           tabs come back.
         ----------------------------------------------- */
 
         if (
@@ -915,8 +879,6 @@ export default function BundlePricingCatalog({
 
     /* -----------------------------------------------------
        SCROLL LISTENER
-
-       requestAnimationFrame used so scrolling smooth rahe.
     ----------------------------------------------------- */
 
     const handleScroll =
@@ -954,7 +916,7 @@ export default function BundlePricingCatalog({
   ]);
 
   /* =======================================================
-     CATEGORY CHANGE
+     CHANGE CATEGORY
   ======================================================= */
 
   const handleCategoryChange =
@@ -967,17 +929,13 @@ export default function BundlePricingCatalog({
       );
 
       /*
-       * Category change hone par sorting reset.
+       * Category change par
+       * sorting Featured.
        */
 
       setSort(
         "featured",
       );
-
-      /*
-       * Desktop par user tab click kare
-       * to tabs visible rakho.
-       */
 
       setTabsVisible(
         true,
@@ -985,9 +943,7 @@ export default function BundlePricingCatalog({
     };
 
   /* =======================================================
-     SHOULD DESKTOP TABS HIDE?
-
-     MOBILE par ye ALWAYS false hoga.
+     DESKTOP TAB HIDE
   ======================================================= */
 
   const hideDesktopTabs =
@@ -1030,95 +986,44 @@ export default function BundlePricingCatalog({
           max-w-[1450px]
 
           px-3
-          py-9
+
+          pb-12
+          pt-6
 
           sm:px-5
-          sm:py-11
+          sm:pb-12
+          sm:pt-8
 
           lg:px-8
-          lg:py-14
+          lg:pb-14
+          lg:pt-8
         "
       >
         {/* =================================================
-            HEADING + SORT
+            IMPORTANT
+
+            SHOP COLLECTION REMOVED
+            BUNDLE PRICING TITLE REMOVED
+            DESCRIPTION REMOVED
+
+            ONLY SORT REMAINS.
         ================================================= */}
 
         <div
           className="
             flex
-            flex-col
+            w-full
 
-            gap-5
+            items-center
+            justify-end
 
             border-b
             border-black/[0.07]
 
-            pb-6
-
-            sm:flex-row
-            sm:items-end
-            sm:justify-between
+            pb-5
           "
         >
-          {/* TITLE */}
-
-          <div>
-            <p
-              className="
-                text-[8px]
-
-                font-semibold
-
-                uppercase
-
-                tracking-[0.24em]
-
-                text-[#B31345]
-              "
-            >
-              Shop Collection
-            </p>
-
-            <h1
-              className="
-                mt-2
-
-                text-[28px]
-
-                font-semibold
-
-                tracking-[-0.03em]
-
-                sm:text-[34px]
-
-                lg:text-[40px]
-              "
-            >
-              {categoryName}
-            </h1>
-
-            <p
-              className="
-                mt-2
-
-                max-w-[600px]
-
-                text-[10px]
-
-                leading-5
-
-                text-black/45
-
-                sm:text-[11px]
-              "
-            >
-              {description}
-            </p>
-          </div>
-
-          {/* =================================================
-              SORT
-          ================================================= */}
+          {/* SORT */}
 
           {activeProducts.length >
           0 ? (
@@ -1135,9 +1040,9 @@ export default function BundlePricingCatalog({
                 )
               }
               className="
-                h-11
+                h-10
 
-                min-w-[180px]
+                min-w-[150px]
 
                 rounded-full
 
@@ -1155,6 +1060,9 @@ export default function BundlePricingCatalog({
                 transition-colors
 
                 hover:border-black/20
+
+                sm:h-11
+                sm:min-w-[180px]
               "
             >
               <option value="featured">
@@ -1177,26 +1085,14 @@ export default function BundlePricingCatalog({
         </div>
 
         {/* =================================================
-            MEN / WOMEN / ACCESSORIES TABS
+            MEN / WOMEN / ACCESSORIES
 
             MOBILE:
-            ---------------------------------
             always visible
-            sticky below mobile header
-            NO hide/show scroll behavior
 
             DESKTOP:
-            ---------------------------------
-            centered
-            sticky below desktop header
-
-            scroll down
-            ↓
-            hide
-
-            scroll up
-            ↑
-            show
+            scroll down → hide
+            scroll up   → show
         ================================================= */}
 
         <div
@@ -1212,7 +1108,7 @@ export default function BundlePricingCatalog({
 
             -mx-3
 
-            mt-6
+            mt-5
 
             border-y
             border-black/[0.07]
@@ -1254,7 +1150,6 @@ export default function BundlePricingCatalog({
               mx-auto
 
               flex
-
               w-full
 
               items-center
@@ -1347,10 +1242,11 @@ export default function BundlePricingCatalog({
         </div>
 
         {/* =================================================
-            ACTIVE CATEGORY TITLE
+            ACTIVE CATEGORY NAME
+
+            Men / Women / Accessories
 
             NO COUNTS
-            NO "9 styles"
         ================================================= */}
 
         <div
@@ -1391,6 +1287,7 @@ export default function BundlePricingCatalog({
               mt-8
 
               grid
+
               grid-cols-2
 
               gap-x-3

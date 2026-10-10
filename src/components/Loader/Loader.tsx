@@ -19,12 +19,20 @@ import {
 ========================================================= */
 
 type LoaderProps = {
-  onComplete?:
-    () => void;
+  onComplete?: () => void;
 };
 
 /* =========================================================
    GREETINGS
+
+   Urdu removed.
+
+   FLOW:
+   नमस्ते
+   Hello
+   Made to feel like you
+   Welcome to
+   HivraSoft
 ========================================================= */
 
 const greetings = [
@@ -41,21 +49,7 @@ const greetings = [
     font:
       '"Cormorant Garamond", Georgia, "Times New Roman", serif',
   },
-
-  {
-    text: "السلام علیکم",
-    dir: "rtl" as const,
-    font:
-      '"Noto Nastaliq Urdu", "Segoe UI", serif',
-  },
 ];
-
-/* =========================================================
-   BRAND LETTERS
-========================================================= */
-
-const brandLetters =
-  "HIVRASOFT".split("");
 
 /* =========================================================
    LOADER
@@ -67,21 +61,29 @@ export default function Loader({
   const pathname =
     usePathname();
 
+  /* =======================================================
+     ACTIVE
+  ======================================================= */
+
   const [
     active,
     setActive,
   ] =
     useState(
-      pathname === "/"
-    );
-
-  const loaderRef =
-    useRef<HTMLDivElement>(
-      null
+      pathname === "/",
     );
 
   /* =======================================================
-     SHOW ONLY ON HOME PAGE
+     LOADER REF
+  ======================================================= */
+
+  const loaderRef =
+    useRef<HTMLDivElement | null>(
+      null,
+    );
+
+  /* =======================================================
+     SHOW LOADER ONLY ON HOME PAGE
   ======================================================= */
 
   useEffect(() => {
@@ -89,13 +91,15 @@ export default function Loader({
       pathname === "/"
     ) {
       setActive(
-        true
+        true,
       );
-    } else {
-      setActive(
-        false
-      );
+
+      return;
     }
+
+    setActive(
+      false,
+    );
   }, [
     pathname,
   ]);
@@ -121,6 +125,10 @@ export default function Loader({
       return;
     }
 
+    /* =====================================================
+       STOP BODY SCROLL WHILE LOADER IS OPEN
+    ===================================================== */
+
     const previousOverflow =
       document.body.style
         .overflow;
@@ -134,7 +142,7 @@ export default function Loader({
 
     const reduceMotion =
       window.matchMedia(
-        "(prefers-reduced-motion: reduce)"
+        "(prefers-reduced-motion: reduce)",
       ).matches;
 
     if (
@@ -147,17 +155,17 @@ export default function Loader({
               previousOverflow;
 
             setActive(
-              false
+              false,
             );
 
             onComplete?.();
           },
-          400
+          500,
         );
 
       return () => {
         window.clearTimeout(
-          timer
+          timer,
         );
 
         document.body.style.overflow =
@@ -172,92 +180,106 @@ export default function Loader({
     const ctx =
       gsap.context(
         () => {
+          /* ===============================================
+             GET ELEMENTS
+          =============================================== */
+
           const greetingElements =
             gsap.utils.toArray<HTMLElement>(
-              "[data-loader-greeting]"
+              "[data-loader-greeting]",
             );
 
           const taglineMask =
             loader.querySelector<HTMLElement>(
-              "[data-tagline-mask]"
+              "[data-tagline-mask]",
             );
 
           const tagline =
             loader.querySelector<HTMLElement>(
-              "[data-tagline]"
+              "[data-tagline]",
             );
 
           const taglineLine =
             loader.querySelector<HTMLElement>(
-              "[data-tagline-line]"
+              "[data-tagline-line]",
             );
 
           const brandKicker =
             loader.querySelector<HTMLElement>(
-              "[data-brand-kicker]"
+              "[data-brand-kicker]",
             );
 
-          const letters =
-            gsap.utils.toArray<HTMLElement>(
-              "[data-brand-letter]"
+          const brandReveal =
+            loader.querySelector<HTMLElement>(
+              "[data-brand-reveal]",
+            );
+
+          const brandWord =
+            loader.querySelector<HTMLElement>(
+              "[data-brand-word]",
+            );
+
+          const brandUnderline =
+            loader.querySelector<HTMLElement>(
+              "[data-brand-underline]",
             );
 
           const brandSubline =
             loader.querySelector<HTMLElement>(
-              "[data-brand-subline]"
+              "[data-brand-subline]",
             );
 
           const progress =
             loader.querySelector<HTMLElement>(
-              "[data-progress]"
+              "[data-progress]",
             );
 
           const silkOne =
             loader.querySelector<HTMLElement>(
-              "[data-silk-one]"
+              "[data-silk-one]",
             );
 
           const silkTwo =
             loader.querySelector<HTMLElement>(
-              "[data-silk-two]"
+              "[data-silk-two]",
             );
 
           const silkThree =
             loader.querySelector<HTMLElement>(
-              "[data-silk-three]"
+              "[data-silk-three]",
             );
 
           const shine =
             loader.querySelector<HTMLElement>(
-              "[data-shine]"
+              "[data-shine]",
             );
 
           /* ===============================================
-             INITIAL STATE
+             GREETING INITIAL STATE
           =============================================== */
 
           gsap.set(
             greetingElements,
             {
-              autoAlpha:
-                0,
+              autoAlpha: 0,
 
-              y:
-                55,
+              y: 55,
 
-              rotateX:
-                45,
+              rotateX: 40,
 
-              scale:
-                0.94,
+              scale: 0.95,
 
               filter:
-                "blur(14px)",
+                "blur(12px)",
 
               transformPerspective:
                 900,
-            }
+            },
           );
+
+          /* ===============================================
+             TAGLINE INITIAL STATE
+          =============================================== */
 
           if (
             taglineMask
@@ -267,7 +289,7 @@ export default function Loader({
               {
                 autoAlpha:
                   0,
-              }
+              },
             );
           }
 
@@ -282,7 +304,7 @@ export default function Loader({
 
                 filter:
                   "blur(8px)",
-              }
+              },
             );
           }
 
@@ -297,9 +319,13 @@ export default function Loader({
 
                 transformOrigin:
                   "left center",
-              }
+              },
             );
           }
+
+          /* ===============================================
+             FINAL BRAND INITIAL STATE
+          =============================================== */
 
           if (
             brandKicker
@@ -311,39 +337,91 @@ export default function Loader({
                   0,
 
                 y:
-                  15,
+                  14,
 
                 letterSpacing:
-                  "0.55em",
-              }
+                  "0.28em",
+              },
             );
           }
 
-          gsap.set(
-            letters,
-            {
-              autoAlpha:
-                0,
+          /* ===============================================
+             BRAND REVEAL INITIAL STATE
 
-              y:
-                80,
+             IMPORTANT FIX:
 
-              rotateX:
-                70,
+             Clip actual italic text par nahi lagaya.
 
-              rotateZ:
-                3,
+             Wrapper par lagaya hai.
 
-              scale:
-                0.88,
+             Final f / t cut nahi honge.
+          =============================================== */
 
-              filter:
-                "blur(12px)",
+          if (
+            brandReveal
+          ) {
+            gsap.set(
+              brandReveal,
+              {
+                clipPath:
+                  "inset(0 110% 0 -16%)",
+              },
+            );
+          }
 
-              transformPerspective:
-                1000,
-            }
-          );
+          /* ===============================================
+             BRAND WORD INITIAL STATE
+          =============================================== */
+
+          if (
+            brandWord
+          ) {
+            gsap.set(
+              brandWord,
+              {
+                autoAlpha:
+                  0,
+
+                x:
+                  -10,
+
+                y:
+                  7,
+
+                scale:
+                  0.98,
+
+                filter:
+                  "blur(3px)",
+
+                transformOrigin:
+                  "left center",
+              },
+            );
+          }
+
+          /* ===============================================
+             UNDERLINE INITIAL
+          =============================================== */
+
+          if (
+            brandUnderline
+          ) {
+            gsap.set(
+              brandUnderline,
+              {
+                scaleX:
+                  0,
+
+                transformOrigin:
+                  "left center",
+              },
+            );
+          }
+
+          /* ===============================================
+             SUBLINE INITIAL
+          =============================================== */
 
           if (
             brandSubline
@@ -356,9 +434,13 @@ export default function Loader({
 
                 y:
                   12,
-              }
+              },
             );
           }
+
+          /* ===============================================
+             PROGRESS INITIAL
+          =============================================== */
 
           if (
             progress
@@ -371,12 +453,12 @@ export default function Loader({
 
                 transformOrigin:
                   "left center",
-              }
+              },
             );
           }
 
           /* ===============================================
-             BACKGROUND MOVEMENT
+             SILK 01
           =============================================== */
 
           if (
@@ -405,9 +487,13 @@ export default function Loader({
 
                 ease:
                   "sine.inOut",
-              }
+              },
             );
           }
+
+          /* ===============================================
+             SILK 02
+          =============================================== */
 
           if (
             silkTwo
@@ -435,9 +521,13 @@ export default function Loader({
 
                 ease:
                   "sine.inOut",
-              }
+              },
             );
           }
+
+          /* ===============================================
+             SILK 03
+          =============================================== */
 
           if (
             silkThree
@@ -465,9 +555,13 @@ export default function Loader({
 
                 ease:
                   "sine.inOut",
-              }
+              },
             );
           }
+
+          /* ===============================================
+             MOVING LIGHT
+          =============================================== */
 
           if (
             shine
@@ -493,7 +587,7 @@ export default function Loader({
 
                 ease:
                   "power1.inOut",
-              }
+              },
             );
           }
 
@@ -514,7 +608,7 @@ export default function Loader({
                     previousOverflow;
 
                   setActive(
-                    false
+                    false,
                   );
 
                   onComplete?.();
@@ -523,90 +617,118 @@ export default function Loader({
 
           /* ===============================================
              GREETINGS
+
+             नमस्ते
+             Hello
           =============================================== */
 
           greetingElements.forEach(
             (
               greeting,
-              index
+              index,
             ) => {
-              timeline
-                .to(
-                  greeting,
-                  {
-                    autoAlpha:
-                      1,
+              const progressValue =
+                0.12 +
+                (
+                  (
+                    index +
+                    1
+                  ) /
+                  greetingElements.length
+                ) *
+                  0.28;
 
-                    y:
-                      0,
+              /* -------------------------------------------
+                 ENTER
+              ------------------------------------------- */
 
-                    rotateX:
-                      0,
+              timeline.to(
+                greeting,
+                {
+                  autoAlpha:
+                    1,
 
-                    scale:
-                      1,
+                  y:
+                    0,
 
-                    filter:
-                      "blur(0px)",
+                  rotateX:
+                    0,
 
-                    duration:
-                      0.68,
+                  scale:
+                    1,
 
-                    ease:
-                      "power4.out",
-                  }
-                )
+                  filter:
+                    "blur(0px)",
 
-                .to(
-                  progress,
-                  {
-                    scaleX:
-                      (index + 1) /
-                      5,
+                  duration:
+                    0.7,
 
-                    duration:
-                      0.55,
+                  ease:
+                    "power4.out",
+                },
+              );
 
-                    ease:
-                      "power3.out",
-                  },
-                  "<"
-                )
+              /* -------------------------------------------
+                 PROGRESS
+              ------------------------------------------- */
 
-                .to(
-                  {},
-                  {
-                    duration:
-                      0.42,
-                  }
-                )
+              timeline.to(
+                progress,
+                {
+                  scaleX:
+                    progressValue,
 
-                .to(
-                  greeting,
-                  {
-                    autoAlpha:
-                      0,
+                  duration:
+                    0.5,
 
-                    y:
-                      -48,
+                  ease:
+                    "power3.out",
+                },
+                "<",
+              );
 
-                    rotateX:
-                      -38,
+              /* -------------------------------------------
+                 HOLD
+              ------------------------------------------- */
 
-                    scale:
-                      1.04,
+              timeline.to(
+                {},
+                {
+                  duration:
+                    0.42,
+                },
+              );
 
-                    filter:
-                      "blur(11px)",
+              /* -------------------------------------------
+                 EXIT
+              ------------------------------------------- */
 
-                    duration:
-                      0.42,
+              timeline.to(
+                greeting,
+                {
+                  autoAlpha:
+                    0,
 
-                    ease:
-                      "power3.in",
-                  }
-                );
-            }
+                  y:
+                    -46,
+
+                  rotateX:
+                    -32,
+
+                  scale:
+                    1.03,
+
+                  filter:
+                    "blur(9px)",
+
+                  duration:
+                    0.42,
+
+                  ease:
+                    "power3.in",
+                },
+              );
+            },
           );
 
           /* ===============================================
@@ -618,116 +740,139 @@ export default function Loader({
             tagline &&
             taglineLine
           ) {
-            timeline
-              .set(
-                taglineMask,
-                {
-                  autoAlpha:
-                    1,
-                }
-              )
+            timeline.set(
+              taglineMask,
+              {
+                autoAlpha:
+                  1,
+              },
+            );
 
-              .to(
-                tagline,
-                {
-                  yPercent:
-                    0,
+            /* -------------------------------------------
+               TEXT ENTER
+            ------------------------------------------- */
 
-                  filter:
-                    "blur(0px)",
+            timeline.to(
+              tagline,
+              {
+                yPercent:
+                  0,
 
-                  duration:
-                    0.9,
+                filter:
+                  "blur(0px)",
 
-                  ease:
-                    "power4.out",
-                }
-              )
+                duration:
+                  0.9,
 
-              .to(
-                progress,
-                {
-                  scaleX:
-                    0.8,
+                ease:
+                  "power4.out",
+              },
+            );
 
-                  duration:
-                    0.65,
+            /* -------------------------------------------
+               PROGRESS
+            ------------------------------------------- */
 
-                  ease:
-                    "power3.out",
-                },
-                "<"
-              )
+            timeline.to(
+              progress,
+              {
+                scaleX:
+                  0.66,
 
-              .to(
-                taglineLine,
-                {
-                  scaleX:
-                    1,
+                duration:
+                  0.65,
 
-                  duration:
-                    0.7,
+                ease:
+                  "power3.out",
+              },
+              "<",
+            );
 
-                  ease:
-                    "power4.out",
-                },
-                "-=0.42"
-              )
+            /* -------------------------------------------
+               LINE DRAW
+            ------------------------------------------- */
 
-              .to(
-                {},
-                {
-                  duration:
-                    0.65,
-                }
-              )
+            timeline.to(
+              taglineLine,
+              {
+                scaleX:
+                  1,
 
-              .to(
-                tagline,
-                {
-                  yPercent:
-                    -120,
+                duration:
+                  0.7,
 
-                  filter:
-                    "blur(7px)",
+                ease:
+                  "power4.out",
+              },
+              "-=0.45",
+            );
 
-                  duration:
-                    0.68,
+            /* -------------------------------------------
+               HOLD
+            ------------------------------------------- */
 
-                  ease:
-                    "power4.in",
-                }
-              )
+            timeline.to(
+              {},
+              {
+                duration:
+                  0.65,
+              },
+            );
 
-              .to(
-                taglineLine,
-                {
-                  scaleX:
-                    0,
+            /* -------------------------------------------
+               TEXT EXIT
+            ------------------------------------------- */
 
-                  transformOrigin:
-                    "right center",
+            timeline.to(
+              tagline,
+              {
+                yPercent:
+                  -120,
 
-                  duration:
-                    0.35,
+                filter:
+                  "blur(6px)",
 
-                  ease:
-                    "power3.in",
-                },
-                "<"
-              )
+                duration:
+                  0.65,
 
-              .set(
-                taglineMask,
-                {
-                  autoAlpha:
-                    0,
-                }
-              );
+                ease:
+                  "power4.in",
+              },
+            );
+
+            /* -------------------------------------------
+               LINE EXIT
+            ------------------------------------------- */
+
+            timeline.to(
+              taglineLine,
+              {
+                scaleX:
+                  0,
+
+                transformOrigin:
+                  "right center",
+
+                duration:
+                  0.35,
+
+                ease:
+                  "power3.in",
+              },
+              "<",
+            );
+
+            timeline.set(
+              taglineMask,
+              {
+                autoAlpha:
+                  0,
+              },
+            );
           }
 
           /* ===============================================
-             WELCOME TO HIVRASOFT
+             WELCOME TO
           =============================================== */
 
           if (
@@ -743,49 +888,106 @@ export default function Loader({
                   0,
 
                 letterSpacing:
-                  "0.38em",
+                  "0.18em",
 
                 duration:
                   0.7,
 
                 ease:
                   "power4.out",
-              }
+              },
             );
           }
 
-          timeline.to(
-            letters,
-            {
-              autoAlpha:
-                1,
+          /* ===============================================
+             HIVRASOFT BASE ENTER
+          =============================================== */
 
-              y:
-                0,
+          if (
+            brandWord
+          ) {
+            timeline.to(
+              brandWord,
+              {
+                autoAlpha:
+                  1,
 
-              rotateX:
-                0,
+                x:
+                  0,
 
-              rotateZ:
-                0,
+                y:
+                  0,
 
-              scale:
-                1,
+                scale:
+                  1,
 
-              filter:
-                "blur(0px)",
+                filter:
+                  "blur(0px)",
 
-              duration:
-                0.85,
+                duration:
+                  0.4,
 
-              stagger:
-                0.055,
+                ease:
+                  "power3.out",
+              },
+              "-=0.25",
+            );
+          }
 
-              ease:
-                "back.out(1.45)",
-            },
-            "-=0.25"
-          );
+          /* ===============================================
+             WRITING REVEAL
+
+             Extra negative inset gives italic letters
+             room on both sides.
+
+             No more cut final "ft".
+          =============================================== */
+
+          if (
+            brandReveal
+          ) {
+            timeline.to(
+              brandReveal,
+              {
+                clipPath:
+                  "inset(0 -18% 0 -16%)",
+
+                duration:
+                  1.45,
+
+                ease:
+                  "power2.inOut",
+              },
+              "-=0.32",
+            );
+          }
+
+          /* ===============================================
+             BRAND UNDERLINE
+          =============================================== */
+
+          if (
+            brandUnderline
+          ) {
+            timeline.to(
+              brandUnderline,
+              {
+                scaleX:
+                  1,
+
+                duration:
+                  0.75,
+
+                ease:
+                  "power3.out",
+              },
+              "-=0.65",
+            );
+          }
+
+          /* ===============================================
+             SUBLINE
+          =============================================== */
 
           if (
             brandSubline
@@ -805,124 +1007,99 @@ export default function Loader({
                 ease:
                   "power3.out",
               },
-              "-=0.35"
+              "-=0.35",
             );
           }
 
-          timeline
-            .to(
-              progress,
-              {
-                scaleX:
-                  1,
+          /* ===============================================
+             FINISH PROGRESS
+          =============================================== */
 
-                duration:
-                  0.7,
+          timeline.to(
+            progress,
+            {
+              scaleX:
+                1,
 
-                ease:
-                  "power3.out",
-              },
-              "<"
-            )
+              duration:
+                0.7,
 
-            .to(
-              {},
-              {
-                duration:
-                  0.75,
-              }
-            );
+              ease:
+                "power3.out",
+            },
+            "<",
+          );
+
+          /* ===============================================
+             HOLD FINAL BRAND
+          =============================================== */
+
+          timeline.to(
+            {},
+            {
+              duration:
+                0.95,
+            },
+          );
 
           /* ===============================================
              BRAND EXIT
           =============================================== */
 
-          if (
-            brandKicker ||
-            brandSubline
-          ) {
-            timeline.to(
-              [
-                brandKicker,
-                brandSubline,
-              ].filter(
-                Boolean
-              ),
-              {
-                autoAlpha:
-                  0,
+          timeline.to(
+            [
+              brandKicker,
+              brandReveal,
+              brandUnderline,
+              brandSubline,
+            ].filter(
+              Boolean,
+            ),
+            {
+              autoAlpha:
+                0,
 
-                y:
-                  -15,
+              y:
+                -16,
 
-                duration:
-                  0.35,
+              duration:
+                0.4,
 
-                ease:
-                  "power3.in",
-              }
-            );
-          }
+              stagger:
+                0.025,
 
-          timeline
-            .to(
-              letters,
-              {
-                autoAlpha:
-                  0,
+              ease:
+                "power3.in",
+            },
+          );
 
-                y:
-                  -38,
+          /* ===============================================
+             FINAL CURTAIN EXIT
+          =============================================== */
 
-                rotateX:
-                  -28,
+          timeline.to(
+            loader,
+            {
+              yPercent:
+                -100,
 
-                scale:
-                  1.04,
+              skewY:
+                -1.2,
 
-                filter:
-                  "blur(8px)",
+              duration:
+                1.05,
 
-                duration:
-                  0.45,
-
-                stagger: {
-                  each:
-                    0.025,
-
-                  from:
-                    "center",
-                },
-
-                ease:
-                  "power3.in",
-              },
-              "<"
-            )
-
-            /* =============================================
-               FINAL CURTAIN EXIT
-            ============================================= */
-
-            .to(
-              loader,
-              {
-                yPercent:
-                  -100,
-
-                skewY:
-                  -1.5,
-
-                duration:
-                  1.1,
-
-                ease:
-                  "power4.inOut",
-              }
-            );
+              ease:
+                "power4.inOut",
+            },
+          );
         },
-        loader
+        loader,
       );
+
+    /* =====================================================
+       CLEANUP
+    ===================================================== */
 
     return () => {
       ctx.revert();
@@ -937,7 +1114,7 @@ export default function Loader({
   ]);
 
   /* =======================================================
-     ONLY MAIN HOME PAGE
+     HOME PAGE ONLY
   ======================================================= */
 
   if (
@@ -946,6 +1123,10 @@ export default function Loader({
   ) {
     return null;
   }
+
+  /* =======================================================
+     RENDER
+  ======================================================= */
 
   return (
     <div
@@ -973,7 +1154,7 @@ export default function Loader({
       "
     >
       {/* =================================================
-          BASE SOFT PINK BACKGROUND
+          BASE BACKGROUND
       ================================================= */}
 
       <div
@@ -986,10 +1167,38 @@ export default function Loader({
           bg-gradient-to-br
 
           from-[#FFF9FA]
-
           via-[#FCE7ED]
-
           to-[#F6D5DF]
+        "
+      />
+
+      {/* =================================================
+          CENTER GLOW
+      ================================================= */}
+
+      <div
+        className="
+          pointer-events-none
+
+          absolute
+
+          left-1/2
+          top-1/2
+
+          h-[440px]
+          w-[440px]
+
+          -translate-x-1/2
+          -translate-y-1/2
+
+          rounded-full
+
+          bg-white/30
+
+          blur-[100px]
+
+          sm:h-[620px]
+          sm:w-[620px]
         "
       />
 
@@ -1017,9 +1226,7 @@ export default function Loader({
           bg-gradient-to-r
 
           from-transparent
-
           via-white/55
-
           to-transparent
 
           blur-[45px]
@@ -1054,9 +1261,7 @@ export default function Loader({
           bg-gradient-to-r
 
           from-transparent
-
           via-[#ECA8B9]/35
-
           to-transparent
 
           blur-[55px]
@@ -1089,9 +1294,7 @@ export default function Loader({
           bg-gradient-to-r
 
           from-transparent
-
-          via-[#FFFFFF]/45
-
+          via-white/45
           to-transparent
 
           blur-[80px]
@@ -1101,7 +1304,7 @@ export default function Loader({
       />
 
       {/* =================================================
-          MOVING LIGHT SHINE
+          MOVING SHINE
       ================================================= */}
 
       <div
@@ -1122,9 +1325,7 @@ export default function Loader({
           bg-gradient-to-r
 
           from-transparent
-
           via-white/25
-
           to-transparent
 
           blur-[30px]
@@ -1132,7 +1333,7 @@ export default function Loader({
       />
 
       {/* =================================================
-          TOP BRAND
+          TOP SMALL BRAND
       ================================================= */}
 
       <div
@@ -1147,11 +1348,10 @@ export default function Loader({
           whitespace-nowrap
 
           text-[7px]
+
           font-semibold
 
-          uppercase
-
-          tracking-[0.48em]
+          tracking-[0.32em]
 
           text-[#8B5364]/45
 
@@ -1159,11 +1359,11 @@ export default function Loader({
           sm:text-[8px]
         "
       >
-        Hivra Soft
+        HivraSoft
       </div>
 
       {/* =================================================
-          MAIN CENTER AREA
+          CENTER CONTENT
       ================================================= */}
 
       <div
@@ -1174,7 +1374,7 @@ export default function Loader({
 
           flex
 
-          h-[180px]
+          h-[230px]
           w-full
 
           items-center
@@ -1188,20 +1388,17 @@ export default function Loader({
 
           [transform-style:preserve-3d]
 
-          sm:h-[220px]
+          sm:h-[270px]
         "
       >
         {/* ===============================================
             GREETINGS
-
-            IMPORTANT:
-            opacity-0 prevents first-render overlap.
         =============================================== */}
 
         {greetings.map(
           (
             greeting,
-            index
+            index,
           ) => (
             <h1
               key={
@@ -1218,7 +1415,6 @@ export default function Loader({
                 top-1/2
 
                 w-full
-
                 max-w-[95vw]
 
                 -translate-x-1/2
@@ -1256,17 +1452,13 @@ export default function Loader({
                     : "normal",
               }}
             >
-              {
-                greeting.text
-              }
+              {greeting.text}
             </h1>
-          )
+          ),
         )}
 
         {/* ===============================================
-            MADE TO FEEL LIKE YOU
-
-            Initial opacity-0 prevents overlap.
+            TAGLINE
         =============================================== */}
 
         <div
@@ -1379,95 +1571,170 @@ export default function Loader({
             [transform-style:preserve-3d]
           "
         >
-          {/* WELCOME TO */}
+          {/* =============================================
+              WELCOME TO
+          ============================================= */}
 
           <p
             data-brand-kicker
             className="
-              mb-3
+              mb-2
 
               opacity-0
 
-              text-[8px]
+              text-[9px]
 
-              font-semibold
+              font-medium
 
-              uppercase
-
-              tracking-[0.38em]
+              tracking-[0.18em]
 
               text-[#9A4961]
 
               will-change-transform
 
-              sm:mb-4
-              sm:text-[10px]
+              sm:mb-3
+              sm:text-[11px]
 
-              md:text-[11px]
+              md:text-[12px]
             "
           >
-            Welcome To
+            Welcome to
           </p>
 
-          {/* HIVRASOFT */}
+          {/* =============================================
+              HIVRASOFT AREA
+          ============================================= */}
 
           <div
             className="
+              mx-auto
+
               flex
+
+              w-fit
+              max-w-[98vw]
+
+              flex-col
 
               items-center
               justify-center
 
               overflow-visible
 
-              [transform-style:preserve-3d]
+              px-2
             "
           >
-            {brandLetters.map(
-              (
-                letter,
-                index
-              ) => (
-                <span
-                  key={
-                    `${letter}-${index}`
-                  }
-                  data-brand-letter
-                  className="
-                    inline-block
+            {/* ===========================================
+                WRITING REVEAL WRAPPER
 
-                    opacity-0
+                IMPORTANT:
 
-                    text-[30px]
+                Extra horizontal padding gives
+                italic H and final f/t enough room.
+            =========================================== */}
 
-                    font-semibold
+            <div
+              data-brand-reveal
+              className="
+                overflow-visible
 
-                    leading-none
+                px-[0.32em]
 
-                    tracking-[0.035em]
+                pb-[0.12em]
+                pt-[0.08em]
 
-                    text-[#741735]
+                will-change-[clip-path]
+              "
+            >
+              <h2
+                data-brand-word
+                aria-label="HivraSoft"
+                className="
+                  inline-block
 
-                    will-change-transform
+                  overflow-visible
 
-                    [transform-style:preserve-3d]
+                  whitespace-nowrap
 
-                    sm:text-[43px]
+                  opacity-0
 
-                    md:text-[60px]
+                  font-serif
 
-                    lg:text-[76px]
-                  "
-                >
-                  {
-                    letter
-                  }
-                </span>
-              )
-            )}
+                  text-[42px]
+
+                  font-medium
+
+                  italic
+
+                  leading-[1.15]
+
+                  tracking-[-0.035em]
+
+                  text-[#741735]
+
+                  will-change-transform
+
+                  sm:text-[60px]
+
+                  md:text-[78px]
+
+                  lg:text-[94px]
+                "
+                style={{
+                  fontFamily:
+                    '"Cormorant Garamond", Georgia, "Times New Roman", serif',
+
+                  paddingLeft:
+                    "0.06em",
+
+                  paddingRight:
+                    "0.12em",
+                }}
+              >
+                HivraSoft
+              </h2>
+            </div>
+
+            {/* ===========================================
+                BRAND UNDERLINE
+            =========================================== */}
+
+            <div
+              className="
+                mt-1
+
+                h-[1.5px]
+
+                w-[68%]
+
+                overflow-hidden
+
+                sm:mt-2
+              "
+            >
+              <div
+                data-brand-underline
+                className="
+                  h-full
+                  w-full
+
+                  origin-left
+
+                  scale-x-0
+
+                  bg-gradient-to-r
+
+                  from-transparent
+                  via-[#9D2C4D]
+                  to-transparent
+                "
+              />
+            </div>
           </div>
 
-          {/* SUBLINE */}
+          {/* =============================================
+              SUBLINE
+          ============================================= */}
 
           <p
             data-brand-subline
@@ -1520,9 +1787,7 @@ export default function Loader({
           bg-gradient-to-b
 
           from-transparent
-
           via-[#9E5368]/30
-
           to-transparent
 
           sm:block
@@ -1555,9 +1820,7 @@ export default function Loader({
           bg-gradient-to-b
 
           from-transparent
-
           via-[#9E5368]/30
-
           to-transparent
 
           sm:block
@@ -1568,7 +1831,7 @@ export default function Loader({
       />
 
       {/* =================================================
-          BOTTOM STATUS
+          BOTTOM LEFT
       ================================================= */}
 
       <div
@@ -1677,9 +1940,7 @@ export default function Loader({
             bg-gradient-to-r
 
             from-[#D77D94]
-
             via-[#A82F51]
-
             to-[#7A1736]
           "
         />
