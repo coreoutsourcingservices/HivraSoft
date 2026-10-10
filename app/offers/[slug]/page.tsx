@@ -15,7 +15,9 @@ import {
 } from "@/src/services/products";
 
 import {
+  findCategoryAnywhere,
   mapProductToColorCards,
+  productBelongsToCategory,
 } from "@/src/services/storefront-catalog";
 
 import {
@@ -46,22 +48,29 @@ type Props = {
 
 /* =========================================================
    BUY / GET OFFER PAGE
+
+   FLOW:
+
+   Offer eligible products
+          ↓
+   All
+   Men
+   Women
+   Accessories
+
+   IMPORTANT:
+
+   All = current offer ke saare eligible products.
+
+   Men/Women/Accessories bhi sirf current
+   offer ke eligible products me se filter honge.
 ========================================================= */
 
 export default async function BuyGetOfferPage({
   params,
 }: Props) {
   /* =======================================================
-     URL SLUG
-
-     Public:
-     /buy-3-get-1-free
-
-     Internal rewrite:
-     /offers/buy-3-get-1-free
-
-     params.slug:
-     buy-3-get-1-free
+     GET SLUG
   ======================================================= */
 
   const {
@@ -89,16 +98,7 @@ export default async function BuyGetOfferPage({
   }
 
   /* =======================================================
-     GET OFFER BY DYNAMIC SLUG
-
-     No buy-3 hardcoding.
-
-     Tomorrow:
-
-     buy-4-get-1-free
-     buy-6-get-3-free
-
-     automatically same page.
+     GET OFFER
   ======================================================= */
 
   const offer =
@@ -107,7 +107,7 @@ export default async function BuyGetOfferPage({
     );
 
   /* =======================================================
-     VALID BUY GET OFFER ONLY
+     VALIDATE OFFER
   ======================================================= */
 
   if (
@@ -150,7 +150,7 @@ export default async function BuyGetOfferPage({
   ======================================================= */
 
   const [
-    tree,
+    categoryTree,
     allProducts,
   ] =
     await Promise.all([
@@ -163,38 +163,149 @@ export default async function BuyGetOfferPage({
      OFFER ELIGIBLE PRODUCTS
 
      All Products ON:
-     => all active products
+     → all active eligible products
 
      All Products OFF:
-     => offer me selected products/categories only
+     → selected products/categories only
   ======================================================= */
 
   const eligibleProducts =
     getOfferEligibleProducts(
       offer,
       allProducts,
-      tree,
+      categoryTree,
     );
 
   /* =======================================================
-     STOREFRONT PRODUCT CARDS
+     ALL OFFER PRODUCTS
+
+     IMPORTANT:
+
+     Ye store ke saare products nahi hain.
+
+     Ye sirf current Buy/Get offer ke
+     eligible products hain.
   ======================================================= */
 
-  const products =
+  const allOfferProducts =
     eligibleProducts.flatMap(
       mapProductToColorCards,
     );
 
   /* =======================================================
-     CLEAN PUBLIC OFFER URL
+     FIND MEN CATEGORY
+  ======================================================= */
 
-     IMPORTANT:
+  const menCategory =
+    findCategoryAnywhere(
+      categoryTree,
+      [
+        "men",
+        "mens",
+        "menswear",
+        "male",
+      ],
+    ) ||
+    null;
 
-     Browser:
-     /buy-3-get-1-free
+  /* =======================================================
+     FIND WOMEN CATEGORY
+  ======================================================= */
 
-     NOT:
-     /offers/buy-3-get-1-free
+  const womenCategory =
+    findCategoryAnywhere(
+      categoryTree,
+      [
+        "women",
+        "womens",
+        "womenswear",
+        "female",
+      ],
+    ) ||
+    null;
+
+  /* =======================================================
+     FIND ACCESSORIES CATEGORY
+  ======================================================= */
+
+  const accessoriesCategory =
+    findCategoryAnywhere(
+      categoryTree,
+      [
+        "accessories",
+        "accessory",
+      ],
+    ) ||
+    null;
+
+  /* =======================================================
+     MEN ELIGIBLE PRODUCTS
+  ======================================================= */
+
+  const menApiProducts =
+    menCategory
+      ? eligibleProducts.filter(
+          (
+            product,
+          ) =>
+            productBelongsToCategory(
+              product,
+              menCategory,
+            ),
+        )
+      : [];
+
+  const menProducts =
+    menApiProducts.flatMap(
+      mapProductToColorCards,
+    );
+
+  /* =======================================================
+     WOMEN ELIGIBLE PRODUCTS
+  ======================================================= */
+
+  const womenApiProducts =
+    womenCategory
+      ? eligibleProducts.filter(
+          (
+            product,
+          ) =>
+            productBelongsToCategory(
+              product,
+              womenCategory,
+            ),
+        )
+      : [];
+
+  const womenProducts =
+    womenApiProducts.flatMap(
+      mapProductToColorCards,
+    );
+
+  /* =======================================================
+     ACCESSORIES ELIGIBLE PRODUCTS
+  ======================================================= */
+
+  const accessoriesApiProducts =
+    accessoriesCategory
+      ? eligibleProducts.filter(
+          (
+            product,
+          ) =>
+            productBelongsToCategory(
+              product,
+              accessoriesCategory,
+            ),
+        )
+      : [];
+
+  const accessoriesProducts =
+    accessoriesApiProducts.flatMap(
+      mapProductToColorCards,
+    );
+
+  /* =======================================================
+     PUBLIC URL
   ======================================================= */
 
   const publicUrl =
@@ -203,23 +314,18 @@ export default async function BuyGetOfferPage({
     )}`;
 
   /* =======================================================
-     BANNERS
-
-     Offer eligible category/category tree
-     ke according existing service decide karegi.
+     OFFER BANNERS
   ======================================================= */
 
   const banners =
     getOfferBanners(
       offer,
-      tree,
+      categoryTree,
       publicUrl,
     );
 
   /* =======================================================
-     PAGE
-
-     Mobile / desktop layout yahan change nahi kiya.
+     RENDER
   ======================================================= */
 
   return (
@@ -230,9 +336,19 @@ export default async function BuyGetOfferPage({
         offer={
           offer
         }
-        products={
-          products
-        }
+        productGroups={{
+          all:
+            allOfferProducts,
+
+          men:
+            menProducts,
+
+          women:
+            womenProducts,
+
+          accessories:
+            accessoriesProducts,
+        }}
         banners={
           banners
         }
