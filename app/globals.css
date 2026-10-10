@@ -52,7 +52,7 @@ body {
 .blog-public-content ol { list-style:decimal; padding-left:1.5rem; }
 .blog-public-content blockquote { border-left:4px solid #A51D45; padding:1rem 1.25rem; background:#fff; border-radius:0 14px 14px 0; font-style:italic; }
 .blog-public-content pre { overflow:auto; border-radius:16px; background:#211A18; padding:1rem; color:#fff; font-size:.85rem; }
-.blog-public-content table { width:100%; border-collapse:collapse; overflow:hidden; }
+.blog-public-content table { width:100%; border-collapse:collapse; }
 .blog-public-content td,.blog-public-content th { border:1px solid rgba(33,26,24,.12); padding:.7rem; text-align:left; }
 .blog-public-content iframe { width:100%; min-height:420px; border:0; border-radius:18px; }
 .blog-public-content details { border:1px solid rgba(33,26,24,.1); border-radius:14px; padding:1rem; background:#fff; }
@@ -61,3 +61,167 @@ body {
 .blog-public-content .blog-columns { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; }
 .blog-public-content .blog-cta { display:inline-flex; padding:.75rem 1.2rem; border-radius:12px; background:#A51D45; color:white; text-decoration:none; font-weight:600; }
 @media (max-width: 700px) { .blog-public-content iframe { min-height:220px; } .blog-public-content .blog-columns { grid-template-columns:1fr; } }
+
+
+/* Legacy HTML blog template compatibility.
+   Blog HTML saved by the old sanitizer retains layout, typography and borders,
+   but has lost background, gradients, shadows and table spacing. This scoped
+   fallback restores the missing paint on the public page only. It never
+   changes stored content, and existing inline styles win over these rules. */
+.blog-public-content--legacy-pink > div > div:first-child,
+.blog-public-content--legacy-pink > div > div:last-child {
+  background: linear-gradient(135deg, #ffe1ec, #ffd1e3);
+}
+.blog-public-content--legacy-pink > div > div:nth-child(2),
+.blog-public-content--legacy-pink > div > div:nth-child(7) {
+  background: #fff5f9;
+}
+.blog-public-content--legacy-pink > div > div:nth-child(5),
+.blog-public-content--legacy-pink > div > div:nth-child(9),
+.blog-public-content--legacy-pink > div > div:nth-child(12) {
+  background: #fff0f5;
+}
+.blog-public-content--legacy-pink > div > div:nth-child(4),
+.blog-public-content--legacy-pink > div > div:nth-child(6),
+.blog-public-content--legacy-pink > div > div:nth-child(8),
+.blog-public-content--legacy-pink > div > div:nth-child(10) {
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(255, 105, 150, .10);
+}
+/* Highlight chips, feature boxes and table headings. */
+.blog-public-content--legacy-pink td[style*="color:#fff"],
+.blog-public-content--legacy-pink th[style*="color:#fff"],
+.blog-public-content--legacy-pink span[style*="color:#fff"] {
+  background: linear-gradient(135deg, #ff6fa3, #ff9bbf);
+}
+.blog-public-content--legacy-pink > div > div:first-child > div[style*="border-radius:50px"],
+.blog-public-content--legacy-pink > div > div:last-child > div[style*="border-radius:50px"] {
+  background: #fff;
+}
+/* Card-like FAQ blocks and laundry/care table cells. */
+.blog-public-content--legacy-pink > div > div:nth-child(13) > div {
+  background: #fff;
+}
+.blog-public-content--legacy-pink > div > div:nth-child(11) td {
+  background: #fff5f9;
+}
+.blog-public-content--legacy-pink > div > div:nth-child(9) > div:has(> span[style*="color:#fff"]) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+/* Restore separated pill/callout cells without applying it to other blogs. */
+.blog-public-content--legacy-pink td[style*="color:#fff"],
+.blog-public-content--legacy-pink th[style*="color:#fff"] { border: 0; }
+.blog-public-content--legacy-pink table:has(td[style*="color:#fff"]) {
+  border-collapse: separate;
+  border-spacing: 8px;
+}
+.blog-public-content--legacy-pink > div > div:nth-child(3) table { border-spacing: 10px; }
+.blog-public-content--legacy-pink > div > div:nth-child(11) table {
+  border-collapse: separate;
+  border-spacing: 12px;
+}
+/* Original size-guide and comparison tables used collapsed borders. */
+.blog-public-content--legacy-pink table[style*="border-radius:10px"] {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+.blog-public-content--legacy-pink > div > div:nth-child(8) tbody tr:nth-child(even),
+.blog-public-content--legacy-pink > div > div:nth-child(7) table[style*="border-radius:10px"] tbody tr:nth-child(even) {
+  background: #fff8fb;
+}
+.blog-public-content--legacy-pink > div > div:nth-child(8) tbody tr:nth-child(odd),
+.blog-public-content--legacy-pink > div > div:nth-child(7) table[style*="border-radius:10px"] tbody tr:nth-child(odd) {
+  background: #fff;
+}
+@media (max-width: 640px) {
+  .blog-public-content--legacy-pink > div > div[style*="padding:24px 28px"],
+  .blog-public-content--legacy-pink > div > div[style*="padding:40px 36px 32px"],
+  .blog-public-content--legacy-pink > div > div[style*="padding:36px 36px 32px"] {
+    padding: 20px 14px !important;
+  }
+  .blog-public-content--legacy-pink table { max-width: 100%; }
+}
+
+
+/* Legacy HTML product description compatibility.
+   Product HTML saved by the old sanitizer retains layout, typography and borders,
+   but has lost background, gradients, shadows and table spacing. This scoped
+   fallback restores the missing paint on the public product page only. It never
+   changes stored content, and existing inline styles win over these rules. */
+.product-description--legacy-pink > div > div:first-child,
+.product-description--legacy-pink > div > div:last-child {
+  background: linear-gradient(135deg, #ffe1ec, #ffd1e3);
+}
+.product-description--legacy-pink > div > div:nth-child(2),
+.product-description--legacy-pink > div > div:nth-child(7) {
+  background: #fff5f9;
+}
+.product-description--legacy-pink > div > div:nth-child(5),
+.product-description--legacy-pink > div > div:nth-child(9),
+.product-description--legacy-pink > div > div:nth-child(12) {
+  background: #fff0f5;
+}
+.product-description--legacy-pink > div > div:nth-child(4),
+.product-description--legacy-pink > div > div:nth-child(6),
+.product-description--legacy-pink > div > div:nth-child(8),
+.product-description--legacy-pink > div > div:nth-child(10) {
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(255, 105, 150, .10);
+}
+/* Highlight chips, feature boxes and table headings. */
+.product-description--legacy-pink td[style*="color:#fff"],
+.product-description--legacy-pink th[style*="color:#fff"],
+.product-description--legacy-pink span[style*="color:#fff"] {
+  background: linear-gradient(135deg, #ff6fa3, #ff9bbf);
+}
+.product-description--legacy-pink > div > div:first-child > div[style*="border-radius:50px"],
+.product-description--legacy-pink > div > div:last-child > div[style*="border-radius:50px"] {
+  background: #fff;
+}
+/* Card-like FAQ blocks and laundry/care table cells. */
+.product-description--legacy-pink > div > div:nth-child(13) > div {
+  background: #fff;
+}
+.product-description--legacy-pink > div > div:nth-child(11) td {
+  background: #fff5f9;
+}
+.product-description--legacy-pink > div > div:nth-child(9) > div:has(> span[style*="color:#fff"]) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+/* Restore separated pill/callout cells without applying it to other products. */
+.product-description--legacy-pink td[style*="color:#fff"],
+.product-description--legacy-pink th[style*="color:#fff"] { border: 0; }
+.product-description--legacy-pink table:has(td[style*="color:#fff"]) {
+  border-collapse: separate;
+  border-spacing: 8px;
+}
+.product-description--legacy-pink > div > div:nth-child(3) table { border-spacing: 10px; }
+.product-description--legacy-pink > div > div:nth-child(11) table {
+  border-collapse: separate;
+  border-spacing: 12px;
+}
+/* Original size-guide and comparison tables used collapsed borders. */
+.product-description--legacy-pink table[style*="border-radius:10px"] {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+.product-description--legacy-pink > div > div:nth-child(8) tbody tr:nth-child(even),
+.product-description--legacy-pink > div > div:nth-child(7) table[style*="border-radius:10px"] tbody tr:nth-child(even) {
+  background: #fff8fb;
+}
+.product-description--legacy-pink > div > div:nth-child(8) tbody tr:nth-child(odd),
+.product-description--legacy-pink > div > div:nth-child(7) table[style*="border-radius:10px"] tbody tr:nth-child(odd) {
+  background: #fff;
+}
+@media (max-width: 640px) {
+  .product-description--legacy-pink > div > div[style*="padding:24px 28px"],
+  .product-description--legacy-pink > div > div[style*="padding:40px 36px 32px"],
+  .product-description--legacy-pink > div > div[style*="padding:36px 36px 32px"] {
+    padding: 20px 14px !important;
+  }
+  .product-description--legacy-pink table { max-width: 100%; }
+}

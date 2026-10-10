@@ -414,7 +414,7 @@ function SeoFields({ seo, setSeo, title, featuredImage }: { seo: any; setSeo: (v
 }
 
 function BlogPreview({ title, excerpt, featuredImage, content }: { title: string; excerpt: string; featuredImage: BlogImage; content: string }) {
-  return <article className="blog-content mx-auto max-w-[1000px] rounded-[24px] border border-[#211A18]/10 bg-white p-6 md:p-10"><header><h1 className="text-3xl font-semibold leading-tight md:text-5xl">{title || "Untitled Blog"}</h1>{excerpt && <p className="mt-4 text-base leading-7 text-[#211A18]/60">{excerpt}</p>}</header>{featuredImage.url && <img src={featuredImage.url} alt={featuredImage.alt || title} className="mt-8 w-full rounded-2xl" />}<div className="mt-8 text-[17px] leading-8 [&_h2]:mt-9 [&_h2]:text-3xl [&_h2]:font-bold [&_h3]:mt-7 [&_h3]:text-2xl [&_h3]:font-bold [&_img]:my-6 [&_img]:max-w-full [&_ol]:list-decimal [&_ol]:pl-7 [&_p]:my-4 [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:p-2 [&_th]:border [&_th]:p-2 [&_ul]:list-disc [&_ul]:pl-7" dangerouslySetInnerHTML={{ __html: content }} /></article>;
+  return <article className="blog-content mx-auto max-w-[1000px] rounded-[24px] border border-[#211A18]/10 bg-white p-6 md:p-10"><header><h1 className="text-3xl font-semibold leading-tight md:text-5xl">{title || "Untitled Blog"}</h1>{excerpt && <p className="mt-4 text-base leading-7 text-[#211A18]/60">{excerpt}</p>}</header>{featuredImage.url && <img src={featuredImage.url} alt={featuredImage.alt || title} className="mt-8 w-full rounded-2xl" />}<iframe title="Blog content preview" sandbox="" srcDoc={content} className="mt-8 h-[900px] w-full rounded-xl border border-[#211A18]/10 bg-white" /></article>;
 }
 
 function Panel({ title, children }: { title: string; children: ReactNode }) {
