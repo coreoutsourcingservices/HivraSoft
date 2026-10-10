@@ -1359,7 +1359,7 @@ export default function Loader({
           sm:text-[8px]
         "
       >
-        HivraSoft
+        Hivra Soft
       </div>
 
       {/* =================================================
