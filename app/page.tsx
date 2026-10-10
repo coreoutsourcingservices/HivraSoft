@@ -2644,7 +2644,7 @@ function AlwaysInItSection({
         ): product is CatalogProduct =>
           Boolean(product),
       )
-      .slice(0, 5);
+      .slice(0, 5000);
 
   /* =========================================================
      RESET ON GENDER CHANGE
