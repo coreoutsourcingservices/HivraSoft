@@ -6,7 +6,7 @@ import { confirmAdminAction } from "@/src/components/Admin/AdminConfirmProvider"
 import WordBlogEditor from "@/src/components/Admin/WordBlogEditor";
 import { uploadBlogImage } from "@/lib/blog";
 
-const API_URL=(process.env.NEXT_PUBLIC_API_URL||"http://localhost:5000").replace(/\/$/,"");
+const API_URL=("").replace(/\/$/,"");
 type Audience="all"|"filtered"|"selected";
 type Schedule={_id:string;name:string;title:string;subject?:string;message:string;deliveryEmail?:boolean;deliveryWebsite?:boolean;daysBefore?:number[];type:string;link:string;audience:Audience;filters:Record<string,unknown>;userIds:any[];eventType:string;recurrence:string;startDate:string;time:string;timezone:string;nextRunAt:string;lastRunAt?:string;runCount:number;isActive:boolean;createdAt:string};
 type Customer={_id:string;name:string;email:string;phone:string;birthday?:string;anniversary?:string};

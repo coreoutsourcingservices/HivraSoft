@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { MessageSquare, Star } from "lucide-react";
-const API_URL=(process.env.NEXT_PUBLIC_API_URL||"http://localhost:5000").replace(/\/$/,"");
+const API_URL=("").replace(/\/$/,"");
 type Review={_id:string;rating:number;title:string;comment:string;isVerified:boolean;media:{type:string;url:string}[];conversation:any[];userQuestionCount:number;createdAt:string;userId?:{name?:string;email?:string};productId?:any};
 export default function AdminReviewsPage(){
  const [items,setItems]=useState<Review[]>([]),[loading,setLoading]=useState(true),[error,setError]=useState(""),[reply,setReply]=useState<Record<string,string>>({}),[busy,setBusy]=useState("");

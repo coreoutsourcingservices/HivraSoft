@@ -4,7 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { ChevronRight, LoaderCircle, LogOut, Search, X } from "lucide-react";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const API_URL = "";
 
 const titles: Record<string, string> = {
   "/admin": "Dashboard",
@@ -64,7 +64,7 @@ export default function AdminHeader() {
     setLoggingOut(true);
     setLogoutError(false);
     try {
-      const response = await fetch(`${API_URL}/api/auth/logout`, {
+      const response = await fetch(`/api/admin/logout`, {
         method: "POST",
         credentials: "include",
       });

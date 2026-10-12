@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { ReceiptText } from "lucide-react";
 import DiscountProductSelector from "@/src/components/Admin/DiscountProductSelector";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const API_URL = "";
 type ValueType = "percentage" | "fixed";
 
 type TaxRule = {

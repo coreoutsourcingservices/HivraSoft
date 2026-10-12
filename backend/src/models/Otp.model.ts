@@ -8,7 +8,8 @@ export type OtpPurpose =
   | "register"
   | "login"
   | "email_change"
-  | "admin_password_reset";
+  | "admin_password_reset"
+  | "admin_register";
 
 export interface IOtp extends Document {
   email: string;
@@ -37,7 +38,7 @@ const otpSchema = new Schema<IOtp>(
 
     purpose: {
       type: String,
-      enum: ["register", "login", "email_change", "admin_password_reset"],
+      enum: ["register", "login", "email_change", "admin_password_reset", "admin_register"],
       required: true,
     },
 

@@ -4,8 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Check, ChevronDown, Search } from "lucide-react";
 
 const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ||
-  "http://localhost:5000";
+  "";
 
 type ProductCategory = {
   _id: string;

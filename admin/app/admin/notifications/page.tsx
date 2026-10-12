@@ -7,7 +7,7 @@ import { Bell, Filter, Globe2, Mail, Send, Trash2, Users } from "lucide-react";
 import WordBlogEditor from "@/src/components/Admin/WordBlogEditor";
 import { uploadBlogImage } from "@/lib/blog";
 
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000").replace(/\/$/, "");
+const API_URL = ("").replace(/\/$/, "");
 
 type Audience = "all" | "filtered" | "selected";
 type Customer = { _id: string; name: string; email: string; phone: string };

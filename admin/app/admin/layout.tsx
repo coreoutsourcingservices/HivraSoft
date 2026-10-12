@@ -50,6 +50,7 @@ export default async function AdminLayout({
 
   let unavailable =
     false;
+  let mustChangePassword = false;
 
   /* =========================================================
      VERIFY ADMIN
@@ -81,6 +82,7 @@ export default async function AdminLayout({
 
     authenticated =
       response.ok;
+    if (response.ok) mustChangePassword = !!(await response.json()).user?.mustChangePassword;
 
     unavailable =
       response.status >=
@@ -120,6 +122,7 @@ export default async function AdminLayout({
      nahi kiya gaya hai.
   ========================================================= */
 
+  if (mustChangePassword) return <AdminLogin initialMode="change"/>;
   return (
     <AdminShell>
       {children}

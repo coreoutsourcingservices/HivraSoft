@@ -6,6 +6,7 @@ import {
 
 import User from "../models/User.model";
 import { verifyToken } from "../utils/jwt";
+import { authenticateStaff } from "../services/staff-session.service";
 
 const authenticate = async (
   req: Request,
@@ -13,6 +14,7 @@ const authenticate = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+    if (req.cookies?.superadminToken) { await authenticateStaff(req, res, next); return; }
     const authorization = String(req.headers.authorization || "");
     const bearerToken = authorization.toLowerCase().startsWith("bearer ") ? authorization.slice(7).trim() : "";
     const token = req.cookies?.accessToken || bearerToken;
@@ -54,6 +56,8 @@ const authenticate = async (
 
       return;
     }
+
+    if (user.role === "admin" || user.role === "super_admin") { await authenticateStaff(req, res, next); return; }
 
     if (!user.isActive) {
       res.status(403).json({

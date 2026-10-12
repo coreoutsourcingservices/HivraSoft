@@ -1,5 +1,6 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
 import { rateLimit } from "express-rate-limit";
+import { authenticateStaff as authenticateAdmin } from "../services/staff-session.service";
 
 import {
   adminLogin,
@@ -179,7 +180,7 @@ router.post(
 router.post("/forgot-password/verify-otp", adminForgotPasswordVerifyOtp);
 router.post("/forgot-password/reset", adminForgotPasswordReset);
 
-const authenticateAdmin = async (
+const legacyAuthenticateAdmin = async (
   req: Request,
   res: Response,
   next: NextFunction

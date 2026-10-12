@@ -216,7 +216,7 @@ export default function CommerceTrackingPage({ kind }: { kind: "cart" | "wishlis
   async function checkSMTP() {
     setReminderMessage("Checking SMTP login...");
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/admin/reminders/smtp-status`, {
+      const response = await fetch(`${""}/api/admin/reminders/smtp-status`, {
         credentials: "include", cache: "no-store",
       });
       const result = await response.json();
@@ -231,7 +231,7 @@ export default function CommerceTrackingPage({ kind }: { kind: "cart" | "wishlis
     setTestEmailBusy(true);
     setReminderMessage("Sending test email...");
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/admin/reminders/test-email`, {
+      const response = await fetch(`${""}/api/admin/reminders/test-email`, {
         method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: testEmailAddress.trim() }),
       });
@@ -247,7 +247,7 @@ export default function CommerceTrackingPage({ kind }: { kind: "cart" | "wishlis
     setRemindersRunning(true);
     setReminderMessage("");
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/admin/reminders/run-due`, {
+      const response = await fetch(`${""}/api/admin/reminders/run-due`, {
         method: "POST", credentials: "include", headers: { "Accept": "application/json" },
       });
       const result = await response.json();

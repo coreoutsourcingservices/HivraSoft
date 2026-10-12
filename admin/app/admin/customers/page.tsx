@@ -4,7 +4,7 @@ import Link from "@/src/components/Admin/ZoneLink";
 import { useEffect, useMemo, useState } from "react";
 import { Filter, Search, SlidersHorizontal, X } from "lucide-react";
 
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000").replace(/\/$/, "");
+const API_URL = ("").replace(/\/$/, "");
 
 type Customer = {
   _id: string;

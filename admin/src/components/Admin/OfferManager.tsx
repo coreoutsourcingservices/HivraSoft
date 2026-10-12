@@ -7,7 +7,7 @@ import { Gift, IndianRupee, Pencil, Trash2 } from "lucide-react";
 import OfferTargetSelector from "./OfferTargetSelector";
 import OfferImageField, { type OfferImage } from "./OfferImageField";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const API_URL = "";
 
 type OfferType = "buy_get" | "fixed_price_bundle";
 

@@ -6,7 +6,7 @@ import Link from "@/src/components/Admin/ZoneLink";
 import type { CatalogProduct } from "@/lib/product-catalog";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const API_URL = "";
 
 async function readJson(response: Response): Promise<{ products?: CatalogProduct[]; message?: string }> {
   try { return await response.json(); } catch { return {}; }

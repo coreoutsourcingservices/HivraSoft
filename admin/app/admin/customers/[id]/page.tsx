@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Bell, Clock3, Heart, PackageCheck, ReceiptText, ShoppingBag, Sparkles, UserRound, Star, MessageSquare } from "lucide-react";
 
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000").replace(/\/$/, "");
+const API_URL = ("").replace(/\/$/, "");
 type AnyRecord = Record<string, any>;
 type Tab = "overview" | "promotion" | "cart" | "wishlist" | "orders" | "reviews" | "activity";
 type DetailResponse = {

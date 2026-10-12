@@ -4,7 +4,7 @@ import Link from "@/src/components/Admin/ZoneLink";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { ArrowLeft, BarChart3, ChevronDown, Download, FileSpreadsheet, FileText, Loader2, RefreshCcw, TrendingDown, TrendingUp } from "lucide-react";
 
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000").replace(/\/$/, "");
+const API_URL = ("").replace(/\/$/, "");
 type Period = "1_month" | "3_months" | "6_months" | "1_year" | "all";
 type Report = any;
 const periods: Array<[Period, string]> = [["1_month","1 Month"],["3_months","3 Months"],["6_months","6 Months"],["1_year","1 Year"],["all","All"]];

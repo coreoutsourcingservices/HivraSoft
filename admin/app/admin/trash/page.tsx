@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { confirmAdminAction } from "@/src/components/Admin/AdminConfirmProvider";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const API_URL = "";
 
 type TrashItem = {
   _id: string;

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Check, Image as ImageIcon, Loader2, Search, Upload, X } from "lucide-react";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const API_URL = "";
 const GALLERY_PAGE_SIZE = 50;
 
 export type MediaLibraryImage = {

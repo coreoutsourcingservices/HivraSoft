@@ -1,4 +1,6 @@
 import superadminRoutes from "./routes/superadmin.routes";
+import staffAuthRoutes from "./routes/staff-auth.routes";
+import { staffAuditMiddleware } from "./services/staff-audit.service";
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
@@ -127,6 +129,8 @@ app.use(
   cookieParser()
 );
 
+app.use(staffAuditMiddleware);
+app.use("/api/admin", staffAuthRoutes);
 app.use("/api/superadmin", superadminRoutes);
 
 /* =========================================================
@@ -363,4 +367,9 @@ app.use(
    EXPORT
 ========================================================= */
 
+app.use((error: unknown, _req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (res.headersSent) return next(error);
+  const status = Number((error as { status?: number })?.status) || 500;
+  res.status(status).json({ success: false, message: status < 500 && error instanceof Error ? error.message : "Service unavailable. Please try again." });
+});
 export default app;

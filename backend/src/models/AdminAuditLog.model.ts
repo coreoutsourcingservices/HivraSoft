@@ -5,7 +5,7 @@ export type AdminAuditAction =
   | "UPDATE"
   | "SOFT_DELETE"
   | "RESTORE"
-  | "PERMANENT_DELETE";
+  | "PERMANENT_DELETE" | "DELETE" | "LOGIN" | "LOGOUT" | "APPROVE" | "REJECT" | "BLOCK" | "UNBLOCK" | "EXPORT";
 
 export interface IAdminAuditLog extends Document {
   action: AdminAuditAction;
@@ -16,13 +16,16 @@ export interface IAdminAuditLog extends Document {
   metadata: Record<string, unknown>;
   createdAt: Date;
   updatedAt: Date;
+  actor: { name: string; username: string; email: string; role: string };
+  status: "success" | "failure";
+  ip: string;
 }
 
 const adminAuditLogSchema = new Schema<IAdminAuditLog>(
   {
     action: {
       type: String,
-      enum: ["CREATE", "UPDATE", "SOFT_DELETE", "RESTORE", "PERMANENT_DELETE"],
+      enum: ["CREATE", "UPDATE", "SOFT_DELETE", "RESTORE", "PERMANENT_DELETE", "DELETE", "LOGIN", "LOGOUT", "APPROVE", "REJECT", "BLOCK", "UNBLOCK", "EXPORT"],
       required: true,
       index: true,
     },
@@ -31,6 +34,9 @@ const adminAuditLogSchema = new Schema<IAdminAuditLog>(
     recordName: { type: String, default: "", trim: true },
     performedBy: { type: Schema.Types.ObjectId, ref: "User", default: null, index: true },
     metadata: { type: Schema.Types.Mixed, default: {} },
+    actor: { name: String, username: String, email: String, role: String },
+    status: { type: String, enum: ["success", "failure"], default: "success" },
+    ip: { type: String, default: "" },
   },
   { timestamps: true, versionKey: false }
 );

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
+import Management from "./Management";
 
 type SessionUser = { name: string; username: string };
 
@@ -52,6 +53,7 @@ export default function SuperadminLogin() {
     finally { setBusy(false); }
   }
 
+  if (user) return <Management name={user.name || user.username} logout={logout}/>;
   return (
     <main className="login-page">
       <section className="login-card" aria-labelledby="login-title">

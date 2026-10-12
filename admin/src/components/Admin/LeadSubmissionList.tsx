@@ -4,7 +4,7 @@ import Link from "@/src/components/Admin/ZoneLink";
 import { useEffect, useState } from "react";
 import { Search } from "lucide-react";
 
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000").replace(/\/$/, "");
+const API_URL = ("").replace(/\/$/, "");
 
 type Kind = "send-your-bra" | "reseller-registration";
 type Row = Record<string, any> & { _id: string; createdAt: string };

@@ -29,7 +29,7 @@ export default function AdminSidebar() {
 
   useEffect(() => {
     let cancelled = false;
-    void fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/admin/trash?limit=1`, {
+    void fetch(`${""}/api/admin/trash?limit=1`, {
       credentials: "include",
       cache: "no-store",
     })

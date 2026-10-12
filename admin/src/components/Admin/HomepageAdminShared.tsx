@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowDown, ArrowUp, Check, ImagePlus, Loader2, Search, X } from "lucide-react";
 
 export const HOMEPAGE_API_URL = (
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
+  ""
 ).replace(/\/$/, "");
 
 export type HomepageImage = {

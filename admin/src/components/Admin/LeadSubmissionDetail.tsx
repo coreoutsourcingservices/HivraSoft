@@ -3,7 +3,7 @@
 import Link from "@/src/components/Admin/ZoneLink";
 import { useEffect, useState } from "react";
 
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000").replace(/\/$/, "");
+const API_URL = ("").replace(/\/$/, "");
 type Kind = "send-your-bra" | "reseller-registration";
 
 function valueText(value: unknown) {

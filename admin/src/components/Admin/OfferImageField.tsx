@@ -13,7 +13,7 @@ type Props = {
   onUploadingChange?: (uploading: boolean) => void;
 };
 
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000")
+const API_URL = ("")
   .replace(/\/+$/, "").replace(/\/api$/i, "");
 
 // Only images accepted by the backend's Multer uploader, up to 10 MB.

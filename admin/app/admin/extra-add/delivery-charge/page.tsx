@@ -5,7 +5,7 @@ import { confirmAdminAction } from "@/src/components/Admin/AdminConfirmProvider"
 import { useEffect, useState } from "react";
 import { Truck } from "lucide-react";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const API_URL = "";
 
 type PaymentMethod = "cod" | "online";
 

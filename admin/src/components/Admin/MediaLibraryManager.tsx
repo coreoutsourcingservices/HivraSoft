@@ -15,7 +15,7 @@ import {
 import { confirmAdminAction } from "./AdminConfirmProvider";
 import type { MediaLibraryImage } from "./MediaLibraryPicker";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const API_URL = "";
 const GALLERY_PAGE_SIZE = 50;
 
 function sortLatestFirst(images: MediaLibraryImage[]) {
