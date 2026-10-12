@@ -1,6 +1,5 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
 import { rateLimit } from "express-rate-limit";
-import { authenticateStaff as authenticateAdmin } from "../services/staff-session.service";
 
 import {
   adminLogin,
@@ -180,7 +179,7 @@ router.post(
 router.post("/forgot-password/verify-otp", adminForgotPasswordVerifyOtp);
 router.post("/forgot-password/reset", adminForgotPasswordReset);
 
-const legacyAuthenticateAdmin = async (
+const authenticateAdmin = async (
   req: Request,
   res: Response,
   next: NextFunction
@@ -205,7 +204,7 @@ const legacyAuthenticateAdmin = async (
       res.status(401).json({ success: false, message: "User not found" });
       return;
     }
-    if (!user.isActive) {
+    if (!user.isActive || user.accountStatus !== "active") {
       res.status(403).json({ success: false, message: "Account is disabled" });
       return;
     }
@@ -214,6 +213,10 @@ const legacyAuthenticateAdmin = async (
       return;
     }
 
+    if (user.mustChangePassword && req.path !== "/me" && req.path !== "/change-password") {
+      res.status(403).json({ success: false, message: "Change your temporary password before using the Admin dashboard.", mustChangePassword: true });
+      return;
+    }
     req.user = user;
     next();
   } catch (error) {
@@ -231,6 +234,7 @@ router.get("/me", authenticateAdmin, (req: Request, res: Response) => {
       name: req.user!.name,
       email: req.user!.email,
       role: req.user!.role,
+      mustChangePassword: Boolean(req.user!.mustChangePassword),
     },
   });
 });

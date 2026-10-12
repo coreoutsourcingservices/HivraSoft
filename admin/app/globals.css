@@ -1,5 +1,17 @@
 @import "tailwindcss";
 
+.admin-shell, .admin-content, .admin-content > * { min-width: 0; max-width: 100%; }
+.admin-content :where(form, section, .overflow-x-auto) { min-width: 0; max-width: 100%; }
+.admin-content :where(input, select, textarea) { max-width: 100%; }
+.admin-content :where(h1, h2, p, dd) { overflow-wrap: anywhere; }
+.admin-dashboard > section { min-width: 0; }
+@media (max-width: 639px) {
+  .admin-dashboard h1 { font-size: 25px !important; }
+  .admin-dashboard > section > div { min-width: 0; }
+  .admin-content :where(button, select, input:not([type="checkbox"]):not([type="radio"])) { min-height: 44px; }
+  .admin-content .overflow-x-auto { overscroll-behavior-x: contain; }
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;

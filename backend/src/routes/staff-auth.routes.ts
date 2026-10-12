@@ -1,5 +1,4 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
-import { rateLimit } from "express-rate-limit";
 import crypto from "node:crypto";
 import User from "../models/User.model";
 import Otp from "../models/Otp.model";
@@ -17,7 +16,7 @@ export const emailInput = (value: unknown) => {
   return email;
 };
 export function newPassword(value: unknown, confirmation: unknown) {
-  if (typeof value !== "string" || value.length < 12 || value.length > 128 || !/[A-Za-z]/.test(value) || !/[0-9]/.test(value)) bad("Use 12–128 characters, including letters and numbers.");
+  if (typeof value !== "string" || value.length < 8 || value.length > 128 || !/[A-Za-z]/.test(value) || !/[0-9]/.test(value)) bad("Use 8–128 characters, including letters and numbers.");
   if (value !== confirmation) bad("Passwords do not match.");
   return value as string;
 }
@@ -46,7 +45,7 @@ async function consumeOtp(email: string, purpose: "admin_register" | "admin_pass
   if (!result.deletedCount) bad("OTP already used.");
   return record!;
 }
-export const authLimit = () => rateLimit({ windowMs: 15 * 60_000, limit: 10, standardHeaders: true, legacyHeaders: false, message: { message: "Too many attempts. Try again in 15 minutes." } });
+export const authLimit = () => (_req: Request, _res: Response, next: NextFunction) => next();
 const dummyHash = hashPassword("invalid-staff-password");
 export const staffLogin = (superadmin = false) => wrap(async (req, res) => {
   const { username, password } = req.body || {};
@@ -76,28 +75,6 @@ export const staffLogout = wrap(async (req, res) => {
 });
 const router = Router();
 router.post("/login", authLimit(), staffLogin());
-router.post("/register/send-otp", authLimit(), wrap(async (req, res) => {
-  const email = emailInput(req.body?.email);
-  const name = typeof req.body?.name === "string" ? req.body.name.trim() : "";
-  const phone = typeof req.body?.phone === "string" ? req.body.phone.replace(/[\s()-]/g, "") : "";
-  if (name.length < 2 || name.length > 100 || !/^\+?\d{10,15}$/.test(phone)) bad("Enter a full name and valid mobile number.");
-  let user = await User.findOne({ email });
-  if (user && (user.role !== "admin" || user.adminStatus !== "unverified")) bad("An account or registration already exists.", 409);
-  if (!user) {
-    if (await User.exists({ phone })) bad("Mobile number is already registered.", 409);
-    try { user = await User.create({ name, email, phone, role: "admin", adminStatus: "unverified", emailVerified: false, isActive: false, accountStatus: "inactive" }); }
-    catch (error) { if ((error as { code?: number }).code === 11000) bad("Registration already exists.", 409); throw error; }
-  }
-  await sendOtp(email, user!._id, "admin_register");
-  return res.json({ success: true, message: "OTP sent. It expires in five minutes." });
-}));
-router.post("/register/verify-otp", authLimit(), wrap(async (req, res) => {
-  const email = emailInput(req.body?.email);
-  const otp = await consumeOtp(email, "admin_register", req.body?.otp);
-  const user = await User.findOneAndUpdate({ _id: otp.userId, role: "admin", adminStatus: "unverified" }, { $set: { emailVerified: true, adminStatus: "pending_approval" } }, { returnDocument: "after" });
-  if (!user) bad("Registration already processed.", 409);
-  return res.json({ success: true, status: "pending_approval", message: "Email verified. Your request is awaiting superadmin approval." });
-}));
 router.post("/forgot-password/send-otp", authLimit(), wrap(async (req, res) => {
   const email = emailInput(req.body?.email);
   const user = await User.findOne({ email, role: { $in: ["admin", "super_admin"] } });
@@ -129,7 +106,7 @@ export const staffChangePassword = wrap(async (req, res) => {
   if (req.body.oldPassword === password) bad("Choose a different password.");
   const updated = await User.findOneAndUpdate({ _id: user!._id, passwordHash: user!.passwordHash }, { $set: { passwordHash: await hashPassword(password), mustChangePassword: false }, $unset: { temporaryPasswordExpiresAt: 1, resetTokenHash: 1, resetTokenExpiresAt: 1 }, $inc: { sessionVersion: 1 } }, { returnDocument: "after" }).select("+sessionVersion");
   if (!updated) bad("Account changed. Sign in again.", 409);
-  issueStaffSession(res, updated!, !!req.cookies?.superadminToken);
+  issueStaffSession(res, updated!, req.originalUrl.split("?")[0].startsWith("/api/superadmin/"));
   return res.json({ success: true, message: "Password changed." });
 });
 router.post("/change-password", authenticateStaff, staffChangePassword);

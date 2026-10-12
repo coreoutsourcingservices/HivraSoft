@@ -47,6 +47,8 @@ export type ApiSize = {
 };
 
 export type ApiColor = {
+  seoTitle?: string;
+  seoDescription?: string;
   _id?: string;
   id?: string;
 
@@ -87,6 +89,8 @@ export type ApiCategory = {
 };
 
 export type ApiProduct = {
+  seoTitle?: string;
+  seoDescription?: string;
   _id?: string;
   id?: string;
 

@@ -5,9 +5,18 @@ import Footer from "@/src/components/Footer/Footer";
 import BlogShare from "@/src/components/Blog/BlogShare";
 import { fetchBlogServer, fetchBlogsServer } from "@/lib/blog-server";
 import type { BlogRecord, BlogTaxonomy } from "@/lib/blog";
+import { absoluteUrl, breadcrumbSchema, description, pageMetadata, SITE_URL } from "@/lib/seo";
+import JsonLd from "@/src/components/Seo/JsonLd";
 
 export const dynamic = "force-dynamic";
 type Props = { params: Promise<{ slug: string }> };
+export async function generateMetadata({ params }: Props) {
+  const { slug } = await params;
+  const response = await fetchBlogServer(slug);
+  if (!response?.blog) notFound();
+  const blog = response.blog, seo = blog.seo || {};
+  return pageMetadata({ path:`/${encodeURIComponent(blog.slug)}`, title:seo.metaTitle || blog.title, description:seo.metaDescription || blog.excerpt || blog.content, image:blog.featuredImage?.url, canonical:seo.canonicalUrl, noindex:seo.robots?.index === false, nofollow:seo.robots?.follow === false, keywords:seo.keywords, article:true, publishedTime:blog.publishedAt || blog.createdAt, modifiedTime:blog.updatedAt, author:authorName(blog.author), ogTitle:seo.openGraph?.title, ogDescription:seo.openGraph?.description, ogImage:seo.openGraph?.image, twitterTitle:seo.twitter?.title, twitterDescription:seo.twitter?.description, twitterImage:seo.twitter?.image });
+}
 function label(value: BlogTaxonomy | string | null | undefined) {
   return typeof value === "string" ? value : value?.name || "Blog";
 }
@@ -45,6 +54,8 @@ export default async function BlogDetailPage({ params }: Props) {
   const related = [...unique.values()].slice(0, 10);
   const visibleTags = [...new Set((blog.tags || []).map(label).filter(v => v && v !== "Blog"))].slice(0, 10);
   return <>
+    <JsonLd data={breadcrumbSchema([{name:"Home",path:"/"},{name:"Journal",path:"/blog"},{name:blog.title,path:`/${encodeURIComponent(blog.slug)}`}])} />
+    <JsonLd data={{ "@context":"https://schema.org", "@type":"BlogPosting", headline:blog.title, description:description(blog.seo?.metaDescription || blog.excerpt || blog.content), image:blog.featuredImage?.url ? [blog.featuredImage.url] : undefined, datePublished:blog.publishedAt || blog.createdAt, dateModified:blog.updatedAt || blog.publishedAt || blog.createdAt, author:{ "@type":"Person", name:authorName(blog.author) }, publisher:{ "@id":`${SITE_URL}/#organization` }, mainEntityOfPage:absoluteUrl(`/${encodeURIComponent(blog.slug)}`) }} />
     <Header />
     <main className="min-h-screen bg-[#FBF8F5] text-[#251B19]">
       <header className="border-b border-[#251B19]/10 px-4 py-8 sm:px-6 sm:py-12">
@@ -57,7 +68,7 @@ export default async function BlogDetailPage({ params }: Props) {
           </div>
           <h1 className="mt-4 w-full text-[clamp(2rem,4vw,4.5rem)] font-semibold leading-[1.12] tracking-tight">{blog.title}</h1>
           {blog.excerpt && <p className="mt-5 max-w-5xl text-base leading-8 text-[#786965] sm:text-lg">{blog.excerpt}</p>}
-          <div className="mt-5 text-sm text-[#8E7C76]">By Hivra Soft</div>
+          <div className="mt-5 text-sm text-[#8E7C76]">By {authorName(blog.author)}</div>
           <div className="mt-5"><BlogShare title={blog.title} /></div>
         </div>
       </header>
@@ -65,7 +76,7 @@ export default async function BlogDetailPage({ params }: Props) {
         <article className="min-w-0">
           {blog.featuredImage?.url && <img src={blog.featuredImage.url} alt={blog.featuredImage.alt || blog.title} className="mb-8 h-auto w-full rounded-2xl object-contain" />}
           {blog.customCss && <style>{blog.customCss}</style>}
-          <div className={`blog-public-content min-w-0 overflow-hidden rounded-2xl bg-white px-5 py-7 shadow-sm sm:px-9 sm:py-10${legacyPinkTemplate ? " blog-public-content--legacy-pink" : ""}`} dangerouslySetInnerHTML={{ __html: blog.content || "" }} />
+          <div className={`blog-public-content min-w-0 overflow-hidden rounded-2xl bg-white px-5 py-7 shadow-sm sm:px-9 sm:py-10${legacyPinkTemplate ? " blog-public-content--legacy-pink" : ""}`} dangerouslySetInnerHTML={{ __html: (blog.content || "").replace(/<(\/?)h1(?=[\s>])/gi, "<$1h2") }} />
         </article>
         <aside className="min-w-0 space-y-6 lg:sticky lg:top-6 lg:self-start" aria-label="Related blog articles">
           <section className="rounded-2xl border border-[#251B19]/10 bg-white p-5 sm:p-6">

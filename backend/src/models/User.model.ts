@@ -10,17 +10,6 @@ export type UserRole =
   | "super_admin";
 
 export interface IUser extends Document {
-  adminStatus?: "unverified" | "pending_approval" | "approved" | "rejected";
-  approvedAt?: Date;
-  approvedBy?: mongoose.Types.ObjectId;
-  lastLoginAt?: Date;
-  sessionVersion: number;
-  mustChangePassword: boolean;
-  temporaryPasswordExpiresAt?: Date;
-  credentialDelivery?: "sending" | "sent" | "failed";
-  credentialIssuedAt?: Date;
-  resetTokenHash?: string;
-  resetTokenExpiresAt?: Date;
   name: string;
   username?: string;
   passwordHash?: string;
@@ -38,6 +27,13 @@ export interface IUser extends Document {
   isActive: boolean;
   accountStatus: "active" | "inactive" | "blocked";
   lastActiveAt?: Date | null;
+  mustChangePassword?: boolean;
+  lastLoginAt?: Date | null;
+  adminStatus?: "unverified" | "pending_approval" | "approved" | "rejected";
+  sessionVersion?: number;
+  temporaryPasswordExpiresAt?: Date;
+  resetTokenHash?: string;
+  resetTokenExpiresAt?: Date;
 
   avatar?: {
     url: string;
@@ -50,17 +46,6 @@ export interface IUser extends Document {
 
 const userSchema = new Schema<IUser>(
   {
-    adminStatus: { type: String, enum: ["unverified", "pending_approval", "approved", "rejected"], index: true },
-    approvedAt: Date,
-    approvedBy: { type: Schema.Types.ObjectId, ref: "User" },
-    lastLoginAt: Date,
-    sessionVersion: { type: Number, default: 0, select: false },
-    mustChangePassword: { type: Boolean, default: false },
-    temporaryPasswordExpiresAt: { type: Date, select: false },
-    credentialDelivery: { type: String, enum: ["sending", "sent", "failed"] },
-    credentialIssuedAt: Date,
-    resetTokenHash: { type: String, select: false },
-    resetTokenExpiresAt: { type: Date, select: false },
     username: { type: String, unique: true, sparse: true, trim: true },
     passwordHash: { type: String, select: false },
     name: {
@@ -135,6 +120,14 @@ const userSchema = new Schema<IUser>(
       default: "active",
       index: true,
     },
+
+    mustChangePassword: { type: Boolean, default: false },
+    adminStatus: { type: String, enum: ["unverified", "pending_approval", "approved", "rejected"] },
+    sessionVersion: { type: Number, default: 0, select: false },
+    temporaryPasswordExpiresAt: { type: Date, select: false },
+    resetTokenHash: { type: String, select: false },
+    resetTokenExpiresAt: { type: Date, select: false },
+    lastLoginAt: { type: Date, default: null },
 
     lastActiveAt: {
       type: Date,

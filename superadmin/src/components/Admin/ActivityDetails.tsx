@@ -1,0 +1,9 @@
+type Props = { metadata?: Record<string, unknown>; recordId?: string };
+const labels: Record<string,string> = { method: "Request method", path: "Page / action", httpStatus: "Response status", statusCode: "Response status", ip: "IP address", action: "Action", status: "Account status", applicantEmail: "Applicant email", recordName: "Record name", previous: "Before change", updated: "After change", name: "Name", email: "Email", phone: "Phone", username: "Username", role: "Role", accountStatus: "Account status", adminStatus: "Approval status", isActive: "Active", emailVerified: "Email verified", credentialDelivery: "Credentials email", sessionRevoked: "Previous session revoked", allSessionsRevoked: "All sessions revoked", success: "Successful", title: "Title", orderStatus: "Order status", paymentStatus: "Payment status", stock: "Stock", quantity: "Quantity", price: "Price" };
+function Values({ value, depth=0 }: { value: Record<string,unknown>; depth?:number }) {
+  const fields=Object.entries(value).filter(([key])=>labels[key]);
+  return <dl className="space-y-2">{fields.map(([key,item])=><div key={key} className="rounded-lg bg-[#faf8f6] p-2.5"><dt className="text-xs font-semibold text-gray-500">{labels[key]}</dt><dd className="mt-1 break-words text-sm text-[#211A18]">{item && typeof item==="object" ? depth<2 && !Array.isArray(item) ? <Values value={item as Record<string,unknown>} depth={depth+1}/> : "Multiple values" : typeof item==="boolean" ? item ? "Yes" : "No" : String(item??"Not recorded")}</dd></div>)}</dl>;
+}
+export default function ActivityDetails({metadata={},recordId}:Props) {
+  return <div className="mt-3 space-y-2">{recordId&&recordId!=="collection"&&<p className="break-all text-xs text-gray-500">Record: {recordId}</p>}<Values value={metadata}/>{!Object.keys(metadata).some(key=>labels[key])&&<p className="text-xs text-gray-500">No additional details recorded.</p>}</div>;
+}

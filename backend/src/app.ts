@@ -1,5 +1,6 @@
 import superadminRoutes from "./routes/superadmin.routes";
 import staffAuthRoutes from "./routes/staff-auth.routes";
+import staffRegistrationRoutes from "./routes/staff-registration.routes";
 import { staffAuditMiddleware } from "./services/staff-audit.service";
 import express from "express";
 import cors from "cors";
@@ -130,6 +131,8 @@ app.use(
 );
 
 app.use(staffAuditMiddleware);
+app.use("/api/admin-registration", staffRegistrationRoutes);
+app.use("/api/admin", staffRegistrationRoutes);
 app.use("/api/admin", staffAuthRoutes);
 app.use("/api/superadmin", superadminRoutes);
 

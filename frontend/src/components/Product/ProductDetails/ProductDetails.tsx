@@ -128,7 +128,7 @@ function cleanDescriptionHtml(html?: string): string {
     else element.removeAttribute("style");
   }
   // DOMPurify normalizes attribute quotes and encodes unsafe characters.
-  return root.innerHTML;
+  return root.innerHTML.replace(/<(\/?)h1(?=[\s>])/gi, "<$1h2");
 }
 
 /* =========================================================

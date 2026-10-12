@@ -18,6 +18,7 @@ import { getUserActivities, trackUserActivity } from "../services/activity.servi
 import Notification from "../models/Notification.model";
 import CustomerPromotionMessage from "../models/CustomerPromotionMessage.model";
 import Otp from "../models/Otp.model";
+import AdminAuditLog from "../models/AdminAuditLog.model";
 import { listAdminCustomers } from "../services/customer-admin.service";
 import { addItemToCart, clearUserCart, removeCartItem, updateCartItem, getUserCart } from "../services/cart.service";
 import { addProductToWishlist, clearUserWishlist, removeProductFromWishlist, getUserWishlist } from "../services/wishlist.service";
@@ -75,6 +76,9 @@ function validateNewAdminPassword(
   if (newPassword.length < 8 || newPassword.length > 128) {
     throw new Error("New password must be between 8 and 128 characters.");
   }
+  if (!/[A-Za-z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
+    throw new Error("New password must include letters and numbers.");
+  }
   if (newPassword !== confirmPassword) {
     throw new Error("New password and confirm password do not match.");
   }
@@ -105,6 +109,7 @@ export async function changeAdminPassword(req: Request, res: Response) {
     }
 
     user.passwordHash = await hashPassword(cleanNewPassword);
+    user.mustChangePassword = false;
     await user.save();
 
     return res.status(200).json({
@@ -276,6 +281,7 @@ export async function adminForgotPasswordReset(req: Request, res: Response) {
     }
 
     user.passwordHash = await hashPassword(cleanNewPassword);
+    user.mustChangePassword = false;
     await user.save();
 
     return res.status(200).json({
@@ -307,10 +313,11 @@ export async function adminLogin(req: Request, res: Response) {
   }
 
   try {
-    const user = await User.findOne({ username: username.trim() }).select("+passwordHash");
+    const loginKey = username.trim().toLowerCase();
+    const user = await User.findOne({ $or: [{ username: loginKey }, { email: loginKey }] }).select("+passwordHash");
     const valid = await verifyPassword(password, user?.passwordHash || (await dummyHash));
 
-    if (!valid || !user?.isActive || !["admin", "super_admin"].includes(user.role)) {
+    if (!valid || !user?.isActive || user.accountStatus !== "active" || !["admin", "super_admin"].includes(user.role)) {
       return res.status(401).json({ message: "Incorrect login ID or password." });
     }
 
@@ -330,7 +337,10 @@ export async function adminLogin(req: Request, res: Response) {
       maxAge: 8 * 60 * 60 * 1000,
     });
 
-    return res.json({ success: true });
+    await User.updateOne({ _id: user._id }, { $set: { lastLoginAt: new Date() } });
+    void AdminAuditLog.create({ action: "LOGIN", module: "auth", recordId: String(user._id), recordName: "Admin login", performedBy: user._id,
+      metadata: { actorName: user.name, actorEmail: user.email, actorUsername: user.username || "", ip: req.ip || "", success: true } }).catch(() => undefined);
+    return res.json({ success: true, mustChangePassword: Boolean(user.mustChangePassword) });
   } catch {
     return res.status(503).json({ message: "Login is unavailable. Please try again." });
   }
@@ -357,7 +367,7 @@ async function safeCollectionCount(name: string) {
  * GET /api/admin/dashboard
  * One request for all cards/status data used by the admin dashboard.
  */
-export async function getAdminDashboard(_req: Request, res: Response) {
+async function buildAdminDashboard() {
   try {
     const now = new Date();
     const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -367,47 +377,38 @@ export async function getAdminDashboard(_req: Request, res: Response) {
     const cancelledStatuses = ["cancelled", "canceled"];
     const revenueMatch = { status: { $nin: cancelledStatuses } };
 
-    const [
-      products,
-      categories,
-      banners,
-      customers,
-      orders,
-      revenueRows,
-      currentProducts,
-      previousProducts,
-      currentOrders,
-      previousOrders,
-      currentCustomers,
-      previousCustomers,
-      currentRevenueRows,
-      previousRevenueRows,
-      recentOrdersRaw,
-      productRows,
-    ] = await Promise.all([
-      Product.countDocuments({}),
-      Category.countDocuments({}),
-      Banner.countDocuments({}),
-      User.countDocuments({ role: "customer" }),
-      Order.countDocuments({}),
-      Order.aggregate([{ $match: revenueMatch }, { $group: { _id: null, revenue: { $sum: "$total" } } }]),
-      Product.countDocuments({ createdAt: { $gte: currentMonthStart, $lt: nextMonthStart } }),
-      Product.countDocuments({ createdAt: { $gte: previousMonthStart, $lt: currentMonthStart } }),
-      Order.countDocuments({ createdAt: { $gte: currentMonthStart, $lt: nextMonthStart } }),
-      Order.countDocuments({ createdAt: { $gte: previousMonthStart, $lt: currentMonthStart } }),
-      User.countDocuments({ role: "customer", createdAt: { $gte: currentMonthStart, $lt: nextMonthStart } }),
-      User.countDocuments({ role: "customer", createdAt: { $gte: previousMonthStart, $lt: currentMonthStart } }),
-      Order.aggregate([
-        { $match: { ...revenueMatch, createdAt: { $gte: currentMonthStart, $lt: nextMonthStart } } },
-        { $group: { _id: null, revenue: { $sum: "$total" } } },
-      ]),
-      Order.aggregate([
-        { $match: { ...revenueMatch, createdAt: { $gte: previousMonthStart, $lt: currentMonthStart } } },
-        { $group: { _id: null, revenue: { $sum: "$total" } } },
-      ]),
-      Order.find({}).sort({ createdAt: -1 }).limit(4).populate("user", "name email").lean(),
-      Product.find({ isActive: { $ne: false } }).select("colors isColor isActive createdAt").lean(),
+    const sevenDaysAgo = new Date(now);
+    sevenDaysAgo.setHours(0, 0, 0, 0);
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+    const monthMatch = { createdAt: { $gte: currentMonthStart, $lt: nextMonthStart } };
+    const previousMatch = { createdAt: { $gte: previousMonthStart, $lt: currentMonthStart } };
+    const countFacets = {
+      total: [{ $count: "count" }],
+      current: [{ $match: monthMatch }, { $count: "count" }],
+      previous: [{ $match: previousMatch }, { $count: "count" }],
+    };
+    // One scan per collection replaces repeated concurrent counts/aggregations.
+    const [productStats, categories, banners, customerStats, orderStats, recentOrdersRaw, productRows] = await Promise.all([
+      Product.aggregate([{ $facet: countFacets }]).option({ maxTimeMS: 8000 }),
+      Category.countDocuments({}).maxTimeMS(8000),
+      Banner.countDocuments({}).maxTimeMS(8000),
+      User.aggregate([{ $match: { role: "customer" } }, { $facet: countFacets }]).option({ maxTimeMS: 8000 }),
+      Order.aggregate([{ $facet: {
+        ...countFacets,
+        revenue: [{ $match: revenueMatch }, { $group: { _id: null, revenue: { $sum: "$total" } } }],
+        currentRevenue: [{ $match: { ...revenueMatch, ...monthMatch } }, { $group: { _id: null, revenue: { $sum: "$total" } } }],
+        previousRevenue: [{ $match: { ...revenueMatch, ...previousMatch } }, { $group: { _id: null, revenue: { $sum: "$total" } } }],
+        daily: [{ $match: { ...revenueMatch, createdAt: { $gte: sevenDaysAgo } } }, { $group: { _id: { year: { $year: "$createdAt" }, month: { $month: "$createdAt" }, day: { $dayOfMonth: "$createdAt" } }, revenue: { $sum: "$total" }, orders: { $sum: 1 } } }],
+        statuses: [{ $group: { _id: { $toLower: "$status" }, count: { $sum: 1 } } }],
+      } }]).option({ maxTimeMS: 8000 }),
+      Order.find({}).sort({ createdAt: -1 }).limit(4).populate({ path: "user", select: "name email", options: { maxTimeMS: 8000 } }).maxTimeMS(8000).lean(),
+      Product.find({ isActive: { $ne: false } }).select("colors isColor isActive createdAt").maxTimeMS(8000).lean(),
     ]);
+    const counts = (rows: any[], key: string) => Number(rows[0]?.[key]?.[0]?.count || 0);
+    const products = counts(productStats, "total"), currentProducts = counts(productStats, "current"), previousProducts = counts(productStats, "previous");
+    const customers = counts(customerStats, "total"), currentCustomers = counts(customerStats, "current"), previousCustomers = counts(customerStats, "previous");
+    const orders = counts(orderStats, "total"), currentOrders = counts(orderStats, "current"), previousOrders = counts(orderStats, "previous");
+    const revenueRows = orderStats[0]?.revenue || [], currentRevenueRows = orderStats[0]?.currentRevenue || [], previousRevenueRows = orderStats[0]?.previousRevenue || [];
 
     const growth = (current: number, previous: number) => {
       if (previous <= 0) return current > 0 ? 100 : 0;
@@ -418,24 +419,7 @@ export async function getAdminDashboard(_req: Request, res: Response) {
     const currentRevenue = Number(currentRevenueRows[0]?.revenue || 0);
     const previousRevenue = Number(previousRevenueRows[0]?.revenue || 0);
 
-    const sevenDaysAgo = new Date(now);
-    sevenDaysAgo.setHours(0, 0, 0, 0);
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
-
-    const dailyRevenueRows = await Order.aggregate([
-      { $match: { ...revenueMatch, createdAt: { $gte: sevenDaysAgo } } },
-      {
-        $group: {
-          _id: {
-            year: { $year: "$createdAt" },
-            month: { $month: "$createdAt" },
-            day: { $dayOfMonth: "$createdAt" },
-          },
-          revenue: { $sum: "$total" },
-          orders: { $sum: 1 },
-        },
-      },
-    ]);
+    const dailyRevenueRows: any[] = orderStats[0]?.daily || [];
 
     const dailyMap = new Map(
       dailyRevenueRows.map((row: any) => [
@@ -457,9 +441,7 @@ export async function getAdminDashboard(_req: Request, res: Response) {
       };
     });
 
-    const rawStatuses = await Order.aggregate([
-      { $group: { _id: { $toLower: "$status" }, count: { $sum: 1 } } },
-    ]);
+    const rawStatuses: any[] = orderStats[0]?.statuses || [];
     const rawStatusMap = new Map(rawStatuses.map((row: any) => [String(row._id || ""), Number(row.count || 0)]));
     const statusCount = (names: string[]) => names.reduce((sum, name) => sum + Number(rawStatusMap.get(name) || 0), 0);
     const orderStatus = {
@@ -511,7 +493,7 @@ export async function getAdminDashboard(_req: Request, res: Response) {
       .sort((a: any, b: any) => a.stock - b.stock || a.name.localeCompare(b.name))
       .slice(0, 8);
 
-    return res.status(200).json({
+    return {
       success: true,
       generatedAt: now.toISOString(),
       stats: {
@@ -540,13 +522,32 @@ export async function getAdminDashboard(_req: Request, res: Response) {
         ordersApi: "ready",
         bannersApi: "ready",
       },
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Unable to load dashboard.",
-    });
-  }
+    };
+  } catch (error) { throw error; }
+}
+
+
+
+type DashboardResult = Awaited<ReturnType<typeof buildAdminDashboard>>;
+let dashboardPending: Promise<DashboardResult> | undefined;
+let dashboardCached: { data: DashboardResult; expiresAt: number } | undefined;
+export async function getAdminDashboard(_req: Request, res: Response) {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    if (dashboardCached && dashboardCached.expiresAt > Date.now()) return res.status(200).json(dashboardCached.data);
+    if (!dashboardPending) {
+      dashboardPending = buildAdminDashboard().then(data => {
+        dashboardCached = { data, expiresAt: Date.now() + 15000 };
+        return data;
+      }).finally(() => { dashboardPending = undefined; });
+    }
+    const data = await Promise.race([dashboardPending, new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error("Dashboard database request timed out. Please try again shortly.")), 18000);
+    })]);
+    return res.status(200).json(data);
+  } catch {
+    return res.status(503).json({ success: false, message: "Dashboard temporarily unavailable. Please refresh in a moment." });
+  } finally { if (timer) clearTimeout(timer); }
 }
 
 /** GET /api/admin/customers - backend-driven search, filters and pagination. */

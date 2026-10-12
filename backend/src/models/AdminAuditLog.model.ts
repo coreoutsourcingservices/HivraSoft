@@ -1,11 +1,17 @@
 import mongoose, { Schema, type Document, type Model, type Types } from "mongoose";
 
 export type AdminAuditAction =
+  | "DELETE" | "BLOCK" | "UNBLOCK" | "EXPORT"
   | "CREATE"
   | "UPDATE"
   | "SOFT_DELETE"
   | "RESTORE"
-  | "PERMANENT_DELETE" | "DELETE" | "LOGIN" | "LOGOUT" | "APPROVE" | "REJECT" | "BLOCK" | "UNBLOCK" | "EXPORT";
+  | "PERMANENT_DELETE"
+  | "LOGIN"
+  | "LOGOUT"
+  | "APPROVE"
+  | "REJECT"
+  | "SET_STATUS";
 
 export interface IAdminAuditLog extends Document {
   action: AdminAuditAction;
@@ -14,18 +20,18 @@ export interface IAdminAuditLog extends Document {
   recordName: string;
   performedBy: Types.ObjectId | null;
   metadata: Record<string, unknown>;
+  actor?: { name?: string; username?: string; email?: string; role?: string };
+  status?: string;
+  ip?: string;
   createdAt: Date;
   updatedAt: Date;
-  actor: { name: string; username: string; email: string; role: string };
-  status: "success" | "failure";
-  ip: string;
 }
 
 const adminAuditLogSchema = new Schema<IAdminAuditLog>(
   {
     action: {
       type: String,
-      enum: ["CREATE", "UPDATE", "SOFT_DELETE", "RESTORE", "PERMANENT_DELETE", "DELETE", "LOGIN", "LOGOUT", "APPROVE", "REJECT", "BLOCK", "UNBLOCK", "EXPORT"],
+      enum: ["CREATE", "UPDATE", "SOFT_DELETE", "RESTORE", "PERMANENT_DELETE", "LOGIN", "LOGOUT", "APPROVE", "REJECT", "SET_STATUS", "DELETE", "BLOCK", "UNBLOCK", "EXPORT"],
       required: true,
       index: true,
     },
@@ -35,8 +41,8 @@ const adminAuditLogSchema = new Schema<IAdminAuditLog>(
     performedBy: { type: Schema.Types.ObjectId, ref: "User", default: null, index: true },
     metadata: { type: Schema.Types.Mixed, default: {} },
     actor: { name: String, username: String, email: String, role: String },
-    status: { type: String, enum: ["success", "failure"], default: "success" },
-    ip: { type: String, default: "" },
+    status: { type: String, enum: ["success", "failure"] },
+    ip: String,
   },
   { timestamps: true, versionKey: false }
 );

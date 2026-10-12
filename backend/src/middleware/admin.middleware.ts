@@ -19,6 +19,14 @@ const requireAdmin = (
       });
   }
 
+  if (req.user.mustChangePassword) {
+    return res.status(403).json({ success: false, message: "Change temporary admin password first." });
+  }
+
+  if (!req.user.isActive || req.user.accountStatus !== "active") {
+    return res.status(403).json({ success: false, message: "Admin account inactive." });
+  }
+
   if (
     req.user.role !==
       "admin" &&

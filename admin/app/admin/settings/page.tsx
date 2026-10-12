@@ -264,6 +264,7 @@ export default function AdminSettingsPage() {
 
       setImageFile(null);
 
+      window.dispatchEvent(new Event("admin-profile-updated"));
       setSuccess(
         result.message ||
           "Profile updated successfully.",
@@ -1672,4 +1673,4 @@ function capitalize(
     value.charAt(0).toUpperCase() +
     value.slice(1)
   );
-} 
+}

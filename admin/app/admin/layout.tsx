@@ -1,6 +1,7 @@
 import type {
   ReactNode,
 } from "react";
+import { redirect } from "next/navigation";
 
 import {
   cookies,
@@ -9,6 +10,7 @@ import {
 import AdminLogin from "@/src/components/Admin/AdminLogin";
 
 import AdminShell from "@/src/components/Admin/AdminShell";
+import type { AdminIdentity } from "@/src/components/Admin/AdminUserContext";
 
 export default async function AdminLayout({
   children,
@@ -50,7 +52,9 @@ export default async function AdminLayout({
 
   let unavailable =
     false;
-  let mustChangePassword = false;
+
+  let mustChange = false;
+  let adminUser: AdminIdentity | null = null;
 
   /* =========================================================
      VERIFY ADMIN
@@ -82,7 +86,11 @@ export default async function AdminLayout({
 
     authenticated =
       response.ok;
-    if (response.ok) mustChangePassword = !!(await response.json()).user?.mustChangePassword;
+    if (response.ok) {
+      const data = await response.json();
+      adminUser = data.user ? { name: data.user.name || "", email: data.user.email || "", role: data.user.role || "admin" } : null;
+      mustChange = Boolean(data.user?.mustChangePassword);
+    }
 
     unavailable =
       response.status >=
@@ -91,6 +99,8 @@ export default async function AdminLayout({
     unavailable =
       true;
   }
+
+  if (mustChange) redirect("/change-password");
 
   /* =========================================================
      NOT AUTHENTICATED
@@ -122,9 +132,8 @@ export default async function AdminLayout({
      nahi kiya gaya hai.
   ========================================================= */
 
-  if (mustChangePassword) return <AdminLogin initialMode="change"/>;
   return (
-    <AdminShell>
+    <AdminShell user={adminUser}>
       {children}
     </AdminShell>
   );

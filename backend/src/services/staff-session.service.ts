@@ -10,7 +10,9 @@ export function issueStaffSession(res: Response, user: IUser, superadmin = false
   res.cookie(superadmin ? "superadminToken" : "accessToken", token, { ...staffCookie, maxAge: 8 * 60 * 60_000 });
 }
 export async function readStaffSession(req: Request) {
-  const token = req.cookies?.superadminToken || req.cookies?.accessToken || String(req.headers.authorization || "").replace(/^Bearer\s+/i, "");
+  // Cookies are shared across localhost ports. Select only the session for this API.
+  const superadmin = req.originalUrl.split("?")[0].startsWith("/api/superadmin/");
+  const token = req.cookies?.[superadmin ? "superadminToken" : "accessToken"] || String(req.headers.authorization || "").replace(/^Bearer\s+/i, "");
   if (!token || !process.env.JWT_SECRET) return null;
   const payload = jwt.verify(token, process.env.JWT_SECRET);
   if (typeof payload === "string" || payload.purpose !== "staff_session" || typeof payload.id !== "string") return null;

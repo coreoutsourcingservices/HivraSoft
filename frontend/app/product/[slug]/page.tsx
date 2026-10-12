@@ -1,6 +1,10 @@
 import {
   notFound,
 } from "next/navigation";
+import { cache } from "react";
+import { absoluteUrl, breadcrumbSchema, pageMetadata, plainText } from "@/lib/seo";
+import JsonLd from "@/src/components/Seo/JsonLd";
+import { getProductName, getProductImageUrls } from "@/src/services/products";
 
 import Header from "@/src/components/Header/Header";
 
@@ -304,7 +308,7 @@ async function getFallbackProduct(
    GET PRODUCT
 ========================================================= */
 
-async function getProduct(
+const getProduct = cache(async function getProduct(
   slug: string
 ): Promise<ProductDetailsData | null> {
   const direct =
@@ -326,6 +330,15 @@ async function getProduct(
   }
 
   return fallback as ProductDetailsData;
+});
+
+export async function generateMetadata({ params }: ProductPageProps) {
+  const { slug } = await params;
+  const product = await getProduct(slug);
+  if (!product) notFound();
+  const color = product.colors?.find(item => item.slugProduct === slug);
+  const name = color?.nameProduct || getProductName(product);
+  return pageMetadata({ path:`/product/${encodeURIComponent(slug)}`, title:color?.seoTitle || product.seoTitle || `${name} - Shop Online`, description:color?.seoDescription || product.seoDescription || color?.shortDescription || color?.description || product.shortDescription || product.description || `Shop ${name} at HivraSoft. Explore product details, available colours and sizes, and choose comfortable everyday essentials for your wardrobe online.`, image:color?.images?.find(image=>image.isDefault)?.url || color?.images?.[0]?.url || getProductImageUrls(product)[0] });
 }
 
 /* =========================================================
@@ -354,6 +367,8 @@ export default async function ProductPage({
 
   return (
     <>
+      <JsonLd data={breadcrumbSchema([{name:"Home",path:"/"},{name:product.colors?.find(item=>item.slugProduct===slug)?.nameProduct || getProductName(product),path:`/product/${encodeURIComponent(slug)}`}])} />
+      <JsonLd data={{ "@context":"https://schema.org", "@type":"Product", name:product.colors?.find(item=>item.slugProduct===slug)?.nameProduct || getProductName(product), url:absoluteUrl(`/product/${encodeURIComponent(slug)}`), image:product.colors?.find(item=>item.slugProduct===slug)?.images?.map(image=>image.url).filter(Boolean) || getProductImageUrls(product), description:plainText(product.shortDescription || product.description), brand:{"@type":"Brand",name:"HivraSoft"} }} />
       <Header />
 
       <ProductDetails

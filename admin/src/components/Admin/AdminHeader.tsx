@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { ChevronRight, LoaderCircle, LogOut, Search, X } from "lucide-react";
+import { useAdminUser } from "./AdminUserContext";
 
 const API_URL = "";
 
@@ -48,6 +49,9 @@ type SearchGroup = {
 };
 
 export default function AdminHeader() {
+  const user = useAdminUser();
+  const name = user?.name?.trim() || "Admin";
+  const initial = Array.from(name)[0]?.toUpperCase() || "A";
   const pathname = usePathname();
   const router = useRouter();
   const [loggingOut, setLoggingOut] = useState(false);
@@ -157,11 +161,11 @@ export default function AdminHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-[#211A18]/10 bg-[#F7F3EF]/95 backdrop-blur-xl">
       <div className="flex min-h-[78px] items-center gap-4 px-5 md:px-8">
-        <div className="min-w-0 shrink-0">
+        <div className="min-w-0 flex-1 md:flex-none">
           <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-[#8C1839]">
             HivraSoft Admin
           </p>
-          <h1 className="mt-1 truncate text-[19px] font-semibold text-[#211A18] md:text-[21px]">
+          <h1 className="mt-1 truncate text-[17px] font-semibold text-[#211A18] md:text-[21px]">
             {title}
           </h1>
         </div>
@@ -252,12 +256,12 @@ export default function AdminHeader() {
 
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
           <div className="hidden text-right xl:block">
-            <p className="text-[11px] font-semibold text-[#211A18]">Administrator</p>
-            <p className="mt-0.5 text-[9px] text-[#211A18]/45">HivraSoft Management</p>
+            <p className="max-w-[180px] truncate text-[11px] font-semibold text-[#211A18]" title={name}>{name}</p>
+            <p className="mt-0.5 max-w-[180px] truncate text-[9px] text-[#211A18]/45" title={user?.email}>{user?.email || "Admin account"}</p>
           </div>
 
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#8C1839] text-[13px] font-semibold text-white">
-            A
+            <span title={name}>{initial}</span>
           </div>
           <button
             type="button"

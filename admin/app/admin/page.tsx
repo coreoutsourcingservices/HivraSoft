@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "@/src/components/Admin/ZoneLink";
+import { useAdminUser } from "@/src/components/Admin/AdminUserContext";
 import {
   AlertTriangle,
   Boxes,
@@ -102,6 +103,7 @@ const tableCellStyle: CSSProperties = {
 };
 
 export default function AdminDashboardPage() {
+  const user = useAdminUser();
   const [data, setData] = useState<AdminDashboardData>(EMPTY);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -173,6 +175,7 @@ export default function AdminDashboardPage() {
 
   return (
     <main
+      className="admin-dashboard"
       style={{
         width: "100%",
         paddingBottom: 32,
@@ -204,9 +207,9 @@ export default function AdminDashboardPage() {
               lineHeight: 1.15,
             }}
           >
-            Welcome to{" "}
+            Welcome back,{" "}
             <span style={{ color: BRAND }}>
-              HivraSoft
+              {user?.name?.trim() || "Admin"}
             </span>
           </h1>
 
@@ -299,7 +302,7 @@ export default function AdminDashboardPage() {
         style={{
           display: "grid",
           gridTemplateColumns:
-            "repeat(auto-fit, minmax(220px, 1fr))",
+            "repeat(auto-fit, minmax(min(220px, 100%), 1fr))",
           gap: 14,
         }}
       >
@@ -362,7 +365,7 @@ export default function AdminDashboardPage() {
         style={{
           display: "grid",
           gridTemplateColumns:
-            "repeat(auto-fit, minmax(380px, 1fr))",
+            "repeat(auto-fit, minmax(min(380px, 100%), 1fr))",
           gap: 16,
         }}
       >
@@ -473,7 +476,7 @@ export default function AdminDashboardPage() {
         style={{
           display: "grid",
           gridTemplateColumns:
-            "repeat(auto-fit, minmax(400px, 1fr))",
+            "repeat(auto-fit, minmax(min(400px, 100%), 1fr))",
           gap: 16,
         }}
       >
@@ -939,7 +942,7 @@ export default function AdminDashboardPage() {
         style={{
           display: "grid",
           gridTemplateColumns:
-            "repeat(auto-fit, minmax(380px, 1fr))",
+            "repeat(auto-fit, minmax(min(380px, 100%), 1fr))",
           gap: 16,
         }}
       >
@@ -969,7 +972,7 @@ export default function AdminDashboardPage() {
               marginTop: 18,
               display: "grid",
               gridTemplateColumns:
-                "repeat(auto-fit, minmax(140px, 1fr))",
+                "repeat(auto-fit, minmax(min(140px, 100%), 1fr))",
               gap: 10,
             }}
           >

@@ -3,6 +3,8 @@ import type {
 } from "next";
 
 import "./globals.css";
+import { pageMetadata, SITE_URL, SITE_NAME } from "@/lib/seo";
+import JsonLd from "@/src/components/Seo/JsonLd";
 
 import Loader from "@/src/components/Loader/Loader";
 
@@ -21,13 +23,10 @@ import ScrollToTopOnRefresh from "@/src/components/Storefront/ScrollToTopOnRefre
 import MonthlyPromotionReminder from "@/src/components/Storefront/MonthlyPromotionReminder";
 import ProfileCompletionPrompt from "@/src/components/Storefront/ProfileCompletionPrompt";
 
-export const metadata: Metadata =
-  {
-    title: "Hivra Soft",
-
-    description:
-      "Hivra Soft online store",
-  };
+export const metadata: Metadata = {
+  ...pageMetadata({ path: "/", title: "HivraSoft | Innerwear, Lingerie & Everyday Essentials" }),
+  metadataBase: new URL(SITE_URL),
+};
 
 export default function RootLayout({
   children,
@@ -58,6 +57,10 @@ export default function RootLayout({
         =============================================== */}
 
         <ScrollToTopOnRefresh />
+        <JsonLd data={{ "@context":"https://schema.org", "@graph":[
+          { "@type":"Organization", "@id":`${SITE_URL}/#organization`, name:SITE_NAME, url:SITE_URL, logo:`${SITE_URL}/images/logos/hivra-soft-logo.png` },
+          { "@type":"WebSite", "@id":`${SITE_URL}/#website`, name:SITE_NAME, url:SITE_URL, publisher:{ "@id":`${SITE_URL}/#organization` } },
+        ] }} />
         <FestiveCrackerEffects />
         <Loader />
 

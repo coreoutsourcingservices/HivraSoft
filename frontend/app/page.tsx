@@ -4024,6 +4024,8 @@ function NewArrivalsSection({
                     <button
                       key={`${image}-${index}`}
                       type="button"
+                      aria-label={`Show image ${index + 1} of ${selected.name}`}
+                      aria-pressed={displayImage === image}
                       onClick={() =>
                         setDisplayImage(
                           image,
@@ -4409,6 +4411,8 @@ function NewArrivalsSection({
                       <button
                         key={`${image}-${index}`}
                         type="button"
+                        aria-label={`Show image ${index + 1} of ${selected.name}`}
+                        aria-pressed={displayImage === image}
                         onClick={() =>
                           setDisplayImage(
                             image,
@@ -5699,6 +5703,8 @@ function ColorSection({
           >
             <input
               type="range"
+              aria-label="Choose a colour to browse products"
+              aria-valuetext={variants.find(variant => variant.hex === selectedColor)?.product.colorName || selectedColor}
               min={0}
               max={
                 Math.max(
@@ -6612,6 +6618,7 @@ export default function HomePage() {
   return (
     <>
       <Header />
+      <h1 className="sr-only">HivraSoft Innerwear, Lingerie & Everyday Essentials</h1>
       {/* Show the correct admin popup image after banner data loads; never a blank text-only card. */}
       {!loading && (
         <HomeWelcomePopup
