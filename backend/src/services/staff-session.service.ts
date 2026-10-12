@@ -23,7 +23,7 @@ export async function authenticateStaff(req: Request, res: Response, next: NextF
     const user = await readStaffSession(req);
     if (!user) return res.status(401).json({ message: "Please sign in again." });
     req.user = user;
-    if (user.mustChangePassword && !["/api/admin/me", "/api/admin/change-password", "/api/admin/logout"].includes(req.originalUrl.split("?")[0])) return res.status(403).json({ message: "Change your temporary password first.", mustChangePassword: true });
+    if (user.mustChangePassword && !["/api/admin/me", "/api/admin/change-password", "/api/admin/logout", "/api/superadmin/me", "/api/superadmin/logout", "/api/superadmin/change-password"].includes(req.originalUrl.split("?")[0])) return res.status(403).json({ message: "Change your temporary password first.", mustChangePassword: true });
     if (res.locals.auditSnapshot) await res.locals.auditSnapshot();
     next();
   } catch { return res.status(401).json({ message: "Session expired. Please sign in again." }); }

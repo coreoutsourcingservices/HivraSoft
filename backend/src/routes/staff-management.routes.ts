@@ -6,7 +6,7 @@ import AdminAuditLog from "../models/AdminAuditLog.model";
 import { hashPassword } from "../utils/password";
 import { sendEmail } from "../services/mail.service";
 import { authenticateStaff, requireSuperadmin, issueStaffSession } from "../services/staff-session.service";
-import { authLimit, bad, staffLogin, staffLogout, wrap } from "./staff-auth.routes";
+import { authLimit, bad, staffChangePassword, staffLogin, staffLogout, wrap } from "./staff-auth.routes";
 import { auditEvent } from "../services/staff-audit.service";
 
 const router = Router();
@@ -16,8 +16,9 @@ const html = (s: string) => s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&l
 const pageNumber = (value: unknown, fallback: number, max: number) => Math.min(max, Math.max(1, Number.isFinite(Number(value)) ? Math.floor(Number(value)) : fallback));
 router.post("/login", authLimit(), staffLogin(true));
 router.use(authenticateStaff, requireSuperadmin);
-router.get("/me", (req, res) => { res.setHeader("Cache-Control", "no-store"); res.json({ success: true, user: { name: req.user!.name, username: req.user!.username } }); });
+router.get("/me", (req, res) => { res.setHeader("Cache-Control", "no-store"); res.json({ success: true, user: { name: req.user!.name, username: req.user!.username, mustChangePassword: req.user!.mustChangePassword } }); });
 router.post("/logout", staffLogout);
+router.post("/change-password", staffChangePassword);
 router.post("/admin-session", (req, res) => { issueStaffSession(res, req.user!); res.json({ success: true }); });
 router.get("/dashboard", wrap(async (_req, res) => {
   const [pending, approved, blocked, rejected] = await Promise.all([
@@ -47,6 +48,11 @@ router.post("/admins/:id/approve", wrap(async (req, res) => {
   const user = await User.findOneAndUpdate({ _id: req.params.id, role: "admin", adminStatus: "pending_approval", emailVerified: true }, { $set: { adminStatus: "approved", isActive: true, accountStatus: "active", approvedAt: issuedAt, approvedBy: req.user!._id, username: `admin_${String(req.params.id)}`, passwordHash: await hashPassword(password), mustChangePassword: true, temporaryPasswordExpiresAt: new Date(Date.now() + 86400_000), credentialDelivery: "sending", credentialIssuedAt: issuedAt }, $inc: { sessionVersion: 1 } }, { returnDocument: "after" });
   if (!user) bad("Request already processed or not verified.", 409);
   const delivery = await deliver(user!, password, issuedAt);
+  await auditEvent(req, "APPROVE", "admins", String(user!._id), {
+    recordName: user!.name, previous: { adminStatus: "pending_approval" },
+    updated: { adminStatus: "approved", accountStatus: "active", credentialDelivery: delivery },
+  });
+  res.locals.auditHandled = true;
   res.json({ success: true, delivery, message: delivery === "sent" ? "Approved. Credentials sent." : "Approved, but email failed. Retry credentials delivery." });
 }));
 async function deliver(user: { _id: Types.ObjectId; name: string; email: string; username?: string }, password: string, issuedAt: Date) {
@@ -63,11 +69,20 @@ router.post("/admins/:id/retry-credentials", authLimit(), wrap(async (req, res) 
   const user = await User.findOneAndUpdate({ _id: req.params.id, role: "admin", adminStatus: "approved", isActive: true, accountStatus: "active", mustChangePassword: true, credentialIssuedAt: { $lt: new Date(Date.now() - 120_000) } }, { $set: { passwordHash: await hashPassword(password), temporaryPasswordExpiresAt: new Date(Date.now() + 86400_000), credentialDelivery: "sending", credentialIssuedAt: issuedAt }, $inc: { sessionVersion: 1 } }, { returnDocument: "after" });
   if (!user) bad("Retry after two minutes. Only active accounts awaiting their first password change are eligible.", 409);
   const delivery = await deliver(user!, password, issuedAt);
+  await auditEvent(req, "UPDATE", "admins", String(user!._id), {
+    recordName: user!.name, updated: { credentialDelivery: delivery, sessionRevoked: true },
+  });
+  res.locals.auditHandled = true;
   res.json({ success: true, delivery, message: delivery === "sent" ? "New credentials sent; previous password revoked." : "Delivery failed. Retry after two minutes." });
 }));
 router.post("/admins/:id/reject", wrap(async (req, res) => {
   const user = await User.findOneAndUpdate({ _id: req.params.id, role: "admin", adminStatus: "pending_approval" }, { $set: { adminStatus: "rejected", isActive: false, accountStatus: "inactive" }, $inc: { sessionVersion: 1 } });
   if (!user) bad("Request already processed.", 409);
+  await auditEvent(req, "REJECT", "admins", String(user!._id), {
+    recordName: user!.name, previous: { adminStatus: "pending_approval" },
+    updated: { adminStatus: "rejected", accountStatus: "inactive" },
+  });
+  res.locals.auditHandled = true;
   res.json({ success: true });
 }));
 router.patch("/admins/:id/status", wrap(async (req, res) => {
@@ -75,7 +90,9 @@ router.patch("/admins/:id/status", wrap(async (req, res) => {
   if (!["active", "inactive", "blocked"].includes(status)) bad("Invalid status.");
   const user = await User.findOneAndUpdate({ _id: req.params.id, role: "admin", $or: [{ adminStatus: "approved" }, { adminStatus: { $exists: false } }] }, { $set: { accountStatus: status, isActive: status === "active" }, $inc: { sessionVersion: 1 }, $unset: { resetTokenHash: 1, resetTokenExpiresAt: 1 } }, { returnDocument: "after" });
   if (!user) bad("Approved admin not found.", 404);
-  await auditEvent(req, status === "blocked" ? "BLOCK" : status === "active" ? "UNBLOCK" : "UPDATE", "admins", String(user!._id), { updated: { accountStatus: status } });
+  await auditEvent(req, status === "blocked" ? "BLOCK" : status === "active" ? "UNBLOCK" : "UPDATE", "admins", String(user!._id), {
+    recordName: user!.name, updated: { accountStatus: status, isActive: status === "active", allSessionsRevoked: true },
+  });
   res.locals.auditHandled = true;
   res.json({ success: true });
 }));

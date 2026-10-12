@@ -121,7 +121,7 @@ router.post("/forgot-password/reset", authLimit(), wrap(async (req, res) => {
 }));
 router.get("/me", authenticateStaff, (req, res) => { const u = req.user!; res.setHeader("Cache-Control", "no-store"); res.json({ success: true, user: { id: u._id, name: u.name, email: u.email, role: u.role, mustChangePassword: u.mustChangePassword } }); });
 router.post("/logout", authenticateStaff, staffLogout);
-router.post("/change-password", authenticateStaff, wrap(async (req, res) => {
+export const staffChangePassword = wrap(async (req, res) => {
   const password = newPassword(req.body?.newPassword, req.body?.confirmPassword);
   if (typeof req.body?.oldPassword !== "string" || req.body.oldPassword.length > 256) bad("Enter your current password.");
   const user = await User.findById(req.user!._id).select("+passwordHash +sessionVersion");
@@ -131,5 +131,6 @@ router.post("/change-password", authenticateStaff, wrap(async (req, res) => {
   if (!updated) bad("Account changed. Sign in again.", 409);
   issueStaffSession(res, updated!, !!req.cookies?.superadminToken);
   return res.json({ success: true, message: "Password changed." });
-}));
+});
+router.post("/change-password", authenticateStaff, staffChangePassword);
 export default router;
