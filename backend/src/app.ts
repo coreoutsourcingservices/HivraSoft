@@ -1,12 +1,11 @@
+
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 
 import authRoutes from "./routes/auth.routes";
 import adminRoutes from "./routes/admin.routes";
-
 import categoryRoutes from "./routes/category.routes";
-
 import productRoutes from "./routes/product.routes";
 import uploadRoutes from "./routes/upload.routes";
 import addressRoutes from "./routes/user/address.routes";
@@ -28,11 +27,6 @@ import userSettingsRoutes from "./routes/user-settings.routes";
 import homepageRoutes from "./routes/homepage.routes";
 import offerRoutes from "./routes/offer.routes";
 import leadFormRoutes from "./routes/lead-form.routes";
-
-/* =========================================================
-   DISCOUNT ROUTES
-========================================================= */
-
 import discountRoutes from "./routes/discount.routes";
 
 import {
@@ -43,81 +37,85 @@ import {
    APP
 ========================================================= */
 
-const app =
-  express();
+const app = express();
 
 /* =========================================================
    TRUST PROXY
-
-   Hostinger forwards requests through its reverse proxy.
-   Trust only the nearest hop.
 ========================================================= */
 
-if (
-  process.env.NODE_ENV ===
-  "production"
-) {
-  app.set(
-    "trust proxy",
-    1
-  );
+if (process.env.NODE_ENV === "production") {
+  app.set("trust proxy", 1);
 }
 
 /* =========================================================
    CORS
+   Allows both www and non-www production domains.
 ========================================================= */
+
+const allowedOrigins = [
+  "https://hivrasoft.com",
+  "https://www.hivrasoft.com",
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+];
+
+// Optional additional origins from Hostinger.
+// Separate multiple URLs with commas.
+const extraOrigins = (
+  process.env.FRONTEND_URL || ""
+)
+  .split(",")
+  .map((url) => url.trim().replace(/\/$/, ""))
+  .filter(Boolean);
+
+const allAllowedOrigins = [
+  ...new Set([...allowedOrigins, ...extraOrigins]),
+];
 
 app.use(
   cors({
-    origin:
-      process.env
-        .FRONTEND_URL ||
-      "http://localhost:3000",
+    origin: (origin, callback) => {
+      // Allow requests without Origin, such as server-to-server.
+      if (!origin || allAllowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
 
-    credentials:
-      true,
+      return callback(
+        new Error("Not allowed by CORS")
+      );
+    },
+    credentials: true,
   })
 );
 
 /* =========================================================
    RAZORPAY WEBHOOK
-
-   IMPORTANT:
-   express.raw() must stay before express.json()
+   Keep express.raw() before express.json().
 ========================================================= */
 
 app.post(
   "/api/payments/razorpay/webhook",
-
   express.raw({
-    type:
-      "application/json",
-
-    limit:
-      "2mb",
+    type: "application/json",
+    limit: "2mb",
   }),
-
   razorpayWebhookController
 );
 
 /* =========================================================
-   BODY PARSER
+   BODY PARSERS
 ========================================================= */
 
 app.use(
   express.json({
-    limit:
-      "10mb",
+    limit: "10mb",
   })
 );
 
 app.use(
   express.urlencoded({
-    extended:
-      true,
-
-    limit:
-      "10mb",
+    extended: true,
+    limit: "10mb",
   })
 );
 
@@ -125,239 +123,100 @@ app.use(
    COOKIE PARSER
 ========================================================= */
 
-app.use(
-  cookieParser()
-);
+app.use(cookieParser());
 
 /* =========================================================
    HEALTH CHECK
 ========================================================= */
 
-app.get(
-  "/api/health",
-  (
-    req,
-    res
-  ) => {
-    return res
-      .status(
-        200
-      )
-      .json({
-        success:
-          true,
-
-        message:
-          "HivraSoft backend is working",
-      });
-  }
-);
+app.get("/api/health", (req, res) => {
+  return res.status(200).json({
+    success: true,
+    message: "HivraSoft backend is working",
+  });
+});
 
 /* =========================================================
-   AUTH
+   AUTH & ADMIN
 ========================================================= */
 
-app.use(
-  "/api/auth",
-  authRoutes
-);
-
-app.use(
-  "/api/admin",
-  adminRoutes
-);
+app.use("/api/auth", authRoutes);
+app.use("/api/admin", adminRoutes);
 
 /* =========================================================
-   CATEGORIES
+   CATEGORIES & PRODUCTS
 ========================================================= */
 
-app.use(
-  "/api/categories",
-  categoryRoutes
-);
+app.use("/api/categories", categoryRoutes);
+app.use("/api/products", productRoutes);
+app.use("/api/search", searchRoutes);
 
 /* =========================================================
-   PRODUCTS
+   UPLOADS & ADDRESS
 ========================================================= */
 
-app.use(
-  "/api/products",
-  productRoutes
-);
+app.use("/api/uploads", uploadRoutes);
+app.use("/api/address", addressRoutes);
 
 /* =========================================================
-   GLOBAL STOREFRONT SEARCH
+   BANNERS, WISHLIST & CART
 ========================================================= */
 
-app.use(
-  "/api/search",
-  searchRoutes
-);
-
-/* =========================================================
-   UPLOADS
-========================================================= */
-
-app.use(
-  "/api/uploads",
-  uploadRoutes
-);
-
-/* =========================================================
-   ADDRESS
-========================================================= */
-
-app.use(
-  "/api/address",
-  addressRoutes
-);
-
-/* =========================================================
-   BANNERS
-========================================================= */
-
-app.use(
-  "/api/banners",
-  bannerRoutes
-);
-
-/* =========================================================
-   WISHLIST
-========================================================= */
-
-app.use(
-  "/api/wishlist",
-  wishlistRoutes
-);
-
-/* =========================================================
-   CART
-========================================================= */
-
-app.use(
-  "/api/cart",
-  cartRoutes
-);
+app.use("/api/banners", bannerRoutes);
+app.use("/api/wishlist", wishlistRoutes);
+app.use("/api/cart", cartRoutes);
 
 /* =========================================================
    ORDERS
 ========================================================= */
 
-app.use(
-  "/api/orders",
-  orderRoutes
-);
+app.use("/api/orders", orderRoutes);
 
 /* =========================================================
    BLOGS
 ========================================================= */
 
-app.use(
-  "/api/blogs",
-  blogRoutes
-);
-
-app.use(
-  "/api/blog-categories",
-  blogCategoryRoutes
-);
-
-app.use(
-  "/api/blog-tags",
-  blogTagRoutes
-);
+app.use("/api/blogs", blogRoutes);
+app.use("/api/blog-categories", blogCategoryRoutes);
+app.use("/api/blog-tags", blogTagRoutes);
 
 /* =========================================================
-   NOTIFICATIONS
+   NOTIFICATIONS & REVIEWS
 ========================================================= */
 
-app.use(
-  "/api/notifications",
-  notificationRoutes
-);
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/reviews", reviewRoutes);
 
 /* =========================================================
-   REVIEWS
+   USER SETTINGS & HOMEPAGE
 ========================================================= */
 
-app.use(
-  "/api/reviews",
-  reviewRoutes
-);
+app.use("/api/user-settings", userSettingsRoutes);
+app.use("/api", homepageRoutes);
 
 /* =========================================================
-   USER SETTINGS
+   OFFERS & DISCOUNTS
 ========================================================= */
 
-app.use(
-  "/api/user-settings",
-  userSettingsRoutes
-);
-
-/* =========================================================
-   HOMEPAGE
-========================================================= */
-
-app.use(
-  "/api",
-  homepageRoutes
-);
-
-/* =========================================================
-   OFFERS
-========================================================= */
-
-app.use(
-  "/api/offers",
-  offerRoutes
-);
-
-/* =========================================================
-   DISCOUNT CODES
-
-   Final endpoint:
-   GET /api/discounts/active
-========================================================= */
-
-app.use(
-  "/api/discounts",
-  discountRoutes
-);
+app.use("/api/offers", offerRoutes);
+app.use("/api/discounts", discountRoutes);
 
 /* =========================================================
    LEAD FORMS
 ========================================================= */
 
-app.use(
-  "/api",
-  leadFormRoutes
-);
+app.use("/api", leadFormRoutes);
 
 /* =========================================================
-   404
-
-   IMPORTANT:
-   Always keep this LAST.
+   404 - KEEP LAST
 ========================================================= */
 
-app.use(
-  (
-    req,
-    res
-  ) => {
-    return res
-      .status(
-        404
-      )
-      .json({
-        success:
-          false,
-
-        message:
-          `Route not found: ${req.originalUrl}`,
-      });
-  }
-);
+app.use((req, res) => {
+  return res.status(404).json({
+    success: false,
+    message: `Route not found: ${req.originalUrl}`,
+  });
+});
 
 /* =========================================================
    EXPORT
