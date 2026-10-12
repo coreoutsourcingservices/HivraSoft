@@ -1,3 +1,11 @@
+# Hivrasoft
+
+The project now has `backend/`, `admin/`, `frontend/` and `superadmin/` directories. See [STRUCTURE.md](STRUCTURE.md) for setup, run commands and deployment configuration.
+
+Quick start: `npm run setup`, then `npm run dev`.
+
+---
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started

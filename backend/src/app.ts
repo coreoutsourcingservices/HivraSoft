@@ -1,3 +1,4 @@
+import superadminRoutes from "./routes/superadmin.routes";
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
@@ -69,10 +70,7 @@ if (
 
 app.use(
   cors({
-    origin:
-      process.env
-        .FRONTEND_URL ||
-      "http://localhost:3000",
+    origin: [process.env.FRONTEND_URL || "http://localhost:3000", process.env.ADMIN_URL || "http://localhost:3001", process.env.SUPERADMIN_URL || "http://localhost:3002"],
 
     credentials:
       true,
@@ -128,6 +126,8 @@ app.use(
 app.use(
   cookieParser()
 );
+
+app.use("/api/superadmin", superadminRoutes);
 
 /* =========================================================
    HEALTH CHECK
