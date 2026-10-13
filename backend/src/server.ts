@@ -11,7 +11,7 @@ import {
   removeLegacyProductSlugIndex,
 } from "./services/product-migration.service";
 
-const PORT = Number(process.env.PORT || 5000);
+const hostingerPort = process.env.PORT;
 let ready = false;
 
 // Hostinger requires the listener before asynchronous database initialization.
@@ -23,7 +23,13 @@ const server = createServer((req, res) => {
   }
   app(req, res);
 });
-server.listen(PORT);
+// Hostinger Passenger supplies a Unix socket path in PORT, while local and
+// other platforms use a numeric TCP port.
+if (hostingerPort && !/^\d+$/.test(hostingerPort)) {
+  server.listen(hostingerPort);
+} else {
+  server.listen(Number(hostingerPort || 5000));
+}
 
 const startServer = async () => {
   try {
@@ -49,7 +55,7 @@ const startServer = async () => {
 
     ready = true;
       console.log(
-        `✅ HivraSoft backend running on http://localhost:${PORT}`
+        `✅ HivraSoft backend running on ${hostingerPort || 5000}`
       );
   } catch (error) {
     console.error("❌ Server startup failed:");
