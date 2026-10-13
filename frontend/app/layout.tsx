@@ -24,7 +24,7 @@ import MonthlyPromotionReminder from "@/src/components/Storefront/MonthlyPromoti
 import ProfileCompletionPrompt from "@/src/components/Storefront/ProfileCompletionPrompt";
 
 export const metadata: Metadata = {
-  ...pageMetadata({ path: "/", title: "HivraSoft | Innerwear, Lingerie & Everyday Essentials" }),
+  ...pageMetadata({ path: "/", title: "Hivra Soft | Innerwear, Lingerie & Everyday Essentials" }),
   metadataBase: new URL(SITE_URL),
 };
 

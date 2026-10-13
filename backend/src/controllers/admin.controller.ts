@@ -1,3 +1,4 @@
+import { PLACED_ORDER_FILTER, paymentAttemptFilter } from "../utils/order-visibility";
 import type { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import crypto from "node:crypto";
@@ -393,7 +394,7 @@ async function buildAdminDashboard() {
       Category.countDocuments({}).maxTimeMS(8000),
       Banner.countDocuments({}).maxTimeMS(8000),
       User.aggregate([{ $match: { role: "customer" } }, { $facet: countFacets }]).option({ maxTimeMS: 8000 }),
-      Order.aggregate([{ $facet: {
+      Order.aggregate([{ $match: PLACED_ORDER_FILTER }, { $facet: {
         ...countFacets,
         revenue: [{ $match: revenueMatch }, { $group: { _id: null, revenue: { $sum: "$total" } } }],
         currentRevenue: [{ $match: { ...revenueMatch, ...monthMatch } }, { $group: { _id: null, revenue: { $sum: "$total" } } }],
@@ -401,7 +402,7 @@ async function buildAdminDashboard() {
         daily: [{ $match: { ...revenueMatch, createdAt: { $gte: sevenDaysAgo } } }, { $group: { _id: { year: { $year: "$createdAt" }, month: { $month: "$createdAt" }, day: { $dayOfMonth: "$createdAt" } }, revenue: { $sum: "$total" }, orders: { $sum: 1 } } }],
         statuses: [{ $group: { _id: { $toLower: "$status" }, count: { $sum: 1 } } }],
       } }]).option({ maxTimeMS: 8000 }),
-      Order.find({}).sort({ createdAt: -1 }).limit(4).populate({ path: "user", select: "name email", options: { maxTimeMS: 8000 } }).maxTimeMS(8000).lean(),
+      Order.find(PLACED_ORDER_FILTER).sort({ createdAt: -1 }).limit(4).populate({ path: "user", select: "name email", options: { maxTimeMS: 8000 } }).maxTimeMS(8000).lean(),
       Product.find({ isActive: { $ne: false } }).select("colors isColor isActive createdAt").maxTimeMS(8000).lean(),
     ]);
     const counts = (rows: any[], key: string) => Number(rows[0]?.[key]?.[0]?.count || 0);
@@ -1196,7 +1197,7 @@ async function hydrateAdminOrderProductImages(orders: any[]) {
   }));
 }
 
-/** GET /api/admin/orders - paginated order management list. */
+/** GET /api/admin/orders - placed orders or online payment attempts (separate views). */
 export async function getAdminOrders(req: Request, res: Response) {
   try {
     const page = Math.max(1, Number.parseInt(String(req.query.page || "1"), 10) || 1);
@@ -1205,10 +1206,18 @@ export async function getAdminOrders(req: Request, res: Response) {
     const status = String(req.query.status || "").trim().toLowerCase();
     const paymentStatus = String(req.query.paymentStatus || "").trim().toLowerCase();
     const paymentMethod = String(req.query.paymentMethod || "").trim().toLowerCase();
+    const view = String(req.query.view || "orders").trim().toLowerCase();
+    const paymentState = String(req.query.paymentState || "processing").trim().toLowerCase();
+    if (!["orders", "payment_attempts"].includes(view) || !["failed", "processing"].includes(paymentState)) {
+      return res.status(400).json({ success: false, message: "Invalid order view or payment state." });
+    }
     const dateFrom = String(req.query.dateFrom || "").trim();
     const dateTo = String(req.query.dateTo || "").trim();
 
-    const filter: Record<string, any> = {};
+    // Apply server-side before countDocuments/skip/limit so totals and pages stay accurate.
+    const filter: Record<string, any> = {
+      $and: [view === "orders" ? PLACED_ORDER_FILTER : paymentAttemptFilter(paymentState as "failed" | "processing")],
+    };
     if (status === "pending") {
       filter.status = { $in: ["pending", "pending_payment", "confirmed", "processing", "shipped", "out_for_delivery"] };
     } else if (status === "completed") {
@@ -1390,6 +1399,14 @@ async function applyAdminOrderStatus(order: any, requestedInput: unknown, adminI
     order.paymentStatus !== "paid"
   ) {
     throw new Error("Razorpay order cannot be confirmed until payment is verified.");
+  }
+
+  if (
+    requested !== "cancelled" &&
+    order.paymentMethod !== "cod" &&
+    !["paid", "refunded"].includes(String(order.paymentStatus || "").toLowerCase())
+  ) {
+    throw new Error("Online payment must be verified before updating order status.");
   }
 
   if (requested === "cancelled" && order.inventoryCommitted) {

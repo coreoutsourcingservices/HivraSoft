@@ -1,6 +1,6 @@
 "use client";
 import { useState, type FormEvent, type InputHTMLAttributes } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/src/components/Admin/navigation";
 
 type Mode = "login" | "register" | "verify" | "pending" | "recovery" | "recovery-verify" | "reset" | "change";
 const API = "";
@@ -11,7 +11,7 @@ function PasswordInput({ className, ...props }: InputHTMLAttributes<HTMLInputEle
     <button type="button" aria-label={`${visible ? "Hide" : "Show"} ${props.id === "oldPassword" ? "current password" : props.id === "confirmPassword" ? "confirm password" : props.id === "newPassword" ? "new password" : "password"}`} aria-pressed={visible} onClick={()=>setVisible(value=>!value)} className="absolute right-3 top-1/2 -translate-y-1/2 rounded px-1 py-2 text-xs font-semibold text-[#8C1839] focus-visible:outline focus-visible:outline-2">{visible ? "Hide" : "Show"}</button>
   </div>;
 }
-export default function StaffAccess({ initialMode = "login", unavailable = false }: { initialMode?: Mode; unavailable?: boolean }) {
+export default function StaffAccess({ initialMode = "login", unavailable = false, superadmin = false }: { initialMode?: Mode; unavailable?: boolean; superadmin?: boolean }) {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>(initialMode);
   const [busy, setBusy] = useState(false), [error, setError] = useState(unavailable ? "Server unavailable. Please retry." : "");
@@ -22,7 +22,7 @@ export default function StaffAccess({ initialMode = "login", unavailable = false
   const [registrationToken, setRegistrationToken] = useState("");
   const [resendAt, setResendAt] = useState(0);
   async function post(path: string, body: unknown) {
-    const response = await fetch(`${API}/api/admin/${path}`, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal: AbortSignal.timeout(45000) });
+    const response = await fetch(`${API}/api/${superadmin && ["login", "change-password", "logout"].includes(path) ? "superadmin" : "admin"}/${path}`, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal: AbortSignal.timeout(45000) });
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || "Request failed. Try again.");
     return data;
@@ -35,7 +35,7 @@ export default function StaffAccess({ initialMode = "login", unavailable = false
       if (mode === "login") {
         const data = await post("login", fields);
         if (data.mustChangePassword) move("change");
-        else { window.location.assign("/admin"); }
+        else { window.location.assign(superadmin ? "/superadmin" : "/admin"); }
       } else if (mode === "register") {
         const input = { name: String(fields.name), email: String(fields.email), phone: String(fields.phone) };
         const data = await post("register/send-otp", input); setRegistrationToken(data.registrationToken); setRegistration(input); setEmail(input.email); setResendAt(Date.now() + 60000); move("verify"); setMessage(data.message);
@@ -48,7 +48,7 @@ export default function StaffAccess({ initialMode = "login", unavailable = false
       } else if (mode === "reset") {
         const data = await post("forgot-password/reset", { ...fields, resetToken }); setResetToken(""); move("login"); setMessage(data.message);
       } else if (mode === "change") {
-        await post("change-password", fields); window.location.assign("/admin"); router.refresh();
+        await post("change-password", fields); window.location.assign(superadmin ? "/superadmin" : "/admin"); router.refresh();
       }
     } catch (err) { setError(err instanceof Error ? err.message : "Request failed."); }
     finally { setBusy(false); }
@@ -60,7 +60,7 @@ export default function StaffAccess({ initialMode = "login", unavailable = false
     catch (err) { setError(err instanceof Error ? err.message : "Resend failed."); }
     finally { setBusy(false); }
   }
-  const titles: Record<Mode, string> = { login: "Admin sign in", register: "Request admin access", verify: "Verify your email", pending: "Awaiting approval", recovery: "Recover your account", "recovery-verify": "Verify recovery code", reset: "Choose a new password", change: "Change temporary password" };
+  const titles: Record<Mode, string> = { login: superadmin ? "Superadmin sign in" : "Admin sign in", register: "Request admin access", verify: "Verify your email", pending: "Awaiting approval", recovery: "Recover your account", "recovery-verify": "Verify recovery code", reset: "Choose a new password", change: "Change temporary password" };
   const inputClass = "mt-1 mb-4 w-full rounded-lg border border-gray-300 bg-white px-3 py-3 text-sm";
   return <main className="flex min-h-dvh items-center justify-center bg-[#f4f5f7] px-5 py-12 text-[#202124]"><section className="w-full max-w-md rounded-xl border border-gray-200 bg-white p-8 shadow-sm">
     <p className="mb-6 text-xl font-bold">HivraSoft<span className="text-[#8C1839]">.</span></p>
@@ -78,10 +78,10 @@ export default function StaffAccess({ initialMode = "login", unavailable = false
     </form>}
     {error && <p className="mt-4 text-sm text-red-700" role="alert">{error}</p>}{message && <p className="mt-4 text-sm text-green-800" role="status">{message}</p>}
     <div className="mt-6 flex flex-wrap gap-4 text-sm text-[#8C1839]">
-      {mode === "login" && <><button onClick={() => move("register")}>Register as admin</button><button onClick={() => move("recovery")}>Forgot password?</button></>}
+      {mode === "login" && <>{!superadmin && <button onClick={() => move("register")}>Register as admin</button>}<button onClick={() => move("recovery")}>Forgot password?</button></>}
       {(mode === "verify" || mode === "recovery-verify") && <button disabled={busy} onClick={resend}>Resend OTP</button>}
       {mode !== "login" && mode !== "change" && <button disabled={busy} onClick={() => move("login")}>Back to sign in</button>}
-      {mode === "change" && <button disabled={busy} onClick={async () => { try { await post("logout", {}); window.location.assign("/admin"); } catch { setError("Sign out failed."); } }}>Sign out</button>}
+      {mode === "change" && <button disabled={busy} onClick={async () => { try { await post("logout", {}); window.location.assign(superadmin ? "/superadmin" : "/admin"); } catch { setError("Sign out failed."); } }}>Sign out</button>}
     </div>
   </section></main>;
 }

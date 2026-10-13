@@ -4,13 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "node run-apps.mjs dev",
-    "build": "npm run build --prefix backend && npm run build --prefix admin && npm run build --prefix frontend && npm run build --prefix superadmin",
+    "build": "npm run build --prefix backend && npm run build --prefix admin && npm run build --prefix frontend",
     "start": "node run-apps.mjs start",
     "dev:frontend": "npm run dev --prefix frontend",
     "dev:admin": "npm run dev --prefix admin",
     "dev:backend": "npm run dev --prefix backend",
-    "setup": "npm install --prefix backend && npm install --prefix admin && npm install --prefix frontend && npm install --prefix superadmin",
-    "lint": "npm run lint --prefix frontend && npm run lint --prefix admin && npm run lint --prefix superadmin",
-    "dev:superadmin": "npm run dev --prefix superadmin"
+    "setup": "npm install --prefix backend && npm install --prefix admin && npm install --prefix frontend",
+    "lint": "npm run lint --prefix frontend && npm run lint --prefix admin"
   }
 }

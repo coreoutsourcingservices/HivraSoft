@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter } from "@/src/components/Admin/navigation";
 import { useEffect, useRef, useState } from "react";
 import { ChevronRight, LoaderCircle, LogOut, Search, X } from "lucide-react";
 import { useAdminUser } from "./AdminUserContext";
@@ -68,7 +68,7 @@ export default function AdminHeader() {
     setLoggingOut(true);
     setLogoutError(false);
     try {
-      const response = await fetch(`/api/admin/logout`, {
+      const response = await fetch("/api/admin/logout", {
         method: "POST",
         credentials: "include",
       });

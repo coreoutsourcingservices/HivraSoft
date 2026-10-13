@@ -10,7 +10,7 @@ import {
 
 import {
   useRouter,
-} from "next/navigation";
+} from "@/src/components/Admin/navigation";
 
 import {
   BANNER_SECTIONS,

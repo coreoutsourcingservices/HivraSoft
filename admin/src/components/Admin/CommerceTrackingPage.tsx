@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "@/src/components/Admin/ZoneLink";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { FileSpreadsheet, Heart, Loader2, Search, ShoppingCart } from "lucide-react";
 import {
   getAdminCartTracking,
@@ -174,6 +174,31 @@ export default function CommerceTrackingPage({ kind }: { kind: "cart" | "wishlis
   const [testEmailAddress, setTestEmailAddress] = useState("");
   const [testEmailBusy, setTestEmailBusy] = useState(false);
   const [error, setError] = useState("");
+  const [selected, setSelected] = useState<string[]>([]);
+  const [bulkAction, setBulkAction] = useState("");
+  const visibleIds = useMemo(() => rows.map((row) => row.id).filter(Boolean), [rows]);
+  const allVisibleSelected = visibleIds.length > 0 && visibleIds.every((id) => selected.includes(id));
+
+  function toggleRow(id: string, checked: boolean) {
+    setSelected((current) => checked
+      ? [...new Set([...current, id])]
+      : current.filter((value) => value !== id));
+  }
+
+  function applyBulkAction() {
+    if (bulkAction !== "export") {
+      setError("Choose a bulk action first.");
+      return;
+    }
+    const selectedRows = rows.filter((row) => selected.includes(row.id));
+    if (!selectedRows.length) {
+      setError("Select at least one record first.");
+      return;
+    }
+    downloadExcel(kind, selectedRows);
+    setError("");
+    setBulkAction("");
+  }
 
   const getTracking = useCallback((requestedPage: number, limit: number) => {
     const params = {
@@ -194,6 +219,7 @@ export default function CommerceTrackingPage({ kind }: { kind: "cart" | "wishlis
       const result = await getTracking(page, 20);
       setRows(result.tracking);
       setPagination(result.pagination);
+      if (!silent) setSelected([]);
     } catch (err) {
       if (!silent) {
         setRows([]);
@@ -319,10 +345,24 @@ export default function CommerceTrackingPage({ kind }: { kind: "cart" | "wishlis
               {exporting ? <Loader2 size={14} className="animate-spin" /> : <FileSpreadsheet size={14} />}
               {exporting ? "Exporting..." : "Export Excel"}
             </button>
+            <div className="rounded-xl border border-[#211A18]/10 bg-[#FAF8F6] px-4 py-3 text-[10px] font-semibold text-[#211A18]/60">
+              Selected: <span className="text-[#8C1839]">{selected.length}</span>
+            </div>
             <div className="rounded-xl bg-[#F7F3EF] px-4 py-3 text-[10px] font-semibold text-[#211A18]/60">
               {pagination.total.toLocaleString("en-IN")} tracking record{pagination.total === 1 ? "" : "s"}
             </div>
           </div>
+        </div>
+
+        <div className="mt-5 flex flex-wrap items-center gap-2">
+          <select aria-label="Bulk actions" value={bulkAction} onChange={(event) => setBulkAction(event.target.value)}
+            className="h-11 min-w-[250px] rounded-xl border border-[#211A18]/15 bg-white px-3 text-xs font-medium text-[#211A18] outline-none focus:border-[#8C1839]/40">
+            <option value="">Bulk actions</option>
+            <option value="export">Export selected as Excel</option>
+          </select>
+          <button type="button" onClick={applyBulkAction} disabled={loading}
+            className="inline-flex h-11 items-center justify-center rounded-xl bg-[#8C1839] px-5 text-[10px] font-semibold uppercase tracking-wide text-white disabled:opacity-50">Apply</button>
+          <span className="text-[10px] text-[#211A18]/50">Select one or multiple records (current page).</span>
         </div>
 
         <div className="mt-5 grid gap-3 lg:grid-cols-5">
@@ -373,6 +413,7 @@ export default function CommerceTrackingPage({ kind }: { kind: "cart" | "wishlis
         <div className="mt-5 overflow-x-auto rounded-2xl border border-[#211A18]/8 bg-white">
           <table className="w-full min-w-[1240px] table-fixed text-left">
             <colgroup>
+              <col className="w-[50px]" />
               <col className="w-[220px]" />
               <col className="w-[370px]" />
               <col className="w-[90px]" />
@@ -383,6 +424,11 @@ export default function CommerceTrackingPage({ kind }: { kind: "cart" | "wishlis
             </colgroup>
             <thead className="bg-[#FAF8F6]">
               <tr className="text-[9px] uppercase tracking-[0.12em] text-[#211A18]/50">
+                <th className="w-[50px] px-4 py-3">
+                  <input type="checkbox" aria-label="Select all records on this page" checked={allVisibleSelected}
+                    onChange={(event) => setSelected(event.target.checked ? visibleIds : [])}
+                    className="h-4 w-4 cursor-pointer accent-[#8C1839]" />
+                </th>
                 <th className="px-4 py-3">User</th>
                 <th className="px-4 py-3">Product</th>
                 <th className="px-4 py-3">Quantity</th>
@@ -394,11 +440,16 @@ export default function CommerceTrackingPage({ kind }: { kind: "cart" | "wishlis
             </thead>
             <tbody className="divide-y divide-[#211A18]/7">
               {loading ? (
-                <tr><td colSpan={7} className="py-16 text-center text-xs text-[#211A18]/45"><Loader2 className="mx-auto mb-2 animate-spin" size={20} />Loading tracking...</td></tr>
+                <tr><td colSpan={8} className="py-16 text-center text-xs text-[#211A18]/45"><Loader2 className="mx-auto mb-2 animate-spin" size={20} />Loading tracking...</td></tr>
               ) : rows.length === 0 ? (
-                <tr><td colSpan={7} className="py-16 text-center text-xs text-[#211A18]/45">No tracking records found.</td></tr>
+                <tr><td colSpan={8} className="py-16 text-center text-xs text-[#211A18]/45">No tracking records found.</td></tr>
               ) : rows.map((row) => (
                 <tr key={row.id} className="text-[10px] text-[#211A18]/65 hover:bg-[#FAF8F6]/60">
+                  <td className="px-4 py-4 align-top">
+                    <input type="checkbox" aria-label={`Select ${row.user.name} - ${row.product.name}`}
+                      checked={selected.includes(row.id)} onChange={(event) => toggleRow(row.id, event.target.checked)}
+                      className="h-4 w-4 cursor-pointer accent-[#8C1839]" />
+                  </td>
                   <td className="px-4 py-4 align-top">
                     <div className="flex min-w-0 items-center gap-3">
                       {row.user.photo ? (

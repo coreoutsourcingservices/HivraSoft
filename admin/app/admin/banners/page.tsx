@@ -11,7 +11,7 @@ import {
 import {
   useRouter,
   useSearchParams,
-} from "next/navigation";
+} from "@/src/components/Admin/navigation";
 
 import {
   getBannerSectionLabel,

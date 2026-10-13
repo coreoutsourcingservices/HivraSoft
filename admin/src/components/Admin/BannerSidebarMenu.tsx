@@ -5,7 +5,7 @@ import Link from "@/src/components/Admin/ZoneLink";
 import {
   usePathname,
   useSearchParams,
-} from "next/navigation";
+} from "@/src/components/Admin/navigation";
 
 import {
   useEffect,

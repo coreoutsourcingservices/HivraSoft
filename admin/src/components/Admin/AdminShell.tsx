@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname } from "@/src/components/Admin/navigation";
 import { Menu, X } from "lucide-react";
 
 import AdminSidebar from "./AdminSidebar";

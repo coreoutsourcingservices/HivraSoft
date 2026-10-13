@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "@/src/components/Admin/ZoneLink";
-import { useParams } from "next/navigation";
+import { useParams } from "@/src/components/Admin/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Bell, Clock3, Heart, PackageCheck, ReceiptText, ShoppingBag, Sparkles, UserRound, Star, MessageSquare } from "lucide-react";
 

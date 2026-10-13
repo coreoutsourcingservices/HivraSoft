@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/src/components/Admin/navigation";
 import { Loader2, Save, X } from "lucide-react";
 import WordBlogEditor from "@/src/components/Admin/WordBlogEditor";
 import {

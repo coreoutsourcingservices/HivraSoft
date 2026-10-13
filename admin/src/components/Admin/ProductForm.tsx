@@ -8,7 +8,7 @@ import {
   type FormEvent,
   type ReactNode,
 } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/src/components/Admin/navigation";
 import {
   analyzeProductSeo,
   hasKeyword,

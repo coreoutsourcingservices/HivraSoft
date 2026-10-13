@@ -53,7 +53,7 @@ export const staffLogin = (superadmin = false) => wrap(async (req, res) => {
   const identity = username.trim();
   const user = await User.findOne({ $or: [{ username: identity }, { email: identity.toLowerCase() }], role: { $in: superadmin ? ["super_admin"] : ["admin", "super_admin"] } }).select("+passwordHash +sessionVersion +temporaryPasswordExpiresAt");
   const valid = await verifyPassword(password, user?.passwordHash || await dummyHash);
-  if (!valid || !user || !activeStaff(user) || (user.mustChangePassword && (!user.temporaryPasswordExpiresAt || user.temporaryPasswordExpiresAt.getTime() <= Date.now()))) {
+  if (!valid || !user || !activeStaff(user) || (superadmin && user.role !== "super_admin") || (user.mustChangePassword && (!user.temporaryPasswordExpiresAt || user.temporaryPasswordExpiresAt.getTime() <= Date.now()))) {
     // Only the account identified by a valid password is attributed; never log submitted credentials.
     if (valid && user) req.user = user;
     await auditEvent(req, "LOGIN", "authentication", user ? String(user._id) : "unknown", {}, false);
@@ -64,6 +64,7 @@ export const staffLogin = (superadmin = false) => wrap(async (req, res) => {
   user!.lastLoginAt = new Date();
   await user!.save();
   issueStaffSession(res, user!, superadmin);
+  if (!superadmin) res.clearCookie("superadminToken", staffCookie);
   return res.json({ success: true, mustChangePassword: user!.mustChangePassword, user: { name: user!.name, username: user!.username, role: user!.role } });
 });
 export const staffLogout = wrap(async (req, res) => {
