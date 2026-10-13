@@ -109,6 +109,9 @@ export default function AdminOrdersPage() {
   const [orderStatus, setOrderStatus] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("");
   const [paymentStatus, setPaymentStatus] = useState("");
+  // Normal Orders show COD or paid online payments only. Failed/pending attempts have their own view.
+  const [paymentView, setPaymentView] = useState<"orders" | "failed" | "processing">("orders");
+  const isPaymentQueue = paymentView !== "orders";
   const [bulkAction, setBulkAction] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -127,7 +130,9 @@ export default function AdminOrdersPage() {
         search: search.trim(),
         status: orderStatus,
         paymentMethod,
-        paymentStatus,
+        paymentStatus: paymentView === "orders" ? paymentStatus : "",
+        view: paymentView === "orders" ? "orders" : "payment_attempts",
+        paymentState: paymentView === "orders" ? undefined : paymentView,
       });
 
       setOrders(Array.isArray(result.orders) ? result.orders : []);
@@ -146,7 +151,7 @@ export default function AdminOrdersPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, orderStatus, paymentMethod, paymentStatus]);
+  }, [page, search, orderStatus, paymentMethod, paymentStatus, paymentView]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -230,6 +235,10 @@ export default function AdminOrdersPage() {
   }
 
   async function applyBulkAction() {
+    if (isPaymentQueue) {
+      setError("Payment attempts cannot be managed as placed orders.");
+      return;
+    }
     if (!bulkAction) {
       setError("Choose a bulk action first.");
       return;
@@ -293,7 +302,7 @@ export default function AdminOrdersPage() {
             </p>
             <h1 className="mt-2 text-2xl font-semibold text-[#211A18]">Orders</h1>
             <p className="mt-1 text-xs text-[#211A18]/50">
-              Manage order status, export orders and apply bulk actions.
+              COD and successfully paid online orders appear here. Failed or processing online payments are tracked separately.
             </p>
           </div>
 
@@ -307,7 +316,26 @@ export default function AdminOrdersPage() {
           </div>
         </div>
 
-        <div className="mt-5 flex flex-col gap-2 lg:flex-row lg:items-center">
+        <div className="mt-5 grid gap-3 md:grid-cols-2">
+          <button type="button" onClick={() => { setPage(1); setSelected([]); setPaymentView("orders"); setOrderStatus(""); setPaymentMethod(""); setPaymentStatus(""); }}
+            className={`rounded-2xl border p-4 text-left transition ${!isPaymentQueue ? "border-[#8C1839] bg-[#FFF4F7]" : "border-[#211A18]/10 bg-[#FAF8F6] hover:border-[#8C1839]/40"}`}>
+            <span className="block text-xs font-semibold text-[#211A18]">Placed Orders</span>
+            <span className="mt-1 block text-[10px] text-[#211A18]/60">COD + successful online payments</span>
+          </button>
+          <div className={`rounded-2xl border p-4 ${isPaymentQueue ? "border-[#8C1839] bg-[#FFF4F7]" : "border-[#211A18]/10 bg-[#FAF8F6]"}`}>
+            <label htmlFor="online-payment-view" className="block text-xs font-semibold text-[#211A18]">Online Payment Attempts</label>
+            <p className="mt-1 text-[10px] text-[#211A18]/60">Failed and processing transactions, not confirmed orders</p>
+            <select id="online-payment-view" value={isPaymentQueue ? paymentView : ""}
+              onChange={(event) => { setPage(1); setSelected([]); setOrderStatus(""); setPaymentMethod(""); setPaymentStatus(""); setPaymentView((event.target.value || "orders") as "orders" | "failed" | "processing"); }}
+              className="mt-3 h-10 w-full rounded-xl border border-[#211A18]/15 bg-white px-3 text-xs text-[#211A18] outline-none focus:border-[#8C1839]/40">
+              <option value="">Choose payment status</option>
+              <option value="failed">Failed</option>
+              <option value="processing">Processing / Pending</option>
+            </select>
+          </div>
+        </div>
+
+        {!isPaymentQueue && <div className="mt-5 flex flex-col gap-2 lg:flex-row lg:items-center">
           <select
             value={bulkAction}
             onChange={(event) => setBulkAction(event.target.value)}
@@ -332,7 +360,7 @@ export default function AdminOrdersPage() {
             {busyId === "bulk" ? <Loader2 size={14} className="animate-spin" /> : null}
             Apply
           </button>
-        </div>
+        </div>}
 
         <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <label className="relative">
@@ -352,6 +380,7 @@ export default function AdminOrdersPage() {
             />
           </label>
 
+          {!isPaymentQueue && <>
           <select
             value={orderStatus}
             onChange={(event) => {
@@ -389,8 +418,9 @@ export default function AdminOrdersPage() {
           >
             <option value="">All payment status</option>
             <option value="paid">Successful</option>
-            <option value="failed">Failed</option>
+            <option value="pending">Pending (COD)</option>
           </select>
+          </>}
         </div>
 
         {actionMessage && (
@@ -417,14 +447,14 @@ export default function AdminOrdersPage() {
             <thead className="bg-[#FAF8F6]">
               <tr className="text-[9px] uppercase tracking-[0.12em] text-[#211A18]/50">
                 <th className="w-[50px] px-4 py-3">
-                  <input
+                  {!isPaymentQueue && <input
                     type="checkbox"
                     checked={allVisibleSelected}
                     onChange={(event) =>
                       setSelected(event.target.checked ? visibleIds : [])
                     }
                     className="h-4 w-4 cursor-pointer accent-[#8C1839]"
-                  />
+                  />}
                 </th>
                 <th className="px-3 py-3">Order</th>
                 <th className="px-3 py-3">Product</th>
@@ -451,7 +481,7 @@ export default function AdminOrdersPage() {
               ) : orders.length === 0 ? (
                 <tr>
                   <td colSpan={12} className="py-16 text-center text-xs text-[#211A18]/45">
-                    {error ? "Orders could not be loaded." : "No orders found."}
+                    {error ? "Records could not be loaded." : isPaymentQueue ? "No payment attempts found." : "No orders found."}
                   </td>
                 </tr>
               ) : (
@@ -490,12 +520,12 @@ export default function AdminOrdersPage() {
                       className="align-middle text-[11px] text-[#211A18] transition hover:bg-[#FAF8F6]/70"
                     >
                       <td className="px-4 py-4">
-                        <input
+                        {!isPaymentQueue && <input
                           type="checkbox"
                           checked={selected.includes(id)}
                           onChange={(event) => toggleOrder(id, event.target.checked)}
                           className="h-4 w-4 cursor-pointer accent-[#8C1839]"
-                        />
+                        />}
                       </td>
 
                       <td className="px-3 py-4">
@@ -588,7 +618,9 @@ export default function AdminOrdersPage() {
                               className="pointer-events-none absolute right-2 animate-spin"
                             />
                           )}
-                          <select
+                          {isPaymentQueue ? (
+                            <span className="inline-flex rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[9px] font-semibold uppercase text-amber-700">Awaiting payment</span>
+                          ) : <select
                             value={status}
                             disabled={busyId === `status-${id}` || busyId === "bulk"}
                             onChange={(event) =>
@@ -599,7 +631,7 @@ export default function AdminOrdersPage() {
                             <option value="pending">Pending</option>
                             <option value="completed">Completed</option>
                             <option value="cancelled">Cancelled</option>
-                          </select>
+                          </select>}
                         </div>
                       </td>
 
@@ -610,7 +642,7 @@ export default function AdminOrdersPage() {
                       <td className="px-3 py-4">
                         <button
                           type="button"
-                          disabled={busyId === `invoice-${id}`}
+                          disabled={isPaymentQueue || busyId === `invoice-${id}`}
                           onClick={() => void downloadInvoice(order)}
                           className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-[#211A18] px-3 text-[9px] font-semibold text-white transition hover:bg-[#8C1839] disabled:cursor-not-allowed disabled:opacity-50"
                         >
@@ -619,7 +651,7 @@ export default function AdminOrdersPage() {
                           ) : (
                             <Download size={12} />
                           )}
-                          Invoice
+                          {isPaymentQueue ? "Not Paid" : "Invoice"}
                         </button>
                       </td>
 
@@ -642,12 +674,12 @@ export default function AdminOrdersPage() {
 
         <div className="mt-4 flex items-center gap-2 text-[10px] text-[#211A18]/50">
           <Trash2 size={12} />
-          Delete is available from Bulk actions after selecting one or more orders.
+          {isPaymentQueue ? "Payment attempts are not placed orders. Use Check Payment to verify a Razorpay transaction." : "Delete is available from Bulk actions after selecting one or more orders."}
         </div>
 
         <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-[10px] text-[#211A18]/50">
-            Total orders: <strong className="text-[#211A18]">{pagination.total}</strong>{" "}
+            {isPaymentQueue ? `${paymentView === "failed" ? "Failed" : "Processing"} payment attempts` : "Total orders"}: <strong className="text-[#211A18]">{pagination.total}</strong>{" "}
             • Page {pagination.page} of {pagination.totalPages}
           </p>
 

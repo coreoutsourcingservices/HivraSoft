@@ -113,6 +113,8 @@ export type AdminOrderQuery = {
   paymentMethod?: string;
   dateFrom?: string;
   dateTo?: string;
+  view?: "orders" | "payment_attempts";
+  paymentState?: "failed" | "processing";
 };
 
 export type AdminOrdersResult = {
@@ -130,6 +132,8 @@ export async function getAdminOrders(query: AdminOrderQuery = {}): Promise<Admin
   if (query.paymentMethod) params.set("paymentMethod", query.paymentMethod);
   if (query.dateFrom) params.set("dateFrom", query.dateFrom);
   if (query.dateTo) params.set("dateTo", query.dateTo);
+  if (query.view) params.set("view", query.view);
+  if (query.paymentState) params.set("paymentState", query.paymentState);
   const result = await apiFetch<{
     success: boolean;
     orders: Record<string, unknown>[];

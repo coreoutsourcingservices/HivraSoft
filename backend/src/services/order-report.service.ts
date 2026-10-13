@@ -1,3 +1,4 @@
+import { PLACED_ORDER_FILTER } from "../utils/order-visibility";
 import Order from "../models/Order.model";
 
 export type ReportPeriod = "1_month" | "3_months" | "6_months" | "1_year" | "all";
@@ -507,7 +508,7 @@ const REPORT_PROJECTION = {
 
 async function loadOrders(range: ReportRange, previous = false) {
   if (previous && !range.previousStart) return [];
-  return Order.find(rangeFilter(range, previous))
+  return Order.find({ $and: [rangeFilter(range, previous), PLACED_ORDER_FILTER] })
     .select(REPORT_PROJECTION)
     .sort({ createdAt: 1 })
     .lean();
