@@ -12,17 +12,19 @@ const result=(log:Log)=>log.status==="failure"||log.metadata?.success===false?"F
 function LogScreen(){
  const params=useSearchParams();const [adminId,setAdminId]=useState(params.get("adminId")||"");
  const [admins,setAdmins]=useState<AdminOption[]>([]);
- useEffect(()=>{setAdminId(params.get("adminId")||"");setPage(1);},[params]);
- useEffect(()=>{const controller=new AbortController();void(async()=>{try{const items:AdminOption[]=[];let page=1,pages=1;do{const response=await fetch(`${API}/api/superadmin/admins?page=${page}`,{credentials:"include",cache:"no-store",signal:controller.signal});if(!response.ok)throw new Error("Unable to load admin filter.");const data=await response.json();items.push(...(data.admins||[]));pages=Number(data.pages)||1;page++;}while(page<=pages);setAdmins(items);}catch(error){if(!controller.signal.aborted)setError(error instanceof Error?error.message:"Unable to load admins.");}})();return()=>controller.abort();},[]);
+
+
  const [logs,setLogs]=useState<Log[]>([]),[total,setTotal]=useState(0),[page,setPage]=useState(1),[pages,setPages]=useState(1);
  const [action,setAction]=useState(""),[module,setModule]=useState(""),[from,setFrom]=useState(""),[to,setTo]=useState("");
  const [loading,setLoading]=useState(true),[error,setError]=useState("");
+ useEffect(()=>{const controller=new AbortController();void(async()=>{try{const items:AdminOption[]=[];let page=1,pages=1;do{const response=await fetch(`${API}/api/superadmin/admins?page=${page}`,{credentials:"include",cache:"no-store",signal:controller.signal});if(!response.ok)throw new Error("Unable to load admin filter.");const data=await response.json();items.push(...(data.admins||[]));pages=Number(data.pages)||1;page++;}while(page<=pages);setAdmins(items);}catch(error){if(!controller.signal.aborted)setError(error instanceof Error?error.message:"Unable to load admins.");}})();return()=>controller.abort();},[]);
+ useEffect(()=>{const timer=setTimeout(()=>{setAdminId(params.get("adminId")||"");setPage(1);},0);return()=>clearTimeout(timer);},[params]);
  const load=useCallback(async()=>{setLoading(true);setError("");try{
   const query=new URLSearchParams({page:String(page)});if(adminId)query.set("adminId",adminId);if(action)query.set("action",action);if(module)query.set("module",module);if(from)query.set("from",`${from}T00:00:00+05:30`);if(to)query.set("to",`${to}T23:59:59.999+05:30`);
   const r=await fetch(`${API}/api/superadmin/logs?${query}`,{credentials:"include",cache:"no-store",signal:AbortSignal.timeout(15000)});
   const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.message||"Cannot load audit logs");setLogs(d.logs||[]);setPage(Number(d.page||1));setPages(Math.max(1,Number(d.pages)||1));setTotal(d.total||0);
  }catch(e){setError(e instanceof Error?e.message:"Unable to load");}finally{setLoading(false);}},[action,module,from,to,page,adminId]);
- useEffect(()=>{void load();},[load]);
+ useEffect(()=>{const timer=setTimeout(()=>{void load();},0);return()=>clearTimeout(timer);},[load]);
  function download(){const esc=(v:unknown)=>{const text=String(v??"");return `"${(/^[=+@\-\t\r]/.test(text)?"'":"")+text.replaceAll('"','""')}"`;};const headings=["Timestamp IST","Admin","Email","Action","Module","Record","Status"];
  const rows=logs.map(x=>[new Date(x.createdAt).toLocaleString("en-IN",{timeZone:"Asia/Kolkata"}),actorName(x),actorEmail(x),x.action,x.module,x.recordName,result(x)]);
  const csv=[headings,...rows].map(cols=>cols.map(esc).join(",")).join("\r\n");const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});const url=URL.createObjectURL(blob);const link=document.createElement("a");link.href=url;link.download=`admin-audit-page-${page}.csv`;link.click();URL.revokeObjectURL(url);

@@ -22,7 +22,7 @@ export default function AdminProfile() {
     try { const [profile,activity]=await Promise.all([request(`admins/${encodeURIComponent(id)}`),request(`logs?adminId=${encodeURIComponent(id)}`)]);setAdmin(profile.user);setLogs(activity.logs||[]);setTotal(activity.total||0); }
     catch(error){setError(error instanceof Error?error.message:"Unable to load admin.");}finally{setLoading(false);}
   },[id]);
-  useEffect(()=>{void load();},[load]);
+  useEffect(()=>{const timer=setTimeout(()=>{void load();},0);return()=>clearTimeout(timer);},[load]);
   async function setStatus(status:string) {
     setBusy(true);setError("");
     try {await request(`admins/${id}/status`,"PATCH",{status});await load();}

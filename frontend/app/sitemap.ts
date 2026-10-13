@@ -1,7 +1,10 @@
+import { connection } from "next/server";
 import type { MetadataRoute } from "next";
 import { buildSitemap, sitemapFetch } from "@/lib/sitemap-data";
 export const revalidate=300;
 export default async function sitemap():Promise<MetadataRoute.Sitemap>{
+  // Fetch live catalog data on requests; builds must not require a running backend.
+  await connection();
   const [products,categories,first,offers]=await Promise.all([
     sitemapFetch("/api/products/active"),sitemapFetch("/api/categories/tree?active=true"),sitemapFetch("/api/blogs?page=1&limit=50&sort=latest"),sitemapFetch("/api/offers"),
   ]);

@@ -21,7 +21,7 @@ export default function StaffManagement(){
     try { const [r,a]=await Promise.all([request(`/requests?status=${encodeURIComponent(status)}`),request(`/admins?page=${page}&search=${encodeURIComponent(q)}`)]);setRequests(r.requests||[]);setAdmins(a.admins||[]);setPages(a.pages||1); }
     catch(e){setError(e instanceof Error?e.message:"Connection failed");}finally{setLoading(false);}
   },[status,q,page]);
-  useEffect(()=>{void load();},[load]);
+  useEffect(()=>{const timer=setTimeout(()=>{void load();},0);return()=>clearTimeout(timer);},[load]);
   async function act(url:string,confirmText:string,body?:unknown,method="POST"){
     if(!window.confirm(confirmText))return;setBusy(url);setMessage("");setError("");
     try {const result=await request(url,method,body);setMessage(result.message||"Saved successfully.");await load();}
