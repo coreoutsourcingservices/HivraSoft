@@ -64,6 +64,7 @@ export const staffLogin = (superadmin = false) => wrap(async (req, res) => {
   user!.lastLoginAt = new Date();
   await user!.save();
   issueStaffSession(res, user!, superadmin);
+  if (!superadmin) res.clearCookie("superadminToken", staffCookie);
   return res.json({ success: true, mustChangePassword: user!.mustChangePassword, user: { name: user!.name, username: user!.username, role: user!.role } });
 });
 export const staffLogout = wrap(async (req, res) => {

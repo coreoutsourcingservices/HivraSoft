@@ -11,7 +11,7 @@ async function seed() {
   if (await User.exists({ $or: [{ role: "super_admin" }, { email: SUPERADMIN_SEED_EMAIL.toLowerCase() }, { username: SUPERADMIN_SEED_USERNAME.toLowerCase() }] })) {
     console.log("Account already exists; password was NOT overwritten."); return;
   }
-  await User.create({ name: SUPERADMIN_SEED_NAME, email: SUPERADMIN_SEED_EMAIL.toLowerCase(), username: SUPERADMIN_SEED_USERNAME.toLowerCase(), phone: SUPERADMIN_SEED_PHONE, role: "super_admin", emailVerified: true, isActive: true, accountStatus: "active", passwordHash: await hashPassword(SUPERADMIN_SEED_PASSWORD), mustChangePassword: true });
+  await User.create({ name: SUPERADMIN_SEED_NAME, email: SUPERADMIN_SEED_EMAIL.toLowerCase(), username: SUPERADMIN_SEED_USERNAME.toLowerCase(), phone: SUPERADMIN_SEED_PHONE, role: "super_admin", emailVerified: true, isActive: true, accountStatus: "active", passwordHash: await hashPassword(SUPERADMIN_SEED_PASSWORD), mustChangePassword: true, temporaryPasswordExpiresAt: new Date(Date.now() + 86400_000) });
   console.log("Superadmin account created. Please change its temporary password after login.");
 }
 seed().catch(e => { console.error("Seed failed:", e.message); process.exitCode = 1; }).finally(() => mongoose.disconnect());

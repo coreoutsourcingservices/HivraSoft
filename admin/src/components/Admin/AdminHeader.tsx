@@ -68,7 +68,7 @@ export default function AdminHeader() {
     setLoggingOut(true);
     setLogoutError(false);
     try {
-      const response = await fetch(user?.role === "super_admin" ? "/api/superadmin/logout" : "/api/admin/logout", {
+      const response = await fetch("/api/admin/logout", {
         method: "POST",
         credentials: "include",
       });
