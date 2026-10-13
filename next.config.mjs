@@ -1,5 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  async redirects() {
+    return [
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "www\\.hivrasoft\\.com" }],
+        destination: "https://hivrasoft.com/:path*",
+        statusCode: 301,
+      },
+    ];
+  },
   async rewrites() {
     const backend = process.env.API_URL?.replace(/\/$/, "");
     return {
