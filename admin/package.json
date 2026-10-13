@@ -6,7 +6,8 @@
     "dev": "next dev --webpack -p 3001",
     "build": "next build --webpack",
     "start": "next start -p 3001",
-    "lint": "eslint"
+    "lint": "eslint",
+    "postbuild": "node scripts/prepare-standalone.cjs"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.8",

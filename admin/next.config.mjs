@@ -3,6 +3,8 @@ import { fileURLToPath } from "node:url";
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone",
+  // Shared hosting has a process limit; do not derive workers from host CPU count.
+  experimental: { cpus: 2, preloadEntriesOnStart: false },
   outputFileTracingRoot: fileURLToPath(new URL(".", import.meta.url)),
   assetPrefix: "/admin-static",
   images: { remotePatterns: [{ protocol: "https", hostname: "images.unsplash.com" }] },
