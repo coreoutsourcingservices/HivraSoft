@@ -1,3 +1,5 @@
+import { authenticateStaff, requireSuperadmin } from "../services/staff-session.service";
+import { authLimit, staffLogin, staffLogout, staffChangePassword } from "./staff-auth.routes";
 import { Router, type Request, type Response, type NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import crypto from "node:crypto";
@@ -5,63 +7,16 @@ import { Types } from "mongoose";
 import User from "../models/User.model";
 import AdminApplication from "../models/AdminApplication.model";
 import AdminAuditLog from "../models/AdminAuditLog.model";
-import { hashPassword, verifyPassword } from "../utils/password";
+import { hashPassword } from "../utils/password";
 import { sendEmail } from "../services/mail.service";
 const router = Router();
-const cookieName = "superadminToken";
-const cookieOptions = { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax" as const, path: "/" };
-const dummyHash = hashPassword("invalid-superadmin-login");
 const safe = (v: unknown) => typeof v === "string" ? v.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!)) : "";
 const wrap = (fn: (req: Request, res: Response) => Promise<unknown>) => (req: Request, res: Response, next: NextFunction) => { void Promise.resolve(fn(req, res)).catch(next); };
-const issueToken = (id: string) => {
-  if (!process.env.JWT_SECRET) throw new Error("JWT_SECRET is not configured");
-  return jwt.sign({ id, role: "super_admin" }, process.env.JWT_SECRET, { expiresIn: "8h" });
-};
-router.post("/login", wrap(async (req, res) => {
-  const { username, password } = req.body || {};
-  if (typeof username !== "string" || !username.trim() || username.length > 100 || typeof password !== "string" || !password || password.length > 256)
-    return res.status(400).json({ message: "Enter your login ID and password." });
-  const key = username.trim().toLowerCase();
-  const user = await User.findOne({ $or: [{ username: key }, { email: key }], role: "super_admin" }).select("+passwordHash");
-  const valid = await verifyPassword(password, user?.passwordHash || await dummyHash);
-  if (!valid || !user?.isActive || user.accountStatus !== "active") return res.status(401).json({ message: "Invalid credentials or account is not active." });
-  const token = issueToken(String(user._id));
-  res.cookie(cookieName, token, { ...cookieOptions, maxAge: 8*60*60_000 });
-  // Shares the existing Admin API authorization cookie, so ALL /api/admin modules work unchanged.
-  res.cookie("accessToken", token, { ...cookieOptions, maxAge: 8*60*60_000 });
-  await User.updateOne({ _id: user._id }, { $set: { lastLoginAt: new Date() } });
-  void AdminAuditLog.create({ action: "LOGIN", module: "auth", recordId: String(user._id), recordName: "Superadmin login", performedBy: user._id,
-    metadata: { actorName: user.name, actorEmail: user.email, actorUsername: user.username || "", role: "super_admin", success: true, ip: req.ip || "" } }).catch(() => undefined);
-  return res.json({ success: true, user: { name: user.name, username: user.username, mustChangePassword: Boolean(user.mustChangePassword) } });
-}));
-async function requireSuper(req: Request, res: Response, next: NextFunction) {
-  try {
-    const token = req.cookies?.[cookieName];
-    if (!token || !process.env.JWT_SECRET) return res.status(401).json({ message: "Please sign in as Superadmin." });
-    const payload = jwt.verify(token, process.env.JWT_SECRET) as jwt.JwtPayload;
-    if (!payload.id || payload.role !== "super_admin") return res.status(401).json({ message: "Invalid session." });
-    const user = await User.findById(payload.id);
-    if (!user?.isActive || user.accountStatus !== "active" || user.role !== "super_admin") return res.status(403).json({ message: "Superadmin access required." });
-    req.user = user;
-    next();
-  } catch { return res.status(401).json({ message: "Session expired." }); }
-}
-router.use(requireSuper);
-router.get("/me", (req, res) => res.json({ success: true, user: { name: req.user!.name, username: req.user!.username, mustChangePassword: Boolean(req.user!.mustChangePassword) } }));
-router.post("/logout", (req, res) => {
-  void AdminAuditLog.create({ action: "LOGOUT", module: "auth", recordId: String(req.user!._id), recordName: "Superadmin logout", performedBy: req.user!._id,
-    metadata: { actorName: req.user!.name, actorEmail: req.user!.email, role: "super_admin", success: true } }).catch(() => undefined);
-  res.clearCookie(cookieName, cookieOptions); res.clearCookie("accessToken", cookieOptions); return res.json({ success: true });
-});
-router.post("/change-password", wrap(async (req, res) => {
-  const { oldPassword, newPassword, confirmPassword } = req.body || {};
-  if (typeof newPassword !== "string" || newPassword.length < 12 || newPassword.length > 128 || !/[a-z]/i.test(newPassword) || !/\d/.test(newPassword) || newPassword !== confirmPassword)
-    return res.status(400).json({ message: "Use 12+ characters with letters and numbers, matching confirmation." });
-  const user = await User.findById(req.user!._id).select("+passwordHash");
-  if (!user || typeof oldPassword !== "string" || !await verifyPassword(oldPassword, user.passwordHash || await dummyHash)) return res.status(400).json({ message: "Current password is incorrect." });
-  user.passwordHash = await hashPassword(newPassword); user.mustChangePassword = false; await user.save();
-  return res.json({ success: true });
-}));
+router.post("/login", authLimit(), staffLogin(true));
+router.use(authenticateStaff, requireSuperadmin);
+router.get("/me", (req, res) => { res.setHeader("Cache-Control", "no-store"); res.json({ success: true, user: { name: req.user!.name, email: req.user!.email, username: req.user!.username, role: req.user!.role, mustChangePassword: Boolean(req.user!.mustChangePassword) } }); });
+router.post("/logout", staffLogout);
+router.post("/change-password", staffChangePassword);
 const fields = "name email phone username role isActive accountStatus emailVerified createdAt lastLoginAt lastActiveAt mustChangePassword";
 router.get("/requests", wrap(async (req, res) => {
   const status = String(req.query.status || "pending_approval");

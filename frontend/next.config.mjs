@@ -9,6 +9,9 @@ const nextConfig = {
     const admin = (process.env.ADMIN_URL || "http://localhost:3001").replace(/\/$/, "");
     return {
       beforeFiles: [
+        { source: "/superadmin/:path*", destination: `${admin}/superadmin/:path*` },
+        { source: "/register", destination: `${admin}/register` },
+        { source: "/change-password", destination: `${admin}/change-password` },
         { source: "/admin/:path*", destination: `${admin}/admin/:path*` },
         { source: "/admin-static/:path*", destination: `${admin}/admin-static/:path*` },
         { source: "/:slug(buy-[0-9]+-get-[0-9]+-free)", destination: "/offers/:slug" },

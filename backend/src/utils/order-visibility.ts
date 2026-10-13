@@ -1,10 +1,12 @@
+import type { QueryFilter } from "mongoose";
+import type { IOrder } from "../models/Order.model";
 /**
  * Razorpay checkout creates an Order before the customer has paid.
  * Keep unpaid/failed online attempts out of placed orders and sales reporting.
  * COD remains placed even though its paymentStatus is pending collection.
  * A refunded online payment was originally successful, so its order stays visible.
  */
-export const PLACED_ORDER_FILTER = {
+export const PLACED_ORDER_FILTER: QueryFilter<IOrder> = {
   $or: [
     { paymentMethod: "cod" },
     { paymentStatus: { $in: ["paid", "refunded"] } },

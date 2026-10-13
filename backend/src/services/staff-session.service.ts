@@ -7,7 +7,8 @@ export const staffCookie = { httpOnly: true, secure: process.env.NODE_ENV === "p
 export function issueStaffSession(res: Response, user: IUser, superadmin = false) {
   if (!process.env.JWT_SECRET) throw new Error("JWT secret missing");
   const token = jwt.sign({ id: String(user._id), role: user.role, sessionVersion: user.sessionVersion || 0, purpose: "staff_session" }, process.env.JWT_SECRET, { expiresIn: "8h" });
-  res.cookie(superadmin ? "superadminToken" : "accessToken", token, { ...staffCookie, maxAge: 8 * 60 * 60_000 });
+  res.cookie("accessToken", token, { ...staffCookie, maxAge: 8 * 60 * 60_000 });
+  if (superadmin) res.cookie("superadminToken", token, { ...staffCookie, maxAge: 8 * 60 * 60_000 });
 }
 export async function readStaffSession(req: Request) {
   // Cookies are shared across localhost ports. Select only the session for this API.

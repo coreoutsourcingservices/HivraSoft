@@ -1,6 +1,6 @@
 "use client";
 import { useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/src/components/Admin/navigation";
 const API = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000").replace(/\/$/, "");
 export default function FirstPasswordChange(){
  const router=useRouter();const [busy,setBusy]=useState(false),[error,setError]=useState("");

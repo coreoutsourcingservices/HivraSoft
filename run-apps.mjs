@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 
 const mode = process.argv[2];
 if (!["dev", "start"].includes(mode)) throw new Error("Use dev or start");
-const children = ["backend", "admin", "superadmin", "frontend"].map((app) =>
+const children = ["backend", "admin", "frontend"].map((app) =>
   spawn(process.execPath, [process.env.npm_execpath, "run", mode], {
     cwd: fileURLToPath(new URL(`./${app}/`, import.meta.url)),
     stdio: "inherit",
@@ -16,7 +16,6 @@ const children = ["backend", "admin", "superadmin", "frontend"].map((app) =>
         NEXT_PUBLIC_API_URL: "http://localhost:5000",
         FRONTEND_URL: "http://localhost:3000",
         ADMIN_URL: "http://localhost:3001",
-        SUPERADMIN_URL: "http://localhost:3002",
         NEXT_PUBLIC_STOREFRONT_URL: "http://localhost:3000",
         NEXT_PUBLIC_ADMIN_URL: "http://localhost:3001",
       } : {}),

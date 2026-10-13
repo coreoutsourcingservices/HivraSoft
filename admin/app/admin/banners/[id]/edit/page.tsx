@@ -2,7 +2,7 @@
 
 import {
   useParams,
-} from "next/navigation";
+} from "@/src/components/Admin/navigation";
 
 import BannerForm from "@/src/components/Admin/BannerForm";
 

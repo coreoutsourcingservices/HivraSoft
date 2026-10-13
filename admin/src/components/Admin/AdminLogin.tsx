@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import Link from "@/src/components/Admin/ZoneLink";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/src/components/Admin/navigation";
 import {
   ArrowLeft,
   ArrowRight,

@@ -1,6 +1,6 @@
 # Hivrasoft
 
-The project now has `backend/`, `admin/`, `frontend/` and `superadmin/` directories. See [STRUCTURE.md](STRUCTURE.md) for setup, run commands and deployment configuration.
+The project now has `backend/`, `admin/` and `frontend/` directories. See [STRUCTURE.md](STRUCTURE.md) for setup, run commands and deployment configuration.
 
 Quick start: `npm run setup`, then `npm run dev`.
 

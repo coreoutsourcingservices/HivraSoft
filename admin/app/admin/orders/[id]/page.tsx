@@ -2,7 +2,7 @@
 
 import Link from "@/src/components/Admin/ZoneLink";
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams } from "@/src/components/Admin/navigation";
 import {
   ArrowLeft,
   CalendarDays,

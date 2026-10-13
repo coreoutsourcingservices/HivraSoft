@@ -1,8 +1,9 @@
 "use client";
 
+import { useAdminUser } from "./AdminUserContext";
 import Link from "@/src/components/Admin/ZoneLink";
 import { useEffect, useState, type ReactNode } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname } from "@/src/components/Admin/navigation";
 import {
   Bell,
   ChevronDown,
@@ -25,6 +26,7 @@ import {
 
 export default function AdminSidebar() {
   const pathname = usePathname();
+  const user = useAdminUser();
   const [trashCount, setTrashCount] = useState(0);
 
   useEffect(() => {
@@ -76,6 +78,7 @@ export default function AdminSidebar() {
         </p>
 
         <nav className="mt-5 space-y-2">
+{user?.role === "super_admin" && <><MenuLink href="/admin/staff" active={pathname.startsWith("/admin/staff")} icon={<UsersRound size={17} />}>Admins</MenuLink><MenuLink href="/admin/audit-logs" active={pathname.startsWith("/admin/audit-logs")} icon={<ClipboardList size={17} />}>Admin activity logs</MenuLink></>}
           <MenuLink href="/admin" active={pathname === "/admin"} icon={<LayoutDashboard size={17} />}>
             Dashboard
           </MenuLink>
