@@ -9,11 +9,13 @@
    delete in Admin -> Categories is reflected on the next request.
 ========================================================= */
 
-const RAW_API_URL =
-  process.env.NEXT_PUBLIC_API_URL?.replace(
-    /\/+$/,
-    ""
-  ) || "http://localhost:5000";
+// Server rendering calls the backend directly instead of re-entering the
+// frontend's /api proxy, which can exhaust workers while pages await the footer.
+const RAW_API_URL = (
+  (typeof window === "undefined" ? process.env.API_URL : undefined) ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  "http://localhost:5000"
+).replace(/\/+$/, "");
 
 const API_URL =
   RAW_API_URL.replace(
@@ -205,6 +207,8 @@ export async function getActiveCategoryTree(): Promise<
       `${API_URL}/api/categories/tree?active=true`,
       {
         cache: "no-store",
+        // The shared server-rendered footer must not wait indefinitely for the API.
+        signal: AbortSignal.timeout(5_000),
         headers: {
           Accept: "application/json",
         },
