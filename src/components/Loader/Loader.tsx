@@ -105,6 +105,24 @@ export default function Loader({
   ]);
 
   /* =======================================================
+     PING BACKEND WHEN HOME LOADER STARTS
+     The health response is intentionally never displayed.
+  ======================================================= */
+
+  useEffect(() => {
+    if (!active || pathname !== "/") return;
+
+    const controller = new AbortController();
+    void fetch("https://backend.hivrasoft.com/api/health", {
+      method: "GET",
+      cache: "no-store",
+      signal: controller.signal,
+    }).catch(() => {});
+
+    return () => controller.abort();
+  }, [active, pathname]);
+
+  /* =======================================================
      MAIN ANIMATION
   ======================================================= */
 
@@ -160,7 +178,7 @@ export default function Loader({
 
             onComplete?.();
           },
-          500,
+          2500,
         );
 
       return () => {
@@ -1038,7 +1056,7 @@ export default function Loader({
             {},
             {
               duration:
-                0.95,
+                2.95,
             },
           );
 

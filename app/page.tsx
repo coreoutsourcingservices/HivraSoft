@@ -44,8 +44,7 @@ const API_URL = (
 /* =========================================================
    HOME PAGE CACHE
 
-   Home data changes more often than category navigation,
-   especially product price/stock. So keep this TTL shorter.
+   Match the 12-hour Upstash Redis cache lifetime.
 
    Fresh cache:
    - render immediately
@@ -57,10 +56,10 @@ const API_URL = (
 ========================================================= */
 
 const HOME_CACHE_KEY =
-  "hivra:home-page:v2";
+  "hivra:home-page:v3";
 
 const HOME_CACHE_TTL =
-  5 * 60 * 1000;
+  12 * 60 * 60 * 1000;
 
 type HomePageCache = {
   savedAt: number;
@@ -6255,17 +6254,11 @@ export default function HomePage() {
   }, []);
 
   /* =======================================================
-     LOAD ALL HOME APIs WITH STALE-WHILE-REVALIDATE CACHE
+     LOAD HOME APIs WITH 12-HOUR CACHE
 
-     Flow:
-     1. cache se page instantly render
-     2. har refresh/load par latest APIs background me fetch
-     3. new product/banner/content milte hi UI update
-     4. latest response cache me save
-
-     Result:
-     - refresh par loader/flicker minimum
-     - admin se new product add ho to next refresh par dikhega
+     - Fresh browser cache: render immediately; skip API calls.
+     - Expired cache: render cached data, refresh from backend.
+     - Backend caches all five homepage APIs in Upstash Redis.
   ======================================================= */
 
   useEffect(() => {
@@ -6315,12 +6308,12 @@ export default function HomePage() {
         );
       }
 
-      /* =====================================================
-         ALWAYS REFRESH LATEST DATA IN BACKGROUND
+      // Fresh homepage data is already cached for 12 hours.
+      if (cached && isHomePageCacheFresh(cached)) {
+        return;
+      }
 
-         Fresh cache hone par bhi API skip nahi hoti.
-         Cache fast first paint ke liye hai.
-      ===================================================== */
+      /* Refresh expired/missing data from the backend (Upstash-backed). */
 
       const [
         bannerResponse,
@@ -6426,22 +6419,16 @@ export default function HomePage() {
         nextActiveProducts
       );
 
-      writeHomePageCache({
-        banners:
-          nextBanners,
-
-        trendItems:
-          nextTrendItems,
-
-        alwaysItems:
-          nextAlwaysItems,
-
-        newLaunchProducts:
-          nextNewLaunchProducts,
-
-        activeProducts:
-          nextActiveProducts,
-      });
+      // A failed endpoint must not make incomplete/stale data fresh for 12 hours.
+      if (bannerResponse && trendResponse && alwaysResponse && newLaunchResponse && activeResponse) {
+        writeHomePageCache({
+          banners: nextBanners,
+          trendItems: nextTrendItems,
+          alwaysItems: nextAlwaysItems,
+          newLaunchProducts: nextNewLaunchProducts,
+          activeProducts: nextActiveProducts,
+        });
+      }
 
       setLoading(
         false

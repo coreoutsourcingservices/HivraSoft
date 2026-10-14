@@ -1,4 +1,3 @@
-
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
@@ -28,6 +27,7 @@ import homepageRoutes from "./routes/homepage.routes";
 import offerRoutes from "./routes/offer.routes";
 import leadFormRoutes from "./routes/lead-form.routes";
 import discountRoutes from "./routes/discount.routes";
+import { cacheHomeApi } from "./middleware/home-cache.middleware";
 
 import {
   razorpayWebhookController,
@@ -74,7 +74,11 @@ const allAllowedOrigins = [
 
 app.use(
   cors({
-    origin: "*",
+    // Credentialed requests need an explicit allowed origin (not "*").
+    origin: (origin, callback) => {
+      callback(null, !origin || allAllowedOrigins.includes(origin));
+    },
+    credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   })
 );
@@ -126,6 +130,9 @@ app.get("/api/health", (req, res) => {
     message: "HivraSoft backend is working",
   });
 });
+
+/* Cache the five public homepage APIs in Upstash Redis for 12 hours. */
+app.use("/api", cacheHomeApi);
 
 /* =========================================================
    AUTH & ADMIN
