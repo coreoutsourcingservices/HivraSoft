@@ -3806,27 +3806,9 @@ function NewArrivalsSection({
   ========================================================= */
 
   const desktopThumbStart =
-    useMemo(() => {
-      if (
-        cards.length <= 4
-      ) {
-        return 0;
-      }
-
-      if (
-        activeIndex <= 3
-      ) {
-        return 0;
-      }
-
-      return Math.min(
-        activeIndex - 3,
-        cards.length - 4,
-      );
-    }, [
-      activeIndex,
-      cards.length,
-    ]);
+    cards.length <= 4 || activeIndex <= 3
+      ? 0
+      : Math.min(activeIndex - 3, cards.length - 4);
 
   const desktopVisibleCards =
     cards.slice(
@@ -4355,7 +4337,7 @@ function NewArrivalsSection({
 
             lg:grid
 
-            lg:grid-cols-[195px_minmax(430px,520px)_minmax(0,1fr)]
+            lg:grid-cols-[160px_minmax(0,1.35fr)_minmax(0,1fr)]
 
             xl:grid-cols-[210px_minmax(470px,570px)_minmax(0,1fr)]
 

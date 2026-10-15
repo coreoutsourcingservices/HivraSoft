@@ -1,5 +1,5 @@
 import { authenticateStaff, requireSuperadmin } from "../services/staff-session.service";
-import { authLimit, staffLogin, staffLogout, staffChangePassword } from "./staff-auth.routes";
+import { authLimit, staffLogin, staffLogout, staffChangePassword, staffRecoveryRouter } from "./staff-auth.routes";
 import { Router, type Request, type Response, type NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import crypto from "node:crypto";
@@ -8,11 +8,13 @@ import User from "../models/User.model";
 import AdminApplication from "../models/AdminApplication.model";
 import AdminAuditLog from "../models/AdminAuditLog.model";
 import { hashPassword } from "../utils/password";
+import { temporaryStaffPassword } from "../utils/staff-password";
 import { sendEmail } from "../services/mail.service";
 const router = Router();
 const safe = (v: unknown) => typeof v === "string" ? v.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!)) : "";
 const wrap = (fn: (req: Request, res: Response) => Promise<unknown>) => (req: Request, res: Response, next: NextFunction) => { void Promise.resolve(fn(req, res)).catch(next); };
 router.post("/login", authLimit(), staffLogin(true));
+router.use(staffRecoveryRouter);
 router.use(authenticateStaff, requireSuperadmin);
 router.get("/me", (req, res) => { res.setHeader("Cache-Control", "no-store"); res.json({ success: true, user: { name: req.user!.name, email: req.user!.email, username: req.user!.username, role: req.user!.role, mustChangePassword: Boolean(req.user!.mustChangePassword) } }); });
 router.post("/logout", staffLogout);
@@ -44,7 +46,6 @@ async function record(req: Request, action: "CREATE"|"UPDATE"|"APPROVE"|"REJECT"
   await AdminAuditLog.create({ action, module, recordId: id, recordName: name, performedBy: req.user!._id,
     metadata: { actorName: req.user!.name, actorEmail: req.user!.email, actorUsername: req.user!.username || "", ...metadata } });
 }
-function tempPassword() { return crypto.randomBytes(24).toString("base64url") + "!A9"; }
 function username(name: string) { return (name.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 14) || "staff") + crypto.randomBytes(4).toString("hex"); }
 async function deliverCredentials(name: string, email: string, login: string, password: string) {
   await sendEmail({ to: email, subject: "HivraSoft Admin account approved - Login details", html:
@@ -56,7 +57,7 @@ router.post("/requests/:id/approve", wrap(async (req, res) => {
   if (!app) return res.status(409).json({ message: "Request is not pending approval." });
   let user;
   try {
-    const login = username(app.name); const password = tempPassword();
+    const login = username(app.name); const password = temporaryStaffPassword(login);
     user = await User.create({ name: app.name, email: app.email, phone: app.phone, username: login,
       role: "admin", emailVerified: true, isActive: false, accountStatus: "inactive",
       mustChangePassword: true, temporaryPasswordExpiresAt: new Date(Date.now() + 86400_000), passwordHash: await hashPassword(password) });
@@ -91,7 +92,7 @@ router.post("/requests/:id/resend", wrap(async (req, res) => {
   if (!app?.userId) return res.status(409).json({ message: "No failed credentials delivery for this request." });
   const user = await User.findOne({ _id: app.userId, role: "admin" });
   if (!user) return res.status(404).json({ message: "Admin account missing." });
-  const password = tempPassword();
+  const password = temporaryStaffPassword(user.username || "");
   // Admin remains inactive until email succeeds; failed retry gets a newly generated password next time.
   user.isActive = false; user.accountStatus = "inactive"; user.passwordHash = await hashPassword(password); user.mustChangePassword = true; user.temporaryPasswordExpiresAt = new Date(Date.now() + 86400_000); await user.save();
   try { await deliverCredentials(app.name, app.email, user.username || "", password); }

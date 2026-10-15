@@ -14,7 +14,7 @@ const authenticate = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    if (req.cookies?.superadminToken) { await authenticateStaff(req, res, next); return; }
+    if (req.cookies?.adminToken || /^\/api\/admin(?:\/|$)/.test(req.originalUrl)) { await authenticateStaff(req, res, next); return; }
     const authorization = String(req.headers.authorization || "");
     const bearerToken = authorization.toLowerCase().startsWith("bearer ") ? authorization.slice(7).trim() : "";
     const token = req.cookies?.accessToken || bearerToken;

@@ -51,9 +51,9 @@ export const staffLogin = (superadmin = false) => wrap(async (req, res) => {
   const { username, password } = req.body || {};
   if (typeof username !== "string" || !username.trim() || username.length > 254 || typeof password !== "string" || !password || password.length > 256) bad("Enter email or username and password.");
   const identity = username.trim();
-  const user = await User.findOne({ $or: [{ username: identity }, { email: identity.toLowerCase() }], role: { $in: superadmin ? ["super_admin"] : ["admin", "super_admin"] } }).select("+passwordHash +sessionVersion +temporaryPasswordExpiresAt");
+  const user = await User.findOne({ $or: [{ username: identity }, { email: identity.toLowerCase() }], role: superadmin ? "super_admin" : "admin" }).select("+passwordHash +sessionVersion +temporaryPasswordExpiresAt");
   const valid = await verifyPassword(password, user?.passwordHash || await dummyHash);
-  if (!valid || !user || !activeStaff(user) || (superadmin && user.role !== "super_admin") || (user.mustChangePassword && (!user.temporaryPasswordExpiresAt || user.temporaryPasswordExpiresAt.getTime() <= Date.now()))) {
+  if (!valid || !user || !activeStaff(user) || user.role !== (superadmin ? "super_admin" : "admin") || (user.mustChangePassword && (!user.temporaryPasswordExpiresAt || user.temporaryPasswordExpiresAt.getTime() <= Date.now()))) {
     // Only the account identified by a valid password is attributed; never log submitted credentials.
     if (valid && user) req.user = user;
     await auditEvent(req, "LOGIN", "authentication", user ? String(user._id) : "unknown", {}, false);
@@ -64,39 +64,43 @@ export const staffLogin = (superadmin = false) => wrap(async (req, res) => {
   user!.lastLoginAt = new Date();
   await user!.save();
   issueStaffSession(res, user!, superadmin);
-  if (!superadmin) res.clearCookie("superadminToken", staffCookie);
+  // A browser signs into one staff portal at a time, using that portal's token.
+  res.clearCookie(superadmin ? "adminToken" : "superadminToken", staffCookie);
   return res.json({ success: true, mustChangePassword: user!.mustChangePassword, user: { name: user!.name, username: user!.username, role: user!.role } });
 });
 export const staffLogout = wrap(async (req, res) => {
   await User.updateOne({ _id: req.user!._id }, { $inc: { sessionVersion: 1 } });
-  res.clearCookie("accessToken", staffCookie);
-  res.clearCookie("superadminToken", staffCookie);
-  res.clearCookie("superadminToken", { ...staffCookie, path: "/api/superadmin" });
+  const superadmin = /^\/api\/superadmin(?:\/|$)/.test(req.originalUrl);
+  res.clearCookie(superadmin ? "superadminToken" : "adminToken", staffCookie);
   return res.json({ success: true });
 });
 const router = Router();
 router.post("/login", authLimit(), staffLogin());
-router.post("/forgot-password/send-otp", authLimit(), wrap(async (req, res) => {
+export const staffRecoveryRouter = Router();
+const recoveryRole = (req: Request) => /^\/api\/superadmin(?:\/|$)/.test(req.originalUrl) ? "super_admin" : "admin";
+staffRecoveryRouter.post("/forgot-password/send-otp", authLimit(), wrap(async (req, res) => {
   const email = emailInput(req.body?.email);
-  const user = await User.findOne({ email, role: { $in: ["admin", "super_admin"] } });
+  const user = await User.findOne({ email, role: recoveryRole(req) });
   if (user && activeStaff(user) && user.emailVerified) await sendOtp(email, user._id, "admin_password_reset");
   return res.json({ success: true, message: "If this is an active verified admin account, a code has been sent." });
 }));
-router.post("/forgot-password/verify-otp", authLimit(), wrap(async (req, res) => {
+staffRecoveryRouter.post("/forgot-password/verify-otp", authLimit(), wrap(async (req, res) => {
   const email = emailInput(req.body?.email);
   const otp = await consumeOtp(email, "admin_password_reset", req.body?.otp);
   const token = crypto.randomBytes(32).toString("hex");
-  await User.updateOne({ _id: otp.userId }, { $set: { resetTokenHash: digest(token), resetTokenExpiresAt: new Date(Date.now() + 600_000) } });
+  const result = await User.updateOne({ _id: otp.userId, role: recoveryRole(req) }, { $set: { resetTokenHash: digest(token), resetTokenExpiresAt: new Date(Date.now() + 600_000) } });
+  if (!result.matchedCount) bad("Invalid recovery account.");
   return res.json({ success: true, resetToken: token });
 }));
-router.post("/forgot-password/reset", authLimit(), wrap(async (req, res) => {
+staffRecoveryRouter.post("/forgot-password/reset", authLimit(), wrap(async (req, res) => {
   const password = newPassword(req.body?.newPassword, req.body?.confirmPassword);
   if (typeof req.body?.resetToken !== "string" || !/^[a-f\d]{64}$/.test(req.body.resetToken)) bad("Invalid reset session.");
-  const user = await User.findOneAndUpdate({ resetTokenHash: digest(req.body.resetToken), resetTokenExpiresAt: { $gt: new Date() }, role: { $in: ["admin", "super_admin"] }, isActive: true, accountStatus: "active", $or: [{ adminStatus: "approved" }, { adminStatus: { $exists: false } }] }, { $set: { passwordHash: await hashPassword(password), mustChangePassword: false }, $unset: { resetTokenHash: 1, resetTokenExpiresAt: 1, temporaryPasswordExpiresAt: 1 }, $inc: { sessionVersion: 1 } });
+  const user = await User.findOneAndUpdate({ resetTokenHash: digest(req.body.resetToken), resetTokenExpiresAt: { $gt: new Date() }, role: recoveryRole(req), isActive: true, accountStatus: "active", $or: [{ adminStatus: "approved" }, { adminStatus: { $exists: false } }] }, { $set: { passwordHash: await hashPassword(password), mustChangePassword: false }, $unset: { resetTokenHash: 1, resetTokenExpiresAt: 1, temporaryPasswordExpiresAt: 1 }, $inc: { sessionVersion: 1 } });
   if (!user) bad("Reset session expired or already used.");
   req.user = user!;
   return res.json({ success: true, message: "Password reset. Sign in with your new password." });
 }));
+router.use(staffRecoveryRouter);
 router.get("/me", authenticateStaff, (req, res) => { const u = req.user!; res.setHeader("Cache-Control", "no-store"); res.json({ success: true, user: { id: u._id, name: u.name, email: u.email, role: u.role, mustChangePassword: u.mustChangePassword } }); });
 router.post("/logout", authenticateStaff, staffLogout);
 export const staffChangePassword = wrap(async (req, res) => {

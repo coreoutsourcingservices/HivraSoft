@@ -27,9 +27,10 @@ http.Server.prototype.listen = function(...args) { if (args[0] === 'passenger') 
         const marker = passenger || liteSpeed ? 'ready for hosted requests' : 'Ready in';
         for (let i = 0; i < 150 && !exited && !logs.includes(marker); i++) await new Promise(resolve => setTimeout(resolve, 300));
         assert(logs.includes(marker), logs || 'Startup timed out');
-        for (const [route, title] of [['/admin', 'Admin sign in'], ['/superadmin', 'Superadmin sign in'], ['/superadmin/products', 'Superadmin sign in']]) {
+        for (const [route, title] of [['/', 'Admin sign in'], ['/admin', 'Admin sign in'], ['/products', 'Admin sign in'], ['/superadmin', 'Superadmin sign in'], ['/superadmin/products', 'Superadmin sign in']]) {
           const response = await fetch('http://127.0.0.1:3131' + route, { headers: { 'x-admin-zone': 'superadmin', 'x-admin-zone-proof': 'forged' }, signal: AbortSignal.timeout(25000) });
           assert.equal(response.status, 200, route);
+          assert.equal(new URL(response.url).pathname, route === '/admin' ? '/' : route === '/superadmin/products' ? '/superadmin' : route);
           const html = await response.text();
           assert(html.includes(title), route + ' wrong login context');
           const css = html.match(/href="([^"]+\.css)"/);

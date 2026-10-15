@@ -28,10 +28,7 @@ const requireAdmin = (
   }
 
   if (
-    req.user.role !==
-      "admin" &&
-    req.user.role !==
-      "super_admin"
+    req.user.role !== "admin"
   ) {
     return res
       .status(403)

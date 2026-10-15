@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import crypto from "node:crypto";
 import type { Request, Response, NextFunction } from "express";
 import User, { type IUser } from "../models/User.model";
 
@@ -6,19 +7,23 @@ export const activeStaff = (user: IUser) => ["admin", "super_admin"].includes(us
 export const staffCookie = { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax" as const, path: "/" };
 export function issueStaffSession(res: Response, user: IUser, superadmin = false) {
   if (!process.env.JWT_SECRET) throw new Error("JWT secret missing");
-  const token = jwt.sign({ id: String(user._id), role: user.role, sessionVersion: user.sessionVersion || 0, purpose: "staff_session" }, process.env.JWT_SECRET, { expiresIn: "8h" });
-  res.cookie("accessToken", token, { ...staffCookie, maxAge: 8 * 60 * 60_000 });
-  if (superadmin) res.cookie("superadminToken", token, { ...staffCookie, maxAge: 8 * 60 * 60_000 });
+  const role = superadmin ? "super_admin" : "admin";
+  if (user.role !== role) throw new Error("Account cannot access this staff portal");
+  const audience = superadmin ? "superadmin" : "admin";
+  const token = jwt.sign({ id: String(user._id), role, sessionVersion: user.sessionVersion || 0, purpose: `${audience}_session` }, process.env.JWT_SECRET, { expiresIn: "8h", audience, jwtid: crypto.randomUUID() });
+  res.cookie(superadmin ? "superadminToken" : "adminToken", token, { ...staffCookie, maxAge: 8 * 60 * 60_000 });
 }
 export async function readStaffSession(req: Request) {
   // Cookies are shared across localhost ports. Select only the session for this API.
-  const superadmin = req.originalUrl.split("?")[0].startsWith("/api/superadmin/");
-  const token = req.cookies?.[superadmin ? "superadminToken" : "accessToken"] || String(req.headers.authorization || "").replace(/^Bearer\s+/i, "");
+  const superadmin = /^\/api\/superadmin(?:\/|$)/.test(req.originalUrl.split("?")[0]);
+  const audience = superadmin ? "superadmin" : "admin";
+  const role = superadmin ? "super_admin" : "admin";
+  const token = req.cookies?.[superadmin ? "superadminToken" : "adminToken"] || String(req.headers.authorization || "").replace(/^Bearer\s+/i, "");
   if (!token || !process.env.JWT_SECRET) return null;
-  const payload = jwt.verify(token, process.env.JWT_SECRET);
-  if (typeof payload === "string" || payload.purpose !== "staff_session" || typeof payload.id !== "string") return null;
+  const payload = jwt.verify(token, process.env.JWT_SECRET, { audience });
+  if (typeof payload === "string" || payload.purpose !== `${audience}_session` || payload.role !== role || typeof payload.id !== "string") return null;
   const user = await User.findById(payload.id).select("+sessionVersion");
-  if (!user || !activeStaff(user) || payload.sessionVersion !== (user.sessionVersion || 0)) return null;
+  if (!user || user.role !== role || !activeStaff(user) || payload.sessionVersion !== (user.sessionVersion || 0)) return null;
   return user;
 }
 export async function authenticateStaff(req: Request, res: Response, next: NextFunction) {

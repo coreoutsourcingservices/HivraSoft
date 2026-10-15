@@ -82,6 +82,8 @@ export default function AdminShell({
         <main
           className="
             admin-content
+            mx-auto
+            max-w-[1600px]
             min-w-0
             px-4
             py-5

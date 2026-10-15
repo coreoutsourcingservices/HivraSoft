@@ -1,5 +1,23 @@
 @import "tailwindcss";
 
+/* Flex/grid children must be allowed to shrink on phones and split screens. */
+.storefront-app :where(main, section, article, form) { min-width: 0; }
+.storefront-app :where(input, select, textarea) { max-width: 100%; }
+.storefront-app :where(img, video, iframe) { max-width: 100%; }
+.storefront-app :where(h1, h2, h3, p, label) { overflow-wrap: anywhere; }
+.storefront-app :where(a, button, input, select, textarea):focus-visible {
+  outline: 3px solid #8c1839;
+  outline-offset: 3px;
+}
+@media (max-width: 639px) {
+  .storefront-app :where(input, select, textarea) { font-size: 16px; }
+  .storefront-app :where(select, textarea) { min-height: 44px; }
+  .storefront-app .overflow-x-auto { overscroll-behavior-x: contain; }
+}
+/* Keep rem-based text and controls readable on large monitors and televisions. */
+@media (min-width: 1920px) { html { font-size: 18px; } }
+@media (min-width: 2560px) { html { font-size: 20px; } }
+
 :root {
   --background: #ffffff;
   --foreground: #171717;

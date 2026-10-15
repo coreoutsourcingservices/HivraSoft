@@ -1,11 +1,11 @@
 import { Router } from "express";
-import crypto from "node:crypto";
 import { Types } from "mongoose";
 import User from "../models/User.model";
 import AdminAuditLog from "../models/AdminAuditLog.model";
 import { hashPassword } from "../utils/password";
+import { temporaryStaffPassword } from "../utils/staff-password";
 import { sendEmail } from "../services/mail.service";
-import { authenticateStaff, requireSuperadmin, issueStaffSession } from "../services/staff-session.service";
+import { authenticateStaff, requireSuperadmin } from "../services/staff-session.service";
 import { authLimit, bad, staffChangePassword, staffLogin, staffLogout, wrap } from "./staff-auth.routes";
 import { auditEvent } from "../services/staff-audit.service";
 
@@ -19,7 +19,6 @@ router.use(authenticateStaff, requireSuperadmin);
 router.get("/me", (req, res) => { res.setHeader("Cache-Control", "no-store"); res.json({ success: true, user: { name: req.user!.name, username: req.user!.username, mustChangePassword: req.user!.mustChangePassword } }); });
 router.post("/logout", staffLogout);
 router.post("/change-password", staffChangePassword);
-router.post("/admin-session", (req, res) => { issueStaffSession(res, req.user!); res.json({ success: true }); });
 router.get("/dashboard", wrap(async (_req, res) => {
   const [pending, approved, blocked, rejected] = await Promise.all([
     User.countDocuments({ role: "admin", adminStatus: "pending_approval" }), User.countDocuments({ role: "admin", isActive: true, accountStatus: "active" }), User.countDocuments({ role: "admin", accountStatus: "blocked" }), User.countDocuments({ role: "admin", adminStatus: "rejected" }),
@@ -44,7 +43,7 @@ router.get("/admins/:id", wrap(async (req, res) => {
   res.json({ user });
 }));
 router.post("/admins/:id/approve", wrap(async (req, res) => {
-  const password = `H!${crypto.randomBytes(24).toString("base64url")}9a`, issuedAt = new Date();
+  const password = temporaryStaffPassword(`admin_${String(req.params.id)}`), issuedAt = new Date();
   const user = await User.findOneAndUpdate({ _id: req.params.id, role: "admin", adminStatus: "pending_approval", emailVerified: true }, { $set: { adminStatus: "approved", isActive: true, accountStatus: "active", approvedAt: issuedAt, approvedBy: req.user!._id, username: `admin_${String(req.params.id)}`, passwordHash: await hashPassword(password), mustChangePassword: true, temporaryPasswordExpiresAt: new Date(Date.now() + 86400_000), credentialDelivery: "sending", credentialIssuedAt: issuedAt }, $inc: { sessionVersion: 1 } }, { returnDocument: "after" });
   if (!user) bad("Request already processed or not verified.", 409);
   const delivery = await deliver(user!, password, issuedAt);
@@ -58,14 +57,16 @@ router.post("/admins/:id/approve", wrap(async (req, res) => {
 async function deliver(user: { _id: Types.ObjectId; name: string; email: string; username?: string }, password: string, issuedAt: Date) {
   let delivery: "sent" | "failed" = "sent";
   try {
-    const url = `${(process.env.ADMIN_URL || "http://localhost:3001").replace(/\/$/, "")}/admin`;
+    const url = `${(process.env.ADMIN_URL || "http://localhost:3001").replace(/\/$/, "")}/`;
     await sendEmail({ to: user.email, subject: "HivraSoft admin access approved", html: `<p>Hello ${html(user.name)},</p><p>Your admin access is approved.</p><p>Username: <strong>${html(user.username || "")}</strong></p><p>Temporary password: <strong>${html(password)}</strong></p><p><a href="${html(url)}">Sign in to HivraSoft Admin</a></p><p>This password expires in 24 hours. You must change it before using the dashboard.</p>` });
   } catch { delivery = "failed"; }
   await User.updateOne({ _id: user._id, credentialIssuedAt: issuedAt }, { $set: { credentialDelivery: delivery } });
   return delivery;
 }
 router.post("/admins/:id/retry-credentials", authLimit(), wrap(async (req, res) => {
-  const password = `H!${crypto.randomBytes(24).toString("base64url")}9a`, issuedAt = new Date();
+  const account = await User.findOne({ _id: req.params.id, role: "admin" }).select("username");
+  if (!account?.username) bad("Admin user ID not found.", 404);
+  const password = temporaryStaffPassword(account!.username!), issuedAt = new Date();
   const user = await User.findOneAndUpdate({ _id: req.params.id, role: "admin", adminStatus: "approved", isActive: true, accountStatus: "active", mustChangePassword: true, credentialIssuedAt: { $lt: new Date(Date.now() - 120_000) } }, { $set: { passwordHash: await hashPassword(password), temporaryPasswordExpiresAt: new Date(Date.now() + 86400_000), credentialDelivery: "sending", credentialIssuedAt: issuedAt }, $inc: { sessionVersion: 1 } }, { returnDocument: "after" });
   if (!user) bad("Retry after two minutes. Only active accounts awaiting their first password change are eligible.", 409);
   const delivery = await deliver(user!, password, issuedAt);

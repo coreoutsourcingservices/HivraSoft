@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 
 const api = process.env.TEST_API_URL || "http://localhost:5000";
-const site = process.env.TEST_SITE_URL || "http://localhost:3000";
+const site = process.env.TEST_SITE_URL || "http://localhost:3001";
 const password = process.env.ADMIN_SEED_PASSWORD;
 assert.ok(password, "Set ADMIN_SEED_PASSWORD to test the seeded account");
 const login = (value) => fetch(`${api}/api/admin/login`, {
@@ -18,13 +18,13 @@ const headers = { Cookie: cookie.split(";")[0] };
 const session = await fetch(`${api}/api/admin/me`, { headers });
 assert.equal(session.status, 200);
 assert.equal((await session.json()).user.role, "admin");
-assert.ok((await (await fetch(`${site}/admin`, { headers })).text()).includes("Welcome to HivraSoft"));
-for (const path of ["/admin", "/admin/products"]) {
+assert.ok((await (await fetch(`${site}/`, { headers })).text()).includes("Welcome to HivraSoft"));
+for (const path of ["/", "/products"]) {
   const html = await (await fetch(`${site}${path}`)).text();
   assert.ok(html.includes("Admin sign in"));
   assert.ok(!html.includes(password));
 }
-const logout = await fetch(`${api}/api/auth/logout`, { method: "POST", headers });
+const logout = await fetch(`${api}/api/admin/logout`, { method: "POST", headers });
 assert.equal(logout.status, 200);
-assert.ok(logout.headers.get("set-cookie").includes("accessToken=;"));
+assert.ok(logout.headers.get("set-cookie").includes("adminToken=;"));
 console.log("PASS: anonymous access, invalid password, admin session, dashboard, protected pages, logout");

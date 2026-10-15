@@ -12,13 +12,13 @@ export function AdminUserProvider({ user, children }: { user: AdminIdentity | nu
     const controller = new AbortController();
     const refresh = async () => {
       try {
-        const response = await fetch("/api/admin/me", { credentials: "include", cache: "no-store", signal: controller.signal });
+        const response = await fetch(user?.role === "super_admin" ? "/api/superadmin/me" : "/api/admin/me", { credentials: "include", cache: "no-store", signal: controller.signal });
         if (response.ok) { const data = await response.json(); setCurrent(data.user); }
       } catch { /* Keep the authenticated identity if the refresh is unavailable. */ }
     };
     window.addEventListener("admin-profile-updated", refresh);
     return () => { controller.abort(); window.removeEventListener("admin-profile-updated", refresh); };
-  }, []);
+  }, [user?.role]);
   return <AdminUserContext.Provider value={current}>{children}</AdminUserContext.Provider>;
 }
 

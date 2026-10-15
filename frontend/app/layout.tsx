@@ -44,7 +44,7 @@ export default function RootLayout({
       </head>
       <body
         className="
-          min-h-screen
+          storefront-app min-h-screen
         "
       >
         {/* ===============================================

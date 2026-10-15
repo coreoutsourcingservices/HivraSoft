@@ -66,7 +66,7 @@ export default function AdminBlogList() {
     try {
       setBusyId(blog._id);
       const result = await duplicateAdminBlog(blog._id);
-      window.location.href = `/admin/blog/${result.blog._id}/edit`;
+      window.location.href = `/blog/${result.blog._id}/edit`;
     } catch (err) {
       alert(err instanceof Error ? err.message : "Unable to duplicate blog.");
       setBusyId("");

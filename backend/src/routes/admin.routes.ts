@@ -1,12 +1,7 @@
-import { Router, type Request, type Response, type NextFunction } from "express";
+import { Router } from "express";
 import { rateLimit } from "express-rate-limit";
 
 import {
-  adminLogin,
-  changeAdminPassword,
-  adminForgotPasswordSendOtp,
-  adminForgotPasswordVerifyOtp,
-  adminForgotPasswordReset,
   getAdminCustomers,
   getAdminCustomerDetails,
   getAdminCustomerActivity,
@@ -69,8 +64,7 @@ import {
   deleteAdminBlogTag,
 } from "../controllers/blog.controller";
 
-import User from "../models/User.model";
-import { verifyToken } from "../utils/jwt";
+import { authenticateStaff } from "../services/staff-session.service";
 import { upload } from "../middleware/upload.middleware";
 
 import {
@@ -152,94 +146,9 @@ import {
 
 const router = Router();
 
-router.post(
-  "/login",
-  rateLimit({
-    windowMs: 15 * 60 * 1000,
-    limit: 10,
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: { message: "Too many login attempts. Try again in 15 minutes." },
-  }),
-  adminLogin
-);
+// All admin modules use the same role, audience and revocation checks as login.
+const authenticateAdmin = authenticateStaff;
 
-router.post(
-  "/forgot-password/send-otp",
-  rateLimit({
-    windowMs: 10 * 60 * 1000,
-    limit: 5,
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: { success: false, message: "Too many OTP requests. Try again later." },
-  }),
-  adminForgotPasswordSendOtp
-);
-
-router.post("/forgot-password/verify-otp", adminForgotPasswordVerifyOtp);
-router.post("/forgot-password/reset", adminForgotPasswordReset);
-
-const authenticateAdmin = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    const authorization = String(req.headers.authorization || "");
-    const bearerToken = authorization.toLowerCase().startsWith("bearer ") ? authorization.slice(7).trim() : "";
-    const token = req.cookies?.accessToken || bearerToken;
-    if (!token) {
-      res.status(401).json({ success: false, message: "Not authenticated" });
-      return;
-    }
-
-    const decoded = verifyToken(token);
-    if (!decoded?.id) {
-      res.status(401).json({ success: false, message: "Invalid session" });
-      return;
-    }
-
-    const user = await User.findById(decoded.id);
-    if (!user) {
-      res.status(401).json({ success: false, message: "User not found" });
-      return;
-    }
-    if (!user.isActive || user.accountStatus !== "active") {
-      res.status(403).json({ success: false, message: "Account is disabled" });
-      return;
-    }
-    if (user.role !== "admin" && user.role !== "super_admin") {
-      res.status(403).json({ success: false, message: "Admin access required." });
-      return;
-    }
-
-    if (user.mustChangePassword && req.path !== "/me" && req.path !== "/change-password") {
-      res.status(403).json({ success: false, message: "Change your temporary password before using the Admin dashboard.", mustChangePassword: true });
-      return;
-    }
-    req.user = user;
-    next();
-  } catch (error) {
-    console.error("ADMIN AUTH ERROR:", error);
-    res.status(401).json({ success: false, message: "Invalid or expired session" });
-  }
-};
-
-router.get("/me", authenticateAdmin, (req: Request, res: Response) => {
-  res.setHeader("Cache-Control", "no-store");
-  return res.json({
-    success: true,
-    user: {
-      id: String(req.user!._id),
-      name: req.user!.name,
-      email: req.user!.email,
-      role: req.user!.role,
-      mustChangePassword: Boolean(req.user!.mustChangePassword),
-    },
-  });
-});
-
-router.post("/change-password", authenticateAdmin, changeAdminPassword);
 router.get("/dashboard", authenticateAdmin, getAdminDashboard);
 router.get("/send-your-bra", authenticateAdmin, listSendYourBraAdmin);
 router.get("/send-your-bra/:id", authenticateAdmin, getSendYourBraAdmin);

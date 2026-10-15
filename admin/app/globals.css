@@ -5,11 +5,15 @@
 .admin-content :where(input, select, textarea) { max-width: 100%; }
 .admin-content :where(h1, h2, p, dd) { overflow-wrap: anywhere; }
 .admin-dashboard > section { min-width: 0; }
+.admin-shell :where(a, button, input, select, textarea):focus-visible { outline: 3px solid #c41245; outline-offset: 3px; }
+@media (min-width: 1920px) { html { font-size: 18px; } }
+@media (min-width: 2560px) { html { font-size: 20px; } }
 @media (max-width: 639px) {
   .admin-dashboard h1 { font-size: 25px !important; }
   .admin-dashboard > section > div { min-width: 0; }
   .admin-content :where(button, select, input:not([type="checkbox"]):not([type="radio"])) { min-height: 44px; }
   .admin-content .overflow-x-auto { overscroll-behavior-x: contain; }
+  .admin-content :where(input, select, textarea) { font-size: 16px; }
 }
 
 :root {

@@ -41,7 +41,7 @@ async function main() {
     assert.equal((await post("change-password",{oldPassword:temporary,newPassword:"abcdefgh",confirmPassword:"abcdefgh"},cookie)).status,400);
     const changed=await post("change-password",{oldPassword:temporary,newPassword:"Abcd1234",confirmPassword:"Abcd1234"},cookie);
     assert.equal(changed.status,200);assert.equal(user.mustChangePassword,false);
-    assert.match(changed.headers.get("set-cookie"), /^accessToken=/, "admin cookie is refreshed even with superadmin cookie present");
+    assert.match(changed.headers.get("set-cookie"), /^adminToken=/, "admin cookie is refreshed even with superadmin cookie present");
     assert(!changed.headers.get("set-cookie").includes("superadminToken="), "superadmin cookie is not overwritten");
     assert(await verifyPassword("Abcd1234",user.passwordHash));assert(!await verifyPassword(temporary,user.passwordHash));
     const fresh=changed.headers.get("set-cookie").split(";")[0];

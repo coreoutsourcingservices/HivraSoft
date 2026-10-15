@@ -403,7 +403,8 @@ async function buildAdminDashboard() {
         statuses: [{ $group: { _id: { $toLower: "$status" }, count: { $sum: 1 } } }],
       } }]).option({ maxTimeMS: 8000 }),
       Order.find(PLACED_ORDER_FILTER).sort({ createdAt: -1 }).limit(4).populate({ path: "user", select: "name email", options: { maxTimeMS: 8000 } }).maxTimeMS(8000).lean(),
-      Product.find({ isActive: { $ne: false } }).select("colors isColor isActive createdAt").maxTimeMS(8000).lean(),
+      // Dashboard stock cards do not need product descriptions or embedded HTML.
+      Product.find({ isActive: { $ne: false } }).select("isColor colors._id colors.nameProduct colors.nameColor colors.sizes._id colors.sizes.size colors.sizes.stock colors.sizes.isActive colors.images.url colors.images.isDefault").maxTimeMS(8000).lean(),
     ]);
     const counts = (rows: any[], key: string) => Number(rows[0]?.[key]?.[0]?.count || 0);
     const products = counts(productStats, "total"), currentProducts = counts(productStats, "current"), previousProducts = counts(productStats, "previous");
