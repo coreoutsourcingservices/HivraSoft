@@ -1,5 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Include dynamic SEO tags in the initial head for crawlers and share previews.
+  htmlLimitedBots: /.*/,
+  // Enable only the explicitly supplied temporary preview host in development.
+  allowedDevOrigins: process.env.PREVIEW_HOST ? [process.env.PREVIEW_HOST] : [],
   async redirects() {
     return [
       {

@@ -1418,7 +1418,7 @@ export default function Loader({
             greeting,
             index,
           ) => (
-            <h1
+            <div
               key={
                 greeting.text
               }
@@ -1471,7 +1471,7 @@ export default function Loader({
               }}
             >
               {greeting.text}
-            </h1>
+            </div>
           ),
         )}
 

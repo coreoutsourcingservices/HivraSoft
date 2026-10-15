@@ -1,6 +1,9 @@
 import {
   notFound,
 } from "next/navigation";
+import { cache } from "react";
+import { productSeo, pageMetadata, breadcrumbs } from "@/lib/seo";
+import StructuredData from "@/src/components/Storefront/StructuredData";
 
 import Header from "@/src/components/Header/Header";
 
@@ -18,7 +21,7 @@ import {
 ========================================================= */
 
 const RAW_API_URL =
-  process.env.NEXT_PUBLIC_API_URL
+  (process.env.API_URL || process.env.NEXT_PUBLIC_API_URL)
     ?.replace(/\/+$/, "") ||
   "http://localhost:5000";
 
@@ -304,7 +307,7 @@ async function getFallbackProduct(
    GET PRODUCT
 ========================================================= */
 
-async function getProduct(
+async function loadProduct(
   slug: string
 ): Promise<ProductDetailsData | null> {
   const direct =
@@ -331,6 +334,13 @@ async function getProduct(
 /* =========================================================
    PAGE
 ========================================================= */
+const getProduct = cache(loadProduct);
+export async function generateMetadata({ params }: ProductPageProps) {
+  const { slug } = await params;
+  const product = await getProduct(slug);
+  if (!product) notFound();
+  return pageMetadata(productSeo(product, slug).input);
+}
 
 export default async function ProductPage({
   params,
@@ -354,9 +364,11 @@ export default async function ProductPage({
 
   return (
     <>
+      <StructuredData data={[productSeo(product, slug).schema, breadcrumbs([{ name: "Home", path: "/" }, { name: productSeo(product, slug).schema.name, path: `/product/${slug}` }])]} />
       <Header />
 
       <ProductDetails
+        key={slug}
         product={
           product
         }

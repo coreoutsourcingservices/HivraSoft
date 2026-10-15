@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { absoluteUrl, blogMetadata, blogSchema, blogSeo, webpageSchema, breadcrumbs } from "@/lib/seo";
+import StructuredData from "@/src/components/Storefront/StructuredData";
 import { notFound } from "next/navigation";
 import Header from "@/src/components/Header/Header";
 import Footer from "@/src/components/Footer/Footer";
@@ -8,6 +10,12 @@ import type { BlogRecord, BlogTaxonomy } from "@/lib/blog";
 
 export const dynamic = "force-dynamic";
 type Props = { params: Promise<{ slug: string }> };
+export async function generateMetadata({ params }: Props) {
+  const { slug } = await params;
+  const result = await fetchBlogServer(slug);
+  if (!result?.blog) notFound();
+  return blogMetadata(result.blog);
+}
 function label(value: BlogTaxonomy | string | null | undefined) {
   return typeof value === "string" ? value : value?.name || "Blog";
 }
@@ -45,6 +53,7 @@ export default async function BlogDetailPage({ params }: Props) {
   const related = [...unique.values()].slice(0, 10);
   const visibleTags = [...new Set((blog.tags || []).map(label).filter(v => v && v !== "Blog"))].slice(0, 10);
   return <>
+    <StructuredData data={[webpageSchema(blogSeo(blog)), blogSchema(blog), breadcrumbs([{ name: "Home", path: "/" }, { name: "Blog", path: "/blog" }, { name: blog.title, path: `/${blog.slug}` }])]} />
     <Header />
     <main className="min-h-screen bg-[#FBF8F5] text-[#251B19]">
       <header className="border-b border-[#251B19]/10 px-4 py-8 sm:px-6 sm:py-12">
@@ -58,14 +67,14 @@ export default async function BlogDetailPage({ params }: Props) {
           <h1 className="mt-4 w-full text-[clamp(2rem,4vw,4.5rem)] font-semibold leading-[1.12] tracking-tight">{blog.title}</h1>
           {blog.excerpt && <p className="mt-5 max-w-5xl text-base leading-8 text-[#786965] sm:text-lg">{blog.excerpt}</p>}
           <div className="mt-5 text-sm text-[#8E7C76]">By Hivra Soft</div>
-          <div className="mt-5"><BlogShare title={blog.title} /></div>
+          <div className="mt-5"><BlogShare title={blog.title} url={absoluteUrl(blogSeo(blog).canonical || `/${blog.slug}`)} /></div>
         </div>
       </header>
       <div className="mx-auto grid max-w-[1520px] gap-8 px-4 py-9 sm:px-6 lg:grid-cols-[minmax(0,1fr)_340px] xl:gap-12">
         <article className="min-w-0">
           {blog.featuredImage?.url && <img src={blog.featuredImage.url} alt={blog.featuredImage.alt || blog.title} className="mb-8 h-auto w-full rounded-2xl object-contain" />}
           {blog.customCss && <style>{blog.customCss}</style>}
-          <div className={`blog-public-content min-w-0 overflow-hidden rounded-2xl bg-white px-5 py-7 shadow-sm sm:px-9 sm:py-10${legacyPinkTemplate ? " blog-public-content--legacy-pink" : ""}`} dangerouslySetInnerHTML={{ __html: blog.content || "" }} />
+          <div className={`blog-public-content min-w-0 overflow-hidden rounded-2xl bg-white px-5 py-7 shadow-sm sm:px-9 sm:py-10${legacyPinkTemplate ? " blog-public-content--legacy-pink" : ""}`} dangerouslySetInnerHTML={{ __html: (blog.content || "").replace(/<h1(\s[^>]*)?>/gi, "<h2$1>").replace(/<\/h1>/gi, "</h2>") }} />
         </article>
         <aside className="min-w-0 space-y-6 lg:sticky lg:top-6 lg:self-start" aria-label="Related blog articles">
           <section className="rounded-2xl border border-[#251B19]/10 bg-white p-5 sm:p-6">

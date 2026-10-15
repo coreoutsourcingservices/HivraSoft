@@ -1,5 +1,55 @@
 @import "tailwindcss";
 
+/* Keep storefront effects and wide content within the browser viewport.
+   clip preserves vertical sticky headers and nested horizontal sliders. */
+html:has(.storefront-viewport),
+body:has(.storefront-viewport) {
+  overflow-x: clip;
+}
+
+/* Preserve all existing xl behavior, and fit the desktop composition on
+   mouse/trackpad screens whose OS scaling reduces the CSS viewport width.
+   Touch tablets and admin retain their existing breakpoints. */
+@custom-variant xl {
+  @media (width >= 80rem) {
+    @slot;
+  }
+  @media (min-width: 1024px) and (hover: hover) and (pointer: fine) {
+    &:where(.storefront-viewport *) {
+      @slot;
+    }
+  }
+}
+
+/* Fit the same 1366px laptop composition to the full desktop viewport.
+   No rules apply on touch tablets/mobile devices or /admin routes.
+   CSS zoom scales layout dimensions too, preserving scrolling and hit targets. */
+@media (min-width: 1024px) and (hover: hover) and (pointer: fine) {
+  .storefront-viewport {
+    display: block !important;
+    width: 1366px;
+    zoom: var(--storefront-scale, 1);
+  }
+
+  /* Retain laptop values when viewport-driven 2xl utilities become active. */
+  .storefront-viewport .\32 xl\:px-7 { padding-inline: 20px; }
+  .storefront-viewport .\32 xl\:w-\[500px\] { width: 470px; }
+  .storefront-viewport .\32 xl\:gap-\[22px\] { gap: 18px; }
+  .storefront-viewport .\32 xl\:text-\[13px\] { font-size: 12px; }
+  .storefront-viewport .\32 xl\:w-\[230px\] { width: 220px; }
+  .storefront-viewport .\32 xl\:max-w-\[960px\] { max-width: 920px; }
+  .storefront-viewport .\32 xl\:grid-cols-4 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .storefront-viewport .\32 xl\:block { display: none; }
+
+  /* Desktop viewport units must use the same capped content width. */
+  .storefront-viewport .pl-\[46vw\] { padding-left: calc(1366px * .46); }
+  .storefront-viewport .w-\[18vw\] { width: calc(1366px * .18); }
+  .storefront-viewport .lg\:text-\[7\.5vw\] { font-size: calc(1366px * .075); }
+  .storefront-viewport .text-\[clamp\(2rem\,4vw\,4\.5rem\)\] {
+    font-size: clamp(2rem, calc(1366px * .04), 4.5rem);
+  }
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;

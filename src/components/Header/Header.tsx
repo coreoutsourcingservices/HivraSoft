@@ -1347,13 +1347,17 @@ function ResellerTicker() {
       className="
         flex
         h-full
+        min-w-[1366px]
         shrink-0
         items-center
+        justify-between
+        gap-8
+        whitespace-nowrap
+        px-5
       "
     >
       <span
         className="
-          px-8
           text-[9px]
           font-bold
           text-white
@@ -1364,7 +1368,6 @@ function ResellerTicker() {
 
       <span
         className="
-          px-8
           text-[9px]
           font-semibold
           text-white
@@ -1372,6 +1375,12 @@ function ResellerTicker() {
       >
         ◆ &nbsp; Sell India&apos;s Most Comfortable
         Innerwear — Zero Stock, High Profit
+      </span>
+      <span className="text-[9px] font-bold text-white">
+        ◆ &nbsp; BECOME A HIVRASOFT RESELLER
+      </span>
+      <span className="text-[9px] font-semibold text-white">
+        ◆ &nbsp; Sell India&apos;s Most Comfortable Innerwear — Zero Stock, High Profit
       </span>
     </div>
   );
@@ -1393,6 +1402,7 @@ function ResellerTicker() {
       </style>
 
       <div
+        aria-label="Store announcements"
         className="
           hidden
           h-[30px]
@@ -1412,7 +1422,7 @@ function ResellerTicker() {
           "
           style={{
             animation:
-              "hivraHeaderTicker 24s linear infinite",
+              "hivraHeaderTicker 24s linear 2s infinite",
           }}
         >
           {content}

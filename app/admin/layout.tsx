@@ -1,6 +1,8 @@
 import type {
   ReactNode,
 } from "react";
+import { pageMetadata } from "@/lib/seo";
+export const metadata = pageMetadata({ title: "Admin", path: "/admin", index: false, follow: false });
 
 import {
   cookies,

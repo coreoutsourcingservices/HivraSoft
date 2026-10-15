@@ -1,5 +1,11 @@
 import Header from "@/src/components/Header/Header";
 import SearchResults from "./SearchResults";
+import { pageMetadata } from "@/lib/seo";
+export async function generateMetadata({ searchParams }: { searchParams: Promise<{ q?: string | string[] }> }) {
+  const value = (await searchParams).q;
+  const query = typeof value === "string" ? value.trim() : "";
+  return pageMetadata({ title: query ? `Search results for ${query}` : "Search HivraSoft", path: "/search", description: "Search HivraSoft innerwear and collections.", index: false });
+}
 
 export default async function Page({ searchParams }: {
   searchParams: Promise<{ q?: string | string[]; page?: string | string[] }>;

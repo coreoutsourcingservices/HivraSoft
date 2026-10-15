@@ -51,6 +51,7 @@ type ProductGalleryProps = {
   wishlistBusy: boolean;
   onBack: () => void;
   onToggleWishlist: () => void;
+  autoplay: boolean;
 };
 
 /* =========================================================
@@ -182,9 +183,9 @@ function ProductGallery({
   wishlistBusy,
   onBack,
   onToggleWishlist,
+  autoplay,
 }: ProductGalleryProps) {
   const [active, setActive] = useState(0);
-  const [paused, setPaused] = useState(false);
   const [zoomOpen, setZoomOpen] = useState(false);
 
   const thumbnailContainerRef = useRef<HTMLDivElement | null>(null);
@@ -192,7 +193,7 @@ function ProductGallery({
   const touchStart = useRef<number | null>(null);
 
   useEffect(() => {
-    setActive(0);
+    setActive((index) => Math.min(index, Math.max(0, images.length - 1)));
     thumbnailContainerRef.current?.scrollTo({
       left: 0,
       top: 0,
@@ -201,14 +202,13 @@ function ProductGallery({
   }, [images]);
 
   useEffect(() => {
-    if (images.length <= 1 || paused || zoomOpen) return;
-
+    if (!autoplay || zoomOpen) return;
     const timer = window.setInterval(() => {
-      setActive((current) => (current + 1) % images.length);
-    }, 3500);
-
+      if (document.hidden) return;
+      setActive((index) => images.length ? (index + 1) % images.length : 0);
+    }, 3000);
     return () => window.clearInterval(timer);
-  }, [images.length, paused, zoomOpen]);
+  }, [active, images, autoplay, zoomOpen]);
 
   useEffect(() => {
     const container = thumbnailContainerRef.current;
@@ -271,9 +271,9 @@ function ProductGallery({
   return (
     <>
       <div
+        role="region"
+        aria-label="Product image gallery"
         className="grid gap-3 lg:grid-cols-[78px_minmax(0,1fr)]"
-        onMouseEnter={() => setPaused(true)}
-        onMouseLeave={() => setPaused(false)}
       >
         {/* THUMBNAILS */}
 
@@ -289,13 +289,9 @@ function ProductGallery({
                   thumbnailRefs.current[index] = element;
                 }}
                 type="button"
+                aria-label={`Select product image ${index + 1}`}
+                aria-pressed={active === index}
                 onClick={() => setActive(index)}
-                onMouseEnter={() => {
-                  // Image thumbnail hover stays unchanged.
-                  if (window.matchMedia("(min-width: 1024px)").matches) {
-                    setActive(index);
-                  }
-                }}
                 className={`h-[72px] w-[58px] flex-none cursor-pointer overflow-hidden rounded-[8px] border-2 bg-[#F4F1EF] transition sm:h-[82px] sm:w-[66px] lg:h-[94px] lg:w-[74px] ${
                   active === index
                     ? "border-[#B31345]"
@@ -970,6 +966,7 @@ export default function ProductDetails({ product, currentSlug }: Props) {
   >(null);
 
   const [quantity, setQuantity] = useState(1);
+  const [galleryRevision, setGalleryRevision] = useState(0);
   const [sizeChartOpen, setSizeChartOpen] = useState(false);
 
   useEffect(() => {
@@ -1188,6 +1185,7 @@ export default function ProductDetails({ product, currentSlug }: Props) {
     if (!color) return;
 
     setSelectedColorIndex(index);
+    setGalleryRevision((revision) => revision + 1);
     setSelectedSizeIndex(null);
     setQuantity(1);
 
@@ -1246,7 +1244,9 @@ export default function ProductDetails({ product, currentSlug }: Props) {
     <main className="min-h-screen bg-white text-[#211A18]">
       <section className="mx-auto grid w-full max-w-[1260px] grid-cols-1 gap-7 px-3 pb-12 pt-4 sm:px-5 sm:pt-7 lg:grid-cols-[minmax(0,650px)_minmax(350px,1fr)] lg:gap-12 lg:px-6 lg:pb-20 lg:pt-10">
         <ProductGallery
+          key={galleryRevision}
           images={images}
+          autoplay={selectedSizeIndex === null && !sizeChartOpen}
           name={name}
           wished={wished}
           wishlistBusy={wishlistBusy}
@@ -1321,6 +1321,8 @@ export default function ProductDetails({ product, currentSlug }: Props) {
                     <button
                       key={getId(color) || index}
                       type="button"
+                      aria-label={`Select color ${color.nameColor || "Default"}`}
+                      aria-pressed={selectedColorIndex === index}
                       onClick={() => selectColor(index)}
                       className="w-[62px] flex-none cursor-pointer text-left"
                     >

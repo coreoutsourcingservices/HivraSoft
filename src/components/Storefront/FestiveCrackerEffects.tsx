@@ -4,7 +4,9 @@
 import {
   useEffect,
   useRef,
+  useState,
 } from "react";
+import { createPortal } from "react-dom";
 
 import {
   usePathname,
@@ -64,6 +66,8 @@ const SYMBOLS = [
 
 export default function FestiveCrackerEffects() {
   const pathname = usePathname();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   const overlayRef =
     useRef<HTMLDivElement | null>(null);
@@ -108,7 +112,7 @@ export default function FestiveCrackerEffects() {
   ======================================================= */
 
   useEffect(() => {
-    if (hiddenRoute) {
+    if (hiddenRoute || !mounted) {
       return;
     }
 
@@ -364,6 +368,7 @@ export default function FestiveCrackerEffects() {
     ===================================================== */
 
     function createScrollBurst() {
+      if (!currentPointer.current.active) return;
       const mobile =
         window.innerWidth < 768;
 
@@ -419,8 +424,7 @@ export default function FestiveCrackerEffects() {
         index < count;
         index += 1
       ) {
-        const usePointerArea =
-          Math.random() < 0.7;
+        const usePointerArea = true;
 
         let x: number;
         let y: number;
@@ -429,15 +433,15 @@ export default function FestiveCrackerEffects() {
           x =
             centerX +
             randomBetween(
-              mobile ? -50 : -75,
-              mobile ? 50 : 75,
+              -12,
+              12,
             );
 
           y =
             centerY +
             randomBetween(
-              mobile ? -55 : -75,
-              mobile ? 55 : 75,
+              -12,
+              12,
             );
         } else {
           x = randomBetween(
@@ -690,13 +694,13 @@ export default function FestiveCrackerEffects() {
 
       overlayElement.innerHTML = "";
     };
-  }, [hiddenRoute]);
+  }, [hiddenRoute, mounted]);
 
   /* =======================================================
      HIDDEN
   ======================================================= */
 
-  if (hiddenRoute) {
+  if (hiddenRoute || !mounted) {
     return null;
   }
 
@@ -704,7 +708,7 @@ export default function FestiveCrackerEffects() {
      UI
   ======================================================= */
 
-  return (
+  return createPortal(
     <>
       <style>
         {`
@@ -955,6 +959,6 @@ export default function FestiveCrackerEffects() {
           overflow-hidden
         "
       />
-    </>
+    </>, document.body
   );
 }

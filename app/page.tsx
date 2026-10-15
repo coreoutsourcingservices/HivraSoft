@@ -6600,6 +6600,7 @@ export default function HomePage() {
     <>
       <Header />
       {/* Show the correct admin popup image after banner data loads; never a blank text-only card. */}
+      <h1 className="sr-only">Comfortable Innerwear for Men and Women | HivraSoft</h1>
       {!loading && (
         <HomeWelcomePopup
           imageUrl={homepagePopupImage?.url}

@@ -25,6 +25,7 @@ export type ApiImage = {
 };
 
 export type ApiSize = {
+  showPrice?: number;
   _id?: string;
   id?: string;
 
@@ -47,6 +48,11 @@ export type ApiSize = {
 };
 
 export type ApiColor = {
+  seoTitle?: string;
+  seoDescription?: string;
+  focusKeyword?: string;
+  tags?: string[];
+  showPrice?: number;
   _id?: string;
   id?: string;
 

@@ -9,6 +9,7 @@ import Product, {
 } from "../models/Product.model";
 
 import Category from "../models/Category.model";
+import { relatedCategoryScope } from "../utils/related-categories";
 
 import {
   createSlug,
@@ -1268,7 +1269,7 @@ export const getNewLaunchProducts =
    PUBLIC / STOREFRONT
 
    - Uses shared categories first.
-   - Fills any remaining slots with other active products.
+   - Fills remaining slots only within the same department/category tree.
    - limit is intentionally capped at 5 for a compact
      related-products section.
 ========================================================= */
@@ -1316,16 +1317,25 @@ export const getRelatedProducts =
 
     const related: any[] = [];
 
+    const categories = await Category.find().select("_id name slug parent ancestors").lean();
+    const scope = relatedCategoryScope(categoryIds, categories);
+    if (!scope) return [];
+    const departmentFilter = {
+      isActive: true,
+      categories: {
+        $in: scope.allowedIds.map(id => new Types.ObjectId(id)),
+        ...(scope.excludedIds.length ? { $nin: scope.excludedIds.map(id => new Types.ObjectId(id)) } : {}),
+      },
+    };
+
     if (categoryIds.length > 0) {
       const categoryMatches =
         await Product.find({
+          ...departmentFilter,
           _id: {
             $ne: new Types.ObjectId(productId),
           },
-          isActive: true,
-          categories: {
-            $in: categoryIds,
-          },
+          $and: [{ categories: { $in: categoryIds } }],
         })
           .populate(
             "categories",
@@ -1354,10 +1364,10 @@ export const getRelatedProducts =
 
       const fallbackProducts =
         await Product.find({
+          ...departmentFilter,
           _id: {
             $nin: excludedIds,
           },
-          isActive: true,
         })
           .populate(
             "categories",

@@ -4,6 +4,10 @@ import type {
 } from "next";
 
 import "./globals.css";
+import { pageMetadata, siteSchema } from "@/lib/seo";
+import { STATIC_SEO } from "@/lib/seo-pages";
+import StructuredData from "@/src/components/Storefront/StructuredData";
+import StorefrontViewport from "@/src/components/Storefront/StorefrontViewport";
 
 import Loader from "@/src/components/Loader/Loader";
 
@@ -47,12 +51,7 @@ import MetaPixel from "@/src/components/Analytics/MetaPixel";
    METADATA
 ========================================================= */
 
-export const metadata: Metadata = {
-  title: "Hivra Soft",
-
-  description:
-    "Hivra Soft online store",
-};
+export const metadata: Metadata = pageMetadata(STATIC_SEO["/"]);
 
 /* =========================================================
    ROOT LAYOUT
@@ -80,6 +79,8 @@ export default function RootLayout({
           min-h-screen
         "
       >
+        <StorefrontViewport>
+        <StructuredData data={siteSchema} />
         {/* ===============================================
             SCROLL TO TOP ON REFRESH
 
@@ -184,6 +185,7 @@ export default function RootLayout({
           </StorefrontFooter>
 
         </StorefrontCommerceProvider>
+        </StorefrontViewport>
       </body>
     </html>
   );
