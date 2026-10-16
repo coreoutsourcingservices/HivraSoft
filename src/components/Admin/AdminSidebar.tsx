@@ -5,6 +5,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import {
   Bell,
+  CreditCard,
   ChevronDown,
   LayoutDashboard,
   Package,
@@ -213,6 +214,10 @@ export default function AdminSidebar() {
               Auto Schedules
             </SubMenuLink>
           </DropdownMenu>
+
+          <MenuLink href="/admin/failed-payment-orders" active={pathname.startsWith("/admin/failed-payment-orders")} icon={<CreditCard size={17} />}>
+            Failed Payment Orders
+          </MenuLink>
 
           <DropdownMenu
             label="Extra Add"

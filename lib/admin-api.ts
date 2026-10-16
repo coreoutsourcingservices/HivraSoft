@@ -110,6 +110,8 @@ export type AdminOrderQuery = {
   search?: string;
   status?: string;
   paymentStatus?: string;
+  excludePaymentIssues?: boolean;
+  paymentIssuesOnly?: boolean;
   paymentMethod?: string;
   dateFrom?: string;
   dateTo?: string;
@@ -127,6 +129,8 @@ export async function getAdminOrders(query: AdminOrderQuery = {}): Promise<Admin
   if (query.search) params.set("search", query.search);
   if (query.status) params.set("status", query.status);
   if (query.paymentStatus) params.set("paymentStatus", query.paymentStatus);
+  if (query.excludePaymentIssues) params.set("excludePaymentIssues", "true");
+  if (query.paymentIssuesOnly) params.set("paymentIssuesOnly", "true");
   if (query.paymentMethod) params.set("paymentMethod", query.paymentMethod);
   if (query.dateFrom) params.set("dateFrom", query.dateFrom);
   if (query.dateTo) params.set("dateTo", query.dateTo);

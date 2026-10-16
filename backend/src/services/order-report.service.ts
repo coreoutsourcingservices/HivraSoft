@@ -1,4 +1,5 @@
 import Order from "../models/Order.model";
+import { adminPaymentIssueFilter } from "./admin-order-payment-filter";
 
 export type ReportPeriod = "1_month" | "3_months" | "6_months" | "1_year" | "all";
 
@@ -386,7 +387,6 @@ function statusStatistics(orders: any[]) {
     { status: "pending", label: "Pending", count: orders.filter((o) => !isCompleted(o) && !isCancelled(o) && !isFailed(o)).length },
     { status: "completed", label: "Completed", count: orders.filter(isCompleted).length },
     { status: "cancelled", label: "Cancelled", count: orders.filter(isCancelled).length },
-    { status: "failed", label: "Failed", count: orders.filter(isFailed).length },
   ];
   const total = orders.length || 1;
   return groups.map((group) => ({ ...group, percentage: Math.round((group.count / total) * 10_000) / 100 }));
@@ -507,7 +507,11 @@ const REPORT_PROJECTION = {
 
 async function loadOrders(range: ReportRange, previous = false) {
   if (previous && !range.previousStart) return [];
-  return Order.find(rangeFilter(range, previous))
+  const filter: Record<string, any> = {
+    ...rangeFilter(range, previous),
+    $nor: [adminPaymentIssueFilter()],
+  };
+  return Order.find(filter)
     .select(REPORT_PROJECTION)
     .sort({ createdAt: 1 })
     .lean();

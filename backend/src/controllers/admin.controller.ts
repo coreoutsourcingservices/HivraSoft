@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import { adminPaymentIssueFilter } from "../services/admin-order-payment-filter";
 import jwt from "jsonwebtoken";
 import crypto from "node:crypto";
 import mongoose, { Types } from "mongoose";
@@ -1203,6 +1204,8 @@ export async function getAdminOrders(req: Request, res: Response) {
     const search = String(req.query.search || "").trim();
     const status = String(req.query.status || "").trim().toLowerCase();
     const paymentStatus = String(req.query.paymentStatus || "").trim().toLowerCase();
+    const excludePaymentIssues = req.query.excludePaymentIssues === "true";
+    const paymentIssuesOnly = req.query.paymentIssuesOnly === "true";
     const paymentMethod = String(req.query.paymentMethod || "").trim().toLowerCase();
     const dateFrom = String(req.query.dateFrom || "").trim();
     const dateTo = String(req.query.dateTo || "").trim();
@@ -1218,6 +1221,8 @@ export async function getAdminOrders(req: Request, res: Response) {
       filter.status = status;
     }
     if (paymentStatus) filter.paymentStatus = paymentStatus;
+    if (excludePaymentIssues) filter.$nor = [adminPaymentIssueFilter()];
+    if (paymentIssuesOnly) filter.$and = [adminPaymentIssueFilter()];
     if (paymentMethod) filter.paymentMethod = paymentMethod;
 
     if (dateFrom || dateTo) {
