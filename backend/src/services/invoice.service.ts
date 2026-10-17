@@ -251,11 +251,20 @@ function buildInvoicePage(
   let y = tableTop - 28;
 
   for (const item of items) {
-    const variant = [item.colorName || item.color, item.sizeName || item.size]
-      .filter(Boolean)
-      .join(" / ");
-    const name = String(item.name || item.productName || "Product");
-    const display = variant ? `${name} - ${variant}` : name;
+    // Support both the saved order snapshot and older/cart-shaped item objects.
+    const color = String(
+      item.colorName || item.color || item.selectedColor?.name || item.variant?.colorName || ""
+    ).trim();
+    const size = String(
+      item.sizeName || item.size || item.selectedSize?.size || item.variant?.size || ""
+    ).trim();
+    const sku = String(item.sku || item.selectedSize?.sku || "").trim();
+    const name = String(item.name || item.productName || item.product?.name || "Product");
+    const details = [
+      color ? `Color: ${color}` : "",
+      size ? `Size: ${size}` : "",
+      sku ? `SKU: ${sku}` : "",
+    ].filter(Boolean).join(" | ");
     const q = amount(item.quantity);
     const unit = amount(item.unitPrice ?? item.price ?? item.finalUnitPrice);
     const discount = amount(item.discount ?? item.totalDiscount);
@@ -263,13 +272,16 @@ function buildInvoicePage(
       item.finalTotal ?? item.lineTotal ?? item.subtotal ?? unit * q
     );
 
-    out += textCmd(MARGIN + 16, y, display.slice(0, 47), 8.2, true);
+    out += textCmd(MARGIN + 16, y, name.slice(0, 42), 8.2, true);
+    if (details) {
+      out += textCmd(MARGIN + 16, y - 11, details.slice(0, 58), 7.2, false);
+    }
     out += textCmd(315, y, money(unit), 8);
     out += textCmd(390, y, `x ${q}`, 8);
     out += textCmd(438, y, money(discount), 8);
     out += textCmd(515, y, money(total), 8);
 
-    y -= 25;
+    y -= details ? 34 : 25;
     out += lineCmd(
       MARGIN + 14,
       y + 10,
