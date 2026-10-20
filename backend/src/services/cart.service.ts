@@ -31,6 +31,7 @@ import Product from "../models/Product.model";
 
 
 import DiscountCode from "../models/DiscountCode.model";
+import { assertDiscountCodeCombination } from "./discount-code-policy";
 
 
 
@@ -5153,6 +5154,16 @@ export const applyCartDiscountCode = async (userId: string, rawCode: string) => 
   const cart = await getOrCreateCart(userId);
 
 
+
+  // Check the persisted offer before replacing it, including direct API requests.
+  if (/^DIWALI\d*$/i.test(String(cart.discountCode || ""))) {
+    const current = await buildCartResponse(cart);
+    assertDiscountCodeCombination(
+      String(cart.discountCode || ""),
+      code,
+      Boolean(current.discountSummary.code?.valid && current.codeDiscount > 0),
+    );
+  }
 
   cart.discountCode = code;
 

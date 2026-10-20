@@ -1,6 +1,6 @@
 "use client";
 
-import { getRegularCouponCode } from "@/lib/diwali-offer";
+import { getRegularCouponCode, isDiwaliCode } from "@/lib/diwali-offer";
 
 import {
   useCallback,
@@ -213,6 +213,11 @@ export default function CheckoutOrderSummary() {
       !value ||
       applying
     ) {
+      return;
+    }
+
+    if (cart && cart.codeDiscount > 0 && isDiwaliCode(cart.appliedDiscountCode)) {
+      setError("Other discount codes cannot be combined with the Diwali offer.");
       return;
     }
 
@@ -822,7 +827,9 @@ export default function CheckoutOrderSummary() {
             Have a discount code?
           </div>
 
-          {getRegularCouponCode(cart.appliedDiscountCode) ? (
+          {cart.codeDiscount > 0 && isDiwaliCode(cart.appliedDiscountCode) ? (
+            <p className="mt-2 text-[10px] leading-relaxed text-[#80684c]">Other discount codes cannot be combined with the Diwali offer.</p>
+          ) : getRegularCouponCode(cart.appliedDiscountCode) ? (
             <div
               className="
                 mt-2

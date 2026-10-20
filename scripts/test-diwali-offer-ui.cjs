@@ -71,7 +71,7 @@ effects[0](); effects[2]();
 assert.deepEqual(applied, ["DIWALI1"], "Matching offer auto-applies");
 render({ appliedCode: "HIVRA20", onAutoApply: async (code) => { applied.push(code); } });
 effects[0](); effects[2]();
-assert.equal(applied.length, 1, "Auto-activation never overwrites a regular coupon");
+assert.deepEqual(applied, ["DIWALI1", "DIWALI1"], "Qualifying Diwali offer replaces a regular coupon instead of combining");
 
 render();
 const cleanup = effects.at(-1)();

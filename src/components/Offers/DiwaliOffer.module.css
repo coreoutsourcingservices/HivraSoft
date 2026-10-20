@@ -19,6 +19,14 @@
 .leftDiya { position: absolute; left: -2px; bottom: 0; width: 25px; height: 29px; }
 .rightDiya { position: absolute; right: -5px; bottom: 13px; width: 19px; height: 22px; }
 .headingCopy { flex: 1; min-width: 0; }
+.offerDetails { position: relative; margin: -7px 0 5px; }
+.offerDetails > summary { display: flex; align-items: center; justify-content: flex-end; gap: 3px; width: fit-content; min-height: 24px; margin-left: auto; padding: 2px 0 2px 8px; color: #80684c; font-size: 9px; line-height: 1.4; cursor: pointer; list-style: none; }
+.offerDetails > summary::-webkit-details-marker { display: none; }
+.offerDetails > summary:hover { color: #81082f; }
+.offerDetails > summary:focus-visible { outline: 2px solid #ad0b41; outline-offset: 2px; border-radius: 3px; }
+.offerDetails[open] > summary > svg { transform: rotate(180deg); }
+.offerDetails > ul { margin: 3px 0 12px; padding: 10px 12px 10px 25px; border: 1px solid #ebd5a5; border-radius: 8px; background: #fffaf0; color: #724c2c; font-size: 11px; line-height: 1.6; list-style: disc outside; }
+.offerDetails li + li { margin-top: 5px; }
 .badge { display: table; margin: 0 0 9px auto; padding: 4px 8px; border-radius: 7px; background: #ffe2a0; color: #8a4a09; font-size: 8px; font-weight: 800; letter-spacing: .04em; }
 .headingCopy h3 { margin: 0; color: #81082f; font: 700 clamp(18px, 1.6vw, 25px)/1.16 Georgia, serif; letter-spacing: -.025em; }
 .headingCopy p { margin: 6px 0 0; font-size: 11px; font-weight: 600; line-height: 1.5; }

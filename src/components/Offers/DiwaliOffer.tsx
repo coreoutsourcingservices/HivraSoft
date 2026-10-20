@@ -6,7 +6,7 @@ import { createPortal } from "react-dom";
 import { ArrowRight, Check, ChevronDown, ShieldCheck, ShoppingBag, Sparkles } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { DIWALI_OFFER_CONFIG as campaign } from "@/lib/diwali-offer-config";
-import { getDiwaliProgress, isDiwaliCode, type DiwaliCode } from "@/lib/diwali-offer";
+import { getDiwaliProgress, type DiwaliCode } from "@/lib/diwali-offer";
 import styles from "./DiwaliOffer.module.css";
 
 type Props = {
@@ -74,15 +74,14 @@ export default function DiwaliOffer({ subtotal, productIds, appliedCode, payment
 
   const { matched, target, remaining, percentage } = getDiwaliProgress(codes, subtotal, productIds);
   const normalizedCode = appliedCode.trim().toUpperCase();
-  // Regular coupons can replace the internal Diwali code without cancelling
-  // the automatic subtotal-based lucky draw eligibility.
+  // The qualifying campaign replaces regular coupons; the two cannot combine.
   const eligible = Boolean(matched) && paymentMethod !== "cod";
   const autoCode = matched?.code ?? "";
   const autoKey = `${autoCode}:${subtotal}:${normalizedCode}`;
 
   useEffect(() => {
     if (!autoCode || normalizedCode === autoCode.toUpperCase() || applying || !applyRef.current ||
-      (normalizedCode && !isDiwaliCode(normalizedCode)) || attempted.current === autoKey) return;
+      attempted.current === autoKey) return;
     attempted.current = autoKey;
     void applyRef.current(autoCode);
   }, [autoCode, applying, normalizedCode, autoKey]);
@@ -110,6 +109,15 @@ export default function DiwaliOffer({ subtotal, productIds, appliedCode, payment
 
   return (
     <section className={`${styles.card} ${compact ? styles.compact : ""}`} aria-label={campaign.title}>
+      <details className={styles.offerDetails}>
+        <summary>Know more <ChevronDown size={10} aria-hidden="true" /></summary>
+        <ul>
+          <li>10 lucky customers will each win a gold coin through our Diwali lucky draw.</li>
+          <li>Shop for the qualifying amount to unlock your entry.</li>
+          <li>Complete your payment online to qualify. Cash on Delivery orders are not eligible.</li>
+          <li>Winners will be selected through a lucky draw. A qualifying purchase does not guarantee a prize.</li>
+        </ul>
+      </details>
       <div className={styles.largeHeading}>
         <div className={styles.coinArt}><span className={styles.starOne}>✦</span><span className={styles.starTwo}>✧</span><GoldCoin /><Diya className={styles.leftDiya} /><Diya className={styles.rightDiya} /></div>
         <div className={styles.headingCopy}>

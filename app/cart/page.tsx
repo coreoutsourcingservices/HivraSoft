@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import DiwaliOffer from "@/src/components/Offers/DiwaliOffer";
-import { getRegularCouponCode } from "@/lib/diwali-offer";
+import { getRegularCouponCode, isDiwaliCode } from "@/lib/diwali-offer";
 
 import {
 
@@ -859,6 +859,11 @@ export default function CartPage() {
     }
 
 
+
+    if (cart && cart.codeDiscount > 0 && isDiwaliCode(cart.appliedDiscountCode) && !isDiwaliCode(code)) {
+      setError("Other discount codes cannot be combined with the Diwali offer.");
+      return;
+    }
 
     try {
 
@@ -2903,7 +2908,9 @@ export default function CartPage() {
                       </span>
                     </div>
 
-                    {cart && getRegularCouponCode(cart.appliedDiscountCode) ? (
+                    {cart && cart.codeDiscount > 0 && isDiwaliCode(cart.appliedDiscountCode) ? (
+                      <p className="mt-3 text-[10px] leading-relaxed text-[#80684c]">Other discount codes cannot be combined with the Diwali offer.</p>
+                    ) : cart && getRegularCouponCode(cart.appliedDiscountCode) ? (
                       <div
                         className="
                           mt-3
