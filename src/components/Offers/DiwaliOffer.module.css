@@ -1,0 +1,79 @@
+.card {
+  position: relative; isolation: isolate; overflow: hidden; margin: 20px 0; padding: 16px;
+  border: 1px solid #edb84d; border-radius: 17px;
+  background: radial-gradient(ellipse at 5% 15%, #fffdf6 0, transparent 55%), linear-gradient(125deg, #fff9e9, #fff1cf 68%, #fff9ee);
+  box-shadow: inset 0 0 0 3px #fffcf1, 0 5px 18px #b9771010; color: #68330f;
+}
+.card::after { content: "✧"; position: absolute; right: -18px; bottom: -52px; z-index: -1; font: 170px Georgia, serif; color: #efbf5c33; transform: rotate(18deg); }
+.largeHeading { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.coinArt { position: relative; display: grid; flex: 0 0 74px; height: 97px; place-items: center; }
+.coin { position: relative; display: grid; place-items: center; width: 67px; height: 67px; border: 3px solid #d29421; border-radius: 50%; background: radial-gradient(circle at 30% 23%, #fff9a8, #f6c754 46%, #d89822 90%); box-shadow: inset 0 0 0 2px #fff0a4, inset 0 0 0 5px #e3aa35, 2px 4px 4px #88530f30; transform: rotate(-17deg); }
+.coin::after { content: ""; position: absolute; inset: 7px; border: 1px solid #ba7b1e99; border-radius: 50%; }
+.coin > span { color: #ad751c; font: bold 36px Georgia, serif; text-shadow: 1px 1px #fff1a5, -1px -1px #b5791e; }
+.smallCoin { width: 27px; height: 27px; border-width: 1px; box-shadow: inset 0 0 0 2px #ffe89a, 1px 2px 3px #88530f25; }
+.smallCoin::after { inset: 3px; }
+.smallCoin > span { font-size: 16px; }
+.starOne, .starTwo { position: absolute; color: #dc9d26; line-height: 1; }
+.starOne { top: 0; left: -2px; font-size: 24px; }
+.starTwo { top: 9px; right: -2px; font-size: 16px; }
+.leftDiya { position: absolute; left: -2px; bottom: 0; width: 25px; height: 29px; }
+.rightDiya { position: absolute; right: -5px; bottom: 13px; width: 19px; height: 22px; }
+.headingCopy { flex: 1; min-width: 0; }
+.badge { display: table; margin: 0 0 9px auto; padding: 4px 8px; border-radius: 7px; background: #ffe2a0; color: #8a4a09; font-size: 8px; font-weight: 800; letter-spacing: .04em; }
+.headingCopy h3 { margin: 0; color: #81082f; font: 700 clamp(18px, 1.6vw, 25px)/1.16 Georgia, serif; letter-spacing: -.025em; }
+.headingCopy p { margin: 6px 0 0; font-size: 11px; font-weight: 600; line-height: 1.5; }
+.headingCopy .unlockedMessage { font-size: 16px; font-weight: 800; color: #8c0b36; }
+.progress { height: 11px; margin-top: 16px; overflow: hidden; border-radius: 999px; background: #ded5cf; }
+.progress > span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #a5063c, #cf0750); transition: width .5s ease; }
+.amounts { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 5px 10px; margin-top: 8px; font-size: 10px; }
+.amounts strong { font-size: 11px; }
+.amounts > span { display: inline-flex; align-items: center; gap: 3px; }
+.shopButton { position: relative; display: flex; align-items: center; justify-content: center; gap: 12px; min-height: 42px; margin-top: 14px; padding: 9px 14px; border-radius: 999px; background: linear-gradient(110deg, #af0640, #81062c); box-shadow: 0 4px 7px #95113922; color: white; font-size: 12px; font-weight: 700; text-decoration: none; transition: filter .15s; }
+.shopButton:hover { filter: brightness(1.12); }
+.shopButton:focus-visible, .compactHeading:focus-visible { outline: 2px solid #ad0b41; outline-offset: 3px; }
+.paymentNote { margin: 12px 0 0; padding: 9px 10px; border: 1px solid #e5be68; border-radius: 9px; background: #fffcf0a8; color: #7c4520; font-size: 11px; line-height: 1.6; font-weight: 600; }
+.footer { display: flex; align-items: center; gap: 5px; margin-top: 11px; color: #88775b; font-size: 8px; }
+.dot { opacity: .6; }
+.finePrint { margin: 4px 0 0; color: #95836a; font-size: 7px; line-height: 1.5; }
+.cornerDiya { position: absolute; z-index: -1; right: 6px; bottom: 7px; width: 34px; height: 40px; opacity: .45; }
+.compactHeading, .compactMessage { display: none; }
+.content { position: relative; }
+.compact { padding: 10px; border-radius: 10px; }
+.compact .largeHeading { display: none; }
+.compact .compactHeading { display: flex; }
+.compact .compactMessage { display: block; }
+.compactHeading { width: 100%; align-items: center; gap: 6px; border: 0; padding: 0; background: transparent; color: #84320b; cursor: pointer; text-align: left; }
+.compactHeading > span:nth-child(2) { flex: 1; font-size: 10px; font-weight: 800; }
+.status { flex: none; border-radius: 5px; padding: 3px 6px; background: #ffe0e4; color: #b31345; font-size: 8px; font-weight: 700; }
+.compactHeading > svg { flex: none; transition: transform .2s; }
+.chevronOpen { transform: rotate(180deg); }
+.compactMessage { margin: 9px 0 0; font-size: 10px; font-weight: 700; line-height: 1.5; }
+.compactMessage.unlockedMessage { font-size: 17px; line-height: 1.3; color: #8c0b36; }
+.compact .progress { height: 7px; margin-top: 9px; }
+.compact .amounts, .compact .amounts strong { font-size: 9px; }
+.compact .shopButton { min-height: 31px; margin-top: 9px; padding: 5px 10px; border-radius: 7px; font-size: 10px; }
+.compact .shopButton svg { width: 13px; height: 13px; }
+.compact .footer { margin-top: 8px; font-size: 7px; }
+.compact .collapsed { display: none; }
+.celebration { position: fixed; inset: 0; overflow: hidden; z-index: 9999; pointer-events: none; }
+.celebrationToast { position: absolute; z-index: 2; top: max(20px, env(safe-area-inset-top)); left: 50%; display: flex; align-items: center; gap: 12px; width: max-content; max-width: calc(100% - 28px); padding: 14px 18px; border: 1px solid #e9b23f; border-radius: 16px; background: linear-gradient(120deg, #fff9df, #ffefbd); box-shadow: 0 8px 40px #76511130; color: #840e35; transform: translateX(-50%); animation: toast-in .3s ease-out; }
+.celebrationToast strong { display: block; font-size: 16px; }
+.celebrationToast div > span { display: block; margin-top: 3px; color: #805b28; font-size: 10px; line-height: 1.5; }
+.rainCoin { position: absolute; top: -45px; animation: coin-fall var(--duration) var(--delay) linear infinite both; }
+.confetti { position: absolute; top: 75%; width: 8px; height: 15px; border-radius: 2px; background: var(--confetti-color); animation: burst 1.8s var(--delay) ease-out infinite both; }
+@keyframes coin-fall { 0% { transform: translate3d(0, -40px, 0) rotateY(0deg) rotateZ(0deg); opacity: 0; } 8%, 85% { opacity: 1; } 100% { transform: translate3d(var(--drift), calc(100dvh + 100px), 0) rotateY(720deg) rotateZ(190deg); opacity: 0; } }
+@keyframes burst { 0% { transform: translate3d(0, 70px, 0) rotate(0deg); opacity: 0; } 10%, 60% { opacity: 1; } 100% { transform: translate3d(var(--burst-x), var(--burst-y), 0) rotate(650deg); opacity: 0; } }
+@keyframes toast-in { from { opacity: 0; transform: translate(-50%, -20px) scale(.96); } to { opacity: 1; transform: translate(-50%, 0) scale(1); } }
+@media (max-width: 480px) {
+  .card { padding: 13px; }
+  .coinArt { flex-basis: 65px; }
+  .coinArt > .coin { width: 58px; height: 58px; }
+  .headingCopy h3 { font-size: 21px; }
+  .headingCopy p { font-size: 11px; }
+  .celebrationToast { gap: 8px; padding: 12px; }
+  .celebrationToast strong { font-size: 14px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .celebration { display: none; }
+  .progress > span, .compactHeading > svg { transition: none; }
+}

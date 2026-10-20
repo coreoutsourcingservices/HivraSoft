@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import DiwaliOffer from "@/src/components/Offers/DiwaliOffer";
 
 import {
   loadRazorpayScript,
@@ -2440,6 +2441,14 @@ export default function CheckoutPage() {
                   "
                 />
 
+                <DiwaliOffer
+                  compact
+                  subtotal={cart.subtotal}
+                  productIds={cart.items.map((item) => item.productId)}
+                  appliedCode={cart.discountCode}
+                  paymentMethod={paymentMethod}
+                />
+
                 {/* =========================================
                     PRICE BREAKDOWN
                 ========================================= */}
@@ -2513,6 +2522,8 @@ export default function CheckoutPage() {
                     bg-black/[0.08]
                   "
                 />
+
+
 
                 {/* =========================================
                     TOTAL

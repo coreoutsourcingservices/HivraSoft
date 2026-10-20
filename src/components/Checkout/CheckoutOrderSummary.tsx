@@ -1,5 +1,7 @@
 "use client";
 
+import { getRegularCouponCode } from "@/lib/diwali-offer";
+
 import {
   useCallback,
   useEffect,
@@ -753,7 +755,7 @@ export default function CheckoutOrderSummary() {
           0 ? (
             <Row
               positive
-              label={`Coupon ${cart.appliedDiscountCode}`}
+              label={getRegularCouponCode(cart.appliedDiscountCode) ? `Coupon ${cart.appliedDiscountCode}` : "Diwali offer benefit"}
               value={`-${money(
                 cart.codeDiscount
               )}`}
@@ -820,7 +822,7 @@ export default function CheckoutOrderSummary() {
             Have a discount code?
           </div>
 
-          {cart.appliedDiscountCode ? (
+          {getRegularCouponCode(cart.appliedDiscountCode) ? (
             <div
               className="
                 mt-2
