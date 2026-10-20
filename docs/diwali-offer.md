@@ -8,7 +8,7 @@
 
 Active admin codes named DIWALI, DIWALI1, DIWALI2, DIWALI3, etc. provide each slab's minimum / maximum amounts, dates and product scope through the existing `/api/discounts/active` endpoint. Configure ₹1,499 / ₹1,999 / ₹2,499 minimums and no maximum for the three current slabs. No backend schema or API changes are required.
 
-The highest matching slab activates automatically and replaces any regular coupon. Internal Diwali codes are hidden from customer-facing coupon controls and have no customer Remove action. While the Diwali code is applied, cart and checkout show an exclusivity message instead of the regular coupon field. The backend also rejects attempts to replace a valid applied Diwali code with a regular coupon. Slab upgrades remain available; expired or ineligible codes do not lock the backend coupon endpoint.
+The highest matching slab activates automatically and replaces any regular coupon. Internal Diwali codes are hidden from customer-facing coupon controls and have no customer Remove action. While the Diwali code is applied, cart and checkout show an exclusivity message instead of the regular coupon field. This restriction is enforced in the frontend only; backend discount behavior is unchanged. Slab upgrades remain available, and a stored code without an applied benefit does not block the coupon field.
 
 Each new matched slab or return to eligibility plays five seconds of coin rain, confetti and an unlock popup. Changes within the same slab do not restart the effect. COD shows the online-payment prompt. Final participation requires a successful online payment; this frontend does not choose winners or allocate physical prizes.
 
