@@ -1,5 +1,7 @@
 "use client";
 
+import AddedToBagModal from "./AddedToBagModal";
+
 import {
   createContext,
   type ReactNode,
@@ -712,11 +714,10 @@ function GlobalToast({
 
   return (
     <div
-      className="
+      className={`
         fixed
 
-        right-4
-        top-[90px]
+        right-4 top-[90px] sm:right-5 sm:top-[105px]
 
         z-[10000]
 
@@ -743,11 +744,9 @@ function GlobalToast({
 
         shadow-[0_16px_45px_rgba(0,0,0,0.18)]
 
-        sm:right-5
-        sm:top-[105px]
         sm:w-[calc(100%-40px)]
         sm:py-4
-      "
+      `}
     >
       <span
         className={`
@@ -1265,6 +1264,8 @@ export function StorefrontCommerceProvider({
       null
     );
 
+  const [addedProduct, setAddedProduct] = useState<DirectCartInput | null>(null);
+
   const toastTimer =
     useRef<
       ReturnType<
@@ -1773,29 +1774,7 @@ export function StorefrontCommerceProvider({
            NORMAL ADD TO BAG NOTIFICATION
         =============================================== */
 
-        showToast(
-          "Added to bag",
-
-          "success",
-
-          [
-            input.name,
-
-            input.colorName,
-
-            input.sizeLabel
-              ? `Size ${input.sizeLabel}`
-              : "",
-          ]
-            .filter(
-              Boolean
-            )
-            .join(
-              " • "
-            ),
-
-          input.image
-        );
+        setAddedProduct(input);
 
         setCartBusy(
           true
@@ -1957,6 +1936,7 @@ export function StorefrontCommerceProvider({
         } catch (
           error
         ) {
+          setAddedProduct(null);
           setCartCount(
             (
               current
@@ -2648,6 +2628,15 @@ export function StorefrontCommerceProvider({
           );
         }}
       />
+
+      {addedProduct && <AddedToBagModal
+        product={addedProduct}
+        onClose={() => setAddedProduct(null)}
+        onViewCart={() => {
+          setAddedProduct(null);
+          router.push("/cart/");
+        }}
+      />}
 
       <GlobalToast
         toast={
