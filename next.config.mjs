@@ -1,5 +1,6 @@
 const production = process.env.NODE_ENV === "production";
-const defaultApiUrl = production ? "https://backend.hivrasoft.com" : "http://localhost:5000";
+const defaultBackendUrl = production ? "https://backend.hivrasoft.com" : "http://localhost:5000";
+const defaultApiUrl = production ? "https://hivrasoft.com" : defaultBackendUrl;
 
 function publicApiUrl(value) {
   const candidate = value?.trim().replace(/\/+$/, "");
@@ -10,6 +11,9 @@ function publicApiUrl(value) {
     if (!["http:", "https:"].includes(url.protocol) || (production && (loopback || url.protocol !== "https:"))) {
       return defaultApiUrl;
     }
+    // Keep the session cookie on the storefront host so server-rendered admin
+    // pages and browser requests see the same authenticated session.
+    if (production && url.origin === "https://backend.hivrasoft.com") return defaultApiUrl;
     return candidate;
   } catch {
     return defaultApiUrl;
@@ -43,7 +47,7 @@ const nextConfig = {
     ];
   },
   async rewrites() {
-    const backend = (process.env.API_URL?.trim() || browserApiUrl).replace(/\/+$/, "");
+    const backend = (process.env.API_URL?.trim() || defaultBackendUrl).replace(/\/+$/, "");
     return {
       beforeFiles: [
         { source: "/:slug(buy-[0-9]+-get-[0-9]+-free)", destination: "/offers/:slug" },

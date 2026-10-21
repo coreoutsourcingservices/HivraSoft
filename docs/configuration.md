@@ -21,17 +21,22 @@ Production variables:
 
 ```dotenv
 API_URL=https://backend.hivrasoft.com
-NEXT_PUBLIC_API_URL=https://backend.hivrasoft.com
+NEXT_PUBLIC_API_URL=https://hivrasoft.com
 NEXT_PUBLIC_SITE_URL=https://hivrasoft.com
 NEXT_PUBLIC_META_PIXEL_ID=950535477792189
 NEXT_PUBLIC_META_PIXEL_ENABLED=true
 ```
 
 `NEXT_PUBLIC_*` values are embedded at build time. Rebuild after changing them.
-Production builds default the public API URL to `https://backend.hivrasoft.com`
+Production builds default the public API URL to `https://hivrasoft.com`
 when it is missing, invalid, non-HTTPS, or points to a loopback address. Development
 still defaults to `http://localhost:5000`. This default is applied centrally to
 all browser API callers, including admin, account, storefront and chatbot requests.
+The production backend public URL is normalized to this same frontend origin as
+well. Next proxies `/api/*` to the separate `API_URL` backend. This keeps the
+HTTP-only login cookie on the frontend host, where the admin server layout can
+read it, without sharing the cookie across subdomains. The proxy defaults to
+`https://backend.hivrasoft.com` independently of the browser URL to avoid loops.
 From the repository root, run `npm ci`, `npm run build`, then `npm start`.
 For local development, run `npm run dev -- -p 3000`.
 

@@ -14,7 +14,15 @@ async function config(environment,publicUrl,serverUrl){
 test('Production browser requests cannot default to localhost',async()=>{
   for(const url of [undefined,'','  ','http://localhost:5000','http://127.0.0.1:5000','https://127.0.0.1:5000','http://[::1]:5000','http://0.0.0.0:5000','invalid','javascript:alert(1)','http://backend.hivrasoft.com']){
     const c=await config('production',url);
-    assert.equal(c.env.NEXT_PUBLIC_API_URL,'https://backend.hivrasoft.com',`Unsafe/missing value: ${url}`);
+    assert.equal(c.env.NEXT_PUBLIC_API_URL,'https://hivrasoft.com',`Unsafe/missing value: ${url}`);
+    assert.equal((await c.rewrites()).afterFiles[0].destination,'https://backend.hivrasoft.com/api/:path*');
+  }
+});
+
+test('Production authentication uses the frontend origin and a separate backend proxy',async()=>{
+  for(const url of ['https://backend.hivrasoft.com','https://backend.hivrasoft.com/','https://hivrasoft.com']){
+    const c=await config('production',url);
+    assert.equal(c.env.NEXT_PUBLIC_API_URL,'https://hivrasoft.com');
     assert.equal((await c.rewrites()).afterFiles[0].destination,'https://backend.hivrasoft.com/api/:path*');
   }
 });
