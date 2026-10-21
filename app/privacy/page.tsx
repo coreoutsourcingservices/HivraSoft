@@ -58,6 +58,21 @@ export default function PrivacyPage() {
             securely. We do not sell or rent your personal information to third parties.
           </p>
         </section>
+
+        <section className="rounded-3xl border border-rose-100 bg-rose-50/60 p-6 sm:p-8">
+          <h2 className="text-xl font-black text-slate-950">
+            Diwali Lucky Draw Terms &amp; Conditions
+          </h2>
+          <ol className="mt-4 list-decimal space-y-2 pl-5 text-sm leading-7 text-slate-600 sm:text-base">
+            <li>10 lucky customers will each win a gold coin through our Diwali lucky draw.</li>
+            <li>Shop for the qualifying amount to unlock your entry.</li>
+            <li>Only prepaid orders are eligible for this offer.</li>
+            <li>Winners will be selected through a lucky draw.</li>
+            <li>A qualifying purchase does not guarantee a prize.</li>
+            <li>Each winner will receive a 0.1 g gold coin.</li>
+            <li>Winners will be announced within 2 days of purchasing.</li>
+          </ol>
+        </section>
       </div>
     </SupportShell>
   );

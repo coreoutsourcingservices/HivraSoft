@@ -4,7 +4,7 @@ import NotificationSchedule from "../models/NotificationSchedule.model";
 import NotificationScheduleHistory from "../models/NotificationScheduleHistory.model";
 import { matchingCustomerIds } from "../services/customer-admin.service";
 import User from "../models/User.model";
-import { sanitizeNotificationHtml } from "../services/notification-html.service";
+import { prepareNotificationHtml } from "../services/notification-html.service";
 import {
   executeNotificationSchedule,
   parseScheduleDateTime,
@@ -76,7 +76,7 @@ function isOneOf<T extends readonly string[]>(
 function normalizedBody(body: any): NormalizedScheduleBody {
   const name = clean(body?.name);
   const title = clean(body?.title);
-  const message = sanitizeNotificationHtml(body?.message);
+  const message = prepareNotificationHtml(body?.message);
   const subject = clean(body?.subject || body?.title);
   const deliveryEmail = Boolean(body?.deliveryEmail ?? body?.sendToEmail ?? false);
   const deliveryWebsite = Boolean(body?.deliveryWebsite ?? body?.sendToWebsite ?? true);

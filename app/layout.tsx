@@ -22,6 +22,7 @@ import {
 import TrafficSourceCapture from "@/src/components/Storefront/TrafficSourceCapture";
 
 import ChatbotWidget from "@/src/components/Chatbot/ChatbotWidget";
+import UnreadNotificationCard from "@/src/components/Storefront/UnreadNotificationCard";
 
 /* =========================================================
    MAIN BRANCH EXISTING FEATURES
@@ -173,6 +174,7 @@ export default function RootLayout({
           ============================================ */}
 
           <ChatbotWidget />
+          <UnreadNotificationCard />
 
           {/* ============================================
               FOOTER

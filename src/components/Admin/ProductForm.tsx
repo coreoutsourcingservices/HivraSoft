@@ -3453,7 +3453,7 @@ export default function ProductForm({
 
                       <Field
                         label="Description"
-                        hint="HTML supported by your backend sanitizer."
+                        hint="Your original HTML, tags and styles are saved unchanged."
                       >
                         <textarea
                           className={`${inputClass} min-h-52 resize-y py-3 font-mono text-xs leading-6`}

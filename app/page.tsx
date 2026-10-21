@@ -59,7 +59,7 @@ const HOME_CACHE_KEY =
   "hivra:home-page:v3";
 
 const HOME_CACHE_TTL =
-  12 * 60 * 60 * 1000;
+  process.env.NODE_ENV === "development" ? 0 : 12 * 60 * 60 * 1000;
 
 type HomePageCache = {
   savedAt: number;
@@ -3805,7 +3805,7 @@ function NewArrivalsSection({
   ========================================================= */
 
   const desktopThumbStart =
-    useMemo(() => {
+    (() => {
       if (
         cards.length <= 4
       ) {
@@ -3822,10 +3822,7 @@ function NewArrivalsSection({
         activeIndex - 3,
         cards.length - 4,
       );
-    }, [
-      activeIndex,
-      cards.length,
-    ]);
+    })();
 
   const desktopVisibleCards =
     cards.slice(

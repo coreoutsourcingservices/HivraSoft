@@ -14,6 +14,7 @@ import {
 import Account from "../Auth/Account";
 
 import {
+  ApiError,
   apiFetch,
 } from "@/lib/api";
 
@@ -1796,10 +1797,13 @@ export default function Header() {
       } catch (
         error
       ) {
-        console.error(
-          "HEADER BUY GET OFFER ERROR:",
-          error
-        );
+        // No featured offer is a normal empty state, returned as HTTP 404.
+        if (!(error instanceof ApiError && error.status === 404)) {
+          console.error(
+            "HEADER BUY GET OFFER ERROR:",
+            error
+          );
+        }
 
         if (
           !cancelled

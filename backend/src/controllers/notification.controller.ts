@@ -6,7 +6,7 @@ import { matchingCustomerIds } from "../services/customer-admin.service";
 import { softDeleteEntity } from "../services/admin-trash.service";
 import NotificationDelivery from "../models/NotificationDelivery.model";
 import { sendEmail } from "../services/mail.service";
-import { sanitizeNotificationHtml } from "../services/notification-html.service";
+import { prepareNotificationHtml } from "../services/notification-html.service";
 import { queueCustomerPromotions } from "../services/promotion-date.service";
 
 
@@ -35,7 +35,7 @@ export async function createAdminNotification(req: Request, res: Response) {
   try {
     const title = String(req.body?.title || "").trim();
     const subject = String(req.body?.subject || title).trim();
-    const message = sanitizeNotificationHtml(req.body?.message);
+    const message = prepareNotificationHtml(req.body?.message);
     const rawType = String(req.body?.type || "general").trim().toLowerCase();
     const rawAudience = String(req.body?.audienceType || req.body?.audience || "all").trim().toLowerCase();
     const link = String(req.body?.link || "").trim();
@@ -196,7 +196,7 @@ export async function listAdminNotifications(_req: Request, res: Response) {
     const notifications = await Notification.find({})
       .populate({ path: "createdBy", select: "name email role" })
       .populate({ path: "product", select: "colors isActive" })
-      .sort({ createdAt: -1 })
+      .sort({ createdAt: -1, _id: -1 })
       .limit(250)
       .lean();
 
@@ -284,7 +284,7 @@ export async function getMyNotifications(req: Request, res: Response) {
         { audience: { $in: ["selected", "filtered"] }, userIds: userObjectId },
       ],
     })
-      .sort({ createdAt: -1 })
+      .sort({ createdAt: -1, _id: -1 })
       .limit(100)
       .lean();
 

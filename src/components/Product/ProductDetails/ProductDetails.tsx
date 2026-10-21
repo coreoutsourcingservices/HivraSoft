@@ -77,8 +77,8 @@ function positiveNumber(...values: unknown[]): number | undefined {
   return undefined;
 }
 
-// The API sanitizes new descriptions before saving, but old DB records may
-// predate the sanitizer. Never render those records using regex-only cleaning.
+// The API preserves the admin's original HTML. Sanitize a display copy only;
+// never write the filtered storefront markup back into the database.
 // DOMPurify removes active HTML/URL payloads, and the CSS guard blocks remote
 // fetches and layout-breaking styles while preserving decorative gradients.
 const descriptionTags = [

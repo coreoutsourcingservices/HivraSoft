@@ -13,6 +13,7 @@ import {
 import {
   gsap,
 } from "gsap";
+import { API_URL } from "@/lib/api";
 
 /* =========================================================
    TYPES
@@ -112,14 +113,12 @@ export default function Loader({
   useEffect(() => {
     if (!active || pathname !== "/") return;
 
-    const controller = new AbortController();
-    void fetch("https://backend.hivrasoft.com/api/health", {
+    // This best-effort ping never updates state. Let it finish across effect
+    // cleanup so Strict Mode/navigation cannot turn it into an abort error.
+    void fetch(`${API_URL}/api/health`, {
       method: "GET",
       cache: "no-store",
-      signal: controller.signal,
     }).catch(() => {});
-
-    return () => controller.abort();
   }, [active, pathname]);
 
   /* =======================================================

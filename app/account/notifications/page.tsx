@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  useCallback,
   useEffect,
   useMemo,
   useState,
@@ -8,6 +9,7 @@ import {
 
 import Link from "next/link";
 import DOMPurify from "isomorphic-dompurify";
+import { newestNotifications, NOTIFICATIONS_CHANGED } from "@/lib/notifications";
 
 import {
   Bell,
@@ -135,22 +137,19 @@ export default function AccountNotificationsPage() {
      LOAD
   ======================================================= */
 
-  async function load() {
+  const load = useCallback(async () => {
     try {
-      setLoading(true);
-
-      setError("");
-
       const data =
         await request(
           "/api/notifications",
         );
 
+      setError("");
       setItems(
         Array.isArray(
           data?.notifications,
         )
-          ? data.notifications
+          ? newestNotifications(data.notifications as NotificationItem[])
           : [],
       );
     } catch (loadError) {
@@ -162,7 +161,7 @@ export default function AccountNotificationsPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
   /* =======================================================
      INITIAL LOAD + SCROLL RESET
@@ -176,7 +175,7 @@ export default function AccountNotificationsPage() {
   ======================================================= */
 
   useEffect(() => {
-    void load();
+    const initialLoad = window.setTimeout(() => { void load(); }, 0);
 
     window.scrollTo({
       top: 0,
@@ -214,11 +213,24 @@ export default function AccountNotificationsPage() {
       );
 
     return () => {
+      window.clearTimeout(initialLoad);
       window.clearTimeout(
         resetSidebarScroll,
       );
     };
-  }, []);
+  }, [load]);
+
+  useEffect(() => {
+    const refresh = () => { if (document.visibilityState !== "hidden") void load(); };
+    window.addEventListener(NOTIFICATIONS_CHANGED, refresh);
+    window.addEventListener("focus", refresh);
+    const timer = window.setInterval(refresh, 30000);
+    return () => {
+      window.removeEventListener(NOTIFICATIONS_CHANGED, refresh);
+      window.removeEventListener("focus", refresh);
+      window.clearInterval(timer);
+    };
+  }, [load]);
 
   /* =======================================================
      UNREAD
@@ -252,6 +264,8 @@ export default function AccountNotificationsPage() {
           method: "PATCH",
         },
       );
+
+      window.dispatchEvent(new Event(NOTIFICATIONS_CHANGED));
 
       setItems(
         (current) =>
@@ -290,6 +304,8 @@ export default function AccountNotificationsPage() {
           method: "PATCH",
         },
       );
+
+      window.dispatchEvent(new Event(NOTIFICATIONS_CHANGED));
 
       setItems(
         (current) =>
@@ -750,6 +766,7 @@ export default function AccountNotificationsPage() {
                   {items.map(
                     (item) => (
                       <article
+                        id={`notification-${item._id}`}
                         key={
                           item._id
                         }

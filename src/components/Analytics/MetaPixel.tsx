@@ -24,10 +24,10 @@ import Script from "next/script";
 ========================================================= */
 
 const META_PIXEL_ID =
-  process.env.NEXT_PUBLIC_META_PIXEL_ID || "";
+  process.env.NEXT_PUBLIC_META_PIXEL_ID?.trim() || "950535477792189";
 
 const META_PIXEL_ENABLED =
-  process.env.NEXT_PUBLIC_META_PIXEL_ENABLED === "true";
+  process.env.NEXT_PUBLIC_META_PIXEL_ENABLED !== "false";
 
 /* =========================================================
    VALIDATE PIXEL ID
@@ -157,6 +157,17 @@ export default function MetaPixel() {
       =================================================== */}
 
       <MetaPixelRouteTracker />
+
+      <noscript>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          height="1"
+          width="1"
+          style={{ display: "none" }}
+          src={`https://www.facebook.com/tr?id=${META_PIXEL_ID}&ev=PageView&noscript=1`}
+          alt=""
+        />
+      </noscript>
     </>
   );
 }

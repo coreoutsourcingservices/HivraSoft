@@ -1,4 +1,5 @@
 import sanitizeHtml from "sanitize-html";
+import { prepareAdminHtml } from "../utils/adminHtml";
 import { Types } from "mongoose";
 import Blog, { type BlogStatus } from "../models/Blog.model";
 import Category from "../models/Category.model";
@@ -29,92 +30,8 @@ function cleanCss(value: unknown) {
     .slice(0, 20000);
 }
 
-// Keep the inline design of imported HTML.  Only allow CSS properties and
-// values that cannot fetch remote resources or inject a new declaration.
-const cssLength = String.raw`(?:auto|0|-?\d+(?:\.\d+)?(?:px|rem|em|%|vw|vh)?)`;
-const cssSpacing = new RegExp(`^${cssLength}(?:\\s+${cssLength}){0,3}$`, "i");
-const cssDimension = /^(?:auto|0|\d+(?:\.\d+)?(?:px|rem|em|%|vw|vh))$/i;
-const cssColor = /^(?:#[0-9a-f]{3,8}|rgba?\([0-9.,%\s]+\)|hsla?\([0-9.,%\s]+\)|[a-z]+)$/i;
-const cssGradient = /^(?!.*(?:url|expression|var|attr|image-set)\s*\()(?:repeating-)?(?:linear|radial)-gradient\([a-z0-9#(),.%\s+\-]+\)$/i;
-const cssShadow = /^(?!.*(?:url|expression|var|attr|image-set)\s*\()[a-z0-9#(),.%\s+\-]+$/i;
-const cssBorder = /^(?:none|0|\d+(?:\.\d+)?(?:px|rem|em)?\s+(?:solid|dashed|dotted|double)\s+(?:#[0-9a-f]{3,8}|rgba?\([0-9.,%\s]+\)|[a-z]+))$/i;
-const cssBorderRadius = /^(?:0|\d+(?:\.\d+)?(?:px|rem|em|%))(?:\s+(?:0|\d+(?:\.\d+)?(?:px|rem|em|%))){0,3}$/i;
-
-const sanitizeOptions: sanitizeHtml.IOptions = {
-  allowedTags: [
-    "h1", "h2", "h3", "h4", "h5", "h6", "p", "strong", "b", "em", "i", "u", "s", "del", "span", "br", "hr",
-    "a", "img", "picture", "source", "figure", "figcaption", "ul", "ol", "li", "blockquote", "pre", "code", "table", "thead",
-    "tbody", "tfoot", "tr", "th", "td", "section", "article", "div", "details", "summary", "sup", "sub", "iframe", "button"
-  ],
-  allowedAttributes: {
-    "*": ["class", "id", "style", "title"],
-    a: ["href", "target", "rel", "class", "id", "style", "title"],
-    img: ["src", "alt", "title", "width", "height", "loading", "class", "id", "style", "data-align", "data-width"],
-    source: ["srcset", "type", "media"],
-    iframe: ["src", "width", "height", "title", "allow", "allowfullscreen", "loading", "referrerpolicy", "class", "id", "style"],
-    td: ["colspan", "rowspan", "class", "id", "style"],
-    th: ["colspan", "rowspan", "scope", "class", "id", "style"],
-    button: ["type", "class", "id", "style"],
-  },
-  allowedSchemes: ["http", "https", "mailto", "tel"],
-  allowedIframeHostnames: ["www.youtube.com", "youtube.com", "www.youtube-nocookie.com", "player.vimeo.com"],
-  allowedStyles: {
-    "*": {
-      color: [cssColor],
-      background: [cssColor, cssGradient],
-      "background-color": [cssColor],
-      "background-image": [cssGradient],
-      "box-shadow": [cssShadow],
-      "font-size": [/^\d+(?:\.\d+)?(?:px|rem|em|%)$/],
-      "font-family": [/^[a-z0-9 ,\-\'"]+$/i],
-      "font-weight": [/^(normal|bold|bolder|lighter|[1-9]00)$/],
-      "font-style": [/^(normal|italic|oblique)$/],
-      "text-align": [/^(left|right|center|justify|start|end)$/],
-      "text-decoration": [/^(?:none|underline|line-through|overline)$/],
-      "line-height": [/^[\d.]+(?:px|rem|em|%)?$/],
-      "letter-spacing": [new RegExp(`^${cssLength}$`, "i")],
-      margin: [cssSpacing],
-      "margin-top": [cssSpacing],
-      "margin-bottom": [cssSpacing],
-      "margin-left": [cssSpacing, /^auto$/],
-      "margin-right": [cssSpacing, /^auto$/],
-      padding: [cssSpacing],
-      "padding-top": [cssSpacing],
-      "padding-bottom": [cssSpacing],
-      "padding-left": [cssSpacing],
-      "padding-right": [cssSpacing],
-      "border-radius": [cssBorderRadius],
-      border: [cssBorder],
-      "border-top": [cssBorder],
-      "border-bottom": [cssBorder],
-      "border-left": [cssBorder],
-      "border-right": [cssBorder],
-      "border-collapse": [/^(separate|collapse)$/],
-      "border-spacing": [cssSpacing],
-      width: [cssDimension],
-      "max-width": [cssDimension],
-      "min-width": [cssDimension],
-      height: [cssDimension],
-      "max-height": [cssDimension],
-      "min-height": [cssDimension],
-      display: [/^(?:block|inline|inline-block|flex|inline-flex|grid|inline-grid|none|table|table-cell)$/],
-      "vertical-align": [/^(?:top|middle|bottom|baseline|sub|super)$/],
-      "flex-wrap": [/^(?:wrap|nowrap|wrap-reverse)$/],
-      "flex-direction": [/^(?:row|column|row-reverse|column-reverse)$/],
-      "justify-content": [/^(?:flex-start|flex-end|center|space-between|space-around|space-evenly)$/],
-      "align-items": [/^(?:stretch|flex-start|flex-end|center|baseline)$/],
-      gap: [cssSpacing],
-      "row-gap": [cssSpacing],
-      "column-gap": [cssSpacing],
-      overflow: [/^(?:hidden|auto|scroll|visible)$/],
-      "overflow-x": [/^(?:hidden|auto|scroll|visible)$/],
-      "overflow-y": [/^(?:hidden|auto|scroll|visible)$/],
-    },
-  },
-};
-
-export function sanitizeBlogHtml(value: unknown) {
-  return sanitizeHtml(String(value ?? ""), sanitizeOptions);
+export function prepareBlogHtml(value: unknown) {
+  return prepareAdminHtml(value, 1_000_000, "Blog HTML");
 }
 
 function styleString(style: any = {}) {
@@ -155,10 +72,10 @@ export function renderBlogBlocks(blocksInput: unknown) {
       const headingText = sanitizeHtml(String(data.text || ""), { allowedTags: [], allowedAttributes: {} });
       const autoAnchor = createSlug(headingText) || `heading-${blockIndex + 1}`;
       const headingAttrs = explicitAnchor ? a : `${a} id="${autoAnchor}-${blockIndex + 1}"`;
-      return `<h${level}${headingAttrs}>${sanitizeBlogHtml(data.text)}</h${level}>`;
+      return `<h${level}${headingAttrs}>${prepareBlogHtml(data.text)}</h${level}>`;
     }
-    if (type === "paragraph") return `<p${a}>${sanitizeBlogHtml(data.text)}</p>`;
-    if (type === "quote") return `<blockquote${a}>${sanitizeBlogHtml(data.text)}</blockquote>`;
+    if (type === "paragraph") return `<p${a}>${prepareBlogHtml(data.text)}</p>`;
+    if (type === "quote") return `<blockquote${a}>${prepareBlogHtml(data.text)}</blockquote>`;
     if (type === "code") return `<pre${a}><code>${esc(data.code)}</code></pre>`;
     if (type === "divider") return `<hr${a} />`;
     if (type === "spacer") {
@@ -173,7 +90,7 @@ export function renderBlogBlocks(blocksInput: unknown) {
       const link = text(data.link);
       const img = `<img src="${esc(url)}" alt="${alt}" title="${esc(data.title)}" loading="lazy"${data.width ? ` width="${Number(data.width)}"` : ""}${data.height ? ` height="${Number(data.height)}"` : ""} />`;
       const wrapped = link ? `<a href="${esc(link)}" rel="noopener noreferrer">${img}</a>` : img;
-      return `<figure${a}>${wrapped}${caption ? `<figcaption>${sanitizeBlogHtml(caption)}</figcaption>` : ""}</figure>`;
+      return `<figure${a}>${wrapped}${caption ? `<figcaption>${prepareBlogHtml(caption)}</figcaption>` : ""}</figure>`;
     }
     if (type === "button") {
       const href = text(data.href) || "#";
@@ -183,29 +100,29 @@ export function renderBlogBlocks(blocksInput: unknown) {
       const ordered = bool(data.ordered);
       const items = Array.isArray(data.items) ? data.items : text(data.items).split("\n").filter(Boolean);
       const tag = ordered ? "ol" : "ul";
-      return `<${tag}${a}>${items.map((item: unknown) => `<li>${sanitizeBlogHtml(item)}</li>`).join("")}</${tag}>`;
+      return `<${tag}${a}>${items.map((item: unknown) => `<li>${prepareBlogHtml(item)}</li>`).join("")}</${tag}>`;
     }
     if (type === "faq" || type === "accordion") {
       const items = Array.isArray(data.items) ? data.items : [];
-      return `<section${a}>${items.map((item: any) => `<details><summary>${esc(item?.question || item?.title)}</summary><div>${sanitizeBlogHtml(item?.answer || item?.content)}</div></details>`).join("")}</section>`;
+      return `<section${a}>${items.map((item: any) => `<details><summary>${esc(item?.question || item?.title)}</summary><div>${prepareBlogHtml(item?.answer || item?.content)}</div></details>`).join("")}</section>`;
     }
-    if (type === "callout") return `<div${a}>${sanitizeBlogHtml(data.text || data.html)}</div>`;
+    if (type === "callout") return `<div${a}>${prepareBlogHtml(data.text || data.html)}</div>`;
     if (type === "video") {
       const src = text(data.url || data.src);
       return src ? `<div${a}><iframe src="${esc(src)}" title="${esc(data.title || "Video")}" loading="lazy" allowfullscreen></iframe></div>` : "";
     }
     if (type === "table") {
       const rows = Array.isArray(data.rows) ? data.rows : [];
-      return `<table${a}><tbody>${rows.map((row: any[]) => `<tr>${(Array.isArray(row) ? row : []).map((cell: unknown) => `<td>${sanitizeBlogHtml(cell)}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+      return `<table${a}><tbody>${rows.map((row: any[]) => `<tr>${(Array.isArray(row) ? row : []).map((cell: unknown) => `<td>${prepareBlogHtml(cell)}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
     }
     if (type === "columns") {
       const columns = Array.isArray(data.columns) ? data.columns : [];
-      return `<div${a} class="blog-columns ${text(block?.className)}">${columns.map((column: any) => `<div>${sanitizeBlogHtml(column?.html || column?.text || "")}</div>`).join("")}</div>`;
+      return `<div${a} class="blog-columns ${text(block?.className)}">${columns.map((column: any) => `<div>${prepareBlogHtml(column?.html || column?.text || "")}</div>`).join("")}</div>`;
     }
-    if (type === "html") return `<div${a}>${sanitizeBlogHtml(data.html)}</div>`;
+    if (type === "html") return `<div${a}>${prepareBlogHtml(data.html)}</div>`;
     return "";
   }).join("\n");
-  return sanitizeBlogHtml(html);
+  return prepareBlogHtml(html);
 }
 
 function stripHtml(value: string) {
@@ -333,7 +250,7 @@ export async function createBlog(input: any, authorId: string) {
   await validateProductCategory(categoryId);
   const tagIds = await resolveBlogTags(Array.isArray(input?.tags) ? input.tags : []);
   const blocks = Array.isArray(input?.blocks) ? input.blocks : [];
-  const rendered = blocks.length ? renderBlogBlocks(blocks) : sanitizeBlogHtml(input?.content);
+  const rendered = blocks.length ? renderBlogBlocks(blocks) : prepareBlogHtml(input?.content);
   const status = normalizeStatus(input?.status);
   const scheduledAt = input?.scheduledAt ? new Date(input.scheduledAt) : null;
   if (status === "SCHEDULED" && (!scheduledAt || Number.isNaN(scheduledAt.getTime()))) throw new Error("Scheduled publish date is required.");
@@ -372,7 +289,7 @@ export async function updateBlog(id: string, input: any, changedBy: string) {
   await validateProductCategory(categoryId);
   const tagIds = await resolveBlogTags(Array.isArray(input?.tags) ? input.tags : blog.tags.map(String));
   const blocks = Array.isArray(input?.blocks) ? input.blocks : blog.blocks;
-  const rendered = blocks.length ? renderBlogBlocks(blocks) : sanitizeBlogHtml(input?.content ?? blog.content);
+  const rendered = blocks.length ? renderBlogBlocks(blocks) : prepareBlogHtml(input?.content ?? blog.content);
   const status = normalizeStatus(input?.status ?? blog.status);
   const scheduledAt = input?.scheduledAt ? new Date(input.scheduledAt) : blog.scheduledAt;
   if (status === "SCHEDULED" && (!scheduledAt || Number.isNaN(new Date(scheduledAt).getTime()))) throw new Error("Scheduled publish date is required.");

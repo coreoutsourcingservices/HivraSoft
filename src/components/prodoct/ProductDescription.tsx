@@ -1,3 +1,5 @@
+import DOMPurify from "isomorphic-dompurify";
+
 type ProductDescriptionProps = {
   html?: string;
 };
@@ -5,8 +7,7 @@ type ProductDescriptionProps = {
 /* =========================================================
    STOREFRONT DESCRIPTION
 
-   Use ONLY with HTML sanitized by backend
-   sanitizeProductDescriptionHtml().
+   Filter a display copy; the database keeps the admin's original HTML.
 ========================================================= */
 
 export default function ProductDescription({
@@ -26,7 +27,7 @@ export default function ProductDescription({
       "
       dangerouslySetInnerHTML={{
         __html:
-          html,
+          DOMPurify.sanitize(html),
       }}
     />
   );

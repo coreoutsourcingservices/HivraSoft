@@ -50,7 +50,6 @@ const notificationSchema = new Schema<INotification>(
     message: {
       type: String,
       required: true,
-      trim: true,
       maxlength: 50000,
     },
     subject: { type: String, trim: true, default: "", maxlength: 200 },

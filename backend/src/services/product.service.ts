@@ -16,7 +16,7 @@ import {
 } from "../utils/slug";
 
 import {
-  sanitizeProductDescriptionHtml,
+  prepareProductDescriptionHtml,
 } from "../utils/productHtml";
 import { calculateSeoScore } from "../utils/productSeoAnalyzer";
 
@@ -692,7 +692,7 @@ const normalizeColors = (
             "",
 
           description:
-            sanitizeProductDescriptionHtml(
+            prepareProductDescriptionHtml(
               color.description
             ),
 

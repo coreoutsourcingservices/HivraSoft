@@ -126,8 +126,8 @@ const StyledImage = Image.extend({
 // TipTap is a document editor, not a full HTML/CSS editor.  Layout HTML must
 // remain in HTML mode or ProseMirror drops divs, gradients and inline styles.
 function hasDesignedHtml(html: string) {
-  return /<[a-z][^>]*\bstyle\s*=/i.test(html) ||
-    /<(?:div|section|article|table|figure|picture|iframe)\b/i.test(html);
+  // Any HTML source belongs in source mode; TipTap cannot round-trip arbitrary tags.
+  return /<(?:[a-z][\w:-]*\b[^>]*|!doctype\b[^>]*|!--[\s\S]*?--)>/i.test(html);
 }
 
 function cleanPastedHtml(html: string) {

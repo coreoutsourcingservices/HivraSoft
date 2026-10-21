@@ -1,4 +1,5 @@
 import Link from "next/link";
+import DOMPurify from "isomorphic-dompurify";
 import { absoluteUrl, blogMetadata, blogSchema, blogSeo, webpageSchema, breadcrumbs } from "@/lib/seo";
 import StructuredData from "@/src/components/Storefront/StructuredData";
 import { notFound } from "next/navigation";
@@ -74,7 +75,7 @@ export default async function BlogDetailPage({ params }: Props) {
         <article className="min-w-0">
           {blog.featuredImage?.url && <img src={blog.featuredImage.url} alt={blog.featuredImage.alt || blog.title} className="mb-8 h-auto w-full rounded-2xl object-contain" />}
           {blog.customCss && <style>{blog.customCss}</style>}
-          <div className={`blog-public-content min-w-0 overflow-hidden rounded-2xl bg-white px-5 py-7 shadow-sm sm:px-9 sm:py-10${legacyPinkTemplate ? " blog-public-content--legacy-pink" : ""}`} dangerouslySetInnerHTML={{ __html: (blog.content || "").replace(/<h1(\s[^>]*)?>/gi, "<h2$1>").replace(/<\/h1>/gi, "</h2>") }} />
+          <div className={`blog-public-content min-w-0 overflow-hidden rounded-2xl bg-white px-5 py-7 shadow-sm sm:px-9 sm:py-10${legacyPinkTemplate ? " blog-public-content--legacy-pink" : ""}`} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(blog.content || "").replace(/<h1(\s[^>]*)?>/gi, "<h2$1>").replace(/<\/h1>/gi, "</h2>") }} />
         </article>
         <aside className="min-w-0 space-y-6 lg:sticky lg:top-6 lg:self-start" aria-label="Related blog articles">
           <section className="rounded-2xl border border-[#251B19]/10 bg-white p-5 sm:p-6">

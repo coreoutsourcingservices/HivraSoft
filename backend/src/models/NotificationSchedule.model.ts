@@ -35,7 +35,7 @@ const schema = new Schema<INotificationSchedule>(
   {
     name: { type: String, required: true, trim: true, maxlength: 160 },
     title: { type: String, required: true, trim: true, maxlength: 160 },
-    message: { type: String, required: true, trim: true, maxlength: 50000 },
+    message: { type: String, required: true, maxlength: 50000 },
     subject: { type: String, required: true, trim: true, maxlength: 200 },
     deliveryEmail: { type: Boolean, default: false },
     deliveryWebsite: { type: Boolean, default: true },

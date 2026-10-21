@@ -28,8 +28,8 @@ type FooterLink = {
 
 const CUSTOMER_SUPPORT = [
   {
-    name: "Help Center",
-    href: "/help",
+    name: "Privacy",
+    href: "/privacy",
   },
   {
     name: "Size Guide",
@@ -42,14 +42,6 @@ const CUSTOMER_SUPPORT = [
   {
     name: "Shipping Information",
     href: "/shipping",
-  },
-  {
-    name: "Track Your Order",
-    href: "/account/orders",
-  },
-  {
-    name: "Payment Methods",
-    href: "/payment-methods",
   },
   {
     name: "FAQ",
