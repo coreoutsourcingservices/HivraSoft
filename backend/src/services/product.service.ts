@@ -1103,7 +1103,7 @@ const getListingImages = (
   return listingImages;
 };
 
-const formatProductResponse = (
+export const formatProductResponse = (
   input: any,
   limitImages: boolean
 ) => {

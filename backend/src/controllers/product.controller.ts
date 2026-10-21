@@ -2,6 +2,7 @@ import {
   Request,
   Response,
 } from "express";
+import { getAdminProductsPage } from "../services/admin-product-list.service";
 
 import {
   createProduct,
@@ -155,10 +156,14 @@ export const createProductController =
 
 export const getAllProductsController =
   async (
-    _req: Request,
+    req: Request,
     res: Response
   ) => {
     try {
+      if (req.query.page !== undefined) {
+        const result = await getAdminProductsPage(req.query);
+        return res.status(200).json({ success: true, count: result.products.length, ...result });
+      }
       const products =
         await getAllProducts();
 

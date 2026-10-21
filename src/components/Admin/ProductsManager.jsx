@@ -10,7 +10,7 @@ import {
 
   useEffect,
 
-  useMemo,
+  useRef,
 
   useState,
 
@@ -361,6 +361,10 @@ function normalizeProduct(product) {
 export default function ProductsManager() {
 
   const [products, setProducts] = useState([]);
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({ page: 1, pageSize: 10, total: 0, totalPages: 1, totalProducts: 0 });
+  const [categoryOptions, setCategoryOptions] = useState([]);
+  const requestRef = useRef(0);
 
   const [loading, setLoading] = useState(true);
 
@@ -393,172 +397,39 @@ export default function ProductsManager() {
 
 
   const loadProducts = useCallback(async () => {
-
+    const request = ++requestRef.current;
+    setLoading(true);
+    setError("");
     try {
-
-      setLoading(true);
-
-      setError("");
-
-      setSuccess("");
-
-
-
-      const response = await apiFetch("/api/products", {
-
-        method: "GET",
-
+      const query = new URLSearchParams({
+        page: String(page), limit: "10", search, status, category,
+        productType, stockStatus, seoStatus,
       });
-
-
-
-      setProducts(
-
-        getProductsFromResponse(response)
-
-          .map(normalizeProduct)
-
-          .filter((product) => Boolean(product.id))
-
-      );
-
+      const response = await apiFetch(`/api/products?${query}`, { method: "GET" });
+      if (request !== requestRef.current) return;
+      setProducts(getProductsFromResponse(response).map(normalizeProduct).filter(product => Boolean(product.id)));
+      setPagination(response.pagination);
+      setCategoryOptions(response.categories || []);
+      setPage(response.pagination.page);
+      setSelectedIds([]);
     } catch (loadError) {
-
-      setError(getErrorMessage(loadError, "Unable to load products."));
-
+      if (request === requestRef.current) setError(getErrorMessage(loadError, "Unable to load products."));
     } finally {
-
-      setLoading(false);
-
+      if (request === requestRef.current) setLoading(false);
     }
-
-  }, []);
-
-
+  }, [page, search, status, category, productType, stockStatus, seoStatus]);
 
   useEffect(() => {
-
     void loadProducts();
-
+    return () => { requestRef.current++; };
   }, [loadProducts]);
 
-
-
-  const categoryOptions = useMemo(() => {
-
-    const map = new Map();
-
-
-
-    products.forEach((product) => {
-
-      product.categories.forEach((item) => {
-
-        if (item.id && item.name) map.set(item.id, item.name);
-
-      });
-
-    });
-
-
-
-    return [...map.entries()]
-
-      .map(([id, name]) => ({ id, name }))
-
-      .sort((a, b) => a.name.localeCompare(b.name));
-
-  }, [products]);
-
-
-
-  const filteredProducts = useMemo(() => {
-
-    const text = search.trim().toLowerCase();
-
-
-
-    return products.filter((product) => {
-
-      const searchMatch =
-
-        !text ||
-
-        product.name.toLowerCase().includes(text) ||
-
-        product.slug.toLowerCase().includes(text) ||
-
-        product.id.toLowerCase().includes(text) ||
-
-        product.categoriesText.toLowerCase().includes(text) ||
-
-        product.colors.some((color) => color.name.toLowerCase().includes(text));
-
-
-
-      const statusMatch = status === "all" || product.status === status;
-
-      const categoryMatch =
-
-        category === "all" ||
-
-        product.categories.some((item) => item.id === category);
-
-      const typeMatch =
-
-        productType === "all" ||
-
-        (productType === "color" && product.isColor) ||
-
-        (productType === "no-color" && !product.isColor);
-
-      const stockMatch =
-
-        stockStatus === "all" ||
-
-        (stockStatus === "in" && product.totalStock >= 10) ||
-
-        (stockStatus === "low" && product.totalStock > 0 && product.totalStock < 10) ||
-
-        (stockStatus === "out" && product.totalStock <= 0);
-
-      const seoMatch =
-
-        seoStatus === "all" ||
-
-        (seoStatus === "good" && product.seoScore >= 80) ||
-
-        (seoStatus === "warning" &&
-
-          product.seoScore >= 60 &&
-
-          product.seoScore < 80) ||
-
-        (seoStatus === "poor" && product.seoScore < 60);
-
-
-
-      return (
-
-        searchMatch &&
-
-        statusMatch &&
-
-        categoryMatch &&
-
-        typeMatch &&
-
-        stockMatch &&
-
-        seoMatch
-
-      );
-
-    });
-
-  }, [products, search, status, category, productType, stockStatus, seoStatus]);
-
-
+  const changeFilter = (setter, value) => {
+    setter(value);
+    setPage(1);
+    setSelectedIds([]);
+  };
+  const filteredProducts = products;
 
   const visibleIds = filteredProducts.map((product) => product.id);
 
@@ -569,6 +440,8 @@ export default function ProductsManager() {
 
 
   const clearFilters = () => {
+    setPage(1);
+    setSelectedIds([]);
 
     setSearch("");
 
@@ -764,6 +637,7 @@ export default function ProductsManager() {
 
       setSelectedIds((current) => current.filter((id) => id !== product.id));
 
+      await loadProducts();
       setSuccess("Product moved to Trash.");
 
     } catch (deleteError) {
@@ -940,6 +814,7 @@ export default function ProductsManager() {
 
 
 
+      if (bulkAction !== "export") await loadProducts();
       setBulkAction("");
 
     } catch (actionError) {
@@ -1092,7 +967,7 @@ export default function ProductsManager() {
 
               value={search}
 
-              onChange={(event) => setSearch(event.target.value)}
+              onChange={(event) => changeFilter(setSearch, event.target.value)}
 
               placeholder="Search by product, ID, slug, color or category..."
 
@@ -1108,7 +983,7 @@ export default function ProductsManager() {
 
         <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
 
-          <FilterSelect value={category} onChange={setCategory}>
+          <FilterSelect value={category} onChange={(value) => changeFilter(setCategory, value)}>
 
             <option value="all">All categories</option>
 
@@ -1126,7 +1001,7 @@ export default function ProductsManager() {
 
 
 
-          <FilterSelect value={productType} onChange={setProductType}>
+          <FilterSelect value={productType} onChange={(value) => changeFilter(setProductType, value)}>
 
             <option value="all">All product types</option>
 
@@ -1138,7 +1013,7 @@ export default function ProductsManager() {
 
 
 
-          <FilterSelect value={stockStatus} onChange={setStockStatus}>
+          <FilterSelect value={stockStatus} onChange={(value) => changeFilter(setStockStatus, value)}>
 
             <option value="all">All stock status</option>
 
@@ -1152,7 +1027,7 @@ export default function ProductsManager() {
 
 
 
-          <FilterSelect value={seoStatus} onChange={setSeoStatus}>
+          <FilterSelect value={seoStatus} onChange={(value) => changeFilter(setSeoStatus, value)}>
 
             <option value="all">All SEO scores</option>
 
@@ -1166,7 +1041,7 @@ export default function ProductsManager() {
 
 
 
-          <FilterSelect value={status} onChange={setStatus}>
+          <FilterSelect value={status} onChange={(value) => changeFilter(setStatus, value)}>
 
             <option value="all">All status</option>
 
@@ -1206,9 +1081,9 @@ export default function ProductsManager() {
 
         <p className="text-[9px] text-[#211A18]/40">
 
-          Showing <strong className="text-[#211A18]">{filteredProducts.length}</strong> of{" "}
-
-          <strong className="text-[#211A18]">{products.length}</strong> products
+          Showing <strong className="text-[#211A18]">{pagination.total ? (pagination.page - 1) * 10 + 1 : 0}–{Math.min(pagination.page * 10, pagination.total)}</strong> of{" "}
+          <strong className="text-[#211A18]">{pagination.total}</strong> matching products
+          {hasFilters ? ` (${pagination.totalProducts} total)` : ""}
 
         </p>
 
@@ -1235,6 +1110,12 @@ export default function ProductsManager() {
       </div>
 
 
+
+      <nav aria-label="Product pagination" className="mt-4 flex flex-wrap items-center justify-end gap-3 text-xs">
+        <button type="button" disabled={loading || busy || page <= 1} onClick={() => setPage(current => current - 1)} className="rounded-xl border border-[#211A18]/15 bg-white px-4 py-2 font-semibold disabled:opacity-40">Previous</button>
+        <span aria-live="polite">Page {pagination.page} of {pagination.totalPages}</span>
+        <button type="button" disabled={loading || busy || page >= pagination.totalPages} onClick={() => setPage(current => current + 1)} className="rounded-xl border border-[#211A18]/15 bg-white px-4 py-2 font-semibold disabled:opacity-40">Next</button>
+      </nav>
 
       <section className="mt-3 w-full min-w-0 overflow-hidden rounded-2xl border border-[#211A18]/10 bg-white shadow-sm">
 
