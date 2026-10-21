@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import DiwaliOffer from "@/src/components/Offers/DiwaliOffer";
+import { getRegularCouponCode, isDiwaliCode } from "@/lib/diwali-offer";
 
 import {
 
@@ -857,6 +859,11 @@ export default function CartPage() {
     }
 
 
+
+    if (cart && cart.codeDiscount > 0 && isDiwaliCode(cart.appliedDiscountCode) && !isDiwaliCode(code)) {
+      setError("Other discount codes cannot be combined with the Diwali offer.");
+      return;
+    }
 
     try {
 
@@ -2760,7 +2767,7 @@ export default function CartPage() {
 
                         positive
 
-                        label={`Coupon ${cart.appliedDiscountCode}`}
+                        label={getRegularCouponCode(cart.appliedDiscountCode) ? `Coupon ${cart.appliedDiscountCode}` : "Diwali offer benefit"}
 
                         value={`-${money(
 
@@ -2838,12 +2845,20 @@ export default function CartPage() {
 
 
 
+                  {cart && <DiwaliOffer
+                    subtotal={cart.subtotal}
+                    productIds={cart.items.map((item) => item.productId)}
+                    appliedCode={cart.appliedDiscountCode}
+                    onAutoApply={handleApplyDiscountCode}
+                    applying={applyingCode || busyItemId !== null}
+                  />}
+
                   {/* =================================================
                       DISCOUNT CODE
 
                       IMPORTANT:
-                      - Available coupon codes cart page par show nahi honge.
-                      - User khud code enter karega.
+                      - Diwali codes use the automatic offer card above.
+                      - Other coupon codes are entered manually here.
                       - Apply hone ke baad backend se jo actual codeDiscount
                         aayega wahi yahan aur Price Details me show hoga.
                   ================================================= */}
@@ -2893,8 +2908,9 @@ export default function CartPage() {
                       </span>
                     </div>
 
-                    {cart
-                      ?.appliedDiscountCode ? (
+                    {cart && cart.codeDiscount > 0 && isDiwaliCode(cart.appliedDiscountCode) ? (
+                      <p className="mt-3 text-[10px] leading-relaxed text-[#80684c]">Other discount codes cannot be combined with the Diwali offer.</p>
+                    ) : cart && getRegularCouponCode(cart.appliedDiscountCode) ? (
                       <div
                         className="
                           mt-3
@@ -3303,6 +3319,10 @@ export default function CartPage() {
                   <Link
 
                     href="/account/checkout"
+                    aria-disabled={applyingCode || busyItemId !== null}
+                    onClick={(event) => {
+                      if (applyingCode || busyItemId !== null) event.preventDefault();
+                    }}
 
                     className="
 

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import DiwaliOffer from "@/src/components/Offers/DiwaliOffer";
 import { loadRazorpayScript, razorpayFailureMessage } from "@/lib/razorpay-loader";
 import {
 
@@ -2014,6 +2015,14 @@ export default function PaymentPage() {
 
 
 
+                  <DiwaliOffer
+                    compact
+                    subtotal={cart.subtotal}
+                    productIds={cart.items.map((item) => item.productId)}
+                    appliedCode={cart.discountCode}
+                    paymentMethod="online"
+                  />
+
                   <div
 
                     className="
@@ -2081,6 +2090,9 @@ export default function PaymentPage() {
                     </strong>
 
                   </div>
+
+
+
 
                 </>
 

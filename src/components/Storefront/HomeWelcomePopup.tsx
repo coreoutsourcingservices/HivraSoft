@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import HomeDiwaliCelebration from "@/src/components/Offers/HomeDiwaliCelebration";
 
 /** Fallback is a real promotional image supplied by the original Prahlad project. */
 const PRAHLAD_IMAGE = "/images/auth/signup-side.png";
@@ -35,10 +36,23 @@ export default function HomeWelcomePopup({
 }) {
   const [open, setOpen] = useState(true);
   const [imageFailed, setImageFailed] = useState(false);
+  const [loadedSource, setLoadedSource] = useState("");
+  const imageRef = useRef<HTMLImageElement>(null);
 
   useEffect(() => {
     setImageFailed(false);
   }, [imageUrl]);
+
+  // Cached images may finish before hydration attaches the load handler.
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      const image = imageRef.current;
+      if (image?.complete && image.naturalWidth > 0) {
+        setLoadedSource(image.getAttribute("src") || "");
+      }
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [imageUrl, imageFailed]);
 
   useEffect(() => {
     if (!open) return;
@@ -55,6 +69,8 @@ export default function HomeWelcomePopup({
   const usingPrahladImage = imageFailed || !imageUrl?.trim();
 
   return (
+    <>
+    <HomeDiwaliCelebration key={source} ready={loadedSource === source} />
     <div
       role="presentation"
       onClick={() => setOpen(false)}
@@ -85,16 +101,20 @@ export default function HomeWelcomePopup({
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
+            ref={imageRef}
             src={source}
             alt={usingPrahladImage ? "HivraSoft Prahlad - Feel Good Everyday" : (imageAlt || "HivraSoft favourites")}
             className="h-full w-full object-contain object-center"
             loading="eager"
+            onLoad={(event) => setLoadedSource(event.currentTarget.getAttribute("src") || "")}
             onError={() => {
+              setLoadedSource("");
               if (!usingPrahladImage) setImageFailed(true);
             }}
           />
         </a>
       </div>
     </div>
+    </>
   );
 }

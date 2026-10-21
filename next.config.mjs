@@ -1,5 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Build against fresh production route types; the running dev server owns
+  // .next/dev/types and may rewrite those files during a production build.
+  typescript: {
+    tsconfigPath: process.env.NODE_ENV === "production" ? "tsconfig.build.json" : "tsconfig.json",
+  },
   // Include dynamic SEO tags in the initial head for crawlers and share previews.
   htmlLimitedBots: /.*/,
   // Enable only the explicitly supplied temporary preview host in development.
