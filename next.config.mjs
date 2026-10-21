@@ -1,5 +1,28 @@
+const production = process.env.NODE_ENV === "production";
+const defaultApiUrl = production ? "https://backend.hivrasoft.com" : "http://localhost:5000";
+
+function publicApiUrl(value) {
+  const candidate = value?.trim().replace(/\/+$/, "");
+  if (!candidate) return defaultApiUrl;
+  try {
+    const url = new URL(candidate);
+    const loopback = /^(?:localhost|127(?:\.\d{1,3}){3}|0\.0\.0\.0|\[::1\])$/i.test(url.hostname);
+    if (!["http:", "https:"].includes(url.protocol) || (production && (loopback || url.protocol !== "https:"))) {
+      return defaultApiUrl;
+    }
+    return candidate;
+  } catch {
+    return defaultApiUrl;
+  }
+}
+
+const browserApiUrl = publicApiUrl(process.env.NEXT_PUBLIC_API_URL);
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Next.js substitutes this value in every browser API caller at build time.
+  // A missing/mistaken hosting variable must never send live visitors to localhost.
+  env: { NEXT_PUBLIC_API_URL: browserApiUrl },
   // Build against fresh production route types; the running dev server owns
   // .next/dev/types and may rewrite those files during a production build.
   typescript: {
@@ -20,7 +43,7 @@ const nextConfig = {
     ];
   },
   async rewrites() {
-    const backend = process.env.API_URL?.replace(/\/$/, "");
+    const backend = (process.env.API_URL?.trim() || browserApiUrl).replace(/\/+$/, "");
     return {
       beforeFiles: [
         { source: "/:slug(buy-[0-9]+-get-[0-9]+-free)", destination: "/offers/:slug" },

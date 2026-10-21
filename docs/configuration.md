@@ -28,6 +28,10 @@ NEXT_PUBLIC_META_PIXEL_ENABLED=true
 ```
 
 `NEXT_PUBLIC_*` values are embedded at build time. Rebuild after changing them.
+Production builds default the public API URL to `https://backend.hivrasoft.com`
+when it is missing, invalid, non-HTTPS, or points to a loopback address. Development
+still defaults to `http://localhost:5000`. This default is applied centrally to
+all browser API callers, including admin, account, storefront and chatbot requests.
 From the repository root, run `npm ci`, `npm run build`, then `npm start`.
 For local development, run `npm run dev -- -p 3000`.
 
