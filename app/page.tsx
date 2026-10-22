@@ -6602,8 +6602,6 @@ export default function HomePage() {
         <HomeWelcomePopup
           imageUrl={homepagePopupImage?.url}
           imageAlt={homepagePopupImage?.alt || homepagePopupImage?.title}
-          href={homepagePopupImage ? bannerHref(homepagePopupImage) : "/new-launch"}
-          newTab={homepagePopupImage?.openInNewTab}
         />
       )}
 

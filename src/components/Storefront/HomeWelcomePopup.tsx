@@ -26,13 +26,9 @@ function bannerImageSrc(value?: string) {
 export default function HomeWelcomePopup({
   imageUrl,
   imageAlt,
-  href = "/new-launch",
-  newTab = false,
 }: {
   imageUrl?: string;
   imageAlt?: string;
-  href?: string;
-  newTab?: boolean;
 }) {
   const [open, setOpen] = useState(true);
   const [imageFailed, setImageFailed] = useState(false);
@@ -91,11 +87,9 @@ export default function HomeWelcomePopup({
         >
           ×
         </button>
-        <a
-          href={usingPrahladImage ? "/new-launch" : href}
-          target={!usingPrahladImage && newTab ? "_blank" : undefined}
-          rel={!usingPrahladImage && newTab ? "noopener noreferrer" : undefined}
-          aria-label="Explore HivraSoft favourites"
+        <button
+          type="button"
+          aria-label="Dismiss HivraSoft favourites"
           onClick={() => setOpen(false)}
           className="block aspect-square w-full overflow-hidden rounded-[22px] border border-white/40 bg-white shadow-[0_25px_80px_rgba(0,0,0,0.38)]"
         >
@@ -112,7 +106,7 @@ export default function HomeWelcomePopup({
               if (!usingPrahladImage) setImageFailed(true);
             }}
           />
-        </a>
+        </button>
       </div>
     </div>
     </>
