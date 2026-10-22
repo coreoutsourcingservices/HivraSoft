@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { trackMetaEvent } from "@/lib/meta-pixel";
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
 
@@ -40,7 +41,7 @@ export default function SearchResults({ query, page }: { query: string; page: nu
         if (!response.success || !Array.isArray(response.products) || !response.pagination) {
           throw new Error("Search unavailable");
         }
-        if (!controller.signal.aborted) setResult(response);
+        if (!controller.signal.aborted) { setResult(response); trackMetaEvent("Search", { search_string: query }); }
       })
       .catch(() => { if (!controller.signal.aborted) setError(true); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });

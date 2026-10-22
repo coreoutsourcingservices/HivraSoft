@@ -1,3 +1,4 @@
+import { trackMetaEvent } from "./meta-pixel";
 import {
   apiFetch,
 } from "./api";
@@ -207,6 +208,10 @@ export async function addToCart(
         },
       }
     );
+
+  if (response.success !== false) {
+    trackMetaEvent("AddToCart", { content_ids: [input.productId], content_type: "product", contents: [{ id: input.productId, quantity: input.quantity ?? 1 }] });
+  }
 
   dispatchCartUpdated();
 

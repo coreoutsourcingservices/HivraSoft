@@ -27,7 +27,7 @@ test('Meta Pixel initializes once, tracks navigation and renders a no-JS fallbac
     return originalLoad.call(this, request, ...args);
   };
   const file = require.resolve('../src/components/Analytics/MetaPixel.tsx');
-  delete require.cache[file];
+  delete require.cache[file]; delete require.cache[require.resolve("../lib/meta-pixel.ts")];
   let root;
   try {
     const Pixel = require(file).default;
@@ -46,13 +46,13 @@ test('Meta Pixel initializes once, tracks navigation and renders a no-JS fallbac
     assert.equal(events().filter(e => e[1] === 'PageView').length, 2);
     await render();
     assert.equal(events().filter(e => e[1] === 'PageView').length, 2, 'Rerenders must not double-count');
-    process.env.NEXT_PUBLIC_META_PIXEL_ENABLED = 'false'; delete require.cache[file];
+    process.env.NEXT_PUBLIC_META_PIXEL_ENABLED = 'false'; delete require.cache[file]; delete require.cache[require.resolve("../lib/meta-pixel.ts")];
     assert.equal(renderToStaticMarkup(React.createElement(require(file).default)), '');
-    process.env.NEXT_PUBLIC_META_PIXEL_ENABLED = 'true'; process.env.NEXT_PUBLIC_META_PIXEL_ID = 'invalid'; delete require.cache[file];
+    process.env.NEXT_PUBLIC_META_PIXEL_ENABLED = 'true'; process.env.NEXT_PUBLIC_META_PIXEL_ID = 'invalid'; delete require.cache[file]; delete require.cache[require.resolve("../lib/meta-pixel.ts")];
     assert.equal(renderToStaticMarkup(React.createElement(require(file).default)), '');
   } finally {
     if (root) await React.act(async () => root.unmount());
-    Module._load = originalLoad; delete require.cache[file]; dom.window.close();
+    Module._load = originalLoad; delete require.cache[file]; delete require.cache[require.resolve("../lib/meta-pixel.ts")]; dom.window.close();
     for (const [key, value] of [['NEXT_PUBLIC_META_PIXEL_ID',originalId],['NEXT_PUBLIC_META_PIXEL_ENABLED',originalEnabled]]) {
       if (value === undefined) delete process.env[key]; else process.env[key] = value;
     }

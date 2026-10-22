@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { trackMetaEvent, metaCartParameters } from "@/lib/meta-pixel";
 import DiwaliOffer from "@/src/components/Offers/DiwaliOffer";
 
 import {
@@ -344,6 +345,7 @@ export default function CheckoutPage() {
           setCart(
             cartData
           );
+          if (cartData.items.length) trackMetaEvent("InitiateCheckout", metaCartParameters(cartData));
 
           setAddresses(
             addressData
@@ -915,6 +917,8 @@ export default function CheckoutPage() {
          ONLINE PAYMENT
          DIRECT RAZORPAY FROM CHECKOUT
       =================================================== */
+
+      trackMetaEvent("AddPaymentInfo", { ...metaCartParameters(cart), payment_method: paymentMethod });
 
       if (
         paymentMethod ===

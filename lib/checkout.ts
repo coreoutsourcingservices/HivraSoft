@@ -1,3 +1,4 @@
+import { trackMetaPurchase } from "./meta-pixel";
 import {
   apiFetch,
 } from "@/lib/api";
@@ -2403,9 +2404,11 @@ export async function createCodOrder(
       }
     );
 
-  return normalizeOrder(
-    response
-  );
+  const order = normalizeOrder(response);
+  if (asObject(response)?.success !== false && !["failed", "cancelled", "canceled"].includes(order.status.toLowerCase())) {
+    trackMetaPurchase(order);
+  }
+  return order;
 }
 
 /* =========================================================
@@ -2545,9 +2548,11 @@ export async function verifyRazorpayPayment(
       }
     );
 
-  return normalizeOrder(
-    response
-  );
+  const order = normalizeOrder(response);
+  if (asObject(response)?.success !== false && !["failed", "cancelled", "canceled"].includes(order.status.toLowerCase()) && ["paid", "captured", "success", "completed"].includes(order.paymentStatus.toLowerCase())) {
+    trackMetaPurchase(order);
+  }
+  return order;
 }
 
 export async function markRazorpayPaymentFailed(

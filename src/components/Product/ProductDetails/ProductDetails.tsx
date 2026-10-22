@@ -4,6 +4,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import DOMPurify from "isomorphic-dompurify";
 import Link from "next/link";
+import { trackMetaEvent } from "@/lib/meta-pixel";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 
@@ -1067,6 +1068,13 @@ export default function ProductDetails({ product, currentSlug }: Props) {
       field(product, "sellingPrice"),
       field(product, "price")
     ) ?? 0;
+
+  const viewedProduct = useRef<string | null>(null);
+  useEffect(() => {
+    if (!productId || viewedProduct.current === productId) return;
+    viewedProduct.current = productId;
+    trackMetaEvent("ViewContent", { content_ids: [productId], content_type: "product", content_name: getProductName(product), value: showPrice, currency: "INR" });
+  }, [productId, product, showPrice]);
 
   const originalPrice = Math.max(
     showPrice,

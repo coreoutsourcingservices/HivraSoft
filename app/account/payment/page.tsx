@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { trackMetaEvent, metaCartParameters } from "@/lib/meta-pixel";
 import DiwaliOffer from "@/src/components/Offers/DiwaliOffer";
 import { loadRazorpayScript, razorpayFailureMessage } from "@/lib/razorpay-loader";
 import {
@@ -678,6 +679,8 @@ export default function PaymentPage() {
         );
 
 
+
+        if (cart?.items.length) trackMetaEvent("AddPaymentInfo", { ...metaCartParameters(cart), payment_method: "online" });
 
         const loaded =
 

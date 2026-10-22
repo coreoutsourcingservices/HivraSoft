@@ -4,6 +4,7 @@
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import Script from "next/script";
+import { META_PIXEL_ID, META_PIXEL_ENABLED, flushMetaEvents, trackMetaEvent } from "@/lib/meta-pixel";
 
 /* =========================================================
    HIVRASOFT META PIXEL
@@ -23,32 +24,7 @@ import Script from "next/script";
    Do not create a second Meta Pixel.
 ========================================================= */
 
-const META_PIXEL_ID =
-  process.env.NEXT_PUBLIC_META_PIXEL_ID?.trim() || "950535477792189";
-
-const META_PIXEL_ENABLED =
-  process.env.NEXT_PUBLIC_META_PIXEL_ENABLED !== "false";
-
-/* =========================================================
-   VALIDATE PIXEL ID
-========================================================= */
-
-const VALID_PIXEL_ID =
-  /^\d{10,20}$/.test(META_PIXEL_ID);
-
-/* =========================================================
-   META PIXEL WINDOW TYPE
-========================================================= */
-
-type MetaPixelFunction = (
-  action: string,
-  eventName: string,
-  parameters?: Record<string, unknown>
-) => void;
-
-type MetaPixelWindow = Window & {
-  fbq?: MetaPixelFunction;
-};
+const VALID_PIXEL_ID = /^\d{10,20}$/.test(META_PIXEL_ID);
 
 /* =========================================================
    NEXT.JS CLIENT ROUTE TRACKING
@@ -78,12 +54,7 @@ function MetaPixelRouteTracker() {
 
     previousPathname.current = pathname;
 
-    const metaWindow =
-      window as MetaPixelWindow;
-
-    if (typeof metaWindow.fbq === "function") {
-      metaWindow.fbq("track", "PageView");
-    }
+    trackMetaEvent("PageView");
   }, [pathname]);
 
   return null;
@@ -113,6 +84,7 @@ export default function MetaPixel() {
       <Script
         id="hivrasoft-meta-pixel"
         strategy="afterInteractive"
+        onReady={flushMetaEvents}
         dangerouslySetInnerHTML={{
           __html: `
             !function(f,b,e,v,n,t,s) {
