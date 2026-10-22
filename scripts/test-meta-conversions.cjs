@@ -25,11 +25,14 @@ test('queues early events, deduplicates purchases, and tracks only successful co
   try {
     const cart = require('../lib/cart.ts');
     const checkout = require('../lib/checkout.ts');
+    const wishlist = require('../lib/wishlist.ts');
     const input = { productId: 'p1', colorId: 'c1', sizeId: 's1', quantity: 2 };
     await cart.addToCart(input);
     assert.equal(events.at(-1)[1], 'AddToCart');
+    await wishlist.addToWishlist('p1');
+    assert.equal(events.at(-1)[1], 'AddToWishlist');
     const count = events.length;
-    response = { success: false }; await cart.addToCart(input);
+    response = { success: false }; await cart.addToCart(input); await wishlist.addToWishlist('p1');
     response = new Error('failed'); await assert.rejects(cart.addToCart(input));
     assert.equal(events.length, count);
     response = { success: true, order: { _id: 'paid-order', total: 1234, paymentStatus: 'paid' } };

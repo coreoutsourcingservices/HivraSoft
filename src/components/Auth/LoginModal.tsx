@@ -1,5 +1,7 @@
 "use client";
 
+import { trackMetaEvent } from "@/lib/meta-pixel";
+
 import {
   createPortal,
 } from "react-dom";
@@ -593,6 +595,8 @@ export default function LoginModal({
         await readResponse(
           response,
         );
+
+      if (mode === "register") trackMetaEvent("CompleteRegistration", { status: true });
 
       const user =
         data.user as

@@ -57,6 +57,19 @@ function MetaPixelRouteTracker() {
     trackMetaEvent("PageView");
   }, [pathname]);
 
+  useEffect(() => {
+    const onContact = (event: MouseEvent) => {
+      const target = event.target;
+      const link = target instanceof Element ? target.closest("a[href]") : null;
+      if (!link) return;
+      const url = new URL(link.getAttribute("href") || "", window.location.href);
+      const channel = url.protocol === "tel:" ? "phone" : url.protocol === "mailto:" ? "email" : ["wa.me", "api.whatsapp.com", "web.whatsapp.com"].includes(url.hostname) ? "whatsapp" : null;
+      if (channel) trackMetaEvent("Contact", { content_name: channel });
+    };
+    document.addEventListener("click", onContact);
+    return () => document.removeEventListener("click", onContact);
+  }, []);
+
   return null;
 }
 

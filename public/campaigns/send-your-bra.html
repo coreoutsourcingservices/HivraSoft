@@ -2388,6 +2388,7 @@
       const response=await fetch(api.replace(/\/$/,'')+'/api/send-your-bra',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
       const result=await response.json().catch(()=>({}));
       if (!response.ok) throw new Error(result.message||'Could not save request');
+      if (result.success !== false) window.parent.postMessage({type: "hivrasoft-campaign-submitted"}, location.origin);
       const message=['Hello Hivra Soft, I want to join the Re:Bra programme.','Name: '+fullName,'Mobile: '+whatsappNumber,'City: '+city,'PIN Code: '+pinCode,'Number of bras: '+quantity,'Condition: '+conditionLabel,'Sending method: '+methodLabel,anythingElse?'Note: '+anythingElse:''].filter(Boolean).join('\n');
       const url='https://wa.me/919420980536?text='+encodeURIComponent(message);
       if(chatWindow) chatWindow.location.replace(url); else window.location.href=url;

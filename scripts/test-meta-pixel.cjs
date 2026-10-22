@@ -7,7 +7,7 @@ const { JSDOM } = require('jsdom');
 
 test('Meta Pixel initializes once, tracks navigation and renders a no-JS fallback', async () => {
   const dom = new JSDOM('<!doctype html><html><body><script></script><main id="root"></main></body></html>', {url:'http://localhost:3000/', runScripts:'outside-only'});
-  global.window = dom.window; global.document = dom.window.document;
+  global.window = dom.window; global.document = dom.window.document; global.Element = dom.window.Element;
   global.IS_REACT_ACT_ENVIRONMENT = true;
   let pathname = '/';
   const executed = new Set();
@@ -21,6 +21,7 @@ test('Meta Pixel initializes once, tracks navigation and renders a no-JS fallbac
     if (request === 'next/script') return {__esModule:true, default:function Script(props) {
       React.useEffect(() => {
         if (!executed.has(props.id)) { executed.add(props.id); dom.window.eval(props.dangerouslySetInnerHTML.__html); }
+        props.onReady?.();
       }, [props.id]);
       return null;
     }};
@@ -42,6 +43,12 @@ test('Meta Pixel initializes once, tracks navigation and renders a no-JS fallbac
     const events = () => Array.from(dom.window.fbq.queue, entry => Array.from(entry));
     assert.deepEqual(events(), [['init','950535477792189'],['track','PageView']]);
     assert.equal(document.querySelectorAll('script[src="https://connect.facebook.net/en_US/fbevents.js"]').length, 1);
+    const contact = document.createElement('a'); contact.href = 'https://wa.me/910000000000';
+    contact.addEventListener('click', e => e.preventDefault()); document.body.append(contact);
+    contact.click();
+    assert.equal(events().filter(e => e[1] === 'Contact').length, 1, 'Contact click fires once in StrictMode');
+    contact.href = '/products'; contact.click();
+    assert.equal(events().filter(e => e[1] === 'Contact').length, 1, 'Ordinary links are not contact events');
     pathname = '/products'; await render();
     assert.equal(events().filter(e => e[1] === 'PageView').length, 2);
     await render();
@@ -56,6 +63,6 @@ test('Meta Pixel initializes once, tracks navigation and renders a no-JS fallbac
     for (const [key, value] of [['NEXT_PUBLIC_META_PIXEL_ID',originalId],['NEXT_PUBLIC_META_PIXEL_ENABLED',originalEnabled]]) {
       if (value === undefined) delete process.env[key]; else process.env[key] = value;
     }
-    delete global.IS_REACT_ACT_ENVIRONMENT;
+    delete global.IS_REACT_ACT_ENVIRONMENT; delete global.Element;
   }
 });

@@ -1,5 +1,7 @@
 "use client";
 
+import { trackMetaEvent } from "@/lib/meta-pixel";
+
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -1089,6 +1091,8 @@ function HeaderSearch() {
             ) {
               return;
             }
+
+            trackMetaEvent("Search", { search_string: searchText });
 
             setItems(
               normalizeSearchItems(

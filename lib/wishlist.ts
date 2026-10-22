@@ -1,3 +1,4 @@
+import { trackMetaEvent } from "./meta-pixel";
 import {
   apiFetch,
 } from "./api";
@@ -230,6 +231,10 @@ export async function addToWishlist(
         body,
       }
     );
+
+  if (response.success !== false) {
+    trackMetaEvent("AddToWishlist", { content_ids: [productId], content_type: "product" });
+  }
 
   dispatchWishlistUpdated();
 

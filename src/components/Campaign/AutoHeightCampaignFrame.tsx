@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { trackMetaEvent } from "@/lib/meta-pixel";
 
 type Props = { title: string; src: string; contentSelector?: string };
 
@@ -12,6 +13,13 @@ export default function AutoHeightCampaignFrame({ title, src, contentSelector }:
   useEffect(() => {
     const iframe = ref.current;
     if (!iframe) return;
+    const onSubmission = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin || event.source !== iframe.contentWindow || event.data?.type !== "hivrasoft-campaign-submitted") return;
+      const campaign = new URL(src, window.location.origin).pathname;
+      if (!["/campaigns/reseller-registration.html", "/campaigns/send-your-bra.html"].includes(campaign)) return;
+      trackMetaEvent("Lead", { content_name: title });
+    };
+    window.addEventListener("message", onSubmission);
     let observer: ResizeObserver | undefined;
     let mutation: MutationObserver | undefined;
     let interval: ReturnType<typeof setInterval> | undefined;
@@ -53,13 +61,14 @@ export default function AutoHeightCampaignFrame({ title, src, contentSelector }:
     window.addEventListener("resize", onResize);
     if (iframe.contentDocument?.readyState === "complete") onLoad();
     return () => {
+      window.removeEventListener("message", onSubmission);
       iframe.removeEventListener("load", onLoad);
       window.removeEventListener("resize", onResize);
       window.clearTimeout(resizeTimer);
       observer?.disconnect(); mutation?.disconnect();
       if (interval) clearInterval(interval);
     };
-  }, [src, contentSelector]);
+  }, [src, contentSelector, title]);
 
   return <iframe ref={ref} title={title} src={src} scrolling="no" style={{ width: "100%", height, border: 0, display: "block", overflow: "hidden" }} />;
 }
