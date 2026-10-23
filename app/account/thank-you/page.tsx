@@ -1,4 +1,5 @@
 "use client";
+import { imageAlt as resolveImageAlt } from "@/lib/image-alt";
 
 import Link from "next/link";
 import {
@@ -321,7 +322,7 @@ export default function ThankYouPage() {
                   <div className="h-24 w-20 shrink-0 overflow-hidden rounded-2xl bg-[#F1ECE8] sm:h-28 sm:w-24">
                     <img
                       src={item.image}
-                      alt={item.name}
+                      alt={resolveImageAlt(item, item.name, "HivraSoft product")}
                       className="h-full w-full object-cover"
                     />
                   </div>

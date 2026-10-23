@@ -1,5 +1,7 @@
-
 "use client";
+import { imageAlt as resolveImageAlt, productImageAlt } from "@/lib/image-alt";
+
+
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import DOMPurify from "isomorphic-dompurify";
@@ -40,6 +42,8 @@ type Props = {
 };
 
 type GalleryImage = {
+  alt?: string;
+  title?: string;
   url: string;
   publicId?: string;
   isDefault?: boolean;
@@ -104,7 +108,7 @@ const decorativeProperties = new Set([
   "vertical-align", "flex-wrap", "flex-direction", "justify-content", "align-items",
   "gap", "row-gap", "column-gap", "overflow", "overflow-x", "overflow-y",
 ]);
-function cleanDescriptionHtml(html?: string): string {
+function cleanDescriptionHtml(html?: string, productName?: string): string {
   if (!html || typeof html !== "string") return "";
   const root = DOMPurify.sanitize(html, {
     ALLOWED_TAGS: descriptionTags,
@@ -128,6 +132,9 @@ function cleanDescriptionHtml(html?: string): string {
     }).filter(Boolean).join(";");
     if (safe) element.setAttribute("style", safe);
     else element.removeAttribute("style");
+  }
+  for (const image of root.querySelectorAll("img")) {
+    image.setAttribute("alt", resolveImageAlt(image.getAttribute("alt"), image.getAttribute("title"), productName, "Product details"));
   }
   // DOMPurify normalizes attribute quotes and encodes unsafe characters.
   return root.innerHTML;
@@ -301,7 +308,7 @@ function ProductGallery({
               >
                 <img
                   src={image.url}
-                  alt={`${name} ${index + 1}`}
+                  alt={resolveImageAlt(image, `${name} ${index + 1}`, "HivraSoft product")}
                   draggable={false}
                   className="h-full w-full object-cover"
                 />
@@ -370,7 +377,7 @@ function ProductGallery({
             {current ? (
               <img
                 src={current.url}
-                alt={name}
+                alt={resolveImageAlt(current, name, "HivraSoft product")}
                 draggable={false}
                 onDoubleClick={() => setZoomOpen(true)}
                 className="h-full w-full cursor-zoom-in object-cover transition-transform duration-500 group-hover:scale-[1.015]"
@@ -495,7 +502,7 @@ function ProductGallery({
 
           <img
             src={current.url}
-            alt={name}
+            alt={resolveImageAlt(current, name, "HivraSoft product")}
             draggable={false}
             className="max-h-[92vh] max-w-[92vw] select-none object-contain"
           />
@@ -713,7 +720,7 @@ function RelatedProductCard({ product }: { product: ApiProduct }) {
           <>
             <img
               src={image}
-              alt={name}
+              alt={productImageAlt(product, image, name)}
               className={`absolute inset-0 h-full w-full object-cover transition-all duration-500 ${
                 hasSecondImage
                   ? "md:group-hover/image:opacity-0"
@@ -724,7 +731,7 @@ function RelatedProductCard({ product }: { product: ApiProduct }) {
             {hasSecondImage && (
               <img
                 src={secondImage}
-                alt={`${name} alternate`}
+                alt={productImageAlt(product, secondImage, `${name} alternate`)}
                 className="absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-500 md:group-hover/image:opacity-100"
               />
             )}
@@ -1002,11 +1009,13 @@ export default function ProductDetails({ product, currentSlug }: Props) {
       ].map((image) => ({
         url: String(image.url || ""),
         publicId: image.publicId,
+        alt: image.alt,
+        title: image.title,
         isDefault: image.isDefault,
       }));
     }
 
-    return getProductImageUrls(product).map((url) => ({ url }));
+    return getProductImageUrls(product).map((url) => ({ url, alt: productImageAlt(product, url, selectedColor?.nameProduct, getProductName(product)) }));
   }, [selectedColor, product]);
 
   /* =======================================================
@@ -1042,7 +1051,7 @@ export default function ProductDetails({ product, currentSlug }: Props) {
   );
 
   const description = cleanDescriptionHtml(
-    selectedColor?.description || product.description
+    selectedColor?.description || product.description, name
   );
 
 
@@ -1344,7 +1353,7 @@ export default function ProductDetails({ product, currentSlug }: Props) {
                         {image?.url && (
                           <img
                             src={image.url}
-                            alt={color.nameColor || name}
+                            alt={resolveImageAlt(image, color.nameColor, name, "HivraSoft product")}
                             className="h-full w-full object-cover"
                           />
                         )}

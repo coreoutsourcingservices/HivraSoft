@@ -1,4 +1,5 @@
 "use client";
+import { imageAlt as resolveImageAlt } from "@/lib/image-alt";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -1151,7 +1152,7 @@ function DesktopStory() {
 
           src={WOMEN_BG}
 
-          alt="Hivra Soft women collection"
+          alt={resolveImageAlt("Hivra Soft women collection", "HivraSoft image")}
 
           fill
 
@@ -1228,7 +1229,7 @@ function DesktopStory() {
             >
               <Image
                 src={src}
-                alt={`Women collection ${index + 1}`}
+                alt={resolveImageAlt(`Women collection ${index + 1}`, "HivraSoft image")}
                 fill
                 sizes="20vw"
                 className="
@@ -1356,7 +1357,7 @@ function DesktopStory() {
 
           src={MEN_BG}
 
-          alt="Hivra Soft men collection"
+          alt={resolveImageAlt("Hivra Soft men collection", "HivraSoft image")}
 
           fill
 
@@ -1430,7 +1431,7 @@ function DesktopStory() {
             >
               <Image
                 src={src}
-                alt={`Men collection ${index + 1}`}
+                alt={resolveImageAlt(`Men collection ${index + 1}`, "HivraSoft image")}
                 fill
                 sizes="20vw"
                 className="
@@ -1859,7 +1860,7 @@ function MobileProductWheel() {
 
                       src={product.image}
 
-                      alt={product.title}
+                      alt={resolveImageAlt(product, product.title, "HivraSoft image")}
 
                       fill
 

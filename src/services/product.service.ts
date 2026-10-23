@@ -1,3 +1,4 @@
+import { productImageAlt } from "@/lib/image-alt";
 /* =========================================================
    API URL
 ========================================================= */
@@ -19,6 +20,9 @@ const API_URL =
 ========================================================= */
 
 export type ApiImage = {
+  alt?: string;
+  altText?: string;
+  title?: string;
   url?: string;
   publicId?: string;
   isDefault?: boolean;
@@ -161,6 +165,8 @@ export type StoreProductData = {
 
   image1: string;
   image2: string;
+  image1Alt?: string;
+  image2Alt?: string;
 
   sellingPrice: number;
   actualPrice: number;
@@ -985,6 +991,8 @@ export function normalizeStoreProduct(
     );
 
   return {
+    image1Alt: productImageAlt(product, images[0], getProductName(product)),
+    image2Alt: productImageAlt(product, images[1] || images[0], `${getProductName(product)} alternate view`),
     /* ID */
 
     id:

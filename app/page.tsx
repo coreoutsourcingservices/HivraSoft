@@ -1,4 +1,5 @@
 "use client";
+import { imageAlt as resolveImageAlt, productImageAlt } from "@/lib/image-alt";
 
 import Link from "next/link";
 import {
@@ -1009,10 +1010,7 @@ function HeroBanner({
                   src={
                     item.url
                   }
-                  alt={
-                    item.alt ||
-                    "Hivra Soft Banner"
-                  }
+                  alt={resolveImageAlt(item, item.alt, "Hivra Soft Banner", "HivraSoft image")}
                   className="
                     h-full
                     w-full
@@ -1693,7 +1691,7 @@ function OnTrendPicks({
                             .image
                             .url
                         }
-                        alt="On Trend"
+                        alt={resolveImageAlt(item .image, item, "On Trend", "HivraSoft image")}
                         className="
                           h-full
                           w-full
@@ -2002,7 +2000,7 @@ function OnTrendPicks({
                             .image
                             .url
                         }
-                        alt="On Trend"
+                        alt={resolveImageAlt(item .image, item, "On Trend", "HivraSoft image")}
                         className="
                           h-full
                           w-full
@@ -2363,9 +2361,7 @@ function CommerceProductCard({
                 src={
                   product.image1
                 }
-                alt={
-                  product.name
-                }
+                alt={productImageAlt(product, product.image1, product.name, "HivraSoft image")}
                 className="
                   absolute
                   inset-0
@@ -2385,7 +2381,7 @@ function CommerceProductCard({
                   product.image2 ||
                   product.image1
                 }
-                alt={`${product.name} alternate`}
+                alt={productImageAlt(product, product.image2 || product.image1, resolveImageAlt(`${product.name} alternate`, "HivraSoft image"))}
                 className="
                   absolute
                   inset-0
@@ -2855,7 +2851,7 @@ function AlwaysInItSection({
             src={
               current.mainImage.url
             }
-            alt={`Always in it ${gender}`}
+            alt={resolveImageAlt(current.mainImage, current, `Always in it ${gender}`, "HivraSoft image")}
             className="
               h-full
               w-full
@@ -4054,7 +4050,7 @@ function NewArrivalsSection({
                         src={
                           image
                         }
-                        alt={`${selected.name} - view ${index + 1}`}
+                        alt={productImageAlt(selectedRawProduct || selected, image, `${selected.name} - view ${index + 1}`)}
                         className="
                           h-full
                           w-full
@@ -4104,9 +4100,7 @@ function NewArrivalsSection({
                   src={
                     displayImage
                   }
-                  alt={
-                    selected.name
-                  }
+                  alt={productImageAlt(selectedRawProduct || selected, displayImage, selected.name)}
                   className="
                     h-full
                     w-full
@@ -4193,9 +4187,7 @@ function NewArrivalsSection({
                     src={
                       product.image1
                     }
-                    alt={
-                      product.name
-                    }
+                    alt={productImageAlt(product, product.image1, product.name, "HivraSoft image")}
                     className="
                       h-full
                       w-full
@@ -4437,7 +4429,7 @@ function NewArrivalsSection({
                           src={
                             image
                           }
-                          alt={`${selected.name} - view ${index + 1}`}
+                          alt={productImageAlt(selectedRawProduct || selected, image, `${selected.name} - view ${index + 1}`)}
                           className="
                             h-full
                             w-full
@@ -4492,9 +4484,7 @@ function NewArrivalsSection({
                 src={
                   displayImage
                 }
-                alt={
-                  selected.name
-                }
+                alt={productImageAlt(selectedRawProduct || selected, displayImage, selected.name)}
                 className="
                   h-full
                   w-full
@@ -4600,9 +4590,7 @@ function NewArrivalsSection({
                         src={
                           product.image1
                         }
-                        alt={
-                          product.name
-                        }
+                        alt={productImageAlt(product, product.image1, product.name, "HivraSoft image")}
                         className="
                           h-full
                           w-full
@@ -5541,11 +5529,7 @@ function ColorSection({
                             .product
                             .image1
                         }
-                        alt={
-                          item
-                            .product
-                            .name
-                        }
+                        alt={productImageAlt(item .product, item .product .image1, item .product .name, "HivraSoft image")}
                         className="
                           h-full
                           w-full
@@ -5952,11 +5936,7 @@ function PromoGrid({
                       src={
                         item.url
                       }
-                      alt={
-                        item.alt ||
-                        item.title ||
-                        "Hivra Soft"
-                      }
+                      alt={resolveImageAlt(item, item.alt, item.title, "Hivra Soft", "HivraSoft image")}
                       className="
                         h-full
                         w-full
@@ -6092,10 +6072,7 @@ function BottomBanner({
           src={
             item.url
           }
-          alt={
-            item.alt ||
-            "Hivra Soft"
-          }
+          alt={resolveImageAlt(item, item.alt, "Hivra Soft", "HivraSoft image")}
           className="
             h-full
             w-full

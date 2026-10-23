@@ -1,4 +1,5 @@
 "use client";
+import { imageAlt as resolveImageAlt } from "@/lib/image-alt";
 
 import Link from "next/link";
 import { trackMetaEvent } from "@/lib/meta-pixel";
@@ -70,7 +71,7 @@ export default function SearchResults({ query, page }: { query: string; page: nu
             {result.products.map((product) => (
               <article key={`${product._id}:${product.slug}`} className="overflow-hidden rounded-[20px] bg-white">
                 <Link href={`/product/${encodeURIComponent(product.slug)}`} className="block">
-                  {product.image?.url ? <img src={product.image.url} alt={product.name} loading="lazy" className="aspect-[3/4] w-full object-cover" /> : <div className="flex aspect-[3/4] items-center justify-center bg-stone-100 text-sm">Image unavailable</div>}
+                  {product.image?.url ? <img src={product.image.url} alt={resolveImageAlt(product.image, product, product.name, "HivraSoft image")} loading="lazy" className="aspect-[3/4] w-full object-cover" /> : <div className="flex aspect-[3/4] items-center justify-center bg-stone-100 text-sm">Image unavailable</div>}
                   <div className="p-4">
                     <p className="mb-2 text-xs uppercase tracking-wider text-stone-500">{product.colorName}</p>
                     <h2 className="mb-3 line-clamp-2 text-sm font-medium">{product.name}</h2>

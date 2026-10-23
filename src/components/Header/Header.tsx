@@ -1,4 +1,5 @@
 "use client";
+import { imageAlt as resolveImageAlt } from "@/lib/image-alt";
 
 import { trackMetaEvent } from "@/lib/meta-pixel";
 
@@ -2395,7 +2396,7 @@ export default function Header() {
                   src={
                     DESKTOP_LOGO_SRC
                   }
-                  alt="HivraSoft"
+                  alt={resolveImageAlt("HivraSoft", "HivraSoft image")}
                   fill
                   priority
                   sizes="148px"
@@ -2420,7 +2421,7 @@ export default function Header() {
                   src={
                     DESKTOP_LOGO_SRC
                   }
-                  alt="HivraSoft"
+                  alt={resolveImageAlt("HivraSoft", "HivraSoft image")}
                   fill
                   priority
                   sizes="230px"
@@ -2659,7 +2660,7 @@ export default function Header() {
                   src={
                     DESKTOP_LOGO_SRC
                   }
-                  alt="HivraSoft"
+                  alt={resolveImageAlt("HivraSoft", "HivraSoft image")}
                   fill
                   sizes="156px"
                   className="
@@ -3328,9 +3329,7 @@ function DesktopCategory({
                           src={
                             imageSrc
                           }
-                          alt={
-                            child.name
-                          }
+                          alt={resolveImageAlt(child.name, "HivraSoft image")}
                           loading="eager"
                           className="
                             absolute

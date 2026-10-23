@@ -1,5 +1,8 @@
 // @ts-nocheck
 "use client";
+import { imageAlt as resolveImageAlt } from "@/lib/image-alt";
+
+
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -774,10 +777,7 @@ export default function CartPage() {
                             {image ? (
                               <img
                                 src={image}
-                                alt={
-                                  item?.product?.name ||
-                                  "Cart product"
-                                }
+                                alt={resolveImageAlt(item?.product?.name, "Cart product", "HivraSoft image")}
                                 className="h-full w-full object-cover"
                               />
                             ) : (
@@ -1123,7 +1123,7 @@ export default function CartPage() {
                           {image ? (
                             <img
                               src={image}
-                              alt={product.name}
+                              alt={resolveImageAlt(product.name, "HivraSoft image")}
                               className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
                             />
                           ) : (

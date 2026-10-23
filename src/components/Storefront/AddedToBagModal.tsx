@@ -1,4 +1,5 @@
 "use client";
+import { imageAlt as resolveImageAlt } from "@/lib/image-alt";
 
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
@@ -53,7 +54,7 @@ export default function AddedToBagModal({ product, onClose, onViewCart }: {
         }}>
         <button type="button" aria-label="Close notification" onClick={onClose} className="absolute right-3 top-3 cursor-pointer rounded-full p-2 hover:bg-black/5"><X size={20} /></button>
         <div className="flex items-center gap-4 pr-5 sm:gap-6">
-          {product.image && <img src={product.image} alt={product.name} className="h-32 w-24 shrink-0 rounded-xl bg-[#f5f2ef] object-cover sm:h-40 sm:w-40" />}
+          {product.image && <img src={product.image} alt={resolveImageAlt(product, product.name, "HivraSoft image")} className="h-32 w-24 shrink-0 rounded-xl bg-[#f5f2ef] object-cover sm:h-40 sm:w-40" />}
           <div className="min-w-0 py-3">
             <h2 id="added-to-bag-heading" className="flex items-center gap-3 text-lg font-bold sm:text-[22px]"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#e90050] text-white"><Check size={21} /></span>Added to bag</h2>
             <p className="mt-3 text-sm leading-snug sm:text-lg">{product.name}</p>

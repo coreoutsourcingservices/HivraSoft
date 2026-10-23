@@ -1,4 +1,5 @@
 "use client";
+import { imageAlt as resolveImageAlt, productImageAlt } from "@/lib/image-alt";
 
 import AddedToBagModal from "./AddedToBagModal";
 
@@ -771,7 +772,7 @@ function GlobalToast({
           src={
             toast.image
           }
-          alt=""
+          alt={resolveImageAlt(toast, toast.subtitle, toast.title, "HivraSoft image")}
           className="
             h-[54px]
             w-[44px]
@@ -981,9 +982,7 @@ function GlobalSizeModal({
               src={
                 product.image1
               }
-              alt={
-                product.name
-              }
+              alt={productImageAlt(product, product.image1, product.name, "HivraSoft image")}
               className="
                 h-[82px]
                 w-[64px]

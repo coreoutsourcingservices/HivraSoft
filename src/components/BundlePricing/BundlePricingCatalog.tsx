@@ -1,4 +1,5 @@
 "use client";
+import { imageAlt as resolveImageAlt } from "@/lib/image-alt";
 
 import Link from "next/link";
 
@@ -279,10 +280,7 @@ function BannerSlider({
               src={
                 banner.image
               }
-              alt={
-                banner.alt ||
-                "Bundle Pricing"
-              }
+              alt={resolveImageAlt(banner, banner.alt, "Bundle Pricing", "HivraSoft product")}
               className="
                 block
                 h-full

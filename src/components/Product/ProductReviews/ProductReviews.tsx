@@ -1,4 +1,5 @@
 "use client";
+import { imageAlt as resolveImageAlt } from "@/lib/image-alt";
 
 import {
   useCallback,
@@ -203,7 +204,7 @@ function ReviewMedia({
             src={
               first.url
             }
-            alt="Customer review"
+            alt={resolveImageAlt(first, "Customer review", "HivraSoft product")}
             className="
               h-full
               w-full

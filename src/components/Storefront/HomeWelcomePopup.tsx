@@ -1,4 +1,5 @@
 "use client";
+import { imageAlt as resolveImageAlt } from "@/lib/image-alt";
 
 import { useEffect, useRef, useState } from "react";
 import HomeDiwaliCelebration from "@/src/components/Offers/HomeDiwaliCelebration";
@@ -97,7 +98,7 @@ export default function HomeWelcomePopup({
           <img
             ref={imageRef}
             src={source}
-            alt={usingPrahladImage ? "HivraSoft Prahlad - Feel Good Everyday" : (imageAlt || "HivraSoft favourites")}
+            alt={resolveImageAlt(usingPrahladImage ? "HivraSoft Prahlad - Feel Good Everyday" : (imageAlt || "HivraSoft favourites"), "HivraSoft image")}
             className="h-full w-full object-contain object-center"
             loading="eager"
             onLoad={(event) => setLoadedSource(event.currentTarget.getAttribute("src") || "")}

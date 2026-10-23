@@ -1,4 +1,5 @@
 "use client";
+import { imageAlt as resolveImageAlt } from "@/lib/image-alt";
 
 import { getRegularCouponCode, isDiwaliCode } from "@/lib/diwali-offer";
 
@@ -487,9 +488,7 @@ export default function CheckoutOrderSummary() {
                       src={
                         item.image
                       }
-                      alt={
-                        item.name
-                      }
+                      alt={resolveImageAlt(item, item.name, "HivraSoft product")}
                       className="
                         h-full
                         w-full

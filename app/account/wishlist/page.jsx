@@ -1,4 +1,5 @@
 "use client";
+import { imageAlt as resolveImageAlt } from "@/lib/image-alt";
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -325,7 +326,7 @@ function RecommendationCard({ product, onMessage, onAddedToWishlist }) {
           {image ? (
             <img
               src={image}
-              alt={product.name || "Product"}
+              alt={resolveImageAlt(product.name, "Product", "HivraSoft product")}
               className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
             />
           ) : (
@@ -811,7 +812,7 @@ export default function WishlistPage() {
                         {getProductImage(featured) ? (
                           <img
                             src={getProductImage(featured)}
-                            alt={featured.name || "Product"}
+                            alt={resolveImageAlt(featured.name, "Product", "HivraSoft product")}
                             className="h-full w-full object-cover"
                           />
                         ) : (
@@ -965,7 +966,7 @@ export default function WishlistPage() {
                                 {image ? (
                                   <img
                                     src={image}
-                                    alt={product.name || "Product"}
+                                    alt={resolveImageAlt(product.name, "Product", "HivraSoft product")}
                                     className="h-full w-full object-cover"
                                   />
                                 ) : (

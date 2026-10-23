@@ -1,4 +1,5 @@
 "use client";
+import { productImageAlt } from "@/lib/image-alt";
 
 import Link from "next/link";
 
@@ -189,9 +190,7 @@ export default function StorefrontProductCard({
                 src={
                   product.image1
                 }
-                alt={
-                  product.name
-                }
+                alt={productImageAlt(product, product.image1, product.name, "HivraSoft product")}
                 className={`
                   absolute
                   inset-0
@@ -217,7 +216,7 @@ export default function StorefrontProductCard({
                   src={
                     product.image2
                   }
-                  alt={`${product.name} alternate`}
+                  alt={productImageAlt(product, product.image2, `${product.name} alternate`, "HivraSoft product")}
                   className="
                     absolute
                     inset-0

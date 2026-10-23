@@ -1,4 +1,5 @@
 "use client";
+import { imageAlt as resolveImageAlt } from "@/lib/image-alt";
 
 import Link from "next/link";
 
@@ -4233,11 +4234,7 @@ export default function OrdersPage() {
 
                                     }
 
-                                    alt={
-
-                                      item.name
-
-                                    }
+                                    alt={resolveImageAlt(item, item.name, "HivraSoft product")}
 
                                     className="
                                       order-1

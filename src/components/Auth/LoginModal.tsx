@@ -1,4 +1,5 @@
 "use client";
+import { imageAlt as resolveImageAlt } from "@/lib/image-alt";
 
 import { trackMetaEvent } from "@/lib/meta-pixel";
 
@@ -1532,12 +1533,7 @@ export default function LoginModal({
                   ? SIGNUP_IMAGE
                   : LOGIN_IMAGE
               }
-              alt={
-                mode ===
-                "register"
-                  ? "HivraSoft create account"
-                  : "HivraSoft login"
-              }
+              alt={resolveImageAlt(mode === "register" ? "HivraSoft create account" : "HivraSoft login", "HivraSoft image")}
               className="
                 h-full
                 w-full

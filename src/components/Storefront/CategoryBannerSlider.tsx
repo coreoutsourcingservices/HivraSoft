@@ -1,4 +1,5 @@
 "use client";
+import { imageAlt as resolveImageAlt } from "@/lib/image-alt";
 
 import Link from "next/link";
 
@@ -189,10 +190,7 @@ export default function CategoryBannerSlider({
                 src={
                   banner.image
                 }
-                alt={
-                  banner.alt ||
-                  "Category banner"
-                }
+                alt={resolveImageAlt(banner, banner.alt, "Category banner", "HivraSoft image")}
                 className="
                   absolute
                   inset-0

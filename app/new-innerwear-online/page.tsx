@@ -265,6 +265,7 @@ export default async function NewLaunchPage() {
       <Header />
 
       <NewLaunchCatalog
+        bannerImageAlts={Object.fromEntries((newLaunchCategory?.images || []).map(image => [image.url, image.alt]))}
         menProducts={
           menProducts
         }

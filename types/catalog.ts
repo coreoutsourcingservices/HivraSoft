@@ -24,6 +24,8 @@ export type CatalogProduct = {
 
   colorName: string;
 
+  image1Alt?: string;
+  image2Alt?: string;
   image1: string;
   image2: string;
 

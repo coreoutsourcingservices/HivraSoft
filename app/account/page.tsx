@@ -1,4 +1,5 @@
 "use client";
+import { imageAlt as resolveImageAlt } from "@/lib/image-alt";
 
 import Link from "next/link";
 import {
@@ -1553,7 +1554,7 @@ export default function AccountPage() {
                   src={
                     WELCOME_BANNER
                   }
-                  alt="Hivra Soft lifestyle"
+                  alt={resolveImageAlt("Hivra Soft lifestyle", "HivraSoft image")}
                   className="
                     h-full
                     w-full
@@ -1761,9 +1762,7 @@ export default function AccountPage() {
                             src={
                               latestOrderItem.image
                             }
-                            alt={
-                              latestOrderItem.name
-                            }
+                            alt={resolveImageAlt(latestOrderItem, latestOrderItem.name, "HivraSoft image")}
                             className="
                               h-full
                               w-full
@@ -1932,9 +1931,7 @@ export default function AccountPage() {
                                 src={
                                   item.image
                                 }
-                                alt={
-                                  item.name
-                                }
+                                alt={resolveImageAlt(item, item.name, "HivraSoft image")}
                                 className="
                                   h-full
                                   w-full
@@ -2073,10 +2070,7 @@ export default function AccountPage() {
                             src={
                               cart.image
                             }
-                            alt={
-                              cart.name ||
-                              "Cart Product"
-                            }
+                            alt={resolveImageAlt(cart, cart.name, "Cart Product", "HivraSoft image")}
                             className="
                               h-full
                               w-full
@@ -2525,7 +2519,7 @@ function AccountProfileCard({
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={avatar}
-                  alt={name}
+                  alt={resolveImageAlt(name, "HivraSoft image")}
                   className="
                     h-6
                     w-6

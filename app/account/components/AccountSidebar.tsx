@@ -1,4 +1,5 @@
 "use client";
+import { imageAlt as resolveImageAlt } from "@/lib/image-alt";
 
 import Link from "next/link";
 
@@ -717,9 +718,7 @@ export default function AccountSidebar() {
                 src={
                   accountAvatar
                 }
-                alt={
-                  accountName
-                }
+                alt={resolveImageAlt(accountName, "HivraSoft image")}
                 className="
                   h-full
                   w-full
@@ -1120,9 +1119,7 @@ export default function AccountSidebar() {
                   src={
                     accountAvatar
                   }
-                  alt={
-                    accountName
-                  }
+                  alt={resolveImageAlt(accountName, "HivraSoft image")}
                   className="
                     h-full
                     w-full

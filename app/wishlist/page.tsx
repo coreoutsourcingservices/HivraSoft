@@ -1,4 +1,5 @@
 "use client";
+import { productImageAlt } from "@/lib/image-alt";
 
 import Link from "next/link";
 
@@ -975,9 +976,7 @@ export default function WishlistPage() {
                                   src={
                                     item.image1
                                   }
-                                  alt={
-                                    item.name
-                                  }
+                                  alt={productImageAlt(item, item.image1, item.name, "HivraSoft product")}
                                   className={`
                                     absolute
                                     inset-0
@@ -1000,7 +999,7 @@ export default function WishlistPage() {
                                     src={
                                       item.image2
                                     }
-                                    alt={`${item.name} alternate`}
+                                    alt={productImageAlt(item, item.image2, `${item.name} alternate`, "HivraSoft product")}
                                     className="
                                       absolute
                                       inset-0

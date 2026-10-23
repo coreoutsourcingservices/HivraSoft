@@ -1,4 +1,5 @@
 "use client";
+import { imageAlt as resolveImageAlt } from "@/lib/image-alt";
 
 import Link from "next/link";
 import { trackMetaEvent, metaCartParameters } from "@/lib/meta-pixel";
@@ -1898,11 +1899,7 @@ export default function PaymentPage() {
 
                                   }
 
-                                  alt={
-
-                                    item.name
-
-                                  }
+                                  alt={resolveImageAlt(item, item.name, "HivraSoft product")}
 
                                   className="
 

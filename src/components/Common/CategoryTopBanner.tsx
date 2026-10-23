@@ -1,3 +1,4 @@
+import { imageAlt as resolveImageAlt } from "@/lib/image-alt";
 import {
   getCategoryBanner,
 } from "@/lib/banner";
@@ -50,9 +51,7 @@ export default async function CategoryTopBanner({
           src={
             banner.imageUrl
           }
-          alt={
-            banner.imageAlt
-          }
+          alt={resolveImageAlt(banner, banner.imageAlt, "HivraSoft image")}
           className="
             absolute
             inset-0

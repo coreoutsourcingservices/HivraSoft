@@ -1,3 +1,4 @@
+import { productImageAlt } from "@/lib/image-alt";
 import {
   API_URL,
 } from "@/lib/api";
@@ -612,7 +613,13 @@ function mapColor(
           Boolean(size)
       );
 
+  const imageName = String(color.nameProduct || product.name || "HivraSoft product").trim();
+  const imageContext = color.nameColor && !imageName.toLowerCase().includes(color.nameColor.toLowerCase())
+    ? imageName + " - " + color.nameColor : imageName;
+  const imageSource = { ...product, images: color.images };
   return {
+    image1Alt: productImageAlt(imageSource, images[0], imageContext),
+    image2Alt: productImageAlt(imageSource, images[1] || images[0], imageContext + " alternate view"),
     variantKey:
       `${productId}:${colorId}`,
 

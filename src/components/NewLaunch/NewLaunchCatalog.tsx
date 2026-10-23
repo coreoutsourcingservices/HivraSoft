@@ -1,4 +1,5 @@
 "use client";
+import { imageAlt as resolveImageAlt, productImageAlt } from "@/lib/image-alt";
 
 import Link from "next/link";
 
@@ -49,6 +50,7 @@ type Props = {
   /* MULTIPLE ADMIN CATEGORY BANNERS */
 
   backgroundImage?: string;
+  bannerImageAlts?: Record<string, string>;
 
   bannerImages?:
     string[];
@@ -207,9 +209,11 @@ function GenderToggle({
 ========================================================= */
 
 function NewLaunchBanner({
+  imageAlts,
   images,
 }: {
   images: string[];
+  imageAlts?: Record<string, string>;
 }) {
   const validImages =
     useMemo(
@@ -336,9 +340,7 @@ function NewLaunchBanner({
             <img
               key={`${image}-${index}`}
               src={image}
-              alt={`Hivra Soft New Launch Banner ${
-                index + 1
-              }`}
+              alt={resolveImageAlt(imageAlts?.[image], `Hivra Soft New Launch Banner ${ index + 1 }`, "HivraSoft product")}
               className={`
                 absolute
                 inset-0
@@ -732,6 +734,7 @@ export default function NewLaunchCatalog({
   womenCategory,
   bannerImages: suppliedBannerImages,
   backgroundImage,
+  bannerImageAlts,
 }: Props) {
   const bannerImages = useMemo(
     () => suppliedBannerImages ?? (backgroundImage ? [backgroundImage] : []),
@@ -1041,6 +1044,7 @@ export default function NewLaunchCatalog({
       =================================================== */}
 
       <NewLaunchBanner
+        imageAlts={bannerImageAlts}
         images={
           bannerImages
         }
@@ -1248,7 +1252,7 @@ export default function NewLaunchCatalog({
                               src={
                                 image
                               }
-                              alt=""
+                              alt={productImageAlt(featured, image, featured.name)}
                               className="
                                 h-full
                                 w-full
@@ -1286,9 +1290,7 @@ export default function NewLaunchCatalog({
                         src={
                           selectedImage
                         }
-                        alt={
-                          featured.name
-                        }
+                        alt={resolveImageAlt(featured.name, "HivraSoft product")}
                         className="
                           h-full
                           w-full
@@ -1398,9 +1400,7 @@ export default function NewLaunchCatalog({
                               src={
                                 product.image1
                               }
-                              alt={
-                                product.name
-                              }
+                              alt={productImageAlt(product, product.image1, product.name, "HivraSoft product")}
                               className="
                                 h-full
                                 w-full
@@ -1830,7 +1830,7 @@ export default function NewLaunchCatalog({
                               src={
                                 image
                               }
-                              alt=""
+                              alt={resolveImageAlt(featured.name, "HivraSoft product")}
                               className="
                                 h-full
                                 w-full
@@ -1866,9 +1866,7 @@ export default function NewLaunchCatalog({
                         src={
                           selectedImage
                         }
-                        alt={
-                          featured.name
-                        }
+                        alt={resolveImageAlt(featured.name, "HivraSoft product")}
                         className="
                           h-full
                           w-full
@@ -1980,9 +1978,7 @@ export default function NewLaunchCatalog({
                                 src={
                                   product.image1
                                 }
-                                alt={
-                                  product.name
-                                }
+                                alt={productImageAlt(product, product.image1, product.name, "HivraSoft product")}
                                 className="
                                   h-full
                                   w-full
