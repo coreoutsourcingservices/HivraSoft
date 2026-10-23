@@ -23,6 +23,8 @@ type LoaderProps = {
   onComplete?: () => void;
 };
 
+const LOADER_DURATION_SECONDS = 1;
+
 /* =========================================================
    GREETINGS
 
@@ -177,7 +179,7 @@ export default function Loader({
 
             onComplete?.();
           },
-          2500,
+          LOADER_DURATION_SECONDS * 1000,
         );
 
       return () => {
@@ -193,6 +195,13 @@ export default function Loader({
     /* =====================================================
        GSAP CONTEXT
     ===================================================== */
+
+    // Keep slow animation frames from extending the loader on busy devices.
+    const completionTimer = window.setTimeout(() => {
+      document.body.style.overflow = previousOverflow;
+      setActive(false);
+      onComplete?.();
+    }, LOADER_DURATION_SECONDS * 1000);
 
     const ctx =
       gsap.context(
@@ -621,6 +630,7 @@ export default function Loader({
 
               onComplete:
                 () => {
+                  window.clearTimeout(completionTimer);
                   document.body.style.overflow =
                     previousOverflow;
 
@@ -1110,6 +1120,10 @@ export default function Loader({
                 "power4.inOut",
             },
           );
+
+          // Fit the complete sequence, including the curtain exit, into one
+          // second on every viewport instead of adding up individual delays.
+          timeline.duration(LOADER_DURATION_SECONDS);
         },
         loader,
       );
@@ -1119,6 +1133,7 @@ export default function Loader({
     ===================================================== */
 
     return () => {
+      window.clearTimeout(completionTimer);
       ctx.revert();
 
       document.body.style.overflow =
