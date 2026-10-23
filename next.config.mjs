@@ -67,7 +67,11 @@ const nextConfig = {
     };
   },
   images: {
-    remotePatterns: [{ protocol: "https", hostname: "images.unsplash.com" }],
+    imageSizes: [16, 32, 48, 64, 96, 128, 188, 256, 320, 384, 480, 800, 960, 1280, 1600],
+    remotePatterns: [
+      { protocol: "https", hostname: "images.unsplash.com" },
+      { protocol: "https", hostname: "aquamarine-mosquito-320960.hostingersite.com", pathname: "/wp-content/uploads/**" },
+    ],
   },
 };
 export default nextConfig;

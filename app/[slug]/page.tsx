@@ -1,20 +1,24 @@
+import BlogImage from "@/src/components/Blog/BlogImage";
+import { blogImageUrl, blogImageSrcSet } from "@/lib/blog-images";
 import Link from "next/link";
+import type { Metadata } from "next";
 import DOMPurify from "isomorphic-dompurify";
 import { absoluteUrl, blogMetadata, blogSchema, blogSeo, webpageSchema, breadcrumbs } from "@/lib/seo";
 import StructuredData from "@/src/components/Storefront/StructuredData";
 import { notFound } from "next/navigation";
 import Header from "@/src/components/Header/Header";
-import Footer from "@/src/components/Footer/Footer";
 import BlogShare from "@/src/components/Blog/BlogShare";
 import { fetchBlogServer, fetchBlogsServer } from "@/lib/blog-server";
 import type { BlogRecord, BlogTaxonomy } from "@/lib/blog";
 
 export const dynamic = "force-dynamic";
 type Props = { params: Promise<{ slug: string }> };
-export async function generateMetadata({ params }: Props) {
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const result = await fetchBlogServer(slug);
   if (!result?.blog) notFound();
+  // All blogs use seo.metaTitle / seo.metaDescription from their API record.
+  // The shared mapper also handles keywords, canonical, robots and social tags.
   return blogMetadata(result.blog);
 }
 function label(value: BlogTaxonomy | string | null | undefined) {
@@ -25,20 +29,26 @@ function dateText(value?: string | null) {
   const d = new Date(value);
   return Number.isNaN(d.getTime()) ? "" : d.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
 }
-function readMinutes(html: string) {
-  const words = (html || "").replace(/<[^>]*>/g, " ").replace(/&[^;]+;/g, " ").trim().split(/\s+/).filter(Boolean).length;
-  return Math.max(1, Math.ceil(words / 200));
-}
-function authorName(author: BlogRecord["author"]) {
-  return typeof author === "string" ? author : author?.name || "HivraSoft";
-}
 function articleHtml(blog: BlogRecord) {
   const content = DOMPurify.sanitize(blog.content || "", { RETURN_DOM: true }) as HTMLElement;
   for (const image of content.querySelectorAll("img")) {
-    // Preserve explicit decorative alt=""; fill only missing descriptions.
-    if (!image.hasAttribute("alt")) {
+    // Only explicitly decorative images may have an empty description.
+    const decorative = image.getAttribute("role") === "presentation" || image.getAttribute("aria-hidden") === "true";
+    if (!decorative && !image.getAttribute("alt")?.trim()) {
       image.setAttribute("alt", image.getAttribute("title")?.trim() || blog.title);
     }
+  }
+  for (const image of content.querySelectorAll("img")) {
+    const source = image.getAttribute("src");
+    if (source?.startsWith("https://res.cloudinary.com/")) {
+      image.setAttribute("src", blogImageUrl(source, 1280));
+      if (!image.hasAttribute("srcset")) {
+        const srcset = blogImageSrcSet(source, [480, 800, 1280]);
+        if (srcset) { image.setAttribute("srcset", srcset); image.setAttribute("sizes", "(min-width: 1024px) 75vw, 100vw"); }
+      }
+    }
+    image.setAttribute("loading", "lazy");
+    image.setAttribute("decoding", "async");
   }
   return content.innerHTML.replace(/<h1(\s[^>]*)?>/gi, "<h2$1>").replace(/<\/h1>/gi, "</h2>");
 }
@@ -46,7 +56,7 @@ export default async function BlogDetailPage({ params }: Props) {
   const { slug } = await params;
   const [response, latest] = await Promise.all([
     fetchBlogServer(slug),
-    fetchBlogsServer("page=1&limit=30&sort=latest"),
+    fetchBlogsServer("page=1&limit=11&sort=latest"),
   ]);
   if (!response?.blog) notFound();
   const blog = response.blog;
@@ -83,7 +93,7 @@ export default async function BlogDetailPage({ params }: Props) {
       </header>
       <div className="mx-auto grid max-w-[1520px] gap-8 px-4 py-9 sm:px-6 lg:grid-cols-[minmax(0,1fr)_340px] xl:gap-12">
         <article className="min-w-0">
-          {blog.featuredImage?.url && <img src={blog.featuredImage.url} alt={blog.featuredImage.alt || blog.title} className="mb-8 h-auto w-full rounded-2xl object-contain" />}
+          {blog.featuredImage?.url && <BlogImage originalSrc={blog.featuredImage.url} src={blogImageUrl(blog.featuredImage.url, 1280)} srcSet={blogImageSrcSet(blog.featuredImage.url, [480, 800, 1280, 1600])} sizes="(min-width: 1024px) 75vw, 100vw" alt={blog.featuredImage.alt?.trim() || blog.title} decoding="async" className="mb-8 h-auto w-full rounded-2xl object-contain" />}
           {blog.customCss && <style>{blog.customCss}</style>}
           <div className={`blog-public-content min-w-0 overflow-hidden rounded-2xl bg-white px-5 py-7 shadow-sm sm:px-9 sm:py-10${legacyPinkTemplate ? " blog-public-content--legacy-pink" : ""}`} dangerouslySetInnerHTML={{ __html: articleHtml(blog) }} />
         </article>
@@ -92,7 +102,7 @@ export default async function BlogDetailPage({ params }: Props) {
             <h2 className="text-xl font-semibold">Related & Latest Blogs</h2>
             <div className="mt-5 space-y-4">
               {related.map(item => <Link key={item._id || item.slug} href={`/${item.slug}`} className="group flex gap-3 border-b border-[#251B19]/10 pb-4 last:border-0 last:pb-0">
-                {item.featuredImage?.url ? <img src={item.featuredImage.url} alt={item.featuredImage.alt || item.title} loading="lazy" className="h-[76px] w-[94px] shrink-0 rounded-lg object-cover" /> : <div className="h-[76px] w-[94px] shrink-0 rounded-lg bg-[#F5E9E7]" />}
+                {item.featuredImage?.url ? <BlogImage originalSrc={item.featuredImage.url} src={blogImageUrl(item.featuredImage.url, 188)} alt={item.featuredImage.alt?.trim() || item.title} width={94} height={76} decoding="async" loading="lazy" className="h-[76px] w-[94px] shrink-0 rounded-lg object-cover" /> : <div className="h-[76px] w-[94px] shrink-0 rounded-lg bg-[#F5E9E7]" />}
                 <div className="min-w-0"><p className="line-clamp-3 text-sm font-semibold leading-5 group-hover:text-[#A01543]">{item.title}</p><p className="mt-1 text-xs text-[#8E7C76]">{dateText(item.publishedAt || item.createdAt)}</p></div>
               </Link>)}
               {!related.length && <p className="text-sm text-[#8E7C76]">More blogs coming soon.</p>}

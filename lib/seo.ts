@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import type { ApiProduct } from "@/src/services/products";
 import type { BlogRecord } from "./blog";
-import { BLOG_SEO_COPY } from "./blog-seo-copy";
+
 
 export const SITE_URL = (process.env.SITE_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://hivrasoft.com").replace(/\/+$/, "");
 export const BRAND = "HivraSoft";
@@ -88,28 +88,41 @@ export const siteSchema = { "@context": "https://schema.org", "@graph": [
   { "@type": "Organization", "@id": `${SITE_URL}/#organization`, name: BRAND, url: SITE_URL, logo: { "@type": "ImageObject", url: LOGO } },
   { "@type": "WebSite", "@id": `${SITE_URL}/#website`, name: BRAND, url: SITE_URL, publisher: { "@id": `${SITE_URL}/#organization` } },
 ] };
+// Use the API description, keeping the rendered search snippet within the audit limit.
+export function blogMetaDescription(value: unknown) {
+  const text = plainText(value);
+  if (text.length <= 135) return text;
+  const shortened = snippet(text, 134)
+    .replace(/\s+(?:in|for|and|with|of|to|the|a|an|or|at|by)$/i, "")
+    .replace(/[,.!?;:]+$/, "");
+  return shortened + ".";
+}
+// Saved API values are the source of truth for every blog.
 export function blogSeo(blog: BlogRecord): SeoInput {
   const seo = blog.seo || {};
-  const reviewed = BLOG_SEO_COPY[blog.slug];
-  const reviewedTitle = reviewed && seo.metaTitle === reviewed.sourceTitle ? reviewed.title : undefined;
-  const reviewedDescription = reviewed && seo.metaDescription === reviewed.sourceDescription ? reviewed.description : undefined;
-  const title = descriptiveTitle(reviewedTitle || plainText(seo.metaTitle) || blog.title, ["Guide", "Comfort Guide", "Fit & Comfort Guide"]);
-  const topic = snippet(plainText(seo.focusKeyword) || titleTopic(blog.title).split(/[:\u2013]/)[0], 52);
-  const description = seoDescription(reviewedDescription || seo.metaDescription || blog.excerpt, `Explore ${topic} with HivraSoft. Read practical tips on fit, fabric and comfort.`);
-  return { title, description, path: `/${blog.slug}`, canonical: seo.canonicalUrl || undefined,
+  const title = plainText(seo.metaTitle) || plainText(blog.title);
+  const description = blogMetaDescription(plainText(seo.metaDescription) || plainText(blog.excerpt) || plainText(blog.content));
+  const tags = (blog.tags || []).map(tag => typeof tag === "string" ? tag : tag.name);
+  const keywords = [...new Set([
+    ...(Array.isArray(seo.keywords) ? seo.keywords : String(seo.keywords || "").split(",")),
+    ...(Array.isArray(seo.secondaryKeywords) ? seo.secondaryKeywords : []), seo.focusKeyword, ...tags,
+  ].map(plainText).filter(Boolean))];
+  return { title, description, path: "/" + blog.slug, canonical: plainText(seo.canonicalUrl) || undefined,
     image: seo.openGraph?.image || blog.featuredImage?.url || LOGO,
-    keywords: [...(Array.isArray(seo.keywords) ? seo.keywords : []), ...(seo.focusKeyword ? [seo.focusKeyword] : [])], index: seo.robots?.index !== false, follow: seo.robots?.follow !== false,
+    keywords, index: seo.robots?.index !== false, follow: seo.robots?.follow !== false,
     article: { publishedTime: blog.publishedAt || blog.createdAt || undefined, modifiedTime: blog.updatedAt, author: typeof blog.author === "string" ? blog.author : blog.author?.name || BRAND } };
 }
 export function blogMetadata(blog: BlogRecord): Metadata {
   const input = blogSeo(blog), meta = pageMetadata(input), seo = blog.seo || {};
-  const reviewed = BLOG_SEO_COPY[blog.slug];
-  const ogTitle = reviewed && (seo.openGraph?.title || "") === reviewed.sourceOpenGraphTitle ? input.title : seo.openGraph?.title || input.title;
-  const ogDescription = reviewed && (seo.openGraph?.description || "") === reviewed.sourceOpenGraphDescription ? input.description : seo.openGraph?.description;
-  const twitterTitle = reviewed && (seo.twitter?.title || "") === reviewed.sourceTwitterTitle ? input.title : seo.twitter?.title || input.title;
-  const twitterDescription = reviewed && (seo.twitter?.description || "") === reviewed.sourceTwitterDescription ? input.description : seo.twitter?.description;
-  return { ...meta, openGraph: { ...meta.openGraph, title: seoTitle(ogTitle), description: seoDescription(ogDescription, String(meta.description)) },
-    twitter: { card: "summary_large_image", title: seoTitle(twitterTitle), description: seoDescription(twitterDescription, String(meta.description)), images: [absoluteUrl(seo.twitter?.image || input.image || LOGO)] } };
+  return { ...meta, title: { absolute: input.title }, description: input.description,
+    robots: { index: input.index !== false, follow: input.follow !== false },
+    openGraph: { ...meta.openGraph, type: "article", title: plainText(seo.openGraph?.title) || input.title,
+      description: plainText(seo.openGraph?.description) || input.description,
+      images: [{ url: absoluteUrl(input.image || LOGO), alt: blog.featuredImage?.alt || blog.title }],
+      tags: (blog.tags || []).map(tag => typeof tag === "string" ? tag : tag.name) },
+    twitter: { card: "summary_large_image", title: plainText(seo.twitter?.title) || input.title,
+      description: plainText(seo.twitter?.description) || input.description,
+      images: [{ url: absoluteUrl(seo.twitter?.image || input.image || LOGO), alt: blog.featuredImage?.alt || blog.title }] } };
 }
 export function blogSchema(blog: BlogRecord) {
   const input = blogSeo(blog), url = absoluteUrl(input.canonical || input.path);

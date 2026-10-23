@@ -358,6 +358,8 @@ export default async function Footer() {
           <Image
             src="/images/footer/footer-newsletter.png"
             alt=""
+            aria-hidden="true"
+            role="presentation"
             fill
             sizes="100vw"
             className="

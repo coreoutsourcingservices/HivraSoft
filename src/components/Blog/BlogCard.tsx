@@ -1,3 +1,5 @@
+import BlogImage from "./BlogImage";
+import { blogImageUrl, blogImageSrcSet } from "@/lib/blog-images";
 import Link from "next/link";
 import type { BlogRecord, BlogTaxonomy } from "@/lib/blog";
 
@@ -7,8 +9,8 @@ function niceDate(value?: string | null) { if (!value) return ""; const d = new 
 
 export default function BlogCard({ blog }: { blog: BlogRecord }) {
   return <article className="group overflow-hidden rounded-[24px] border border-[#211A18]/10 bg-white shadow-[0_10px_30px_rgba(33,26,24,0.04)]">
-    <Link href={`/${blog.slug}`} className="block aspect-[16/10] overflow-hidden bg-[#F0E9E5]">
-      {blog.featuredImage?.url ? <img src={blog.featuredImage.url} alt={blog.featuredImage.alt || blog.title} loading="lazy" className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"/> : <div className="flex h-full items-center justify-center text-xs text-[#211A18]/35">HivraSoft Blog</div>}
+    <Link href={`/${blog.slug}`} aria-label={blog.title} className="block aspect-[16/10] overflow-hidden bg-[#F0E9E5]">
+      {blog.featuredImage?.url ? <BlogImage originalSrc={blog.featuredImage.url} src={blogImageUrl(blog.featuredImage.url, 640)} srcSet={blogImageSrcSet(blog.featuredImage.url, [320, 640, 960])} sizes="(min-width: 1280px) 33vw, (min-width: 768px) 50vw, 100vw" alt={blog.featuredImage.alt?.trim() || blog.title} decoding="async" loading="lazy" className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"/> : <div className="flex h-full items-center justify-center text-xs text-[#211A18]/35">HivraSoft Blog</div>}
     </Link>
     <div className="p-5 sm:p-6">
       <div className="flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#A51D45]"><span>{taxName(blog.category)}</span><span className="text-[#211A18]/20">•</span><span className="text-[#211A18]/40">{niceDate(blog.publishedAt || blog.scheduledAt)}</span></div>
