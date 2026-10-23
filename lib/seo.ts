@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import type { ApiProduct } from "@/src/services/products";
 import type { BlogRecord } from "./blog";
+import { BLOG_SEO_COPY } from "./blog-seo-copy";
 
 export const SITE_URL = (process.env.SITE_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://hivrasoft.com").replace(/\/+$/, "");
 export const BRAND = "HivraSoft";
 export const LOGO = `${SITE_URL}/images/logos/hivra-desktop.png.png`;
-export const DEFAULT_DESCRIPTION = "Shop comfortable men's and women's innerwear, bras, panties and accessories at HivraSoft. Explore everyday essentials, new arrivals and bundle offers.";
+export const DEFAULT_DESCRIPTION = "Shop men's and women's innerwear at HivraSoft. Explore bras, panties, briefs and trunks in a range of sizes, colours and styles.";
 export function absoluteUrl(path: string) {
   try { const url = new URL(path, `${SITE_URL}/`); return /^https?:$/.test(url.protocol) ? url.href : SITE_URL; }
   catch { return SITE_URL; }
@@ -14,21 +15,55 @@ export function plainText(value: unknown) {
   return String(value || "").replace(/<[^>]*>/g, " ").replace(/&nbsp;|&#160;/gi, " ").replace(/&amp;/gi, "&").replace(/&quot;/gi, '"').replace(/&#39;|&apos;/gi, "'").replace(/\s+/g, " ").trim();
 }
 export type SeoInput = { title: string; description?: string; path: string; image?: string; keywords?: string[]; index?: boolean; follow?: boolean; canonical?: string; article?: { publishedTime?: string; modifiedTime?: string; author: string }; };
+// Cut only at word boundaries; metadata must not contain artificial ellipses.
 export function snippet(value: unknown, limit: number) {
   const text = plainText(value);
   if (text.length <= limit) return text;
-  const prefix = text.slice(0, limit - 1);
-  const boundary = prefix.lastIndexOf(" ");
-  return `${prefix.slice(0, boundary > limit * 0.6 ? boundary : prefix.length).replace(/[\s,;:|–-]+$/, "")}…`;
+  const prefix = text.slice(0, limit + 1);
+  return prefix.slice(0, prefix.lastIndexOf(" ") > 0 ? prefix.lastIndexOf(" ") : limit)
+    .replace(/[\s,;:|\u2013-]+$/, "");
+}
+function titleTopic(value: unknown) {
+  return plainText(value).replace(/\s*[|\u2013-]\s*hivra\s*soft(?:\s.*)?$/i, "").trim();
 }
 export function seoTitle(value: unknown) {
-  const topic = plainText(value).replace(/\s*[|–-]\s*hivra\s*soft\s*$/i, "").trim() || BRAND;
-  return /hivra\s*soft/i.test(topic) ? snippet(topic, 60) : `${snippet(topic, 48)} | ${BRAND}`;
+  const topic = titleTopic(value) || BRAND;
+  const branded = /hivra\s*soft/i.test(topic) ? topic : topic + " | " + BRAND;
+  if (branded.length <= 60) return branded;
+  // Keep a complete 50-60 character API title instead of cutting off its topic.
+  if (topic.length <= 60) return topic;
+  const main = topic.split(/\s*\|\s*/)[0];
+  if (main.length + BRAND.length + 3 <= 60) return main + " | " + BRAND;
+  if (main.length <= 60) return main;
+  return snippet(main, 60).replace(/\s+(?:for|with|and|or|of|the|a|in|&|by)$/i, "");
+}
+export function descriptiveTitle(value: unknown, suffixes: string[]) {
+  const initial = titleTopic(value);
+  const resolved = seoTitle(initial);
+  const topic = resolved.length < 50 ? titleTopic(resolved).split(/\s*\|\s*/)[0] : initial;
+  for (const candidate of [topic, ...suffixes.map(suffix => topic + " " + suffix)]) {
+    const title = seoTitle(candidate);
+    if (title.length >= 50 && title.length <= 60) return candidate;
+  }
+  return topic;
+}
+export function seoDescription(value: unknown, fallback: string) {
+  const text = plainText(value);
+  // Product names alone and cut-off sentences are not useful descriptions.
+  if (text.length >= 70 && text.length <= 135 && /[.!?]$/.test(text)) return text;
+  const sentences = text.match(/[^.!?]+[.!?](?:\s|$)/g) || [];
+  let complete = "";
+  for (const sentence of sentences) {
+    if ((complete + sentence).trim().length > 135) break;
+    complete += sentence;
+  }
+  return complete.trim().length >= 70 ? complete.trim() : fallback;
 }
 export function pageMetadata(input: SeoInput): Metadata {
   const title = plainText(input.title) || BRAND;
   const fullTitle = seoTitle(title);
-  const description = snippet(plainText(input.description) || DEFAULT_DESCRIPTION, 135);
+  const copy = plainText(input.description) || DEFAULT_DESCRIPTION;
+  const description = copy.length <= 135 ? copy : seoDescription(copy, DEFAULT_DESCRIPTION);
   const url = absoluteUrl(input.canonical || input.path);
   const image = absoluteUrl(input.image || LOGO);
   return {
@@ -55,15 +90,26 @@ export const siteSchema = { "@context": "https://schema.org", "@graph": [
 ] };
 export function blogSeo(blog: BlogRecord): SeoInput {
   const seo = blog.seo || {};
-  return { title: seo.metaTitle || blog.title, description: seo.metaDescription || blog.excerpt || plainText(blog.content).slice(0, 160), path: `/${blog.slug}`, canonical: seo.canonicalUrl || undefined,
+  const reviewed = BLOG_SEO_COPY[blog.slug];
+  const reviewedTitle = reviewed && seo.metaTitle === reviewed.sourceTitle ? reviewed.title : undefined;
+  const reviewedDescription = reviewed && seo.metaDescription === reviewed.sourceDescription ? reviewed.description : undefined;
+  const title = descriptiveTitle(reviewedTitle || plainText(seo.metaTitle) || blog.title, ["Guide", "Comfort Guide", "Fit & Comfort Guide"]);
+  const topic = snippet(plainText(seo.focusKeyword) || titleTopic(blog.title).split(/[:\u2013]/)[0], 52);
+  const description = seoDescription(reviewedDescription || seo.metaDescription || blog.excerpt, `Explore ${topic} with HivraSoft. Read practical tips on fit, fabric and comfort.`);
+  return { title, description, path: `/${blog.slug}`, canonical: seo.canonicalUrl || undefined,
     image: seo.openGraph?.image || blog.featuredImage?.url || LOGO,
     keywords: [...(Array.isArray(seo.keywords) ? seo.keywords : []), ...(seo.focusKeyword ? [seo.focusKeyword] : [])], index: seo.robots?.index !== false, follow: seo.robots?.follow !== false,
     article: { publishedTime: blog.publishedAt || blog.createdAt || undefined, modifiedTime: blog.updatedAt, author: typeof blog.author === "string" ? blog.author : blog.author?.name || BRAND } };
 }
 export function blogMetadata(blog: BlogRecord): Metadata {
   const input = blogSeo(blog), meta = pageMetadata(input), seo = blog.seo || {};
-  return { ...meta, openGraph: { ...meta.openGraph, title: seo.openGraph?.title ? seoTitle(seo.openGraph.title) : meta.openGraph?.title, description: snippet(seo.openGraph?.description || meta.description, 135) },
-    twitter: { card: "summary_large_image", title: seoTitle(seo.twitter?.title || input.title), description: snippet(seo.twitter?.description || input.description, 135), images: [absoluteUrl(seo.twitter?.image || input.image || LOGO)] } };
+  const reviewed = BLOG_SEO_COPY[blog.slug];
+  const ogTitle = reviewed && (seo.openGraph?.title || "") === reviewed.sourceOpenGraphTitle ? input.title : seo.openGraph?.title || input.title;
+  const ogDescription = reviewed && (seo.openGraph?.description || "") === reviewed.sourceOpenGraphDescription ? input.description : seo.openGraph?.description;
+  const twitterTitle = reviewed && (seo.twitter?.title || "") === reviewed.sourceTwitterTitle ? input.title : seo.twitter?.title || input.title;
+  const twitterDescription = reviewed && (seo.twitter?.description || "") === reviewed.sourceTwitterDescription ? input.description : seo.twitter?.description;
+  return { ...meta, openGraph: { ...meta.openGraph, title: seoTitle(ogTitle), description: seoDescription(ogDescription, String(meta.description)) },
+    twitter: { card: "summary_large_image", title: seoTitle(twitterTitle), description: seoDescription(twitterDescription, String(meta.description)), images: [absoluteUrl(seo.twitter?.image || input.image || LOGO)] } };
 }
 export function blogSchema(blog: BlogRecord) {
   const input = blogSeo(blog), url = absoluteUrl(input.canonical || input.path);
@@ -72,9 +118,25 @@ export function blogSchema(blog: BlogRecord) {
 export function productSeo(product: ApiProduct, slug: string) {
   const colors = (product.colors || []).filter(color => color.isActive !== false);
   const color = colors.find(color => color.slugProduct === slug) || colors.find(color => color.isDefault) || colors[0];
-  const images = (color?.images || product.mainImages || []).filter(image => image.url);
+  const images = (color?.images?.length ? color.images : product.mainImages || []).filter(image => image.url);
   const name = color?.nameProduct || product.name || "Innerwear";
-  const input: SeoInput = { title: color?.seoTitle || name, description: color?.seoDescription || color?.shortDescription || product.shortDescription || plainText(color?.description || product.description).slice(0, 160) || `Shop ${name} at HivraSoft. Explore available sizes, colors and everyday comfort.`, path: `/product/${slug}`, image: images.find(image => image.isDefault)?.url || images[0]?.url, keywords: [color?.focusKeyword || "", ...(color?.tags || [])] };
+  const label = plainText(name).split(/\s*\|\s*/)[0].replace(/hivra\s*soft\s*/ig, "").replace(/BlueCotton/g, "Blue Cotton").trim();
+  const activeSizes = (color?.sizes || []).filter(size => size.isActive !== false).map(size => size.size || size.name).filter(Boolean);
+  const sizeLabel = activeSizes.length ? activeSizes.length === 1 ? activeSizes[0] : activeSizes[0] + "-" + activeSizes.at(-1) : "";
+  const rawTitle = plainText(color?.seoTitle);
+  // Some old variants contain another colour's SEO title; use their actual name.
+  const selectedColor = plainText(color?.nameColor).toLowerCase();
+  const wrongColor = selectedColor && !/default|multi/i.test(selectedColor) && !rawTitle.toLowerCase().includes(selectedColor)
+    && /\b(?:red|blue|white|black|pink|green|maroon|beige)\b/i.test(rawTitle);
+  const title = descriptiveTitle(wrongColor || /(?:\b\d+\s*(?:x|great|amazing|best|premium|positive)|\bNo\.?\s*1\b|\b24H(?:r)?\b|\bPowerx|5-star)/i.test(rawTitle) ? label : rawTitle || label,
+    [sizeLabel ? "in Sizes " + sizeLabel : "Online", "Shop Online", "Online", "Everyday Comfort", "Daily Wear", "Buy Online", "Comfort Fit", "for Everyday Comfort", "Everyday Styles & Sizes Online"]);
+  const shortLabel = snippet(label, 60);
+  const apiDescription = plainText(color?.seoDescription || color?.shortDescription || product.shortDescription);
+  const unreliableDescription = /(?:\+91|\bcall\b|\border now from\b)/i.test(apiDescription)
+    || (selectedColor && !/default|multi/i.test(selectedColor) && !apiDescription.toLowerCase().includes(selectedColor) && /\b(?:red|blue|white|black|pink|green|maroon|beige)\b/i.test(apiDescription));
+  const description = seoDescription(unreliableDescription ? "" : apiDescription,
+    `Shop ${shortLabel} at HivraSoft. ${sizeLabel ? `Sizes ${sizeLabel}. ` : ""}View colours and product details.`);
+  const input: SeoInput = { title, description, path: `/product/${slug}`, image: images.find(image => image.isDefault)?.url || images[0]?.url, keywords: [color?.focusKeyword || "", ...(color?.tags || [])] };
   const sizes = (color?.sizes || []).filter(size => size.isActive !== false);
   const selected = sizes.find(size => size.isDefault) || sizes.find(size => Number(size.stock || 0) > 0) || sizes[0];
   const price = Number(selected?.showPrice ?? selected?.sellingPrice ?? selected?.price ?? color?.showPrice ?? color?.sellingPrice ?? product.sellingPrice ?? product.price);

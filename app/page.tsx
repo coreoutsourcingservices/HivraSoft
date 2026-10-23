@@ -4054,7 +4054,7 @@ function NewArrivalsSection({
                         src={
                           image
                         }
-                        alt=""
+                        alt={`${selected.name} - view ${index + 1}`}
                         className="
                           h-full
                           w-full
@@ -4437,7 +4437,7 @@ function NewArrivalsSection({
                           src={
                             image
                           }
-                          alt=""
+                          alt={`${selected.name} - view ${index + 1}`}
                           className="
                             h-full
                             w-full

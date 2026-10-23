@@ -1198,7 +1198,7 @@ export default async function Footer() {
             </BottomLink>
 
             <BottomLink
-              href="/terms-and-conditions"
+              href="/terms"
             >
               Terms & Conditions
             </BottomLink>
@@ -1216,7 +1216,7 @@ export default async function Footer() {
             </BottomLink>
 
             <BottomLink
-              href="/sitemap"
+              href="/sitemap.xml"
             >
               Sitemap
             </BottomLink>
