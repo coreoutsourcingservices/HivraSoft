@@ -6,7 +6,8 @@
     "dev": "next dev --webpack --port 3000",
     "build": "next build --webpack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "audit:alt": "node scripts/audit-image-alt.cjs"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.8",

@@ -1,4 +1,4 @@
-import Image from "next/image";
+import Image, { getImageProps } from "next/image";
 import Link from "next/link";
 
 import NewsletterForm from "./NewsletterForm";
@@ -145,6 +145,16 @@ function collectSubCategoryLinks(
 /* =========================================================
    FOOTER
 ========================================================= */
+
+// This artwork is decorative; keep it out of the content image/ALT list.
+const newsletterImage = getImageProps({
+  src: "/images/footer/footer-newsletter.png", alt: "", width: 960, height: 320,
+}).props;
+const newsletterBackground = newsletterImage.srcSet ? "image-set(" + newsletterImage.srcSet
+  .split(", ").map(candidate => {
+    const [url, resolution] = candidate.split(" ");
+    return 'url("' + url + '") ' + resolution;
+  }).join(", ") + ")" : 'url("' + newsletterImage.src + '")';
 
 export default async function Footer() {
   /* =======================================================
@@ -355,17 +365,10 @@ export default async function Footer() {
             inset-0
           "
         >
-          <Image
-            src="/images/footer/footer-newsletter.png"
-            alt=""
+          <div
             aria-hidden="true"
-            role="presentation"
-            fill
-            sizes="100vw"
-            className="
-              object-cover
-              object-center
-            "
+            className="absolute inset-0 bg-cover bg-center"
+            style={{ backgroundImage: newsletterBackground }}
           />
 
           <div
