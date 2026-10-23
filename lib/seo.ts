@@ -14,10 +14,21 @@ export function plainText(value: unknown) {
   return String(value || "").replace(/<[^>]*>/g, " ").replace(/&nbsp;|&#160;/gi, " ").replace(/&amp;/gi, "&").replace(/&quot;/gi, '"').replace(/&#39;|&apos;/gi, "'").replace(/\s+/g, " ").trim();
 }
 export type SeoInput = { title: string; description?: string; path: string; image?: string; keywords?: string[]; index?: boolean; follow?: boolean; canonical?: string; article?: { publishedTime?: string; modifiedTime?: string; author: string }; };
+export function snippet(value: unknown, limit: number) {
+  const text = plainText(value);
+  if (text.length <= limit) return text;
+  const prefix = text.slice(0, limit - 1);
+  const boundary = prefix.lastIndexOf(" ");
+  return `${prefix.slice(0, boundary > limit * 0.6 ? boundary : prefix.length).replace(/[\s,;:|–-]+$/, "")}…`;
+}
+export function seoTitle(value: unknown) {
+  const topic = plainText(value).replace(/\s*[|–-]\s*hivra\s*soft\s*$/i, "").trim() || BRAND;
+  return /hivra\s*soft/i.test(topic) ? snippet(topic, 60) : `${snippet(topic, 48)} | ${BRAND}`;
+}
 export function pageMetadata(input: SeoInput): Metadata {
   const title = plainText(input.title) || BRAND;
-  const fullTitle = /hivra\s*soft/i.test(title) ? title : `${title} | ${BRAND}`;
-  const description = plainText(input.description || DEFAULT_DESCRIPTION).slice(0, 300);
+  const fullTitle = seoTitle(title);
+  const description = snippet(plainText(input.description) || DEFAULT_DESCRIPTION, 135);
   const url = absoluteUrl(input.canonical || input.path);
   const image = absoluteUrl(input.image || LOGO);
   return {
@@ -51,8 +62,8 @@ export function blogSeo(blog: BlogRecord): SeoInput {
 }
 export function blogMetadata(blog: BlogRecord): Metadata {
   const input = blogSeo(blog), meta = pageMetadata(input), seo = blog.seo || {};
-  return { ...meta, openGraph: { ...meta.openGraph, title: seo.openGraph?.title || meta.openGraph?.title, description: seo.openGraph?.description || meta.description || undefined },
-    twitter: { card: "summary_large_image", title: seo.twitter?.title || input.title, description: plainText(seo.twitter?.description || input.description), images: [absoluteUrl(seo.twitter?.image || input.image || LOGO)] } };
+  return { ...meta, openGraph: { ...meta.openGraph, title: seo.openGraph?.title ? seoTitle(seo.openGraph.title) : meta.openGraph?.title, description: snippet(seo.openGraph?.description || meta.description, 135) },
+    twitter: { card: "summary_large_image", title: seoTitle(seo.twitter?.title || input.title), description: snippet(seo.twitter?.description || input.description, 135), images: [absoluteUrl(seo.twitter?.image || input.image || LOGO)] } };
 }
 export function blogSchema(blog: BlogRecord) {
   const input = blogSeo(blog), url = absoluteUrl(input.canonical || input.path);

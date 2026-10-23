@@ -36,6 +36,12 @@ const nextConfig = {
   htmlLimitedBots: /.*/,
   // Enable only the explicitly supplied temporary preview host in development.
   allowedDevOrigins: process.env.PREVIEW_HOST ? [process.env.PREVIEW_HOST] : [],
+  async headers() {
+    return production ? [{
+      source: "/:path*",
+      headers: [{ key: "Strict-Transport-Security", value: "max-age=31536000" }],
+    }] : [];
+  },
   async redirects() {
     return [
       {

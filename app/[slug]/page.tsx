@@ -32,6 +32,16 @@ function readMinutes(html: string) {
 function authorName(author: BlogRecord["author"]) {
   return typeof author === "string" ? author : author?.name || "HivraSoft";
 }
+function articleHtml(blog: BlogRecord) {
+  const content = DOMPurify.sanitize(blog.content || "", { RETURN_DOM: true }) as HTMLElement;
+  for (const image of content.querySelectorAll("img")) {
+    // Preserve explicit decorative alt=""; fill only missing descriptions.
+    if (!image.hasAttribute("alt")) {
+      image.setAttribute("alt", image.getAttribute("title")?.trim() || blog.title);
+    }
+  }
+  return content.innerHTML.replace(/<h1(\s[^>]*)?>/gi, "<h2$1>").replace(/<\/h1>/gi, "</h2>");
+}
 export default async function BlogDetailPage({ params }: Props) {
   const { slug } = await params;
   const [response, latest] = await Promise.all([
@@ -75,7 +85,7 @@ export default async function BlogDetailPage({ params }: Props) {
         <article className="min-w-0">
           {blog.featuredImage?.url && <img src={blog.featuredImage.url} alt={blog.featuredImage.alt || blog.title} className="mb-8 h-auto w-full rounded-2xl object-contain" />}
           {blog.customCss && <style>{blog.customCss}</style>}
-          <div className={`blog-public-content min-w-0 overflow-hidden rounded-2xl bg-white px-5 py-7 shadow-sm sm:px-9 sm:py-10${legacyPinkTemplate ? " blog-public-content--legacy-pink" : ""}`} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(blog.content || "").replace(/<h1(\s[^>]*)?>/gi, "<h2$1>").replace(/<\/h1>/gi, "</h2>") }} />
+          <div className={`blog-public-content min-w-0 overflow-hidden rounded-2xl bg-white px-5 py-7 shadow-sm sm:px-9 sm:py-10${legacyPinkTemplate ? " blog-public-content--legacy-pink" : ""}`} dangerouslySetInnerHTML={{ __html: articleHtml(blog) }} />
         </article>
         <aside className="min-w-0 space-y-6 lg:sticky lg:top-6 lg:self-start" aria-label="Related blog articles">
           <section className="rounded-2xl border border-[#251B19]/10 bg-white p-5 sm:p-6">

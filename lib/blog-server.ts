@@ -1,6 +1,6 @@
 import type { BlogRecord } from "./blog";
 
-const SERVER_API_URL = (process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000").replace(/\/$/, "");
+const SERVER_API_URL = (process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || (process.env.NODE_ENV === "production" ? "https://backend.hivrasoft.com" : "http://localhost:5000")).replace(/\/$/, "");
 
 async function publicFetch<T>(path: string): Promise<T | null> {
   try {
