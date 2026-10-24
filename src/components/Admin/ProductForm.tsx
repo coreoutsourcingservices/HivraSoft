@@ -8,6 +8,7 @@ import {
   type FormEvent,
   type ReactNode,
 } from "react";
+import DescriptionEditor from "./DescriptionEditor";
 import { useRouter } from "next/navigation";
 import {
   analyzeProductSeo,
@@ -3453,27 +3454,13 @@ export default function ProductForm({
 
                       <Field
                         label="Description"
-                        hint="Your original HTML, tags and styles are saved unchanged."
+                        hint="Write formatted text, add images, or paste HTML source."
                       >
-                        <textarea
-                          className={`${inputClass} min-h-52 resize-y py-3 font-mono text-xs leading-6`}
-                          value={
-                            color.description
-                          }
-                          placeholder="<p>Full product description...</p>"
-                          onChange={(
-                            event
-                          ) =>
-                            updateColor(
-                              colorIndex,
-                              {
-                                description:
-                                  event
-                                    .target
-                                    .value,
-                              }
-                            )
-                          }
+                        <DescriptionEditor
+                          value={color.description}
+                          onChange={(description) => updateColor(colorIndex, { description })}
+                          disabled={saving}
+                          folder="products/descriptions"
                         />
                       </Field>
                     </div>

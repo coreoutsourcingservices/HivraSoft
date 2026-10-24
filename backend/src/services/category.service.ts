@@ -26,12 +26,22 @@ import { softDeleteEntity } from "./admin-trash.service";
    TYPES
 ========================================================= */
 
+function normalizeMeta(value: unknown, limit: number, label: string): string {
+  if (value == null) return "";
+  if (typeof value !== "string") throw new Error(label + " must be text.");
+  const text = value.trim();
+  if (text.length > limit) throw new Error(label + " is too long.");
+  return text;
+}
+
 export type CreateCategoryInput = {
   name: string;
 
   slug?: string;
 
   description?: string;
+  metaTitle?: string;
+  metaDescription?: string;
 
   parentId?: string | null;
 
@@ -48,6 +58,8 @@ export type UpdateCategoryInput = {
   slug?: string;
 
   description?: string;
+  metaTitle?: string;
+  metaDescription?: string;
 
   parentId?: string | null;
 
@@ -75,6 +87,8 @@ export type CategoryTreeNode = {
   slug: string;
 
   description: string;
+  metaTitle: string;
+  metaDescription: string;
 
   parent: string | null;
 
@@ -517,6 +531,9 @@ export const createCategory =
             ?.trim() ||
           "",
 
+        metaTitle: normalizeMeta(input.metaTitle, 160, "Meta title"),
+        metaDescription: normalizeMeta(input.metaDescription, 320, "Meta description"),
+
         parent:
           parentInfo.parent,
 
@@ -794,6 +811,9 @@ export const updateCategory =
       category.description =
         input.description.trim();
     }
+
+    if (input.metaTitle !== undefined) category.metaTitle = normalizeMeta(input.metaTitle, 160, "Meta title");
+    if (input.metaDescription !== undefined) category.metaDescription = normalizeMeta(input.metaDescription, 320, "Meta description");
 
     /* IMAGES */
 
@@ -1176,6 +1196,9 @@ export const getCategoryTree =
           description:
             category.description ||
             "",
+
+          metaTitle: category.metaTitle || "",
+          metaDescription: category.metaDescription || "",
 
           parent:
             category.parent

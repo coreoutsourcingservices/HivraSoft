@@ -12,6 +12,8 @@ import {
   useState,
 } from "react";
 
+import DescriptionEditor from "./DescriptionEditor";
+
 import CategoryImagesUploader, {
   CategoryImage,
 } from "./CategoryImagesUploader";
@@ -28,6 +30,8 @@ type CategoryNode = {
   slug: string;
 
   description: string;
+  metaTitle: string;
+  metaDescription: string;
 
   parent: string | null;
 
@@ -54,6 +58,8 @@ type CategoryApiItem = {
   slug?: string;
 
   description?: string;
+  metaTitle?: string;
+  metaDescription?: string;
 
   parent?:
     | string
@@ -81,6 +87,8 @@ type CategoryForm = {
   slug: string;
 
   description: string;
+  metaTitle: string;
+  metaDescription: string;
 
   parentId: string;
 
@@ -104,6 +112,8 @@ const EMPTY_FORM: CategoryForm = {
   name: "",
   slug: "",
   description: "",
+  metaTitle: "",
+  metaDescription: "",
   parentId: "",
   sortOrder: "0",
   isActive: true,
@@ -172,6 +182,9 @@ function normalizeTree(
       description:
         item.description ||
         "",
+
+      metaTitle: item.metaTitle || "",
+      metaDescription: item.metaDescription || "",
 
       parent:
         getParentId(
@@ -917,6 +930,9 @@ export default function CategoryManager() {
             category.description ||
             "",
 
+          metaTitle: category.metaTitle || "",
+          metaDescription: category.metaDescription || "",
+
           parentId:
             getParentId(
               category.parent
@@ -1217,6 +1233,9 @@ export default function CategoryManager() {
 
                   description:
                     form.description.trim(),
+
+                  metaTitle: form.metaTitle.trim(),
+                  metaDescription: form.metaDescription.trim(),
 
                   parentId:
                     form.parentId ||
@@ -2207,34 +2226,25 @@ export default function CategoryManager() {
                   Description
                 </Label>
 
-                <textarea
-                  value={
-                    form.description
-                  }
-                  onChange={(
-                    event
-                  ) =>
-                    setForm(
-                      (
-                        current
-                      ) => ({
-                        ...current,
-
-                        description:
-                          event
-                            .target
-                            .value,
-                      })
-                    )
-                  }
-                  rows={
-                    5
-                  }
-                  placeholder="Category description"
-                  className={`${inputClass} h-auto resize-none py-3`}
+                <DescriptionEditor
+                  value={form.description}
+                  onChange={(description) => setForm((current) => ({ ...current, description }))}
+                  disabled={saving}
+                  folder={cloudinaryCategoryFolder + "/description"}
                 />
               </Field>
             </div>
+
+            <Field>
+              <Label>Meta Title</Label>
+              <input className={inputClass} value={form.metaTitle} maxLength={160} placeholder="Search engine title"
+                onChange={(event) => setForm((current) => ({ ...current, metaTitle: event.target.value }))} />
+            </Field>
+            <Field>
+              <Label>Meta Description</Label>
+              <textarea className={inputClass} value={form.metaDescription} maxLength={320} rows={3} placeholder="Search engine description"
+                onChange={(event) => setForm((current) => ({ ...current, metaDescription: event.target.value }))} />
+            </Field>
 
             {/* SORT */}
 

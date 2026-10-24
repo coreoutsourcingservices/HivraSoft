@@ -168,6 +168,7 @@ async function getDirectProduct(
           method: "GET",
           cache:
             "no-store",
+          signal: AbortSignal.timeout(8_000),
 
           headers: {
             Accept:
@@ -206,6 +207,7 @@ async function getFallbackProduct(
         `${API_URL}/api/products/active`,
         {
           method: "GET",
+          signal: AbortSignal.timeout(8_000),
           cache:
             "no-store",
 
@@ -335,6 +337,24 @@ async function loadProduct(
    PAGE
 ========================================================= */
 const getProduct = cache(loadProduct);
+
+// A colour with its own URL loads its full content on navigation. Do not send
+// every other colour's long HTML description in this page's hydration payload.
+function productForPage(product: ProductDetailsData, slug: string): ProductDetailsData {
+  const colors = product.colors || [];
+  const selected = colors.find((color) => color.slugProduct === slug)
+    || colors.find((color) => color.isDefault && color.isActive !== false)
+    || colors.find((color) => color.isActive !== false);
+  return {
+    ...product,
+    description: selected?.description ? undefined : product.description,
+    colors: colors.filter((color) => color.isActive !== false).map((color) => {
+      if (color === selected || !color.slugProduct) return color;
+      const { description, shortDescription, ...summary } = color;
+      return summary;
+    }),
+  };
+}
 export async function generateMetadata({ params }: ProductPageProps) {
   const { slug } = await params;
   const product = await getProduct(slug);
@@ -370,7 +390,7 @@ export default async function ProductPage({
       <ProductDetails
         key={slug}
         product={
-          product
+          productForPage(product, slug)
         }
         currentSlug={
           slug

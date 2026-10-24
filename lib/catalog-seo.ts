@@ -13,7 +13,7 @@ export const categorySeo = cache(async (path: string): Promise<SeoInput> => {
   const title = node?.name || parts.at(-1)?.replace(/-/g, " ") || department;
   const copy = CATEGORY_SEO_COPY[path];
   const fallback = copy?.[0] === node?.name ? copy : undefined;
-  return { path, title: fallback?.[1] || descriptiveTitle(`${title} Innerwear`, ["Styles to Shop Online", "& Everyday Essentials Online"]), description: seoDescription(node?.description, fallback?.[2] || `Shop ${title} at HivraSoft. Compare available styles, colours and sizes, and view product details online.`), image: node?.images[0]?.url };
+  return { path, preserveDescription: Boolean(node?.metaDescription), title: node?.metaTitle || fallback?.[1] || descriptiveTitle(`${title} Innerwear`, ["Styles to Shop Online", "& Everyday Essentials Online"]), description: node?.metaDescription || seoDescription(node?.description, fallback?.[2] || `Shop ${title} at HivraSoft. Compare available styles, colours and sizes, and view product details online.`), image: node?.images[0]?.url };
 });
 export const offerSeo = cache(async (slug: string): Promise<SeoInput> => {
   const offer = await getOfferBySlug(slug);

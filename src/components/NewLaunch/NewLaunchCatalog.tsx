@@ -90,19 +90,7 @@ function GenderToggle({
 }) {
   return (
     <div
-      className="
-        inline-grid
-        grid-cols-2
-
-        rounded-[11px]
-
-        border
-        border-black/20
-
-        bg-white
-
-        p-1
-      "
+      className="inline-grid grid-cols-2 rounded-[11px] border border-black/20 bg-white p-1"
     >
       <button
         type="button"
@@ -309,24 +297,10 @@ function NewLaunchBanner({
 
   return (
     <section
-      className="
-        relative
-
-        w-full
-
-        overflow-hidden
-
-        bg-[#F8F2EF]
-      "
+      className="relative w-full overflow-hidden bg-[#F8F2EF]"
     >
       <div
-        className="
-          relative
-
-          w-full
-
-          aspect-[1537/536]
-        "
+        className="relative w-full aspect-[1537/536]"
       >
         {/* ===============================================
             ALL BANNERS
@@ -387,43 +361,7 @@ function NewLaunchBanner({
               onClick={
                 previousBanner
               }
-              className="
-                absolute
-
-                left-4
-                top-1/2
-                z-30
-
-                hidden
-
-                h-10
-                w-10
-
-                -translate-y-1/2
-
-                place-items-center
-
-                rounded-full
-
-                bg-white/90
-
-                text-[22px]
-                text-[#292526]
-
-                shadow-[0_5px_18px_rgba(0,0,0,0.15)]
-
-                backdrop-blur
-
-                transition
-
-                hover:bg-white
-
-                sm:grid
-
-                lg:left-8
-                lg:h-11
-                lg:w-11
-              "
+              className="absolute left-4 top-1/2 z-30 hidden h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-[22px] text-[#292526] shadow-[0_5px_18px_rgba(0,0,0,0.15)] backdrop-blur transition hover:bg-white sm:grid lg:left-8 lg:h-11 lg:w-11"
             >
               ‹
             </button>
@@ -434,43 +372,7 @@ function NewLaunchBanner({
               onClick={
                 nextBanner
               }
-              className="
-                absolute
-
-                right-4
-                top-1/2
-                z-30
-
-                hidden
-
-                h-10
-                w-10
-
-                -translate-y-1/2
-
-                place-items-center
-
-                rounded-full
-
-                bg-white/90
-
-                text-[22px]
-                text-[#292526]
-
-                shadow-[0_5px_18px_rgba(0,0,0,0.15)]
-
-                backdrop-blur
-
-                transition
-
-                hover:bg-white
-
-                sm:grid
-
-                lg:right-8
-                lg:h-11
-                lg:w-11
-              "
+              className="absolute right-4 top-1/2 z-30 hidden h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-[22px] text-[#292526] shadow-[0_5px_18px_rgba(0,0,0,0.15)] backdrop-blur transition hover:bg-white sm:grid lg:right-8 lg:h-11 lg:w-11"
             >
               ›
             </button>
@@ -480,37 +382,7 @@ function NewLaunchBanner({
             =========================================== */}
 
             <div
-              className="
-                absolute
-
-                bottom-3
-                left-1/2
-                z-30
-
-                flex
-
-                -translate-x-1/2
-
-                items-center
-
-                gap-1.5
-
-                rounded-full
-
-                bg-white/80
-
-                px-2.5
-                py-1.5
-
-                shadow-sm
-
-                backdrop-blur
-
-                sm:bottom-4
-                sm:gap-2
-                sm:px-3
-                sm:py-2
-              "
+              className="absolute bottom-3 left-1/2 z-30 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-white/80 px-2.5 py-1.5 shadow-sm backdrop-blur sm:bottom-4 sm:gap-2 sm:px-3 sm:py-2"
             >
               {validImages.map(
                 (
@@ -601,70 +473,14 @@ function DynamicCategories({
 
   return (
     <section
-      className="
-        border-y
-        border-black/10
-
-        bg-white
-
-        px-3
-        py-4
-
-        sm:px-5
-        sm:py-5
-
-        lg:px-6
-        lg:py-7
-      "
+      className="border-y border-black/10 bg-white px-3 py-4 sm:px-5 sm:py-5 lg:px-6 lg:py-7"
     >
       <div
-        className="
-          mx-auto
-
-          flex
-          max-w-[1380px]
-
-          gap-2
-
-          overflow-x-auto
-
-          pb-1
-
-          [scrollbar-width:none]
-
-          [&::-webkit-scrollbar]:hidden
-
-          lg:flex-wrap
-          lg:justify-center
-          lg:gap-3
-          lg:overflow-visible
-          lg:pb-0
-        "
+        className="mx-auto flex max-w-[1380px] gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:flex-wrap lg:justify-center lg:gap-3 lg:overflow-visible lg:pb-0"
       >
         <Link
           href={`/${gender}`}
-          className="
-            shrink-0
-
-            rounded-full
-
-            bg-[#B31345]
-
-            px-5
-            py-2.5
-
-            text-[9px]
-            font-bold
-            uppercase
-
-            tracking-[0.1em]
-
-            text-white
-
-            lg:px-6
-            lg:py-3
-            lg:text-[11px]
-          "
+          className="shrink-0 rounded-full bg-[#B31345] px-5 py-2.5 text-[9px] font-bold uppercase tracking-[0.1em] text-white lg:px-6 lg:py-3 lg:text-[11px]"
         >
           All{" "}
 
@@ -683,34 +499,7 @@ function DynamicCategories({
                 child.id
               }
               href={`/${gender}/${child.slug}`}
-              className="
-                shrink-0
-
-                rounded-full
-
-                border
-                border-black/10
-
-                bg-[#F7F5F3]
-
-                px-5
-                py-2.5
-
-                text-[9px]
-                font-semibold
-                uppercase
-
-                tracking-[0.08em]
-
-                transition
-
-                hover:border-[#B31345]
-                hover:text-[#B31345]
-
-                lg:px-6
-                lg:py-3
-                lg:text-[11px]
-              "
+              className="shrink-0 rounded-full border border-black/10 bg-[#F7F5F3] px-5 py-2.5 text-[9px] font-semibold uppercase tracking-[0.08em] transition hover:border-[#B31345] hover:text-[#B31345] lg:px-6 lg:py-3 lg:text-[11px]"
             >
               {
                 child.name
@@ -797,6 +586,9 @@ export default function NewLaunchCatalog({
         womenProducts,
       ],
     );
+
+  const [freshWindow, setFreshWindow] = useState({ gender: "", count: 6 });
+  const freshCount = freshWindow.gender === gender ? freshWindow.count : 6;
 
   const category =
     gender ===
@@ -1029,15 +821,7 @@ export default function NewLaunchCatalog({
 
   return (
     <main
-      className="
-        min-h-screen
-
-        overflow-x-hidden
-
-        bg-white
-
-        text-[#292526]
-      "
+      className="min-h-screen overflow-x-hidden bg-white text-[#292526]"
     >
       {/* ===================================================
           1. MULTIPLE NEW LAUNCH BANNERS
@@ -1055,91 +839,32 @@ export default function NewLaunchCatalog({
       =================================================== */}
 
       <section
-        className="
-          bg-[#EFEFEF]
-
-          px-3
-          py-8
-
-          sm:px-5
-          sm:py-10
-
-          lg:px-10
-          lg:py-12
-        "
+        className="bg-[#EFEFEF] px-3 py-8 sm:px-5 sm:py-10 lg:px-10 lg:py-12"
       >
         <div
-          className="
-            mx-auto
-
-            max-w-[1380px]
-          "
+          className="mx-auto max-w-[1380px]"
         >
           {/* =================================================
               TITLE + GENDER
           ================================================= */}
 
           <div
-            className="
-              mb-7
-
-              flex
-              flex-col
-              items-center
-
-              gap-5
-
-              text-center
-
-              sm:mb-8
-
-              lg:flex-row
-              lg:items-center
-              lg:justify-between
-              lg:text-left
-            "
+            className="mb-7 flex flex-col items-center gap-5 text-center sm:mb-8 lg:flex-row lg:items-center lg:justify-between lg:text-left"
           >
             <div>
               <p
-                className="
-                  mb-2
-
-                  text-[7px]
-
-                  uppercase
-
-                  tracking-[0.35em]
-
-                  text-[#8B7468]
-                "
+                className="mb-2 text-[7px] uppercase tracking-[0.35em] text-[#8B7468]"
               >
                 Just Dropped
               </p>
 
               <h1
-                className="
-                  text-[40px]
-
-                  font-black
-                  uppercase
-
-                  leading-none
-
-                  tracking-[-0.04em]
-
-                  sm:text-[54px]
-
-                  lg:text-[68px]
-                "
+                className="text-[40px] font-black uppercase leading-none tracking-[-0.04em] sm:text-[54px] lg:text-[68px]"
               >
                 New{" "}
 
                 <span
-                  className="
-                    font-light
-
-                    text-[#555152]
-                  "
+                  className="font-light text-[#555152]"
                 >
                   Arrivals
                 </span>
@@ -1165,50 +890,24 @@ export default function NewLaunchCatalog({
               ============================================= */}
 
               <div
-                className="
-                  lg:hidden
-                "
+                className="lg:hidden"
               >
                 <div
-                  className="
-                    grid
-
-                    grid-cols-[78px_minmax(0,1fr)]
-
-                    gap-3
-
-                    sm:grid-cols-[110px_minmax(0,1fr)]
-                    sm:gap-5
-                  "
+                  className="grid grid-cols-[78px_minmax(0,1fr)] gap-3 sm:grid-cols-[110px_minmax(0,1fr)] sm:gap-5"
                 >
                   {/* OTHER IMAGES */}
 
                   <div
-                    className="
-                      flex
-                      flex-col
-                      justify-center
-                    "
+                    className="flex flex-col justify-center"
                   >
                     <p
-                      className="
-                        mb-3
-
-                        text-[10px]
-                        font-medium
-
-                        sm:text-[13px]
-                      "
+                      className="mb-3 text-[10px] font-medium sm:text-[13px]"
                     >
                       Other Images
                     </p>
 
                     <div
-                      className="
-                        flex
-                        flex-col
-                        gap-2
-                      "
+                      className="flex flex-col gap-2"
                     >
                       {featureImages.map(
                         (
@@ -1253,12 +952,7 @@ export default function NewLaunchCatalog({
                                 image
                               }
                               alt={productImageAlt(featured, image, featured.name)}
-                              className="
-                                h-full
-                                w-full
-
-                                object-cover
-                              "
+                              className="h-full w-full object-cover"
                             />
                           </button>
                         ),
@@ -1272,18 +966,7 @@ export default function NewLaunchCatalog({
                     href={`/product/${encodeURIComponent(
                       featured.slug,
                     )}`}
-                    className="
-                      flex
-
-                      h-[430px]
-
-                      items-end
-                      justify-center
-
-                      overflow-hidden
-
-                      sm:h-[540px]
-                    "
+                    className="flex h-[430px] items-end justify-center overflow-hidden sm:h-[540px]"
                   >
                     {selectedImage ? (
                       <img
@@ -1291,29 +974,11 @@ export default function NewLaunchCatalog({
                           selectedImage
                         }
                         alt={resolveImageAlt(featured.name, "HivraSoft product")}
-                        className="
-                          h-full
-                          w-full
-
-                          object-contain
-                          object-bottom
-                        "
+                        className="h-full w-full object-contain object-bottom"
                       />
                     ) : (
                       <div
-                        className="
-                          flex
-
-                          h-full
-                          w-full
-
-                          items-center
-                          justify-center
-
-                          text-xs
-
-                          text-black/40
-                        "
+                        className="flex h-full w-full items-center justify-center text-xs text-black/40"
                       >
                         No image
                       </div>
@@ -1324,26 +989,7 @@ export default function NewLaunchCatalog({
                 {/* PRODUCT SELECTORS */}
 
                 <div
-                  className="
-                    -mx-3
-                    mt-3
-
-                    flex
-
-                    snap-x
-                    snap-mandatory
-
-                    gap-2
-
-                    overflow-x-auto
-
-                    px-3
-                    pb-2
-
-                    [scrollbar-width:none]
-
-                    [&::-webkit-scrollbar]:hidden
-                  "
+                  className="-mx-3 mt-3 flex snap-x snap-mandatory gap-2 overflow-x-auto px-3 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                 >
                   {products
                     .slice(
@@ -1401,12 +1047,7 @@ export default function NewLaunchCatalog({
                                 product.image1
                               }
                               alt={productImageAlt(product, product.image1, product.name, "HivraSoft product")}
-                              className="
-                                h-full
-                                w-full
-
-                                object-cover
-                              "
+                              className="h-full w-full object-cover"
                             />
                           ) : null}
                         </button>
@@ -1417,54 +1058,19 @@ export default function NewLaunchCatalog({
                 {/* MOBILE PRODUCT INFO */}
 
                 <div
-                  className="
-                    mt-4
-
-                    overflow-hidden
-
-                    rounded-[15px]
-
-                    bg-white
-
-                    shadow-sm
-                  "
+                  className="mt-4 overflow-hidden rounded-[15px] bg-white shadow-sm"
                 >
                   <div
-                    className="
-                      bg-[#292727]
-
-                      px-4
-                      py-4
-
-                      text-white
-                    "
+                    className="bg-[#292727] px-4 py-4 text-white"
                   >
                     <span
-                      className="
-                        inline-flex
-
-                        rounded-full
-
-                        bg-white/15
-
-                        px-3
-                        py-1
-
-                        text-[8px]
-                      "
+                      className="inline-flex rounded-full bg-white/15 px-3 py-1 text-[8px]"
                     >
                       New
                     </span>
 
                     <h2
-                      className="
-                        mt-2
-
-                        line-clamp-2
-
-                        text-[13px]
-                        font-semibold
-                      "
+                      className="mt-2 line-clamp-2 text-[13px] font-semibold"
                     >
                       {
                         featured.name
@@ -1473,13 +1079,7 @@ export default function NewLaunchCatalog({
 
                     {featured.colorName ? (
                       <p
-                        className="
-                          mt-1
-
-                          text-[9px]
-
-                          text-white/65
-                        "
+                        className="mt-1 text-[9px] text-white/65"
                       >
                         Color:{" "}
 
@@ -1491,25 +1091,15 @@ export default function NewLaunchCatalog({
                   </div>
 
                   <div
-                    className="
-                      p-4
-                    "
+                    className="p-4"
                   >
                     {/* PRICE */}
 
                     <div
-                      className="
-                        flex
-                        flex-wrap
-                        items-center
-
-                        gap-2
-                      "
+                      className="flex flex-wrap items-center gap-2"
                     >
                       <strong
-                        className="
-                          text-[18px]
-                        "
+                        className="text-[18px]"
                       >
                         {money(
                           featured.showPrice,
@@ -1519,13 +1109,7 @@ export default function NewLaunchCatalog({
                       {featured.originalPrice >
                       featured.showPrice ? (
                         <span
-                          className="
-                            text-[10px]
-
-                            text-black/35
-
-                            line-through
-                          "
+                          className="text-[10px] text-black/35 line-through"
                         >
                           {money(
                             featured.originalPrice,
@@ -1536,19 +1120,7 @@ export default function NewLaunchCatalog({
                       {featured.discountPercent >
                       0 ? (
                         <span
-                          className="
-                            rounded-full
-
-                            bg-[#F7E4EA]
-
-                            px-2.5
-                            py-1
-
-                            text-[8px]
-                            font-bold
-
-                            text-[#B31345]
-                          "
+                          className="rounded-full bg-[#F7E4EA] px-2.5 py-1 text-[8px] font-bold text-[#B31345]"
                         >
                           {
                             featured.discountPercent
@@ -1561,38 +1133,13 @@ export default function NewLaunchCatalog({
                     {/* ACTIONS */}
 
                     <div
-                      className="
-                        mt-4
-
-                        grid
-
-                        grid-cols-[1fr_auto_auto]
-
-                        gap-2
-                      "
+                      className="mt-4 grid grid-cols-[1fr_auto_auto] gap-2"
                     >
                       <Link
                         href={`/product/${encodeURIComponent(
                           featured.slug,
                         )}`}
-                        className="
-                          flex
-                          h-10
-
-                          items-center
-                          justify-center
-
-                          rounded-[7px]
-
-                          border
-                          border-[#292526]
-
-                          px-3
-
-                          text-[8px]
-                          font-bold
-                          uppercase
-                        "
+                        className="flex h-10 items-center justify-center rounded-[7px] border border-[#292526] px-3 text-[8px] font-bold uppercase"
                       >
                         Explore
                       </Link>
@@ -1609,22 +1156,7 @@ export default function NewLaunchCatalog({
                             featured,
                           );
                         }}
-                        className="
-                          grid
-
-                          h-10
-                          w-10
-
-                          place-items-center
-
-                          rounded-[7px]
-
-                          bg-[#292526]
-
-                          text-[17px]
-
-                          text-white
-                        "
+                        className="grid h-10 w-10 place-items-center rounded-[7px] bg-[#292526] text-[17px] text-white"
                       >
                         {commerce.isWishlisted(
                           featured,
@@ -1640,21 +1172,7 @@ export default function NewLaunchCatalog({
                             featured,
                           );
                         }}
-                        className="
-                          h-10
-
-                          rounded-[7px]
-
-                          bg-[#EC477C]
-
-                          px-4
-
-                          text-[8px]
-                          font-bold
-                          uppercase
-
-                          text-white
-                        "
+                        className="h-10 rounded-[7px] bg-[#EC477C] px-4 text-[8px] font-bold uppercase text-white"
                       >
                         Add to Bag
                       </button>
@@ -1667,15 +1185,7 @@ export default function NewLaunchCatalog({
                 {products.length >
                 1 ? (
                   <div
-                    className="
-                      mt-4
-
-                      flex
-
-                      justify-end
-
-                      gap-2
-                    "
+                    className="mt-4 flex justify-end gap-2"
                   >
                     <button
                       type="button"
@@ -1683,22 +1193,7 @@ export default function NewLaunchCatalog({
                       onClick={
                         previousFeaturedProduct
                       }
-                      className="
-                        grid
-
-                        h-9
-                        w-9
-
-                        place-items-center
-
-                        rounded-[5px]
-
-                        bg-[#292727]
-
-                        text-[19px]
-
-                        text-white
-                      "
+                      className="grid h-9 w-9 place-items-center rounded-[5px] bg-[#292727] text-[19px] text-white"
                     >
                       ‹
                     </button>
@@ -1709,22 +1204,7 @@ export default function NewLaunchCatalog({
                       onClick={
                         nextFeaturedProduct
                       }
-                      className="
-                        grid
-
-                        h-9
-                        w-9
-
-                        place-items-center
-
-                        rounded-[5px]
-
-                        bg-[#292727]
-
-                        text-[19px]
-
-                        text-white
-                      "
+                      className="grid h-9 w-9 place-items-center rounded-[5px] bg-[#292727] text-[19px] text-white"
                     >
                       ›
                     </button>
@@ -1737,58 +1217,28 @@ export default function NewLaunchCatalog({
               ============================================= */}
 
               <div
-                className="
-                  hidden
-
-                  gap-8
-
-                  lg:grid
-                  lg:grid-cols-[1.08fr_.92fr]
-                "
+                className="hidden gap-8 lg:grid lg:grid-cols-[1.08fr_.92fr]"
               >
                 {/* ===========================================
                     LEFT
                 =========================================== */}
 
                 <div
-                  className="
-                    grid
-
-                    grid-cols-[175px_minmax(0,1fr)]
-
-                    gap-5
-
-                    xl:grid-cols-[190px_minmax(0,1fr)]
-                  "
+                  className="grid grid-cols-[175px_minmax(0,1fr)] gap-5 xl:grid-cols-[190px_minmax(0,1fr)]"
                 >
                   {/* OTHER IMAGES */}
 
                   <div
-                    className="
-                      flex
-                      flex-col
-                      justify-center
-                    "
+                    className="flex flex-col justify-center"
                   >
                     <p
-                      className="
-                        mb-4
-
-                        text-sm
-                        font-medium
-                      "
+                      className="mb-4 text-sm font-medium"
                     >
                       Other Images
                     </p>
 
                     <div
-                      className="
-                        grid
-
-                        grid-cols-2
-
-                        gap-3
-                      "
+                      className="grid grid-cols-2 gap-3"
                     >
                       {featureImages.map(
                         (
@@ -1831,12 +1281,7 @@ export default function NewLaunchCatalog({
                                 image
                               }
                               alt={resolveImageAlt(featured.name, "HivraSoft product")}
-                              className="
-                                h-full
-                                w-full
-
-                                object-cover
-                              "
+                              className="h-full w-full object-cover"
                             />
                           </button>
                         ),
@@ -1850,16 +1295,7 @@ export default function NewLaunchCatalog({
                     href={`/product/${encodeURIComponent(
                       featured.slug,
                     )}`}
-                    className="
-                      flex
-
-                      h-[560px]
-
-                      items-end
-                      justify-center
-
-                      overflow-hidden
-                    "
+                    className="flex h-[560px] items-end justify-center overflow-hidden"
                   >
                     {selectedImage ? (
                       <img
@@ -1867,29 +1303,11 @@ export default function NewLaunchCatalog({
                           selectedImage
                         }
                         alt={resolveImageAlt(featured.name, "HivraSoft product")}
-                        className="
-                          h-full
-                          w-full
-
-                          object-contain
-                          object-bottom
-                        "
+                        className="h-full w-full object-contain object-bottom"
                       />
                     ) : (
                       <div
-                        className="
-                          flex
-
-                          h-full
-                          w-full
-
-                          items-center
-                          justify-center
-
-                          text-xs
-
-                          text-black/40
-                        "
+                        className="flex h-full w-full items-center justify-center text-xs text-black/40"
                       >
                         No image
                       </div>
@@ -1902,29 +1320,12 @@ export default function NewLaunchCatalog({
                 =========================================== */}
 
                 <div
-                  className="
-                    flex
-                    min-w-0
-                    flex-col
-                    justify-center
-                  "
+                  className="flex min-w-0 flex-col justify-center"
                 >
                   {/* PRODUCT VARIANTS */}
 
                   <div
-                    className="
-                      flex
-
-                      gap-3
-
-                      overflow-x-auto
-
-                      pb-2
-
-                      [scrollbar-width:none]
-
-                      [&::-webkit-scrollbar]:hidden
-                    "
+                    className="flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                   >
                     {products
                       .slice(
@@ -1979,12 +1380,7 @@ export default function NewLaunchCatalog({
                                   product.image1
                                 }
                                 alt={productImageAlt(product, product.image1, product.name, "HivraSoft product")}
-                                className="
-                                  h-full
-                                  w-full
-
-                                  object-cover
-                                "
+                                className="h-full w-full object-cover"
                               />
                             ) : null}
                           </button>
@@ -1995,52 +1391,21 @@ export default function NewLaunchCatalog({
                   {/* PRODUCT INFO */}
 
                   <div
-                    className="
-                      mt-4
-
-                      overflow-hidden
-
-                      rounded-[18px]
-
-                      bg-white
-                    "
+                    className="mt-4 overflow-hidden rounded-[18px] bg-white"
                   >
                     {/* DARK HEADER */}
 
                     <div
-                      className="
-                        bg-[#292727]
-
-                        px-6
-                        py-5
-
-                        text-white
-                      "
+                      className="bg-[#292727] px-6 py-5 text-white"
                     >
                       <span
-                        className="
-                          rounded-full
-
-                          bg-white/15
-
-                          px-4
-                          py-2
-
-                          text-xs
-                        "
+                        className="rounded-full bg-white/15 px-4 py-2 text-xs"
                       >
                         New
                       </span>
 
                       <h2
-                        className="
-                          mt-4
-
-                          line-clamp-2
-
-                          text-xl
-                          font-semibold
-                        "
+                        className="mt-4 line-clamp-2 text-xl font-semibold"
                       >
                         {
                           featured.name
@@ -2049,13 +1414,7 @@ export default function NewLaunchCatalog({
 
                       {featured.colorName ? (
                         <p
-                          className="
-                            mt-1
-
-                            text-xs
-
-                            text-white/70
-                          "
+                          className="mt-1 text-xs text-white/70"
                         >
                           Color:{" "}
 
@@ -2069,23 +1428,13 @@ export default function NewLaunchCatalog({
                     {/* WHITE AREA */}
 
                     <div
-                      className="
-                        p-6
-                      "
+                      className="p-6"
                     >
                       <div
-                        className="
-                          flex
-                          flex-wrap
-                          items-center
-
-                          gap-3
-                        "
+                        className="flex flex-wrap items-center gap-3"
                       >
                         <strong
-                          className="
-                            text-2xl
-                          "
+                          className="text-2xl"
                         >
                           {money(
                             featured.showPrice,
@@ -2095,13 +1444,7 @@ export default function NewLaunchCatalog({
                         {featured.originalPrice >
                         featured.showPrice ? (
                           <span
-                            className="
-                              text-sm
-
-                              text-black/35
-
-                              line-through
-                            "
+                            className="text-sm text-black/35 line-through"
                           >
                             {money(
                               featured.originalPrice,
@@ -2112,19 +1455,7 @@ export default function NewLaunchCatalog({
                         {featured.discountPercent >
                         0 ? (
                           <span
-                            className="
-                              rounded-full
-
-                              bg-[#F7E4EA]
-
-                              px-3
-                              py-1
-
-                              text-[10px]
-                              font-bold
-
-                              text-[#B31345]
-                            "
+                            className="rounded-full bg-[#F7E4EA] px-3 py-1 text-[10px] font-bold text-[#B31345]"
                           >
                             {
                               featured.discountPercent
@@ -2137,36 +1468,13 @@ export default function NewLaunchCatalog({
                       {/* BUTTONS */}
 
                       <div
-                        className="
-                          mt-6
-
-                          grid
-
-                          grid-cols-[1fr_auto_1fr]
-
-                          gap-3
-                        "
+                        className="mt-6 grid grid-cols-[1fr_auto_1fr] gap-3"
                       >
                         <Link
                           href={`/product/${encodeURIComponent(
                             featured.slug,
                           )}`}
-                          className="
-                            flex
-
-                            h-11
-
-                            items-center
-                            justify-center
-
-                            rounded-lg
-
-                            border
-                            border-[#292526]
-
-                            text-xs
-                            font-semibold
-                          "
+                          className="flex h-11 items-center justify-center rounded-lg border border-[#292526] text-xs font-semibold"
                         >
                           EXPLORE
                         </Link>
@@ -2183,22 +1491,7 @@ export default function NewLaunchCatalog({
                               featured,
                             );
                           }}
-                          className="
-                            grid
-
-                            h-11
-                            w-11
-
-                            place-items-center
-
-                            rounded-lg
-
-                            bg-[#292526]
-
-                            text-lg
-
-                            text-white
-                          "
+                          className="grid h-11 w-11 place-items-center rounded-lg bg-[#292526] text-lg text-white"
                         >
                           {commerce.isWishlisted(
                             featured,
@@ -2214,22 +1507,7 @@ export default function NewLaunchCatalog({
                               featured,
                             );
                           }}
-                          className="
-                            h-11
-
-                            rounded-lg
-
-                            bg-[#292526]
-
-                            text-xs
-                            font-semibold
-
-                            text-white
-
-                            transition
-
-                            hover:bg-[#B31345]
-                          "
+                          className="h-11 rounded-lg bg-[#292526] text-xs font-semibold text-white transition hover:bg-[#B31345]"
                         >
                           ADD TO BAG
                         </button>
@@ -2242,16 +1520,7 @@ export default function NewLaunchCatalog({
                   {products.length >
                   1 ? (
                     <div
-                      className="
-                        mt-5
-
-                        flex
-
-                        items-center
-                        justify-end
-
-                        gap-2
-                      "
+                      className="mt-5 flex items-center justify-end gap-2"
                     >
                       <button
                         type="button"
@@ -2259,28 +1528,7 @@ export default function NewLaunchCatalog({
                         onClick={
                           previousFeaturedProduct
                         }
-                        className="
-                          grid
-
-                          h-9
-                          w-9
-
-                          place-items-center
-
-                          rounded-[5px]
-
-                          bg-[#292727]
-
-                          text-[19px]
-
-                          text-white
-
-                          shadow-sm
-
-                          transition
-
-                          hover:bg-[#B31345]
-                        "
+                        className="grid h-9 w-9 place-items-center rounded-[5px] bg-[#292727] text-[19px] text-white shadow-sm transition hover:bg-[#B31345]"
                       >
                         ‹
                       </button>
@@ -2291,28 +1539,7 @@ export default function NewLaunchCatalog({
                         onClick={
                           nextFeaturedProduct
                         }
-                        className="
-                          grid
-
-                          h-9
-                          w-9
-
-                          place-items-center
-
-                          rounded-[5px]
-
-                          bg-[#292727]
-
-                          text-[19px]
-
-                          text-white
-
-                          shadow-sm
-
-                          transition
-
-                          hover:bg-[#B31345]
-                        "
+                        className="grid h-9 w-9 place-items-center rounded-[5px] bg-[#292727] text-[19px] text-white shadow-sm transition hover:bg-[#B31345]"
                       >
                         ›
                       </button>
@@ -2323,13 +1550,7 @@ export default function NewLaunchCatalog({
             </>
           ) : (
             <div
-              className="
-                py-24
-
-                text-center
-
-                text-black/50
-              "
+              className="py-24 text-center text-black/50"
             >
               No new launch
               products available
@@ -2362,86 +1583,27 @@ export default function NewLaunchCatalog({
       =================================================== */}
 
       <section
-        className="
-          relative
-
-          overflow-hidden
-
-          bg-[#F3F1EF]
-
-          px-3
-          py-10
-
-          sm:px-5
-          sm:py-12
-
-          lg:px-10
-          lg:py-16
-        "
+        className="relative overflow-hidden bg-[#F3F1EF] px-3 py-10 sm:px-5 sm:py-12 lg:px-10 lg:py-16"
       >
         <div
-          className="
-            relative
-            z-10
-
-            mx-auto
-
-            max-w-[1380px]
-          "
+          className="relative z-10 mx-auto max-w-[1380px]"
         >
           {/* HEADER */}
 
           <div
-            className="
-              mb-6
-
-              flex
-
-              items-start
-              justify-between
-
-              gap-3
-
-              sm:mb-8
-              sm:items-center
-            "
+            className="mb-6 flex items-start justify-between gap-3 sm:mb-8 sm:items-center"
           >
             <div
-              className="
-                text-[#292526]
-              "
+              className="text-[#292526]"
             >
               <p
-                className="
-                  text-[8px]
-
-                  font-semibold
-                  uppercase
-
-                  tracking-[0.22em]
-
-                  text-[#8B7468]
-
-                  sm:text-[10px]
-                "
+                className="text-[8px] font-semibold uppercase tracking-[0.22em] text-[#8B7468] sm:text-[10px]"
               >
                 Just Dropped
               </p>
 
               <h2
-                className="
-                  mt-1
-
-                  text-[27px]
-                  font-black
-                  uppercase
-
-                  tracking-[-0.03em]
-
-                  sm:text-[34px]
-
-                  lg:text-[44px]
-                "
+                className="mt-1 text-[27px] font-black uppercase tracking-[-0.03em] sm:text-[34px] lg:text-[44px]"
               >
                 Fresh Styles
               </h2>
@@ -2466,26 +1628,9 @@ export default function NewLaunchCatalog({
               ref={
                 railRef
               }
-              className="
-                flex
-
-                snap-x
-                snap-mandatory
-
-                gap-3
-
-                overflow-x-auto
-
-                pb-4
-
-                [scrollbar-width:none]
-
-                [&::-webkit-scrollbar]:hidden
-
-                sm:gap-4
-              "
+              className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-4"
             >
-              {products.map(
+              {products.slice(0, freshCount).map(
                 (
                   product,
                 ) => (
@@ -2493,21 +1638,7 @@ export default function NewLaunchCatalog({
                     key={
                       product.variantKey
                     }
-                    className="
-                      w-[72vw]
-                      max-w-[255px]
-
-                      shrink-0
-
-                      snap-start
-
-                      sm:w-[300px]
-                      sm:max-w-none
-
-                      lg:w-[260px]
-
-                      xl:w-[285px]
-                    "
+                    className="w-[72vw] max-w-[255px] shrink-0 snap-start sm:w-[300px] sm:max-w-none lg:w-[260px] xl:w-[285px]"
                   >
                     <StorefrontProductCard
                       product={
@@ -2521,27 +1652,20 @@ export default function NewLaunchCatalog({
             </div>
           ) : (
             <div
-              className="
-                rounded-[15px]
-
-                border
-                border-black/5
-
-                bg-white
-
-                px-5
-                py-12
-
-                text-center
-
-                text-sm
-
-                text-black/50
-              "
+              className="rounded-[15px] border border-black/5 bg-white px-5 py-12 text-center text-sm text-black/50"
             >
               No {gender} new
               launch products
               available.
+            </div>
+          )}
+
+          {freshCount < products.length && (
+            <div className="flex justify-center py-4">
+              <button type="button" className="rounded-lg border border-black/15 bg-white px-6 py-3 text-sm font-semibold"
+                onClick={() => setFreshWindow({ gender, count: freshCount + 6 })}>
+                Show more products
+              </button>
             </div>
           )}
 
@@ -2550,17 +1674,7 @@ export default function NewLaunchCatalog({
           {products.length >
           1 ? (
             <div
-              className="
-                mt-3
-
-                flex
-
-                justify-center
-
-                gap-3
-
-                sm:justify-end
-              "
+              className="mt-3 flex justify-center gap-3 sm:justify-end"
             >
               <button
                 type="button"
@@ -2570,31 +1684,7 @@ export default function NewLaunchCatalog({
                     "left",
                   )
                 }
-                className="
-                  grid
-
-                  h-10
-                  w-10
-
-                  place-items-center
-
-                  rounded-full
-
-                  bg-[#292727]
-
-                  text-xl
-
-                  text-white
-
-                  shadow-md
-
-                  transition
-
-                  hover:bg-[#B31345]
-
-                  lg:h-11
-                  lg:w-11
-                "
+                className="grid h-10 w-10 place-items-center rounded-full bg-[#292727] text-xl text-white shadow-md transition hover:bg-[#B31345] lg:h-11 lg:w-11"
               >
                 ‹
               </button>
@@ -2607,31 +1697,7 @@ export default function NewLaunchCatalog({
                     "right",
                   )
                 }
-                className="
-                  grid
-
-                  h-10
-                  w-10
-
-                  place-items-center
-
-                  rounded-full
-
-                  bg-[#292727]
-
-                  text-xl
-
-                  text-white
-
-                  shadow-md
-
-                  transition
-
-                  hover:bg-[#B31345]
-
-                  lg:h-11
-                  lg:w-11
-                "
+                className="grid h-10 w-10 place-items-center rounded-full bg-[#292727] text-xl text-white shadow-md transition hover:bg-[#B31345] lg:h-11 lg:w-11"
               >
                 ›
               </button>

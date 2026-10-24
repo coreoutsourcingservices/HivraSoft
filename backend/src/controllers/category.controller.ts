@@ -62,6 +62,8 @@ export const createCategoryController =
         name,
         slug,
         description,
+        metaTitle,
+        metaDescription,
         parentId,
         images,
         isActive,
@@ -88,6 +90,8 @@ export const createCategoryController =
           name,
           slug,
           description,
+          metaTitle,
+          metaDescription,
           parentId,
           images,
           isActive,
@@ -337,6 +341,8 @@ export const updateCategoryController =
 
             description:
               req.body.description,
+            metaTitle: req.body.metaTitle,
+            metaDescription: req.body.metaDescription,
 
             parentId:
               req.body.parentId,

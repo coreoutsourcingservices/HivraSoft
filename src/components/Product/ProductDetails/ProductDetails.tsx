@@ -1201,18 +1201,18 @@ export default function ProductDetails({ product, currentSlug }: Props) {
     const color = activeColors[index];
     if (!color) return;
 
+    const nextSlug = String(color.slugProduct || "").trim();
+    if (nextSlug && nextSlug !== currentSlug) {
+      router.push(`/product/${encodeURIComponent(nextSlug)}`, { scroll: false });
+      return;
+    }
+
     setSelectedColorIndex(index);
     setGalleryRevision((revision) => revision + 1);
     setSelectedSizeIndex(null);
     setQuantity(1);
 
-    const nextSlug = String(color.slugProduct || "").trim();
 
-    if (nextSlug && nextSlug !== currentSlug) {
-      router.push(`/product/${encodeURIComponent(nextSlug)}`, {
-        scroll: false,
-      });
-    }
   };
 
   /* =======================================================

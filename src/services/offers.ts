@@ -20,8 +20,7 @@ import type {
 ========================================================= */
 
 const RAW_API_URL =
-  process.env
-    .NEXT_PUBLIC_API_URL
+  ((typeof window === "undefined" ? process.env.API_URL : undefined) || process.env.NEXT_PUBLIC_API_URL)
     ?.replace(
       /\/+$/,
       "",
@@ -96,6 +95,7 @@ export async function getActiveOffers(): Promise<
         {
           cache:
             "no-store",
+          signal: AbortSignal.timeout(8_000),
 
           headers: {
             Accept:

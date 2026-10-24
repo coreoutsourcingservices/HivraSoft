@@ -60,6 +60,7 @@ type Props = {
   onChange: (html: string) => void;
   onImageUpload: (file: File) => Promise<BlogImage>;
   disabled?: boolean;
+  placeholder?: string;
 };
 
 const FontSize = Extension.create({
@@ -182,7 +183,7 @@ function setTextSize(editor: Editor, value: string) {
   editor.chain().focus().setMark("textStyle", { fontSize: `${value}px` }).run();
 }
 
-export default function WordBlogEditor({ value, onChange, onImageUpload, disabled = false }: Props) {
+export default function WordBlogEditor({ value, onChange, onImageUpload, disabled = false, placeholder = "Start writing your blog..." }: Props) {
   const [zoom, setZoom] = useState(100);
   const [sourceMode, setSourceMode] = useState(() => hasDesignedHtml(value || ""));
   const [htmlPreview, setHtmlPreview] = useState(false);
@@ -210,10 +211,10 @@ export default function WordBlogEditor({ value, onChange, onImageUpload, disable
     TableRow,
     TableHeader,
     TableCell,
-    Placeholder.configure({ placeholder: "Start writing your blog..." }),
+    Placeholder.configure({ placeholder }),
     Superscript,
     Subscript,
-  ], []);
+  ], [placeholder]);
 
   const editor = useEditor({
     extensions,

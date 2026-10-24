@@ -153,36 +153,13 @@ export default function StorefrontProductCard({
       =================================================== */}
 
       <div
-        className="
-          relative
-
-          w-full
-          min-w-0
-
-          overflow-hidden
-
-          rounded-t-[13px]
-
-          bg-[#F4F1EF]
-        "
+        className="relative w-full min-w-0 overflow-hidden rounded-t-[13px] bg-[#F4F1EF]"
       >
         <Link
           href={`/product/${encodeURIComponent(
             product.slug
           )}`}
-          className="
-            group/image
-
-            relative
-
-            block
-
-            w-full
-
-            cursor-pointer
-
-            aspect-[0.78]
-          "
+          className="group/image relative block w-full cursor-pointer aspect-[0.78]"
         >
           {product.image1 ? (
             <>
@@ -217,40 +194,13 @@ export default function StorefrontProductCard({
                     product.image2
                   }
                   alt={productImageAlt(product, product.image2, `${product.name} alternate`, "HivraSoft product")}
-                  className="
-                    absolute
-                    inset-0
-
-                    h-full
-                    w-full
-
-                    object-cover
-
-                    opacity-0
-
-                    transition-opacity
-                    duration-500
-
-                    md:group-hover/image:opacity-100
-                  "
+                  className="absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-500 md:group-hover/image:opacity-100"
                 />
               ) : null}
             </>
           ) : (
             <div
-              className="
-                flex
-
-                h-full
-                w-full
-
-                items-center
-                justify-center
-
-                text-xs
-
-                text-black/35
-              "
+              className="flex h-full w-full items-center justify-center text-xs text-black/35"
             >
               No image
             </div>
@@ -264,34 +214,7 @@ export default function StorefrontProductCard({
         {product.discountPercent >
         0 ? (
           <span
-            className="
-              absolute
-
-              left-0
-              top-3
-
-              z-10
-
-              rounded-r-[6px]
-
-              bg-[#FF7545]
-
-              px-2
-              py-1.5
-
-              text-[8px]
-
-              font-bold
-
-              whitespace-nowrap
-
-              text-white
-
-              sm:text-[9px]
-
-              lg:px-2.5
-              lg:text-[10px]
-            "
+            className="absolute left-0 top-3 z-10 rounded-r-[6px] bg-[#FF7545] px-2 py-1.5 text-[8px] font-bold whitespace-nowrap text-white sm:text-[9px] lg:px-2.5 lg:text-[10px]"
           >
             {
               product.discountPercent
@@ -328,47 +251,7 @@ export default function StorefrontProductCard({
               product
             );
           }}
-          className="
-            absolute
-
-            right-2.5
-            top-2.5
-
-            z-20
-
-            flex
-
-            h-[32px]
-            w-[32px]
-
-            cursor-pointer
-
-            items-center
-            justify-center
-
-            rounded-full
-
-            border
-            border-black/[0.06]
-
-            bg-white/95
-
-            p-0
-
-            shadow-[0_2px_10px_rgba(0,0,0,.10)]
-
-            transition-all
-
-            hover:scale-105
-            hover:bg-white
-
-            disabled:cursor-default
-
-            sm:right-3
-            sm:top-3
-            sm:h-[34px]
-            sm:w-[34px]
-          "
+          className="absolute right-2.5 top-2.5 z-20 flex h-[32px] w-[32px] cursor-pointer items-center justify-center rounded-full border border-black/[0.06] bg-white/95 p-0 shadow-[0_2px_10px_rgba(0,0,0,.10)] transition-all hover:scale-105 hover:bg-white disabled:cursor-default sm:right-3 sm:top-3 sm:h-[34px] sm:w-[34px]"
         >
           <HeartIcon
             filled={
@@ -383,16 +266,7 @@ export default function StorefrontProductCard({
       =================================================== */}
 
       <div
-        className="
-          min-w-0
-
-          px-2.5
-          pb-2.5
-          pt-2.5
-
-          sm:px-3
-          sm:pt-3
-        "
+        className="min-w-0 px-2.5 pb-2.5 pt-2.5 sm:px-3 sm:pt-3"
       >
         {/* =================================================
             PRODUCT NAME
@@ -405,28 +279,7 @@ export default function StorefrontProductCard({
           title={
             product.name
           }
-          className="
-            block
-
-            w-full
-            min-w-0
-
-            cursor-pointer
-
-            truncate
-
-            text-[10px]
-
-            font-medium
-
-            text-[#111111]
-
-            min-[360px]:text-[11px]
-
-            sm:text-[12px]
-
-            lg:text-[13px]
-          "
+          className="block w-full min-w-0 cursor-pointer truncate text-[10px] font-medium text-[#111111] min-[360px]:text-[11px] sm:text-[12px] lg:text-[13px]"
         >
           {
             product.name
@@ -438,49 +291,15 @@ export default function StorefrontProductCard({
         ================================================= */}
 
         <div
-          className="
-            mt-2
-
-            flex
-
-            w-full
-            min-w-0
-
-            items-center
-
-            gap-2
-          "
+          className="mt-2 flex w-full min-w-0 items-center gap-2"
         >
           {/* PRICE */}
 
           <div
-            className="
-              flex
-
-              min-w-0
-              flex-1
-
-              items-center
-
-              gap-1
-            "
+            className="flex min-w-0 flex-1 items-center gap-1"
           >
             <strong
-              className="
-                shrink-0
-
-                text-[14px]
-
-                font-bold
-
-                text-black
-
-                min-[360px]:text-[15px]
-
-                sm:text-[16px]
-
-                lg:text-[17px]
-              "
+              className="shrink-0 text-[14px] font-bold text-black min-[360px]:text-[15px] sm:text-[16px] lg:text-[17px]"
             >
               ₹
               {product.showPrice.toLocaleString(
@@ -495,21 +314,7 @@ export default function StorefrontProductCard({
 
             {hasDiscount ? (
               <span
-                className="
-                  min-w-0
-
-                  truncate
-
-                  text-[8px]
-
-                  text-black/35
-
-                  line-through
-
-                  min-[390px]:text-[9px]
-
-                  sm:text-[10px]
-                "
+                className="min-w-0 truncate text-[8px] text-black/35 line-through min-[390px]:text-[9px] sm:text-[10px]"
               >
                 ₹
                 {product.originalPrice.toLocaleString(
@@ -543,52 +348,7 @@ export default function StorefrontProductCard({
                 resolvedOfferContext
               );
             }}
-            className="
-              flex
-
-              h-[38px]
-
-              w-[48%]
-
-              shrink-0
-
-              cursor-pointer
-
-              items-center
-              justify-center
-
-              rounded-[8px]
-
-              bg-[#EC477C]
-
-              px-2
-
-              text-[8px]
-
-              font-bold
-
-              uppercase
-
-              tracking-[0.02em]
-
-              whitespace-nowrap
-
-              text-white
-
-              transition-colors
-
-              hover:bg-[#B31345]
-
-              min-[360px]:h-[40px]
-              min-[360px]:text-[9px]
-
-              sm:h-[42px]
-              sm:text-[10px]
-
-              lg:h-[56px]
-              lg:max-w-[185px]
-              lg:text-[13px]
-            "
+            className="flex h-[38px] w-[48%] shrink-0 cursor-pointer items-center justify-center rounded-[8px] bg-[#EC477C] px-2 text-[8px] font-bold uppercase tracking-[0.02em] whitespace-nowrap text-white transition-colors hover:bg-[#B31345] min-[360px]:h-[40px] min-[360px]:text-[9px] sm:h-[42px] sm:text-[10px] lg:h-[56px] lg:max-w-[185px] lg:text-[13px]"
           >
             Add To Bag
           </button>
@@ -623,12 +383,7 @@ function HeartIcon({
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
-      className="
-        block
-
-        transition-all
-        duration-200
-      "
+      className="block transition-all duration-200"
     >
       <path d="M20.8 4.6a5.4 5.4 0 0 0-7.6 0L12 5.8l-1.2-1.2a5.4 5.4 0 0 0-7.6 7.6L12 21l8.8-8.8a5.4 5.4 0 0 0 0-7.6Z" />
     </svg>

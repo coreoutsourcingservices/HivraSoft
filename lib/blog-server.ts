@@ -4,7 +4,7 @@ const SERVER_API_URL = (process.env.API_URL || process.env.NEXT_PUBLIC_API_URL |
 
 async function publicFetch<T>(path: string): Promise<T | null> {
   try {
-    const response = await fetch(`${SERVER_API_URL}${path}`, { cache: "no-store" });
+    const response = await fetch(`${SERVER_API_URL}${path}`, { cache: "no-store", signal: AbortSignal.timeout(8_000) });
     if (!response.ok) return null;
     return await response.json() as T;
   } catch {

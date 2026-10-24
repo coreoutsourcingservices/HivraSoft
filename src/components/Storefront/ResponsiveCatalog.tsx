@@ -132,33 +132,10 @@ function CategoryRow({
 }) {
   return (
     <div
-      className="
-        w-full
-        overflow-x-auto
-        overflow-y-hidden
-        [scrollbar-width:none]
-        [&::-webkit-scrollbar]:hidden
-      "
+      className="w-full overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
     >
       <div
-        className="
-          mx-auto
-          flex
-          min-w-max
-          flex-nowrap
-          items-center
-          gap-2.5
-
-          px-3
-          py-3
-
-          sm:px-4
-
-          md:justify-center
-          md:px-6
-
-          xl:gap-3
-        "
+        className="mx-auto flex min-w-max flex-nowrap items-center gap-2.5 px-3 py-3 sm:px-4 md:justify-center md:px-6 xl:gap-3"
       >
         {/* ALL CATEGORY BUTTON */}
 
@@ -283,24 +260,7 @@ function CategoryNavigation({
 
   return (
     <section
-      className="
-        sticky
-        top-[56px]
-        z-[900]
-
-        w-full
-
-        border-y
-        border-[#EEE5E0]
-
-        bg-white
-
-        shadow-[0_4px_12px_rgba(0,0,0,0.06)]
-
-        md:static
-        md:z-auto
-        md:shadow-none
-      "
+      className="sticky top-[56px] z-[900] w-full border-y border-[#EEE5E0] bg-white shadow-[0_4px_12px_rgba(0,0,0,0.06)] md:static md:z-auto md:shadow-none"
     >
       {/* ===================================================
           ROOT CATEGORY ROW
@@ -349,11 +309,7 @@ function CategoryNavigation({
           return (
             <div
               key={node.id}
-              className="
-                border-t
-                border-[#F0E6E8]
-                bg-[#FFF9FA]
-              "
+              className="border-t border-[#F0E6E8] bg-[#FFF9FA]"
             >
               <CategoryRow
                 basePath={basePath}
@@ -402,21 +358,7 @@ function FilterRow({
     <button
       type="button"
       onClick={onClick}
-      className="
-        flex
-        w-full
-        cursor-pointer
-        items-center
-        justify-between
-
-        border-b
-        border-black/10
-
-        py-4
-
-        text-[14px]
-        text-black
-      "
+      className="flex w-full cursor-pointer items-center justify-between border-b border-black/10 py-4 text-[14px] text-black"
     >
       {label}
 
@@ -509,18 +451,7 @@ function SortSheet({
 
   return (
     <div
-      className="
-        fixed
-        inset-0
-        z-[10000]
-
-        flex
-        items-end
-
-        bg-black/45
-
-        md:hidden
-      "
+      className="fixed inset-0 z-[10000] flex items-end bg-black/45 md:hidden"
       onMouseDown={(event) => {
         if (
           event.target ===
@@ -531,43 +462,17 @@ function SortSheet({
       }}
     >
       <div
-        className="
-          w-full
-
-          rounded-t-[22px]
-
-          bg-white
-
-          px-5
-          pb-8
-          pt-4
-        "
+        className="w-full rounded-t-[22px] bg-white px-5 pb-8 pt-4"
       >
         <div
-          className="
-            mx-auto
-            h-1
-            w-12
-
-            rounded-full
-            bg-black/15
-          "
+          className="mx-auto h-1 w-12 rounded-full bg-black/15"
         />
 
         <div
-          className="
-            mt-5
-            flex
-            items-center
-            justify-between
-          "
+          className="mt-5 flex items-center justify-between"
         >
           <h3
-            className="
-              text-lg
-              font-semibold
-              text-black
-            "
+            className="text-lg font-semibold text-black"
           >
             Sort By
           </h3>
@@ -575,11 +480,7 @@ function SortSheet({
           <button
             type="button"
             onClick={onClose}
-            className="
-              cursor-pointer
-              text-2xl
-              text-black
-            "
+            className="cursor-pointer text-2xl text-black"
           >
             ×
           </button>
@@ -600,21 +501,7 @@ function SortSheet({
 
                   onClose();
                 }}
-                className="
-                  flex
-                  w-full
-                  cursor-pointer
-                  items-center
-                  justify-between
-
-                  border-b
-                  border-black/10
-
-                  py-4
-
-                  text-[14px]
-                  text-black
-                "
+                className="flex w-full cursor-pointer items-center justify-between border-b border-black/10 py-4 text-[14px] text-black"
               >
                 {option.label}
 
@@ -640,12 +527,7 @@ function SortSheet({
                   {value ===
                     option.value && (
                     <span
-                      className="
-                        h-2.5
-                        w-2.5
-                        rounded-full
-                        bg-[#B31345]
-                      "
+                      className="h-2.5 w-2.5 rounded-full bg-[#B31345]"
                     />
                   )}
                 </span>
@@ -690,18 +572,7 @@ function FilterSheet({
 
   return (
     <div
-      className="
-        fixed
-        inset-0
-        z-[10000]
-
-        flex
-        items-end
-
-        bg-black/45
-
-        md:hidden
-      "
+      className="fixed inset-0 z-[10000] flex items-end bg-black/45 md:hidden"
       onMouseDown={(event) => {
         if (
           event.target ===
@@ -712,43 +583,17 @@ function FilterSheet({
       }}
     >
       <div
-        className="
-          w-full
-
-          rounded-t-[22px]
-
-          bg-white
-
-          px-5
-          pb-8
-          pt-4
-        "
+        className="w-full rounded-t-[22px] bg-white px-5 pb-8 pt-4"
       >
         <div
-          className="
-            mx-auto
-            h-1
-            w-12
-
-            rounded-full
-            bg-black/15
-          "
+          className="mx-auto h-1 w-12 rounded-full bg-black/15"
         />
 
         <div
-          className="
-            mt-5
-            flex
-            items-center
-            justify-between
-          "
+          className="mt-5 flex items-center justify-between"
         >
           <h3
-            className="
-              text-lg
-              font-semibold
-              text-black
-            "
+            className="text-lg font-semibold text-black"
           >
             Filter
           </h3>
@@ -756,11 +601,7 @@ function FilterSheet({
           <button
             type="button"
             onClick={onClose}
-            className="
-              cursor-pointer
-              text-2xl
-              text-black
-            "
+            className="cursor-pointer text-2xl text-black"
           >
             ×
           </button>
@@ -805,12 +646,7 @@ function FilterSheet({
         </div>
 
         <div
-          className="
-            mt-6
-            grid
-            grid-cols-2
-            gap-3
-          "
+          className="mt-6 grid grid-cols-2 gap-3"
         >
           <button
             type="button"
@@ -824,14 +660,7 @@ function FilterSheet({
                   false,
               })
             }
-            className="
-              h-12
-              cursor-pointer
-              rounded-[8px]
-              border
-              border-black/15
-              font-semibold
-            "
+            className="h-12 cursor-pointer rounded-[8px] border border-black/15 font-semibold"
           >
             Clear
           </button>
@@ -839,14 +668,7 @@ function FilterSheet({
           <button
             type="button"
             onClick={onClose}
-            className="
-              h-12
-              cursor-pointer
-              rounded-[8px]
-              bg-[#B31345]
-              font-semibold
-              text-white
-            "
+            className="h-12 cursor-pointer rounded-[8px] bg-[#B31345] font-semibold text-white"
           >
             Apply
           </button>
@@ -899,6 +721,10 @@ export default function ResponsiveCatalog({
   /* =======================================================
      FILTER / SORT
   ======================================================= */
+
+  const windowKey = JSON.stringify([basePath, categoryPath, filters, sort]);
+  const [productWindow, setProductWindow] = useState({ key: "", count: 12 });
+  const visibleCount = productWindow.key === windowKey ? productWindow.count : 12;
 
   const visibleProducts =
     useMemo(() => {
@@ -1013,19 +839,7 @@ export default function ResponsiveCatalog({
 
   return (
     <main
-      className="
-        min-h-screen
-
-        overflow-x-clip
-
-        bg-[#FAF8F6]
-
-        pb-[68px]
-
-        text-[#211A18]
-
-        md:pb-16
-      "
+      className="min-h-screen overflow-x-clip bg-[#FAF8F6] pb-[68px] text-[#211A18] md:pb-16"
     >
       {/* ===================================================
           BANNER
@@ -1062,24 +876,10 @@ export default function ResponsiveCatalog({
       =================================================== */}
 
       <section
-        className="
-          hidden
-
-          px-6
-          py-4
-
-          md:block
-
-          xl:px-8
-        "
+        className="hidden px-6 py-4 md:block xl:px-8"
       >
         <div
-          className="
-            mx-auto
-            flex
-            max-w-[1500px]
-            justify-end
-          "
+          className="mx-auto flex max-w-[1500px] justify-end"
         >
           <select
             value={sort}
@@ -1091,29 +891,7 @@ export default function ResponsiveCatalog({
                   .value as SortValue
               )
             }
-            className="
-              h-11
-              min-w-[190px]
-              cursor-pointer
-
-              rounded-[8px]
-
-              border
-              border-black/15
-
-              bg-white
-
-              px-4
-
-              text-[11px]
-              font-semibold
-
-              text-black
-
-              outline-none
-
-              focus:border-[#B31345]
-            "
+            className="h-11 min-w-[190px] cursor-pointer rounded-[8px] border border-black/15 bg-white px-4 text-[11px] font-semibold text-black outline-none focus:border-[#B31345]"
           >
             <option value="featured">
               Featured
@@ -1139,57 +917,20 @@ export default function ResponsiveCatalog({
       =================================================== */}
 
       <section
-        className="
-          relative
-          z-0
-
-          mx-auto
-          w-full
-          max-w-[1500px]
-
-          md:px-6
-          md:pt-1
-
-          xl:px-8
-        "
+        className="relative z-0 mx-auto w-full max-w-[1500px] md:px-6 md:pt-1 xl:px-8"
       >
         {visibleProducts.length >
         0 ? (
           <div
-            className="
-              grid
-              w-full
-
-              grid-cols-2
-
-              gap-x-[2px]
-              gap-y-3
-
-              bg-[#EEE8E5]
-
-              sm:gap-x-3
-              sm:gap-y-5
-              sm:bg-transparent
-              sm:px-3
-
-              md:grid-cols-3
-              md:gap-x-5
-              md:gap-y-8
-              md:px-0
-
-              xl:grid-cols-4
-            "
+            className="grid w-full grid-cols-2 gap-x-[2px] gap-y-3 bg-[#EEE8E5] sm:gap-x-3 sm:gap-y-5 sm:bg-transparent sm:px-3 md:grid-cols-3 md:gap-x-5 md:gap-y-8 md:px-0 xl:grid-cols-4"
           >
-            {visibleProducts.map(
+            {visibleProducts.slice(0, visibleCount).map(
               (product) => (
                 <div
                   key={
                     product.variantKey
                   }
-                  className="
-                    w-full
-                    min-w-0
-                  "
+                  className="w-full min-w-0"
                 >
                   <StorefrontProductCard
                     product={
@@ -1202,53 +943,28 @@ export default function ResponsiveCatalog({
           </div>
         ) : (
           <div
-            className="
-              mx-4
-              mt-8
-
-              rounded-[16px]
-
-              border
-              border-black/10
-
-              bg-white
-
-              px-5
-              py-14
-
-              text-center
-            "
+            className="mx-4 mt-8 rounded-[16px] border border-black/10 bg-white px-5 py-14 text-center"
           >
             No products found
           </div>
         )}
       </section>
 
+      {visibleCount < visibleProducts.length && (
+        <div className="flex justify-center py-6">
+          <button type="button" className="rounded-lg border border-black/15 bg-white px-6 py-3 text-sm font-semibold"
+            onClick={() => setProductWindow({ key: windowKey, count: visibleCount + 12 })}>
+            Show more products
+          </button>
+        </div>
+      )}
+
       {/* ===================================================
           MOBILE SORT / FILTER
       =================================================== */}
 
       <div
-        className="
-          fixed
-          bottom-0
-          left-0
-          right-0
-          z-[1000]
-
-          grid
-          h-[64px]
-          grid-cols-2
-
-          border-t
-          border-black/15
-
-          bg-white
-
-          shadow-[0_-7px_24px_rgba(0,0,0,.09)]
-
-          md:hidden
-        "
+        className="fixed bottom-0 left-0 right-0 z-[1000] grid h-[64px] grid-cols-2 border-t border-black/15 bg-white shadow-[0_-7px_24px_rgba(0,0,0,.09)] md:hidden"
       >
         <button
           type="button"
@@ -1257,19 +973,7 @@ export default function ResponsiveCatalog({
               true
             )
           }
-          className="
-            flex
-            cursor-pointer
-            items-center
-            justify-center
-
-            gap-2
-
-            border-r
-            border-black/10
-
-            font-semibold
-          "
+          className="flex cursor-pointer items-center justify-center gap-2 border-r border-black/10 font-semibold"
         >
           Sort
         </button>
@@ -1281,16 +985,7 @@ export default function ResponsiveCatalog({
               true
             )
           }
-          className="
-            flex
-            cursor-pointer
-            items-center
-            justify-center
-
-            gap-2
-
-            font-semibold
-          "
+          className="flex cursor-pointer items-center justify-center gap-2 font-semibold"
         >
           Filter
         </button>

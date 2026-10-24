@@ -1,6 +1,6 @@
 import { productImageAlt } from "@/lib/image-alt";
 import {
-  API_URL,
+  API_URL as BROWSER_API_URL,
 } from "@/lib/api";
 
 import {
@@ -20,6 +20,8 @@ import type {
   CatalogProduct,
   CatalogSize,
 } from "@/types/catalog";
+
+const API_URL = (typeof window === "undefined" ? process.env.API_URL : undefined) || BROWSER_API_URL;
 
 /* =========================================================
    SAFE FIELD
@@ -1038,6 +1040,7 @@ export async function getNewLaunchProducts(): Promise<ApiProduct[]> {
       `${API_URL}/api/products/new-launches`,
       {
         method: "GET",
+        signal: AbortSignal.timeout(8_000),
 
         cache:
           "no-store",

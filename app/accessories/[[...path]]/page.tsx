@@ -1,3 +1,4 @@
+import CategoryDescription from "@/src/components/Storefront/CategoryDescription";
 import {
   notFound,
 } from "next/navigation";
@@ -894,6 +895,7 @@ export default async function AccessoriesPage({
           categoryPath
         }
       />
+      <CategoryDescription title={title} html={description} />
     </>
   );
 }

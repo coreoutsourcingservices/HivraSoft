@@ -37,6 +37,8 @@ export interface ICategory extends Document {
   slug: string;
 
   description?: string;
+  metaTitle?: string;
+  metaDescription?: string;
 
   parent: Types.ObjectId | null;
 
@@ -114,6 +116,9 @@ const categorySchema =
         default: "",
         trim: true,
       },
+
+      metaTitle: { type: String, default: "", trim: true, maxlength: 160 },
+      metaDescription: { type: String, default: "", trim: true, maxlength: 320 },
 
       /*
         null = root category

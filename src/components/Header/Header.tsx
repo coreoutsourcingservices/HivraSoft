@@ -1155,11 +1155,7 @@ function HeaderSearch() {
 
   return (
     <div
-      className="
-        relative
-        min-w-0
-        flex-1
-      "
+      className="relative min-w-0 flex-1"
     >
       <form
         onSubmit={(
@@ -1169,18 +1165,7 @@ function HeaderSearch() {
 
           submitSearch();
         }}
-        className="
-          flex
-          h-8
-          w-full
-          items-center
-          rounded-full
-          border
-          border-black/15
-          bg-white
-          px-3
-          shadow-sm
-        "
+        className="flex h-8 w-full items-center rounded-full border border-black/15 bg-white px-3 shadow-sm"
       >
         <button type="submit" aria-label="Search products" className="cursor-pointer p-1"><SearchIcon /></button>
 
@@ -1208,17 +1193,7 @@ function HeaderSearch() {
           aria-label="Search products"
           onKeyDown={(event) => { if (event.key === "Escape") setOpen(false); }}
           placeholder="Search..."
-          className="
-            h-full
-            min-w-0
-            flex-1
-            bg-transparent
-            px-2
-            text-[10px]
-            text-black
-            outline-none
-            placeholder:text-black/40
-          "
+          className="h-full min-w-0 flex-1 bg-transparent px-2 text-[10px] text-black outline-none placeholder:text-black/40"
         />
       </form>
 
@@ -1226,37 +1201,18 @@ function HeaderSearch() {
       query.trim().length >=
         2 ? (
         <div
-          className="
-            absolute
-            left-0
-            right-0
-            top-[38px]
-            z-[2200]
-            overflow-hidden
-            rounded-[12px]
-            border
-            border-black/10
-            bg-white
-            shadow-[0_18px_50px_rgba(0,0,0,.16)]
-          "
+          className="absolute left-0 right-0 top-[38px] z-[2200] overflow-hidden rounded-[12px] border border-black/10 bg-white shadow-[0_18px_50px_rgba(0,0,0,.16)]"
         >
           {loading ? (
             <div
-              className="
-                px-3
-                py-3
-                text-[10px]
-                text-black/45
-              "
+              className="px-3 py-3 text-[10px] text-black/45"
             >
               Searching...
             </div>
           ) : items.length >
             0 ? (
             <div
-              className="
-                py-1
-              "
+              className="py-1"
             >
               {items.map(
                 (
@@ -1281,34 +1237,17 @@ function HeaderSearch() {
                           false
                         )
                       }
-                      className="
-                        block
-                        border-b
-                        border-black/5
-                        px-4
-                        py-2.5
-                        last:border-b-0
-                        hover:bg-[#FFF5F7]
-                      "
+                      className="block border-b border-black/5 px-4 py-2.5 last:border-b-0 hover:bg-[#FFF5F7]"
                     >
                       <strong
-                        className="
-                          block
-                          text-[10px]
-                          text-[#211817]
-                        "
+                        className="block text-[10px] text-[#211817]"
                       >
                         {item.label}
                       </strong>
 
                       {item.subtitle ? (
                         <span
-                          className="
-                            mt-0.5
-                            block
-                            text-[8px]
-                            text-black/40
-                          "
+                          className="mt-0.5 block text-[8px] text-black/40"
                         >
                           {item.subtitle}
                         </span>
@@ -1324,15 +1263,7 @@ function HeaderSearch() {
               onClick={
                 submitSearch
               }
-              className="
-                block
-                w-full
-                px-4
-                py-3
-                text-left
-                text-[10px]
-                text-[#B31345]
-              "
+              className="block w-full px-4 py-3 text-left text-[10px] text-[#B31345]"
             >
               Search for “{query}”
             </button>
@@ -1350,34 +1281,16 @@ function HeaderSearch() {
 function ResellerTicker() {
   const content = (
     <div
-      className="
-        flex
-        h-full
-        min-w-[1366px]
-        shrink-0
-        items-center
-        justify-between
-        gap-8
-        whitespace-nowrap
-        px-5
-      "
+      className="flex h-full min-w-[1366px] shrink-0 items-center justify-between gap-8 whitespace-nowrap px-5"
     >
       <span
-        className="
-          text-[9px]
-          font-bold
-          text-white
-        "
+        className="text-[9px] font-bold text-white"
       >
         ◆ &nbsp; BECOME A HIVRASOFT RESELLER
       </span>
 
       <span
-        className="
-          text-[9px]
-          font-semibold
-          text-white
-        "
+        className="text-[9px] font-semibold text-white"
       >
         ◆ &nbsp; Sell India&apos;s Most Comfortable
         Innerwear — Zero Stock, High Profit
@@ -1409,23 +1322,10 @@ function ResellerTicker() {
 
       <div
         aria-label="Store announcements"
-        className="
-          hidden
-          h-[30px]
-          w-full
-          overflow-hidden
-          bg-[#B31345]
-          md:block
-        "
+        className="hidden h-[30px] w-full overflow-hidden bg-[#B31345] md:block"
       >
         <div
-          className="
-            flex
-            h-full
-            w-max
-            items-center
-            will-change-transform
-          "
+          className="flex h-full w-max items-center will-change-transform"
           style={{
             animation:
               "hivraHeaderTicker 24s linear 2s infinite",
@@ -2048,12 +1948,7 @@ export default function Header() {
       ================================================= */}
 
       <div
-        className="
-          sticky
-          top-0
-          z-[1100]
-          w-full
-        "
+        className="sticky top-0 z-[1100] w-full"
       >
         <ResellerTicker />
 
@@ -2062,52 +1957,22 @@ export default function Header() {
         =============================================== */}
 
         <div
-          className="
-            hidden
-            w-full
-            border-b
-            border-black/10
-            bg-white
-            xl:block
-          "
+          className="hidden w-full border-b border-black/10 bg-white xl:block"
         >
           <div
-            className="
-              mx-auto
-              flex
-              h-[46px]
-              w-full
-              max-w-[1600px]
-              items-center
-              gap-5
-              px-5
-              2xl:px-7
-            "
+            className="mx-auto flex h-[46px] w-full max-w-[1600px] items-center gap-5 px-5 2xl:px-7"
           >
             {/* BENEFITS */}
 
             <div
-              className="
-                flex
-                w-[470px]
-                shrink-0
-                items-center
-                whitespace-nowrap
-                text-[9px]
-                font-medium
-                text-black
-                2xl:w-[500px]
-              "
+              className="flex w-[470px] shrink-0 items-center whitespace-nowrap text-[9px] font-medium text-black 2xl:w-[500px]"
             >
               <span>
                 Free Returns
               </span>
 
               <span
-                className="
-                  mx-2
-                  text-black/25
-                "
+                className="mx-2 text-black/25"
               >
                 |
               </span>
@@ -2117,10 +1982,7 @@ export default function Header() {
               </span>
 
               <span
-                className="
-                  mx-2
-                  text-black/25
-                "
+                className="mx-2 text-black/25"
               >
                 |
               </span>
@@ -2130,10 +1992,7 @@ export default function Header() {
               </span>
 
               <span
-                className="
-                  mx-2
-                  text-black/25
-                "
+                className="mx-2 text-black/25"
               >
                 |
               </span>
@@ -2150,13 +2009,7 @@ export default function Header() {
             {/* ACTIONS */}
 
             <div
-              className="
-                ml-auto
-                flex
-                shrink-0
-                items-center
-                gap-2
-              "
+              className="ml-auto flex shrink-0 items-center gap-2"
             >
               {/* WISHLIST */}
 
@@ -2166,18 +2019,7 @@ export default function Header() {
                 onClick={() => {
                   void commerce.openWishlist();
                 }}
-                className="
-                  relative
-                  grid
-                  h-9
-                  w-9
-                  place-items-center
-                  rounded-full
-                  text-black
-                  transition
-                  hover:bg-black/5
-                  hover:text-[#B31345]
-                "
+                className="relative grid h-9 w-9 place-items-center rounded-full text-black transition hover:bg-black/5 hover:text-[#B31345]"
               >
                 <HeartIcon />
 
@@ -2194,16 +2036,7 @@ export default function Header() {
               {/* ACCOUNT */}
 
               <div
-                className="
-                  grid
-                  h-9
-                  min-w-[36px]
-                  place-items-center
-                  text-black
-                  [&_a]:text-black
-                  [&_button]:text-black
-                  [&_svg]:text-black
-                "
+                className="grid h-9 min-w-[36px] place-items-center text-black [&_a]:text-black [&_button]:text-black [&_svg]:text-black"
               >
                 <Account />
               </div>
@@ -2216,18 +2049,7 @@ export default function Header() {
                 onClick={() => {
                   void commerce.openCart();
                 }}
-                className="
-                  relative
-                  grid
-                  h-9
-                  w-9
-                  place-items-center
-                  rounded-full
-                  text-black
-                  transition
-                  hover:bg-black/5
-                  hover:text-[#B31345]
-                "
+                className="relative grid h-9 w-9 place-items-center rounded-full text-black transition hover:bg-black/5 hover:text-[#B31345]"
               >
                 <BagIcon />
 
@@ -2289,37 +2111,7 @@ export default function Header() {
         `}
       >
           <div
-            className="
-              relative
-
-              mx-auto
-
-              flex
-
-              h-[68px]
-
-              w-full
-              max-w-[1600px]
-
-              min-w-0
-
-              items-center
-
-              overflow-hidden
-              xl:overflow-visible
-
-              px-2
-
-              sm:px-4
-
-              md:h-[74px]
-              md:px-6
-
-              xl:h-[88px]
-              xl:px-5
-
-              2xl:px-7
-            "
+            className="relative mx-auto flex h-[68px] w-full max-w-[1600px] min-w-0 items-center overflow-hidden xl:overflow-visible px-2 sm:px-4 md:h-[74px] md:px-6 xl:h-[88px] xl:px-5 2xl:px-7"
           >
             {/* ===========================================
                 MOBILE MENU
@@ -2333,16 +2125,7 @@ export default function Header() {
                   true
                 )
               }
-              className="
-                flex
-                h-11
-                w-10
-                shrink-0
-                items-center
-                justify-center
-                text-black
-                xl:hidden
-              "
+              className="flex h-11 w-10 shrink-0 items-center justify-center text-black xl:hidden"
             >
               <MenuIcon />
             </button>
@@ -2353,44 +2136,14 @@ export default function Header() {
 
             <Link
               href="/"
-              className="
-                absolute
-
-                left-1/2
-                top-1/2
-
-                z-10
-
-                block
-
-                -translate-x-1/2
-                -translate-y-1/2
-
-                xl:static
-                xl:ml-0
-                xl:translate-x-0
-                xl:translate-y-0
-              "
+              className="absolute left-1/2 top-1/2 z-10 block -translate-x-1/2 -translate-y-1/2 xl:static xl:ml-0 xl:translate-x-0 xl:translate-y-0"
             >
               {/* MOBILE / TABLET
                   Desktop logo use kar rahe hain, compact size me.
               */}
 
               <div
-                className="
-                  relative
-
-                  h-[44px]
-                  w-[126px]
-
-                  sm:h-[46px]
-                  sm:w-[138px]
-
-                  md:h-[48px]
-                  md:w-[148px]
-
-                  xl:hidden
-                "
+                className="relative h-[44px] w-[126px] sm:h-[46px] sm:w-[138px] md:h-[48px] md:w-[148px] xl:hidden"
               >
                 <Image
                   src={
@@ -2400,22 +2153,14 @@ export default function Header() {
                   fill
                   priority
                   sizes="148px"
-                  className="
-                    object-contain
-                  "
+                  className="object-contain"
                 />
               </div>
 
               {/* DESKTOP */}
 
               <div
-                className="
-                  relative
-                  hidden
-                  h-[62px]
-                  w-[230px]
-                  xl:block
-                "
+                className="relative hidden h-[62px] w-[230px] xl:block"
               >
                 <Image
                   src={
@@ -2425,10 +2170,7 @@ export default function Header() {
                   fill
                   priority
                   sizes="230px"
-                  className="
-                    object-contain
-                    object-left
-                  "
+                  className="object-contain object-left"
                 />
               </div>
             </Link>
@@ -2438,19 +2180,7 @@ export default function Header() {
             =========================================== */}
 
             <nav
-              className="
-                hidden
-                h-full
-                min-w-0
-                flex-1
-                items-center
-                justify-center
-                gap-[18px]
-
-                xl:flex
-
-                2xl:gap-[22px]
-              "
+              className="hidden h-full min-w-0 flex-1 items-center justify-center gap-[18px] xl:flex 2xl:gap-[22px]"
             >
               {navigationItems.map(
                 (
@@ -2493,21 +2223,7 @@ export default function Header() {
             =========================================== */}
 
             <div
-              className="
-                relative
-                z-20
-
-                ml-auto
-
-                flex
-                shrink-0
-
-                items-center
-
-                gap-0.5
-
-                xl:hidden
-              "
+              className="relative z-20 ml-auto flex shrink-0 items-center gap-0.5 xl:hidden"
             >
               {/* WISHLIST */}
 
@@ -2517,14 +2233,7 @@ export default function Header() {
                 onClick={() => {
                   void commerce.openWishlist();
                 }}
-                className="
-                  relative
-                  grid
-                  h-10
-                  w-10
-                  place-items-center
-                  text-[#8C1839]
-                "
+                className="relative grid h-10 w-10 place-items-center text-[#8C1839]"
               >
                 <HeartIcon />
 
@@ -2546,14 +2255,7 @@ export default function Header() {
                 onClick={() => {
                   void commerce.openCart();
                 }}
-                className="
-                  relative
-                  grid
-                  h-10
-                  w-10
-                  place-items-center
-                  text-black
-                "
+                className="relative grid h-10 w-10 place-items-center text-black"
               >
                 <BagIcon />
 
@@ -2576,12 +2278,7 @@ export default function Header() {
 
       {mobileOpen ? (
         <div
-          className="
-            fixed
-            inset-0
-            z-[3000]
-            xl:hidden
-          "
+          className="fixed inset-0 z-[3000] xl:hidden"
         >
           {/* BACKDROP */}
 
@@ -2593,52 +2290,18 @@ export default function Header() {
                 false
               )
             }
-            className="
-              absolute
-              inset-0
-              bg-black/45
-            "
+            className="absolute inset-0 bg-black/45"
           />
 
           {/* DRAWER */}
 
           <aside
-            className="
-              absolute
-              left-0
-              top-0
-
-              h-full
-
-              w-[92vw]
-              max-w-[420px]
-
-              overflow-x-hidden
-              overflow-y-auto
-
-              bg-white
-
-              shadow-2xl
-            "
+            className="absolute left-0 top-0 h-full w-[92vw] max-w-[420px] overflow-x-hidden overflow-y-auto bg-white shadow-2xl"
           >
             {/* MOBILE DRAWER HEADER */}
 
             <div
-              className="
-                relative
-
-                flex
-
-                h-[82px]
-
-                items-center
-                justify-center
-
-                border-b
-                border-black/10
-
-                px-14
-              "
+              className="relative flex h-[82px] items-center justify-center border-b border-black/10 px-14"
             >
               <Link
                 href="/"
@@ -2647,14 +2310,7 @@ export default function Header() {
                     false
                   )
                 }
-                className="
-                  relative
-
-                  h-[52px]
-                  w-[156px]
-
-                  shrink-0
-                "
+                className="relative h-[52px] w-[156px] shrink-0"
               >
                 <Image
                   src={
@@ -2663,9 +2319,7 @@ export default function Header() {
                   alt={resolveImageAlt("HivraSoft", "HivraSoft image")}
                   fill
                   sizes="156px"
-                  className="
-                    object-contain
-                  "
+                  className="object-contain"
                 />
               </Link>
 
@@ -2677,28 +2331,7 @@ export default function Header() {
                     false
                   )
                 }
-                className="
-                  absolute
-
-                  right-4
-                  top-1/2
-
-                  grid
-
-                  h-10
-                  w-10
-
-                  -translate-y-1/2
-
-                  place-items-center
-
-                  rounded-full
-
-                  bg-black/5
-
-                  text-[24px]
-                  text-black
-                "
+                className="absolute right-4 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-black/5 text-[24px] text-black"
               >
                 ×
               </button>
@@ -2707,19 +2340,7 @@ export default function Header() {
             {/* MOBILE ACCOUNT / WISHLIST / CART */}
 
             <div
-              className="
-                grid
-                grid-cols-3
-                gap-1.5
-
-                border-b
-                border-black/10
-
-                bg-[#FFFDFC]
-
-                px-4
-                py-3
-              "
+              className="grid grid-cols-3 gap-1.5 border-b border-black/10 bg-[#FFFDFC] px-4 py-3"
             >
               <button
                 type="button"
@@ -2731,39 +2352,12 @@ export default function Header() {
 
                   void commerce.openWishlist();
                 }}
-                className="
-                  relative
-
-                  flex
-                  min-h-[58px]
-                  flex-col
-
-                  items-center
-                  justify-center
-
-                  gap-1
-
-                  rounded-[10px]
-
-                  border
-                  border-black/[0.08]
-
-                  bg-white
-
-                  text-[#8C1839]
-                "
+                className="relative flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-[10px] border border-black/[0.08] bg-white text-[#8C1839]"
               >
                 <HeartIcon />
 
                 <span
-                  className="
-                    text-[7px]
-                    font-semibold
-
-                    uppercase
-
-                    tracking-[0.06em]
-                  "
+                  className="text-[7px] font-semibold uppercase tracking-[0.06em]"
                 >
                   Wishlist
                 </span>
@@ -2779,47 +2373,14 @@ export default function Header() {
               </button>
 
               <div
-                className="
-                  flex
-                  min-h-[58px]
-
-                  flex-col
-
-                  items-center
-                  justify-center
-
-                  gap-1
-
-                  rounded-[10px]
-
-                  border
-                  border-black/[0.08]
-
-                  bg-white
-
-                  [&_button]:!bg-transparent
-                  [&_button]:!text-black
-                  [&_button]:!shadow-none
-                  [&_button>span]:!text-black
-                "
+                className="flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-[10px] border border-black/[0.08] bg-white [&_button]:!bg-transparent [&_button]:!text-black [&_button]:!shadow-none [&_button>span]:!text-black"
               >
                 <Account
                   mobile
                 />
 
                 <span
-                  className="
-                    -mt-1
-
-                    text-[7px]
-                    font-semibold
-
-                    uppercase
-
-                    tracking-[0.06em]
-
-                    text-[#211817]
-                  "
+                  className="-mt-1 text-[7px] font-semibold uppercase tracking-[0.06em] text-[#211817]"
                 >
                   Account
                 </span>
@@ -2835,39 +2396,12 @@ export default function Header() {
 
                   void commerce.openCart();
                 }}
-                className="
-                  relative
-
-                  flex
-                  min-h-[58px]
-                  flex-col
-
-                  items-center
-                  justify-center
-
-                  gap-1
-
-                  rounded-[10px]
-
-                  border
-                  border-black/[0.08]
-
-                  bg-white
-
-                  text-black
-                "
+                className="relative flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-[10px] border border-black/[0.08] bg-white text-black"
               >
                 <BagIcon />
 
                 <span
-                  className="
-                    text-[7px]
-                    font-semibold
-
-                    uppercase
-
-                    tracking-[0.06em]
-                  "
+                  className="text-[7px] font-semibold uppercase tracking-[0.06em]"
                 >
                   Cart
                 </span>
@@ -2886,19 +2420,10 @@ export default function Header() {
             {/* TITLE */}
 
             <div
-              className="
-                border-b
-                border-black/10
-                px-4
-                py-4
-              "
+              className="border-b border-black/10 px-4 py-4"
             >
               <h2
-                className="
-                  text-[16px]
-                  font-bold
-                  text-[#211817]
-                "
+                className="text-[16px] font-bold text-[#211817]"
               >
                 Categories
               </h2>
@@ -3031,13 +2556,7 @@ function DesktopCategory({
 
     return (
       <div
-        className="
-          group
-          relative
-          flex
-          h-full
-          items-center
-        "
+        className="group relative flex h-full items-center"
       >
         {/* NAV */}
 
@@ -3045,25 +2564,7 @@ function DesktopCategory({
           href={
             href
           }
-          className="
-            flex
-            h-full
-            items-center
-            gap-1.5
-            whitespace-nowrap
-
-            text-[12px]
-            font-bold
-            tracking-[0.01em]
-
-            text-[#FF7900]
-
-            transition-colors
-
-            hover:text-[#FFAA57]
-
-            2xl:text-[13px]
-          "
+          className="flex h-full items-center gap-1.5 whitespace-nowrap text-[12px] font-bold tracking-[0.01em] text-[#FF7900] transition-colors hover:text-[#FFAA57] 2xl:text-[13px]"
         >
           {root.name}
 
@@ -3075,100 +2576,32 @@ function DesktopCategory({
         =============================================== */}
 
         <div
-          className="
-            invisible
-
-            absolute
-            left-1/2
-            top-full
-
-            z-[1800]
-
-            w-[920px]
-            max-w-[calc(100vw-40px)]
-
-            -translate-x-1/2
-            translate-y-2
-
-            overflow-hidden
-
-            rounded-b-[18px]
-
-            border
-            border-black/10
-
-            bg-white
-
-            opacity-0
-
-            shadow-[0_24px_70px_rgba(0,0,0,.20)]
-
-            transition-all
-            duration-200
-
-            group-hover:visible
-            group-hover:translate-y-0
-            group-hover:opacity-100
-          "
+          className="invisible absolute left-1/2 top-full z-[1800] w-[920px] max-w-[calc(100vw-40px)] -translate-x-1/2 translate-y-2 overflow-hidden rounded-b-[18px] border border-black/10 bg-white opacity-0 shadow-[0_24px_70px_rgba(0,0,0,.20)] transition-all duration-200 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100"
         >
           <div
-            className="
-              grid
-              grid-cols-[minmax(0,1fr)_320px]
-            "
+            className="grid grid-cols-[minmax(0,1fr)_320px]"
           >
             {/* ===========================================
                 LEFT SIDE
             =========================================== */}
 
             <div
-              className="
-                min-w-0
-                p-5
-              "
+              className="min-w-0 p-5"
             >
               {/* TITLE */}
 
               <div
-                className="
-                  mb-4
-
-                  flex
-                  items-end
-                  justify-between
-                  gap-4
-
-                  border-b
-                  border-[#EEE5E1]
-
-                  pb-4
-                "
+                className="mb-4 flex items-end justify-between gap-4 border-b border-[#EEE5E1] pb-4"
               >
                 <div>
                   <p
-                    className="
-                      text-[8px]
-                      font-extrabold
-                      uppercase
-                      tracking-[0.16em]
-
-                      text-[#B31345]
-                    "
+                    className="text-[8px] font-extrabold uppercase tracking-[0.16em] text-[#B31345]"
                   >
                     Shop {root.name}
                   </p>
 
                   <h3
-                    className="
-                      mt-1
-
-                      font-serif
-
-                      text-[24px]
-                      leading-none
-
-                      text-[#211817]
-                    "
+                    className="mt-1 font-serif text-[24px] leading-none text-[#211817]"
                   >
                     Explore Categories
                   </h3>
@@ -3178,31 +2611,7 @@ function DesktopCategory({
                   href={
                     href
                   }
-                  className="
-                    shrink-0
-
-                    rounded-full
-
-                    border
-                    border-[#B31345]/15
-
-                    bg-[#FFF4F7]
-
-                    px-3
-                    py-1.5
-
-                    text-[8px]
-                    font-extrabold
-                    uppercase
-                    tracking-[0.07em]
-
-                    text-[#B31345]
-
-                    transition
-
-                    hover:border-[#B31345]/40
-                    hover:bg-[#FCE8EE]
-                  "
+                  className="shrink-0 rounded-full border border-[#B31345]/15 bg-[#FFF4F7] px-3 py-1.5 text-[8px] font-extrabold uppercase tracking-[0.07em] text-[#B31345] transition hover:border-[#B31345]/40 hover:bg-[#FCE8EE]"
                 >
                   View All →
                 </Link>
@@ -3213,11 +2622,7 @@ function DesktopCategory({
               =========================================== */}
 
               <div
-                className="
-                  grid
-                  grid-cols-2
-                  gap-2.5
-                "
+                className="grid grid-cols-2 gap-2.5"
               >
                 {root.children.map(
                   (
@@ -3227,23 +2632,7 @@ function DesktopCategory({
                       key={
                         child.id
                       }
-                      className="
-                        min-w-0
-
-                        rounded-[12px]
-
-                        border
-                        border-[#EEE5E1]
-
-                        bg-[#FFFCFB]
-
-                        p-3.5
-
-                        transition
-
-                        hover:border-[#B31345]/20
-                        hover:bg-[#FFF7F9]
-                      "
+                      className="min-w-0 rounded-[12px] border border-[#EEE5E1] bg-[#FFFCFB] p-3.5 transition hover:border-[#B31345]/20 hover:bg-[#FFF7F9]"
                     >
                       <DesktopCategoryColumn
                         node={
@@ -3265,21 +2654,10 @@ function DesktopCategory({
             =========================================== */}
 
             <div
-              className="
-                border-l
-                border-[#EEE5E1]
-
-                bg-[#FAF6F4]
-
-                p-3
-              "
+              className="border-l border-[#EEE5E1] bg-[#FAF6F4] p-3"
             >
               <div
-                className="
-                  grid
-                  grid-cols-2
-                  gap-2.5
-                "
+                className="grid grid-cols-2 gap-2.5"
               >
                 {visualChildren.map(
                   (
@@ -3303,19 +2681,7 @@ function DesktopCategory({
                             child.slug,
                           ])
                         }
-                        className="
-                          group/card
-
-                          relative
-
-                          h-[150px]
-
-                          overflow-hidden
-
-                          rounded-[12px]
-
-                          bg-[#E9E1DD]
-                        "
+                        className="group/card relative h-[150px] overflow-hidden rounded-[12px] bg-[#E9E1DD]"
                       >
                         {/* =================================
                             IMPORTANT
@@ -3331,74 +2697,28 @@ function DesktopCategory({
                           }
                           alt={resolveImageAlt(child.name, "HivraSoft image")}
                           loading="eager"
-                          className="
-                            absolute
-                            inset-0
-
-                            h-full
-                            w-full
-
-                            object-cover
-
-                            transition-transform
-                            duration-500
-
-                            group-hover/card:scale-105
-                          "
+                          className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover/card:scale-105"
                         />
 
                         {/* OVERLAY */}
 
                         <div
-                          className="
-                            absolute
-                            inset-0
-
-                            bg-gradient-to-t
-
-                            from-black/75
-                            via-black/10
-                            to-transparent
-                          "
+                          className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent"
                         />
 
                         {/* TEXT */}
 
                         <div
-                          className="
-                            absolute
-
-                            inset-x-0
-                            bottom-0
-
-                            p-3
-                          "
+                          className="absolute inset-x-0 bottom-0 p-3"
                         >
                           <strong
-                            className="
-                              block
-
-                              text-[9px]
-                              font-extrabold
-                              uppercase
-                              tracking-[0.05em]
-
-                              text-white
-                            "
+                            className="block text-[9px] font-extrabold uppercase tracking-[0.05em] text-white"
                           >
                             {child.name}
                           </strong>
 
                           <span
-                            className="
-                              mt-1
-                              inline-flex
-
-                              text-[7px]
-                              font-semibold
-
-                              text-white/80
-                            "
+                            className="mt-1 inline-flex text-[7px] font-semibold text-white/80"
                           >
                             Shop now →
                           </span>
@@ -3421,38 +2741,13 @@ function DesktopCategory({
 
   return (
     <div
-      className="
-        group
-        relative
-        flex
-        h-full
-        items-center
-      "
+      className="group relative flex h-full items-center"
     >
       <Link
         href={
           href
         }
-        className="
-          flex
-          h-full
-          items-center
-          gap-1.5
-
-          whitespace-nowrap
-
-          text-[12px]
-          font-bold
-          tracking-[0.01em]
-
-          text-[#FF7900]
-
-          transition-colors
-
-          hover:text-[#FFAA57]
-
-          2xl:text-[13px]
-        "
+        className="flex h-full items-center gap-1.5 whitespace-nowrap text-[12px] font-bold tracking-[0.01em] text-[#FF7900] transition-colors hover:text-[#FFAA57] 2xl:text-[13px]"
       >
         {root.name}
 
@@ -3460,54 +2755,10 @@ function DesktopCategory({
       </Link>
 
       <div
-        className="
-          invisible
-
-          absolute
-          left-1/2
-          top-full
-
-          z-[1600]
-
-          max-h-[72vh]
-
-          w-[720px]
-          max-w-[calc(100vw-40px)]
-
-          -translate-x-1/2
-          translate-y-2
-
-          overflow-y-auto
-
-          rounded-b-[14px]
-
-          border
-          border-black/10
-
-          bg-white
-
-          opacity-0
-
-          shadow-[0_22px_55px_rgba(0,0,0,.18)]
-
-          transition-all
-          duration-200
-
-          group-hover:visible
-          group-hover:translate-y-0
-          group-hover:opacity-100
-        "
+        className="invisible absolute left-1/2 top-full z-[1600] max-h-[72vh] w-[720px] max-w-[calc(100vw-40px)] -translate-x-1/2 translate-y-2 overflow-y-auto rounded-b-[14px] border border-black/10 bg-white opacity-0 shadow-[0_22px_55px_rgba(0,0,0,.18)] transition-all duration-200 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100"
       >
         <div
-          className="
-            grid
-            grid-cols-3
-
-            gap-x-8
-            gap-y-8
-
-            p-7
-          "
+          className="grid grid-cols-3 gap-x-8 gap-y-8 p-7"
         >
           {root.children.map(
             (
@@ -3530,32 +2781,13 @@ function DesktopCategory({
         </div>
 
         <div
-          className="
-            border-t
-            border-black/10
-
-            px-7
-            py-4
-          "
+          className="border-t border-black/10 px-7 py-4"
         >
           <Link
             href={
               href
             }
-            className="
-              inline-flex
-              items-center
-              gap-2
-
-              text-[9px]
-              font-bold
-              uppercase
-              tracking-[0.08em]
-
-              text-[#B31345]
-
-              hover:underline
-            "
+            className="inline-flex items-center gap-2 text-[9px] font-bold uppercase tracking-[0.08em] text-[#B31345] hover:underline"
           >
             View All{" "}
             {root.name} →
@@ -3582,9 +2814,7 @@ function DesktopCategoryColumn({
 }) {
   return (
     <div
-      className="
-        min-w-0
-      "
+      className="min-w-0"
     >
       {/* MAIN CATEGORY */}
 
@@ -3594,20 +2824,7 @@ function DesktopCategoryColumn({
             path
           )
         }
-        className="
-          block
-
-          text-[10px]
-          font-extrabold
-          uppercase
-          tracking-[0.055em]
-
-          text-[#211817]
-
-          transition
-
-          hover:text-[#B31345]
-        "
+        className="block text-[10px] font-extrabold uppercase tracking-[0.055em] text-[#211817] transition hover:text-[#B31345]"
       >
         {node.name}
       </Link>
@@ -3617,10 +2834,7 @@ function DesktopCategoryColumn({
       {node.children.length >
       0 ? (
         <div
-          className="
-            mt-2.5
-            space-y-2
-          "
+          className="mt-2.5 space-y-2"
         >
           {node.children.map(
             (
@@ -3675,19 +2889,7 @@ function DesktopNestedCategory({
             path
           )
         }
-        className="
-          block
-
-          text-[10px]
-          font-medium
-          leading-[1.35]
-
-          text-[#6C6265]
-
-          transition
-
-          hover:text-[#D91B58]
-        "
+        className="block text-[10px] font-medium leading-[1.35] text-[#6C6265] transition hover:text-[#D91B58]"
         style={{
           paddingLeft:
             `${depth * 9}px`,
@@ -3699,10 +2901,7 @@ function DesktopNestedCategory({
       {node.children.length >
       0 ? (
         <div
-          className="
-            mt-2
-            space-y-2
-          "
+          className="mt-2 space-y-2"
         >
           {node.children.map(
             (
@@ -3780,17 +2979,10 @@ function MobileCategoryBranch({
 
   return (
     <div
-      className="
-        border-b
-        border-black/10
-      "
+      className="border-b border-black/10"
     >
       <div
-        className="
-          flex
-          min-h-[47px]
-          items-center
-        "
+        className="flex min-h-[47px] items-center"
       >
         <Link
           href={
@@ -3801,18 +2993,7 @@ function MobileCategoryBranch({
           onClick={
             onNavigate
           }
-          className="
-            min-w-0
-            flex-1
-
-            py-3
-            pr-2
-
-            text-[11px]
-            font-medium
-
-            text-black
-          "
+          className="min-w-0 flex-1 py-3 pr-2 text-[11px] font-medium text-black"
           style={{
             paddingLeft:
               `${
@@ -3834,15 +3015,7 @@ function MobileCategoryBranch({
                 node.id
               )
             }
-            className="
-              flex
-              h-[47px]
-              w-11
-              shrink-0
-              items-center
-              justify-center
-              text-[18px]
-            "
+            className="flex h-[47px] w-11 shrink-0 items-center justify-center text-[18px]"
           >
             <span
               className={`
@@ -3867,12 +3040,7 @@ function MobileCategoryBranch({
       {hasChildren &&
       open ? (
         <div
-          className="
-            border-t
-            border-[#F2DDE4]
-
-            bg-[#FFF4F7]
-          "
+          className="border-t border-[#F2DDE4] bg-[#FFF4F7]"
         >
           {node.children.map(
             (
@@ -3906,13 +3074,7 @@ function MobileCategoryBranch({
           )}
 
           <div
-            className="
-              border-t
-              border-[#EFCFD9]
-
-              px-4
-              py-3
-            "
+            className="border-t border-[#EFCFD9] px-4 py-3"
           >
             <Link
               href={
@@ -3923,15 +3085,7 @@ function MobileCategoryBranch({
               onClick={
                 onNavigate
               }
-              className="
-                text-[10px]
-                font-bold
-
-                text-[#A31543]
-
-                underline
-                underline-offset-2
-              "
+              className="text-[10px] font-bold text-[#A31543] underline underline-offset-2"
             >
               View All{" "}
               {node.name}
@@ -3962,25 +3116,7 @@ function DesktopNavLink({
       href={
         href
       }
-      className="
-        flex
-        h-full
-        items-center
-
-        whitespace-nowrap
-
-        text-[12px]
-        font-bold
-        tracking-[0.01em]
-
-        text-[#FF7900]
-
-        transition-colors
-
-        hover:text-[#FFAA57]
-
-        2xl:text-[13px]
-      "
+      className="flex h-full items-center whitespace-nowrap text-[12px] font-bold tracking-[0.01em] text-[#FF7900] transition-colors hover:text-[#FFAA57] 2xl:text-[13px]"
     >
       {children}
     </Link>
@@ -4006,25 +3142,7 @@ function DesktopOfferLink({
       href={
         href
       }
-      className="
-        flex
-        h-full
-        items-center
-
-        whitespace-nowrap
-
-        text-[12px]
-        font-bold
-        tracking-[0.01em]
-
-        text-[#FF7900]
-
-        transition-colors
-
-        hover:text-[#FFAA57]
-
-        2xl:text-[13px]
-      "
+      className="flex h-full items-center whitespace-nowrap text-[12px] font-bold tracking-[0.01em] text-[#FF7900] transition-colors hover:text-[#FFAA57] 2xl:text-[13px]"
     >
       {children}
     </Link>
@@ -4057,27 +3175,7 @@ function MobileOfferLink({
       onClick={
         onNavigate
       }
-      className="
-        flex
-        min-h-[48px]
-        items-center
-        justify-between
-
-        border-b
-        border-black/10
-
-        bg-[#211A18]
-
-        px-4
-        py-3
-
-        text-[11px]
-        font-bold
-        uppercase
-        tracking-[0.07em]
-
-        text-white
-      "
+      className="flex min-h-[48px] items-center justify-between border-b border-black/10 bg-[#211A18] px-4 py-3 text-[11px] font-bold uppercase tracking-[0.07em] text-white"
     >
       <span>
         {children}
@@ -4102,29 +3200,7 @@ function CountBadge({
 }) {
   return (
     <span
-      className="
-        absolute
-        -right-1
-        -top-1
-
-        flex
-        h-[17px]
-        min-w-[17px]
-
-        items-center
-        justify-center
-
-        rounded-full
-
-        bg-[#D91B58]
-
-        px-1
-
-        text-[8px]
-        font-bold
-
-        text-white
-      "
+      className="absolute -right-1 -top-1 flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-[#D91B58] px-1 text-[8px] font-bold text-white"
     >
       {count >
       99

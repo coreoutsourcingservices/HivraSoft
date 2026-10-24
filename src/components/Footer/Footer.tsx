@@ -1,10 +1,11 @@
 import Image, { getImageProps } from "next/image";
 import Link from "next/link";
 
+import { getCachedActiveCategoryTree } from "@/src/services/storefront-fast";
+
 import NewsletterForm from "./NewsletterForm";
 
 import {
-  getActiveCategoryTree,
   type StorefrontCategoryNode,
 } from "@/src/services/categories";
 
@@ -162,7 +163,7 @@ export default async function Footer() {
   ======================================================= */
 
   const categoryTree =
-    await getActiveCategoryTree();
+    await getCachedActiveCategoryTree();
 
   /* =======================================================
      ACTIVE ROOT CATEGORIES
@@ -329,41 +330,19 @@ export default async function Footer() {
 
   return (
     <footer
-      className="
-        w-full
-
-        overflow-hidden
-
-        bg-[#FFFDFC]
-
-        text-[#302527]
-      "
+      className="w-full overflow-hidden bg-[#FFFDFC] text-[#302527]"
     >
       {/* ===================================================
           NEWSLETTER HERO
       =================================================== */}
 
       <section
-        className="
-          relative
-
-          w-full
-
-          overflow-hidden
-
-          border-t
-          border-[#F2D7DA]
-
-          bg-[#FBE9E6]
-        "
+        className="relative w-full overflow-hidden border-t border-[#F2D7DA] bg-[#FBE9E6]"
       >
         {/* BACKGROUND */}
 
         <div
-          className="
-            absolute
-            inset-0
-          "
+          className="absolute inset-0"
         >
           <div
             aria-hidden="true"
@@ -372,106 +351,26 @@ export default async function Footer() {
           />
 
           <div
-            className="
-              absolute
-
-              inset-y-0
-              left-1/2
-
-              w-[65%]
-
-              -translate-x-1/2
-
-              bg-gradient-to-r
-
-              from-transparent
-
-              via-[#FFF8F5]/80
-
-              to-transparent
-
-              max-md:w-full
-
-              max-md:via-[#FFF8F5]/88
-            "
+            className="absolute inset-y-0 left-1/2 w-[65%] -translate-x-1/2 bg-gradient-to-r from-transparent via-[#FFF8F5]/80 to-transparent max-md:w-full max-md:via-[#FFF8F5]/88"
           />
         </div>
 
         {/* CONTENT */}
 
         <div
-          className="
-            relative
-            z-10
-
-            mx-auto
-
-            flex
-
-            min-h-[350px]
-
-            max-w-[1600px]
-
-            items-center
-            justify-center
-
-            px-4
-            py-7
-
-            sm:min-h-[370px]
-            sm:px-6
-
-            lg:min-h-[390px]
-            lg:px-8
-          "
+          className="relative z-10 mx-auto flex min-h-[350px] max-w-[1600px] items-center justify-center px-4 py-7 sm:min-h-[370px] sm:px-6 lg:min-h-[390px] lg:px-8"
         >
           <div
-            className="
-              w-full
-
-              max-w-[610px]
-
-              text-center
-            "
+            className="w-full max-w-[610px] text-center"
           >
             <p
-              className="
-                text-[8px]
-
-                font-semibold
-
-                uppercase
-
-                tracking-[0.38em]
-
-                text-[#B84058]
-
-                sm:text-[9px]
-              "
+              className="text-[8px] font-semibold uppercase tracking-[0.38em] text-[#B84058] sm:text-[9px]"
             >
               Stay In The Loop
             </p>
 
             <h2
-              className="
-                mt-3
-
-                font-serif
-
-                text-[26px]
-
-                leading-[1.06]
-
-                tracking-[-0.03em]
-
-                text-[#2B2224]
-
-                sm:text-[34px]
-
-                md:text-[39px]
-
-                lg:text-[43px]
-              "
+              className="mt-3 font-serif text-[26px] leading-[1.06] tracking-[-0.03em] text-[#2B2224] sm:text-[34px] md:text-[39px] lg:text-[43px]"
             >
               Special Offers,
               New Launches
@@ -482,21 +381,7 @@ export default async function Footer() {
             </h2>
 
             <p
-              className="
-                mx-auto
-
-                mt-4
-
-                max-w-[485px]
-
-                text-[10px]
-
-                leading-5
-
-                text-[#675D5F]
-
-                sm:text-[12px]
-              "
+              className="mx-auto mt-4 max-w-[485px] text-[10px] leading-5 text-[#675D5F] sm:text-[12px]"
             >
               Subscribe to get exclusive
               offers, style updates and
@@ -514,107 +399,37 @@ export default async function Footer() {
       =================================================== */}
 
       <section
-        className="
-          border-t
-
-          border-[#F1D9DC]
-
-          bg-[#FFFDFC]
-
-          px-4
-          py-8
-
-          sm:px-6
-          sm:py-9
-
-          lg:px-8
-          lg:py-10
-        "
+        className="border-t border-[#F1D9DC] bg-[#FFFDFC] px-4 py-8 sm:px-6 sm:py-9 lg:px-8 lg:py-10"
       >
         <div
-          className="
-            mx-auto
-
-            grid
-
-            w-full
-
-            max-w-[1500px]
-
-            gap-x-8
-            gap-y-10
-
-            sm:grid-cols-2
-
-            lg:grid-cols-[1.15fr_.85fr_1.5fr_1fr_1fr]
-          "
+          className="mx-auto grid w-full max-w-[1500px] gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-[1.15fr_.85fr_1.5fr_1fr_1fr]"
         >
           {/* =================================================
               BRAND
           ================================================= */}
 
           <div
-            className="
-              min-w-0
-
-              text-center
-
-              sm:col-span-2
-
-              lg:col-span-1
-
-              lg:text-left
-            "
+            className="min-w-0 text-center sm:col-span-2 lg:col-span-1 lg:text-left"
           >
             {/* LOGO */}
 
             <Link
               href="/"
-              className="
-                flex
-
-                w-full
-
-                justify-center
-
-                lg:w-auto
-
-                lg:justify-start
-              "
+              className="flex w-full justify-center lg:w-auto lg:justify-start"
             >
               <Image
                 src="/images/logos/hivra-desktop.png.png"
                 alt="HivraSoft"
                 width={230}
                 height={62}
-                className="
-                  h-auto
-
-                  w-[190px]
-
-                  sm:w-[205px]
-
-                  lg:w-[185px]
-                "
+                className="h-auto w-[190px] sm:w-[205px] lg:w-[185px]"
               />
             </Link>
 
             {/* TAGLINE */}
 
             <p
-              className="
-                mt-5
-
-                text-[8px]
-
-                font-bold
-
-                uppercase
-
-                tracking-[0.30em]
-
-                text-[#A52C47]
-              "
+              className="mt-5 text-[8px] font-bold uppercase tracking-[0.30em] text-[#A52C47]"
             >
               Fashion Lives In Kindness
             </p>
@@ -622,21 +437,7 @@ export default async function Footer() {
             {/* DESCRIPTION */}
 
             <p
-              className="
-                mx-auto
-
-                mt-4
-
-                max-w-[320px]
-
-                text-[11px]
-
-                leading-6
-
-                text-[#65595B]
-
-                lg:mx-0
-              "
+              className="mx-auto mt-4 max-w-[320px] text-[11px] leading-6 text-[#65595B] lg:mx-0"
             >
               Hivra Soft brings you
               comfortable, stylish and
@@ -649,19 +450,7 @@ export default async function Footer() {
             {/* SOCIAL ICONS */}
 
             <div
-              className="
-                mt-5
-
-                flex
-
-                flex-wrap
-
-                justify-center
-
-                gap-2.5
-
-                lg:justify-start
-              "
+              className="mt-5 flex flex-wrap justify-center gap-2.5 lg:justify-start"
             >
               <SocialLink
                 href="https://www.instagram.com/hivrasoft/"
@@ -744,59 +533,24 @@ export default async function Footer() {
           ================================================= */}
 
           <div
-            className="
-              w-full
-
-              min-w-0
-              max-w-full
-
-              sm:col-span-2
-
-              lg:hidden
-            "
+            className="w-full min-w-0 max-w-full sm:col-span-2 lg:hidden"
           >
             <div
-              className="
-                grid
-
-                w-full
-
-                min-w-0
-
-                grid-cols-[minmax(0,1fr)_minmax(0,1fr)]
-
-                gap-x-3
-
-                min-[390px]:gap-x-5
-
-                sm:gap-x-8
-              "
+              className="grid w-full min-w-0 grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-x-3 min-[390px]:gap-x-5 sm:gap-x-8"
             >
               {/* =============================================
                   LEFT - CUSTOMER SUPPORT
               ============================================= */}
 
               <div
-                className="
-                  min-w-0
-                "
+                className="min-w-0"
               >
                 <FooterTitle>
                   Customer Support
                 </FooterTitle>
 
                 <ul
-                  className="
-                    mt-5
-
-                    flex
-
-                    min-w-0
-
-                    flex-col
-
-                    gap-2.5
-                  "
+                  className="mt-5 flex min-w-0 flex-col gap-2.5"
                 >
                   {CUSTOMER_SUPPORT.map(
                     (
@@ -804,39 +558,13 @@ export default async function Footer() {
                     ) => (
                       <li
                         key={`mobile-support-${link.name}`}
-                        className="
-                          min-w-0
-                        "
+                        className="min-w-0"
                       >
                         <Link
                           href={
                             link.href
                           }
-                          className="
-                            block
-
-                            min-w-0
-
-                            break-words
-
-                            text-[8.5px]
-
-                            leading-[1.55]
-
-                            text-[#655A5C]
-
-                            transition
-
-                            hover:text-[#B32E4D]
-
-                            hover:underline
-
-                            hover:underline-offset-2
-
-                            min-[390px]:text-[9.5px]
-
-                            sm:text-[11px]
-                          "
+                          className="block min-w-0 break-words text-[8.5px] leading-[1.55] text-[#655A5C] transition hover:text-[#B32E4D] hover:underline hover:underline-offset-2 min-[390px]:text-[9.5px] sm:text-[11px]"
                         >
                           {
                             link.name
@@ -853,26 +581,14 @@ export default async function Footer() {
               ============================================= */}
 
               <div
-                className="
-                  min-w-0
-                "
+                className="min-w-0"
               >
                 <FooterTitle>
                   Contact Us
                 </FooterTitle>
 
                 <div
-                  className="
-                    mt-5
-
-                    flex
-
-                    min-w-0
-
-                    flex-col
-
-                    gap-4
-                  "
+                  className="mt-5 flex min-w-0 flex-col gap-4"
                 >
                   {/* CALL */}
 
@@ -887,11 +603,7 @@ export default async function Footer() {
 
                     <a
                       href="tel:+919420980536"
-                      className="
-                        break-words
-
-                        font-semibold
-                      "
+                      className="break-words font-semibold"
                     >
                       +91 9420980536
                     </a>
@@ -910,11 +622,7 @@ export default async function Footer() {
 
                     <a
                       href="mailto:support@hivrasoft.com"
-                      className="
-                        break-all
-
-                        font-semibold
-                      "
+                      className="break-all font-semibold"
                     >
                       support@hivrasoft.com
                     </a>
@@ -932,9 +640,7 @@ export default async function Footer() {
                     </strong>
 
                     <span
-                      className="
-                        break-words
-                      "
+                      className="break-words"
                     >
                       E 2, Sector 63,
                       Noida, Uttar
@@ -951,13 +657,7 @@ export default async function Footer() {
           ================================================= */}
 
           <div
-            className="
-              hidden
-
-              min-w-0
-
-              lg:block
-            "
+            className="hidden min-w-0 lg:block"
           >
             <StaticFooterColumn
               title="Customer Support"
@@ -972,24 +672,14 @@ export default async function Footer() {
           ================================================= */}
 
           <div
-            className="
-              hidden
-
-              min-w-0
-
-              lg:block
-            "
+            className="hidden min-w-0 lg:block"
           >
             <FooterTitle>
               Contact Us
             </FooterTitle>
 
             <div
-              className="
-                mt-5
-
-                space-y-5
-              "
+              className="mt-5 space-y-5"
             >
               <ContactItem
                 icon={
@@ -1002,9 +692,7 @@ export default async function Footer() {
 
                 <a
                   href="tel:+919420980536"
-                  className="
-                    font-semibold
-                  "
+                  className="font-semibold"
                 >
                   +91 9420980536
                 </a>
@@ -1021,11 +709,7 @@ export default async function Footer() {
 
                 <a
                   href="mailto:support@hivrasoft.com"
-                  className="
-                    break-all
-
-                    font-semibold
-                  "
+                  className="break-all font-semibold"
                 >
                   support@hivrasoft.com
                 </a>
@@ -1041,9 +725,7 @@ export default async function Footer() {
                 </strong>
 
                 <span
-                  className="
-                    break-words
-                  "
+                  className="break-words"
                 >
                   E 2, Sector 63,
                   Noida, Uttar Pradesh,
@@ -1060,36 +742,10 @@ export default async function Footer() {
       =================================================== */}
 
       <section
-        className="
-          border-y
-
-          border-[#EFD4D7]
-
-          bg-[#FFF6F3]
-
-          px-4
-          py-5
-
-          sm:px-6
-
-          lg:px-8
-        "
+        className="border-y border-[#EFD4D7] bg-[#FFF6F3] px-4 py-5 sm:px-6 lg:px-8"
       >
         <div
-          className="
-            mx-auto
-
-            grid
-
-            max-w-[1450px]
-
-            grid-cols-2
-
-            gap-x-3
-            gap-y-6
-
-            md:grid-cols-4
-          "
+          className="mx-auto grid max-w-[1450px] grid-cols-2 gap-x-3 gap-y-6 md:grid-cols-4"
         >
           <Benefit
             icon={
@@ -1130,71 +786,20 @@ export default async function Footer() {
       =================================================== */}
 
       <section
-        className="
-          bg-gradient-to-r
-
-          from-[#C8818C]
-
-          via-[#D39AA1]
-
-          to-[#C8818C]
-
-          px-4
-          py-4
-
-          text-white
-
-          sm:px-6
-
-          lg:px-8
-        "
+        className="bg-gradient-to-r from-[#C8818C] via-[#D39AA1] to-[#C8818C] px-4 py-4 text-white sm:px-6 lg:px-8"
       >
         <div
-          className="
-            mx-auto
-
-            flex
-
-            max-w-[1450px]
-
-            flex-col
-
-            items-center
-            justify-between
-
-            gap-3
-
-            text-center
-
-            lg:flex-row
-
-            lg:text-left
-          "
+          className="mx-auto flex max-w-[1450px] flex-col items-center justify-between gap-3 text-center lg:flex-row lg:text-left"
         >
           <p
-            className="
-              text-[8px]
-
-              text-white/95
-
-              sm:text-[9px]
-            "
+            className="text-[8px] text-white/95 sm:text-[9px]"
           >
             © 2026 Hivra Soft.
             All rights reserved.
           </p>
 
           <div
-            className="
-              flex
-
-              flex-wrap
-
-              justify-center
-
-              gap-x-4
-              gap-y-2
-            "
+            className="flex flex-wrap justify-center gap-x-4 gap-y-2"
           >
             <BottomLink
               href="/privacy-policy"
@@ -1228,13 +833,7 @@ export default async function Footer() {
           </div>
 
           <p
-            className="
-              text-[8px]
-
-              text-white/95
-
-              sm:text-[9px]
-            "
+            className="text-[8px] text-white/95 sm:text-[9px]"
           >
             Made with ♡ for a
             kinder, more confident
@@ -1266,9 +865,7 @@ function DynamicFooterColumn({
 }) {
   return (
     <div
-      className="
-        min-w-0
-      "
+      className="min-w-0"
     >
       <FooterTitle>
         {title}
@@ -1309,39 +906,13 @@ function DynamicFooterColumn({
             ) => (
               <li
                 key={`${title}-${link.id}`}
-                className="
-                  min-w-0
-                "
+                className="min-w-0"
               >
                 <Link
                   href={
                     link.href
                   }
-                  className="
-                    block
-
-                    min-h-[18px]
-
-                    break-words
-
-                    text-[10px]
-
-                    leading-[1.5]
-
-                    text-[#655A5C]
-
-                    hover:text-[#B32E4D]
-
-                    hover:underline
-
-                    hover:underline-offset-2
-
-                    sm:text-[11px]
-
-                    lg:text-[10px]
-
-                    xl:text-[11px]
-                  "
+                  className="block min-h-[18px] break-words text-[10px] leading-[1.5] text-[#655A5C] hover:text-[#B32E4D] hover:underline hover:underline-offset-2 sm:text-[11px] lg:text-[10px] xl:text-[11px]"
                 >
                   {
                     link.name
@@ -1353,13 +924,7 @@ function DynamicFooterColumn({
         </ul>
       ) : (
         <p
-          className="
-            mt-5
-
-            text-[10px]
-
-            text-black/35
-          "
+          className="mt-5 text-[10px] text-black/35"
         >
           No categories available.
         </p>
@@ -1389,24 +954,14 @@ function StaticFooterColumn({
 }) {
   return (
     <div
-      className="
-        min-w-0
-      "
+      className="min-w-0"
     >
       <FooterTitle>
         {title}
       </FooterTitle>
 
       <ul
-        className="
-          mt-5
-
-          flex
-
-          flex-col
-
-          gap-2.5
-        "
+        className="mt-5 flex flex-col gap-2.5"
       >
         {links.map(
           (
@@ -1419,27 +974,7 @@ function StaticFooterColumn({
                 href={
                   link.href
                 }
-                className="
-                  block
-
-                  min-h-[18px]
-
-                  text-[10px]
-
-                  leading-[1.5]
-
-                  text-[#655A5C]
-
-                  hover:text-[#B32E4D]
-
-                  hover:underline
-
-                  hover:underline-offset-2
-
-                  sm:text-[11px]
-
-                  xl:text-[12px]
-                "
+                className="block min-h-[18px] text-[10px] leading-[1.5] text-[#655A5C] hover:text-[#B32E4D] hover:underline hover:underline-offset-2 sm:text-[11px] xl:text-[12px]"
               >
                 {
                   link.name
@@ -1466,37 +1001,13 @@ function FooterTitle({
   return (
     <>
       <h3
-        className="
-          text-[9px]
-
-          font-bold
-
-          uppercase
-
-          tracking-[0.14em]
-
-          text-[#A62B47]
-
-          min-[390px]:text-[10px]
-
-          sm:text-[11px]
-        "
+        className="text-[9px] font-bold uppercase tracking-[0.14em] text-[#A62B47] min-[390px]:text-[10px] sm:text-[11px]"
       >
         {children}
       </h3>
 
       <span
-        className="
-          mt-2
-
-          block
-
-          h-[2px]
-
-          w-8
-
-          bg-[#DF5E76]
-        "
+        className="mt-2 block h-[2px] w-8 bg-[#DF5E76]"
       />
     </>
   );
@@ -1530,30 +1041,7 @@ function SocialLink({
       }
       target="_blank"
       rel="noopener noreferrer"
-      className="
-        grid
-
-        h-9
-        w-9
-
-        place-items-center
-
-        rounded-full
-
-        bg-[#FBE5E5]
-
-        text-[12px]
-
-        font-bold
-
-        text-[#B52C4A]
-
-        transition
-
-        hover:bg-[#B52C4A]
-
-        hover:text-white
-      "
+      className="grid h-9 w-9 place-items-center rounded-full bg-[#FBE5E5] text-[12px] font-bold text-[#B52C4A] transition hover:bg-[#B52C4A] hover:text-white"
     >
       {children}
     </a>
@@ -1579,58 +1067,16 @@ function MobileContactItem({
 }) {
   return (
     <div
-      className="
-        flex
-
-        w-full
-
-        min-w-0
-
-        gap-2
-      "
+      className="flex w-full min-w-0 gap-2"
     >
       <span
-        className="
-          flex
-
-          h-7
-          w-7
-
-          shrink-0
-
-          items-center
-          justify-center
-
-          rounded-full
-
-          bg-[#FCE3E4]
-
-          text-[#C23B57]
-        "
+        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#FCE3E4] text-[#C23B57]"
       >
         {icon}
       </span>
 
       <div
-        className="
-          flex
-
-          min-w-0
-
-          flex-1
-
-          flex-col
-
-          text-[8px]
-
-          leading-[1.55]
-
-          text-[#4D4143]
-
-          min-[390px]:text-[9px]
-
-          sm:text-[10px]
-        "
+        className="flex min-w-0 flex-1 flex-col text-[8px] leading-[1.55] text-[#4D4143] min-[390px]:text-[9px] sm:text-[10px]"
       >
         {children}
       </div>
@@ -1654,54 +1100,16 @@ function ContactItem({
 }) {
   return (
     <div
-      className="
-        flex
-
-        w-full
-
-        min-w-0
-
-        gap-3
-      "
+      className="flex w-full min-w-0 gap-3"
     >
       <span
-        className="
-          flex
-
-          h-8
-          w-8
-
-          shrink-0
-
-          items-center
-          justify-center
-
-          rounded-full
-
-          bg-[#FCE3E4]
-
-          text-[#C23B57]
-        "
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#FCE3E4] text-[#C23B57]"
       >
         {icon}
       </span>
 
       <div
-        className="
-          flex
-
-          min-w-0
-
-          flex-1
-
-          flex-col
-
-          text-[10px]
-
-          leading-5
-
-          text-[#4D4143]
-        "
+        className="flex min-w-0 flex-1 flex-col text-[10px] leading-5 text-[#4D4143]"
       >
         {children}
       </div>
@@ -1729,66 +1137,23 @@ function Benefit({
 }) {
   return (
     <div
-      className="
-        flex
-
-        items-center
-        justify-center
-
-        gap-3
-
-        md:border-r
-
-        md:border-[#ECCED2]
-
-        md:last:border-r-0
-      "
+      className="flex items-center justify-center gap-3 md:border-r md:border-[#ECCED2] md:last:border-r-0"
     >
       <span
-        className="
-          flex
-
-          h-10
-          w-10
-
-          shrink-0
-
-          items-center
-          justify-center
-
-          rounded-full
-
-          bg-[#FBE0E1]
-
-          text-[#C33A56]
-        "
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#FBE0E1] text-[#C33A56]"
       >
         {icon}
       </span>
 
       <div>
         <p
-          className="
-            text-[10px]
-
-            font-semibold
-
-            sm:text-[11px]
-          "
+          className="text-[10px] font-semibold sm:text-[11px]"
         >
           {title}
         </p>
 
         <p
-          className="
-            mt-0.5
-
-            text-[8px]
-
-            text-black/50
-
-            sm:text-[9px]
-          "
+          className="mt-0.5 text-[8px] text-black/50 sm:text-[9px]"
         >
           {subtitle}
         </p>
@@ -1816,15 +1181,7 @@ function BottomLink({
       href={
         href
       }
-      className="
-        text-[8px]
-
-        text-white/95
-
-        hover:underline
-
-        sm:text-[9px]
-      "
+      className="text-[8px] text-white/95 hover:underline sm:text-[9px]"
     >
       {children}
     </Link>

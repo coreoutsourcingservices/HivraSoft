@@ -4,7 +4,7 @@ import { productImageAlt } from "@/lib/image-alt";
 ========================================================= */
 
 const RAW_API_URL =
-  process.env.NEXT_PUBLIC_API_URL?.replace(
+  ((typeof window === "undefined" ? process.env.API_URL : undefined) || process.env.NEXT_PUBLIC_API_URL)?.replace(
     /\/+$/,
     ""
   ) || "http://localhost:5000";
@@ -291,6 +291,7 @@ export async function getActiveProducts(): Promise<
         `${API_URL}/api/products/active`,
         {
           method: "GET",
+          signal: AbortSignal.timeout(8_000),
 
           cache: "no-store",
 

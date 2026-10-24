@@ -1,3 +1,4 @@
+import CategoryDescription from "@/src/components/Storefront/CategoryDescription";
 import {
   notFound,
 } from "next/navigation";
@@ -204,6 +205,7 @@ export default async function MenPage({
           fixedPriceOffer
         }
       />
+      <CategoryDescription title={currentCategory.name} html={description} />
     </>
   );
 }

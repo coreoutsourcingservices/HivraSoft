@@ -34,6 +34,8 @@ export type StorefrontCategoryNode = {
   name: string;
   slug: string;
   description: string;
+  metaTitle?: string;
+  metaDescription?: string;
   parent: string | null;
   ancestors: string[];
   level: number;
@@ -150,6 +152,8 @@ function normalizeNode(
     description: String(
       raw.description || ""
     ),
+    metaTitle: String(raw.metaTitle || ""),
+    metaDescription: String(raw.metaDescription || ""),
     parent:
       raw.parent == null
         ? null
