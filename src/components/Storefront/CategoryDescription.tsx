@@ -32,8 +32,8 @@ export default function CategoryDescription({ title, html, pagePath = "/", headi
     .replace(/&nbsp;|&#0*160;|&#x0*a0;/gi, " ").trim();
   if (!text && !/<(?:img|hr)\b/i.test(safe)) return null;
 
-  return <section className="mx-auto max-w-[1500px] px-6 py-8 text-[#211A18]">
-    <Heading className="mb-4 text-2xl font-semibold">{title}</Heading>
+  return <section className="mx-auto max-w-[1500px] bg-white px-6 py-8 text-[#211A18]">
+    <Heading className="mb-4 text-2xl font-semibold text-[#211A18]">{title}</Heading>
     <div className="space-y-3 text-sm leading-7 [&_img]:h-auto [&_img]:max-w-full [&_table]:max-w-full [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6" dangerouslySetInnerHTML={{ __html: safe }} />
   </section>;
 }
