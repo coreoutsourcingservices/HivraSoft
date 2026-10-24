@@ -131,7 +131,7 @@ export default function StorefrontProductCard({
   return (
     <article
       className={`
-        group/card
+        group/card relative
 
         w-full
         min-w-0
@@ -155,12 +155,7 @@ export default function StorefrontProductCard({
       <div
         className="relative w-full min-w-0 overflow-hidden rounded-t-[13px] bg-[#F4F1EF]"
       >
-        <Link
-          href={`/product/${encodeURIComponent(
-            product.slug
-          )}`}
-          className="group/image relative block w-full cursor-pointer aspect-[0.78]"
-        >
+        <div className="group/image relative block w-full aspect-[0.78]">
           {product.image1 ? (
             <>
               <img
@@ -182,8 +177,8 @@ export default function StorefrontProductCard({
 
                   ${
                     hasSecondImage
-                      ? "md:group-hover/image:opacity-0"
-                      : "md:group-hover/image:scale-[1.02]"
+                      ? "md:group-hover/card:opacity-0"
+                      : "md:group-hover/card:scale-[1.02]"
                   }
                 `}
               />
@@ -194,7 +189,7 @@ export default function StorefrontProductCard({
                     product.image2
                   }
                   alt={productImageAlt(product, product.image2, `${product.name} alternate`, "HivraSoft product")}
-                  className="absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-500 md:group-hover/image:opacity-100"
+                  className="absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-500 md:group-hover/card:opacity-100"
                 />
               ) : null}
             </>
@@ -205,7 +200,7 @@ export default function StorefrontProductCard({
               No image
             </div>
           )}
-        </Link>
+        </div>
 
         {/* =================================================
             DISCOUNT
@@ -279,11 +274,9 @@ export default function StorefrontProductCard({
           title={
             product.name
           }
-          className="block w-full min-w-0 cursor-pointer truncate text-[10px] font-medium text-[#111111] min-[360px]:text-[11px] sm:text-[12px] lg:text-[13px]"
+          className="block w-full min-w-0 cursor-pointer after:absolute after:inset-0 after:z-10 text-[10px] font-medium text-[#111111] min-[360px]:text-[11px] sm:text-[12px] lg:text-[13px]"
         >
-          {
-            product.name
-          }
+          <span className="block truncate">{product.name}</span>
         </Link>
 
         {/* =================================================
@@ -348,7 +341,7 @@ export default function StorefrontProductCard({
                 resolvedOfferContext
               );
             }}
-            className="flex h-[38px] w-[48%] shrink-0 cursor-pointer items-center justify-center rounded-[8px] bg-[#EC477C] px-2 text-[8px] font-bold uppercase tracking-[0.02em] whitespace-nowrap text-white transition-colors hover:bg-[#B31345] min-[360px]:h-[40px] min-[360px]:text-[9px] sm:h-[42px] sm:text-[10px] lg:h-[56px] lg:max-w-[185px] lg:text-[13px]"
+            className="relative z-20 flex h-[38px] w-[48%] shrink-0 cursor-pointer items-center justify-center rounded-[8px] bg-[#EC477C] px-2 text-[8px] font-bold uppercase tracking-[0.02em] whitespace-nowrap text-white transition-colors hover:bg-[#B31345] min-[360px]:h-[40px] min-[360px]:text-[9px] sm:h-[42px] sm:text-[10px] lg:h-[56px] lg:max-w-[185px] lg:text-[13px]"
           >
             Add To Bag
           </button>

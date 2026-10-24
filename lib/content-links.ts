@@ -22,6 +22,13 @@ export function normalizeContentHref(href: string, pagePath = "/", siteUrl = SIT
 export function contentAnchorAttributes(attributes: Record<string, string>, pagePath = "/"): Record<string, string> {
   const { href, ...rest } = attributes;
   const normalized = href ? normalizeContentHref(href, pagePath) : undefined;
+  // Public content links should pass authority; preserve utility/external policies.
+  if (normalized?.startsWith("/") && !normalized.startsWith("//")
+    && !/^\/(?:admin|api|account|my-account|login|register|cart|checkout|wishlist)(?:[/?#]|$)/i.test(normalized)) {
+    const rel = (rest.rel || "").split(/\s+/).filter((token) => token && token.toLowerCase() !== "nofollow");
+    if (rel.length) rest.rel = rel.join(" ");
+    else delete rest.rel;
+  }
   if (rest.target === "_blank") {
     rest.rel = [...new Set((rest.rel || "").split(/\s+/).filter(Boolean).concat("noopener", "noreferrer"))].join(" ");
   }
@@ -31,12 +38,14 @@ export function contentAnchorAttributes(attributes: Record<string, string>, page
 /** Called on the sanitized display DOM; the stored editor HTML is unchanged. */
 export function normalizeContentAnchors(root: ParentNode, pagePath = "/") {
   for (const anchor of root.querySelectorAll("a[href]")) {
-    const href = normalizeContentHref(anchor.getAttribute("href") || "", pagePath);
-    if (href) anchor.setAttribute("href", href);
+    const attributes = contentAnchorAttributes({
+      href: anchor.getAttribute("href") || "",
+      target: anchor.getAttribute("target") || "",
+      rel: anchor.getAttribute("rel") || "",
+    }, pagePath);
+    if (attributes.href) anchor.setAttribute("href", attributes.href);
     else anchor.removeAttribute("href");
-    if (anchor.getAttribute("target") === "_blank") {
-      const rel = contentAnchorAttributes({ target: "_blank", rel: anchor.getAttribute("rel") || "" }).rel;
-      anchor.setAttribute("rel", rel);
-    }
+    if (attributes.rel) anchor.setAttribute("rel", attributes.rel);
+    else anchor.removeAttribute("rel");
   }
 }

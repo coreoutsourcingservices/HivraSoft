@@ -66,7 +66,15 @@ assert.equal(normalizeContentHref("https://example.com/a/"), "https://example.co
 assert.equal(normalizeContentHref("https://hivrasoft.com.example.com/a/"), "https://hivrasoft.com.example.com/a/");
 assert.equal(normalizeContentHref("mailto:support@hivrasoft.com"), "mailto:support@hivrasoft.com");
 assert.equal(normalizeContentHref("javascript:alert(1)"), undefined);
-assert.match(contentAnchorAttributes({ href: "/women", target: "_blank", rel: "nofollow" }).rel, /nofollow/);
+assert.doesNotMatch(contentAnchorAttributes({ href: "/women", target: "_blank", rel: "nofollow" }).rel, /nofollow/i);
+assert.equal(contentAnchorAttributes({ href: "https://example.com", rel: "nofollow sponsored" }).rel, "nofollow sponsored");
+assert.equal(contentAnchorAttributes({ href: "/account", rel: "nofollow" }).rel, "nofollow");
+assert.equal(contentAnchorAttributes({ href: "https://hivrasoft.com/women/bra", rel: "NOFOLLOW noopener" }).rel, "noopener");
+const linkFixture = DOMPurify.sanitize('<a href="https://hivrasoft.com/women/bra" rel="nofollow">Bra</a><a href="https://example.com" rel="nofollow">External</a>', { RETURN_DOM: true }) as HTMLElement;
+normalizeContentAnchors(linkFixture, "/men/brief");
+assert.equal(linkFixture.querySelector("a")?.getAttribute("href"), "/women/bra");
+assert.equal(linkFixture.querySelector("a")?.hasAttribute("rel"), false);
+assert.equal(linkFixture.querySelectorAll("a")[1].getAttribute("rel"), "nofollow");
 const dom = DOMPurify.sanitize('<a href="https://hivrasoft.com/women/" target="_blank">Women</a><a href="https://example.com/">Other</a>', { RETURN_DOM: true, ADD_ATTR: ["target"] }) as HTMLElement;
 normalizeContentAnchors(dom, "/product/item");
 assert.equal(dom.querySelector("a")?.getAttribute("href"), "/women");
