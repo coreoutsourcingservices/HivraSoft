@@ -1,9 +1,11 @@
 import type { ReactNode } from "react";
-import { pageMetadata, webpageSchema } from "@/lib/seo";
-import { STATIC_SEO } from "@/lib/seo-pages";
-import StructuredData from "@/src/components/Storefront/StructuredData";
-const seo = STATIC_SEO["/new-innerwear-online"];
-export const metadata = pageMetadata(seo);
+import { categorySeo } from "@/lib/catalog-seo";
+import { pageMetadata } from "@/lib/seo";
+import CategorySeoLayout from "@/src/components/Storefront/CategorySeoLayout";
+
+export const dynamic = "force-dynamic";
+const path = "/new-innerwear-online";
+export async function generateMetadata() { return pageMetadata(await categorySeo(path)); }
 export default function Layout({ children }: { children: ReactNode }) {
-  return <><StructuredData data={webpageSchema(seo)} />{children}</>;
+  return <CategorySeoLayout path={path}>{children}</CategorySeoLayout>;
 }

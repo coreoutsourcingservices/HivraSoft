@@ -3,6 +3,7 @@ import { blogImageUrl, blogImageSrcSet } from "@/lib/blog-images";
 import Link from "next/link";
 import type { Metadata } from "next";
 import DOMPurify from "isomorphic-dompurify";
+import { normalizeContentAnchors } from "@/lib/content-links";
 import { absoluteUrl, blogMetadata, blogSchema, blogSeo, webpageSchema, breadcrumbs } from "@/lib/seo";
 import StructuredData from "@/src/components/Storefront/StructuredData";
 import { notFound } from "next/navigation";
@@ -50,6 +51,7 @@ function articleHtml(blog: BlogRecord) {
     image.setAttribute("loading", "lazy");
     image.setAttribute("decoding", "async");
   }
+  normalizeContentAnchors(content, "/" + blog.slug);
   return content.innerHTML.replace(/<h1(\s[^>]*)?>/gi, "<h2$1>").replace(/<\/h1>/gi, "</h2>");
 }
 export default async function BlogDetailPage({ params }: Props) {

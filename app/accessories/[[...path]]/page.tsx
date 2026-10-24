@@ -895,7 +895,7 @@ export default async function AccessoriesPage({
           categoryPath
         }
       />
-      <CategoryDescription title={title} html={description} />
+      <CategoryDescription title={title} html={description} pagePath={"/accessories" + (categoryPath.length ? "/" + categoryPath.join("/") : "")} />
     </>
   );
 }

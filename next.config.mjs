@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+const legacyContentLinks = JSON.parse(readFileSync(new URL("./data/storefront-link-aliases.json", import.meta.url), "utf8"));
+
 const production = process.env.NODE_ENV === "production";
 const defaultBackendUrl = production ? "https://backend.hivrasoft.com" : "http://localhost:5000";
 const defaultApiUrl = production ? "https://hivrasoft.com" : defaultBackendUrl;
@@ -44,6 +47,7 @@ const nextConfig = {
   },
   async redirects() {
     return [
+      ...Object.entries(legacyContentLinks).map(([source, destination]) => ({ source, destination, permanent: true })),
       {
         source: "/:path*",
         has: [{ type: "host", value: "www\\.hivrasoft\\.com" }],

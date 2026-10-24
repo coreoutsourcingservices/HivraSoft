@@ -2,6 +2,7 @@ import {
   notFound,
 } from "next/navigation";
 import { cache } from "react";
+import { requestPublicProduct } from "@/lib/public-product-request";
 import { productSeo, pageMetadata, breadcrumbs } from "@/lib/seo";
 import StructuredData from "@/src/components/Storefront/StructuredData";
 
@@ -155,43 +156,14 @@ function getProductsFromResponse(
    DIRECT SLUG API
 ========================================================= */
 
-async function getDirectProduct(
-  slug: string
-): Promise<ApiProduct | null> {
-  try {
-    const response =
-      await fetch(
-        `${API_URL}/api/products/slug/${encodeURIComponent(
-          slug
-        )}`,
-        {
-          method: "GET",
-          cache:
-            "no-store",
-          signal: AbortSignal.timeout(8_000),
-
-          headers: {
-            Accept:
-              "application/json",
-          },
-        }
-      );
-
-    if (
-      !response.ok
-    ) {
-      return null;
-    }
-
-    const data =
-      await response.json();
-
-    return getProductFromResponse(
-      data
-    );
-  } catch {
-    return null;
-  }
+async function getDirectProduct(slug: string): Promise<ApiProduct | null> {
+  const response = await requestPublicProduct(
+    API_URL + "/api/products/slug/" + encodeURIComponent(slug)
+  );
+  if (response.status === 404) return null;
+  const product = getProductFromResponse(await response.json());
+  if (!product) throw new Error("Product API returned an invalid product");
+  return product;
 }
 
 /* =========================================================

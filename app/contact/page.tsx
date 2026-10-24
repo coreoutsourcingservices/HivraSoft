@@ -14,8 +14,8 @@ export default function ContactPage() {
   return (
     <main className="min-h-screen bg-[#fffafc] px-5 py-12 text-slate-900 sm:px-8 sm:py-16">
       <div className="mx-auto max-w-6xl">
-        <Link href="/help" className="text-sm font-bold text-rose-600">
-          ← Back to Help Center
+        <Link href="/faq" className="text-sm font-bold text-rose-600">
+          ← Back to FAQs
         </Link>
 
         <div className="mt-8 grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">

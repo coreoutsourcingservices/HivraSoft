@@ -24,7 +24,8 @@ const cachedActiveCategoryTree =
       return getActiveCategoryTree();
     },
     [
-      "storefront-active-category-tree-v2",
+      "storefront-active-category-tree-v3",
+      process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || "default",
     ],
     {
       revalidate: 60,
@@ -41,7 +42,8 @@ const cachedActiveProducts =
       return getActiveProducts();
     },
     [
-      "storefront-active-products-v2",
+      "storefront-active-products-v3",
+      process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || "default",
     ],
     {
       revalidate: 30,
@@ -62,7 +64,8 @@ const cachedFixedPriceOfferForCategory =
       );
     },
     [
-      "storefront-fixed-price-offer-category-v2",
+      "storefront-fixed-price-offer-category-v3",
+      process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || "default",
     ],
     {
       revalidate: 15,

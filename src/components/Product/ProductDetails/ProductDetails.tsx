@@ -5,6 +5,7 @@ import { imageAlt as resolveImageAlt, productImageAlt } from "@/lib/image-alt";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import DOMPurify from "isomorphic-dompurify";
+import { normalizeContentAnchors } from "@/lib/content-links";
 import Link from "next/link";
 import { trackMetaEvent } from "@/lib/meta-pixel";
 import { useRouter } from "next/navigation";
@@ -108,7 +109,7 @@ const decorativeProperties = new Set([
   "vertical-align", "flex-wrap", "flex-direction", "justify-content", "align-items",
   "gap", "row-gap", "column-gap", "overflow", "overflow-x", "overflow-y",
 ]);
-function cleanDescriptionHtml(html?: string, productName?: string): string {
+function cleanDescriptionHtml(html?: string, productName?: string, pagePath = "/"): string {
   if (!html || typeof html !== "string") return "";
   const root = DOMPurify.sanitize(html, {
     ALLOWED_TAGS: descriptionTags,
@@ -136,6 +137,7 @@ function cleanDescriptionHtml(html?: string, productName?: string): string {
   for (const image of root.querySelectorAll("img")) {
     image.setAttribute("alt", resolveImageAlt(image.getAttribute("alt"), image.getAttribute("title"), productName, "Product details"));
   }
+  normalizeContentAnchors(root, pagePath);
   // DOMPurify normalizes attribute quotes and encodes unsafe characters.
   return root.innerHTML;
 }
@@ -1051,7 +1053,7 @@ export default function ProductDetails({ product, currentSlug }: Props) {
   );
 
   const description = cleanDescriptionHtml(
-    selectedColor?.description || product.description, name
+    selectedColor?.description || product.description, name, `/product/${currentSlug}`
   );
 
 

@@ -14,7 +14,7 @@ export function absoluteUrl(path: string) {
 export function plainText(value: unknown) {
   return String(value || "").replace(/<[^>]*>/g, " ").replace(/&nbsp;|&#160;/gi, " ").replace(/&amp;/gi, "&").replace(/&quot;/gi, '"').replace(/&#39;|&apos;/gi, "'").replace(/\s+/g, " ").trim();
 }
-export type SeoInput = { title: string; description?: string; preserveDescription?: boolean; path: string; image?: string; keywords?: string[]; index?: boolean; follow?: boolean; canonical?: string; article?: { publishedTime?: string; modifiedTime?: string; author: string }; };
+export type SeoInput = { title: string; preserveTitle?: boolean; description?: string; preserveDescription?: boolean; path: string; image?: string; keywords?: string[]; index?: boolean; follow?: boolean; canonical?: string; article?: { publishedTime?: string; modifiedTime?: string; author: string }; };
 // Cut only at word boundaries; metadata must not contain artificial ellipses.
 export function snippet(value: unknown, limit: number) {
   const text = plainText(value);
@@ -61,7 +61,7 @@ export function seoDescription(value: unknown, fallback: string) {
 }
 export function pageMetadata(input: SeoInput): Metadata {
   const title = plainText(input.title) || BRAND;
-  const fullTitle = seoTitle(title);
+  const fullTitle = input.preserveTitle ? title : seoTitle(title);
   const copy = plainText(input.description) || DEFAULT_DESCRIPTION;
   const description = input.preserveDescription || copy.length <= 135 ? copy : seoDescription(copy, DEFAULT_DESCRIPTION);
   const url = absoluteUrl(input.canonical || input.path);

@@ -207,7 +207,7 @@ export default async function WomenPage({
           fixedPriceOffer
         }
       />
-      <CategoryDescription title={currentCategory.name} html={description} />
+      <CategoryDescription title={currentCategory.name} html={description} pagePath={"/women" + (slugParts.length ? "/" + slugParts.join("/") : "")} />
     </>
   );
 }

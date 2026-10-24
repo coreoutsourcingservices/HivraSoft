@@ -205,7 +205,7 @@ export default async function MenPage({
           fixedPriceOffer
         }
       />
-      <CategoryDescription title={currentCategory.name} html={description} />
+      <CategoryDescription title={currentCategory.name} html={description} pagePath={"/men" + (slugParts.length ? "/" + slugParts.join("/") : "")} />
     </>
   );
 }
