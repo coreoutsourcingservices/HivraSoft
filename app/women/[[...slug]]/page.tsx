@@ -167,14 +167,7 @@ export default async function WomenPage({
      DESCRIPTION
   ======================================================= */
 
-  const description =
-    currentCategory.description ||
-    (
-      currentCategory.id ===
-      womenRoot.id
-        ? "Explore HivraSoft women's collection designed around comfort and confidence."
-        : `Shop HivraSoft ${currentCategory.name}.`
-    );
+  const description = currentCategory.description || "";
 
   /* =======================================================
      RENDER

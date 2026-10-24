@@ -165,14 +165,7 @@ export default async function MenPage({
      DESCRIPTION
   ======================================================= */
 
-  const description =
-    currentCategory.description ||
-    (
-      currentCategory.id ===
-      menRoot.id
-        ? "Explore HivraSoft men's collection."
-        : `Shop HivraSoft ${currentCategory.name}.`
-    );
+  const description = currentCategory.description || "";
 
   /* =======================================================
      RENDER

@@ -857,15 +857,7 @@ export default async function AccessoriesPage({
      DESCRIPTION
   ======================================================= */
 
-  const description =
-    categoryDescription(
-      selectedCategory,
-    ) ||
-    (
-      categoryPath.length
-        ? `Shop ${title} at Hivra Soft.`
-        : "Complete your look with Hivra Soft accessories."
-    );
+  const description = categoryDescription(selectedCategory);
 
   /* =======================================================
      PAGE

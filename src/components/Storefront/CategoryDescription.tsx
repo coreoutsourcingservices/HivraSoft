@@ -2,7 +2,7 @@ import sanitizeHtml from "sanitize-html";
 import { contentAnchorAttributes } from "@/lib/content-links";
 
 /** Render a safe copy; keep the original editor HTML in the API. */
-export default function CategoryDescription({ title, html, pagePath = "/", heading: Heading = "h1" }: { title: string; html: string; pagePath?: string; heading?: "h1" | "h2" }) {
+export default function CategoryDescription({ title, html, pagePath = "/", heading: Heading = "h2" }: { title: string; html: string; pagePath?: string; heading?: "h1" | "h2" }) {
   const safe = sanitizeHtml(html, {
     allowedTags: [...sanitizeHtml.defaults.allowedTags, "img", "h1", "h2", "sub", "sup"],
     allowedAttributes: {
@@ -27,6 +27,11 @@ export default function CategoryDescription({ title, html, pagePath = "/", headi
       a: (tagName, attribs) => ({ tagName, attribs: contentAnchorAttributes(attribs, pagePath) }),
     },
   });
+  // Editors can save empty markup such as <p><br></p> or non-breaking spaces.
+  const text = sanitizeHtml(safe, { allowedTags: [], allowedAttributes: {} })
+    .replace(/&nbsp;|&#0*160;|&#x0*a0;/gi, " ").trim();
+  if (!text && !/<(?:img|hr)\b/i.test(safe)) return null;
+
   return <section className="mx-auto max-w-[1500px] px-6 py-8 text-[#211A18]">
     <Heading className="mb-4 text-2xl font-semibold">{title}</Heading>
     <div className="space-y-3 text-sm leading-7 [&_img]:h-auto [&_img]:max-w-full [&_table]:max-w-full [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6" dangerouslySetInnerHTML={{ __html: safe }} />

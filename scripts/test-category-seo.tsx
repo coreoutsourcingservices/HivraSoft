@@ -74,4 +74,9 @@ assert.match(dom.querySelector("a")?.getAttribute("rel") || "", /noopener/);
 const html = renderToStaticMarkup(<CategoryDescription title="Category" pagePath="/women" html={'<p><a href="https://www.hivrasoft.com/men/">Men</a></p><a href="javascript:alert(1)">Unsafe</a><script>alert(1)</script>'} />);
 assert.match(html, /href="\/men"/);
 assert.doesNotMatch(html, /javascript:|<script|nofollow/);
+for (const empty of ["", "   ", "<p><br></p>", "<p>&nbsp;</p>", "<script>alert(1)</script>"]) {
+  assert.equal(renderToStaticMarkup(<CategoryDescription title="Category" html={empty} />), "");
+}
+assert.match(renderToStaticMarkup(<CategoryDescription title="Category" html={'<p><img src="https://example.com/image.jpg" /></p>'} />), /<img/);
+assert.match(html, /<h2/);
 console.log("PASS: category/subcategory API metadata, aliases, fallback, exact title/description, HTML anchors and unsafe URL handling.");
