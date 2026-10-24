@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 
 import CategoryBannerSlider from "@/src/components/Storefront/CategoryBannerSlider";
 import StorefrontProductCard from "@/src/components/Storefront/StorefrontProductCard";
@@ -30,6 +30,7 @@ type FilterState = {
 };
 
 type Props = {
+  children?: ReactNode;
   basePath: "/women" | "/men"   | "/accessories";
 
   allLabel: string;
@@ -683,6 +684,7 @@ function FilterSheet({
 ========================================================= */
 
 export default function ResponsiveCatalog({
+  children,
   basePath,
   allLabel,
   products,
@@ -958,6 +960,8 @@ export default function ResponsiveCatalog({
           </button>
         </div>
       )}
+
+      {children}
 
       {/* ===================================================
           MOBILE SORT / FILTER

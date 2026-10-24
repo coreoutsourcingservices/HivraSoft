@@ -183,6 +183,23 @@ function setTextSize(editor: Editor, value: string) {
   editor.chain().focus().setMark("textStyle", { fontSize: `${value}px` }).run();
 }
 
+// Keep anchor destinations when editing imported HTML in the visual editor.
+const ContentIds = Extension.create({
+  name: "contentIds",
+  addGlobalAttributes() {
+    return [{
+      types: ["heading", "paragraph", "blockquote", "bulletList", "orderedList", "listItem", "table", "tableRow", "tableCell", "tableHeader", "image", "codeBlock"],
+      attributes: {
+        id: {
+          default: null,
+          parseHTML: (element: HTMLElement) => element.getAttribute("id"),
+          renderHTML: (attributes: Record<string, unknown>) => attributes.id ? { id: String(attributes.id) } : {},
+        },
+      },
+    }];
+  },
+});
+
 export default function WordBlogEditor({ value, onChange, onImageUpload, disabled = false, placeholder = "Start writing your blog..." }: Props) {
   const [zoom, setZoom] = useState(100);
   const [sourceMode, setSourceMode] = useState(() => hasDesignedHtml(value || ""));
@@ -198,6 +215,7 @@ export default function WordBlogEditor({ value, onChange, onImageUpload, disable
 
   const extensions = useMemo(() => [
     StarterKit.configure({ heading: { levels: [1, 2, 3, 4, 5, 6] } }),
+    ContentIds,
     Underline,
     TextStyle,
     FontSize,
@@ -369,7 +387,7 @@ export default function WordBlogEditor({ value, onChange, onImageUpload, disable
     : "overflow-hidden rounded-[24px] border border-[#211A18]/10 bg-[#F3F1EF] shadow-[0_18px_45px_rgba(33,26,24,0.08)]";
 
   return (
-    <div className={rootClass}>
+    <div className={`${rootClass} text-[#211A18] [color-scheme:light]`}>
       <div className="sticky top-0 z-20 border-b border-[#211A18]/10 bg-white/95 shadow-[0_6px_18px_rgba(33,26,24,0.05)] backdrop-blur">
         <div className="flex min-h-[54px] flex-wrap items-center gap-x-1 gap-y-1.5 px-2 py-2 sm:px-3">
           {!sourceMode && <>
@@ -528,7 +546,7 @@ export default function WordBlogEditor({ value, onChange, onImageUpload, disable
       </div>
 
       <style jsx global>{`
-        .word-blog-prose { min-height: 900px; padding: 64px 76px 96px; color: #211A18; font-family: Arial, Helvetica, sans-serif; font-size: 17px; line-height: 1.75; }
+        .word-blog-prose { min-height: 900px; padding: 64px 76px 96px; background: #fff; color: #211A18; font-family: Arial, Helvetica, sans-serif; font-size: 17px; line-height: 1.75; }
         .word-blog-prose > *:first-child { margin-top: 0; }
         .word-blog-prose p { margin: 0 0 18px; }
         .word-blog-prose h1 { margin: 0 0 24px; font-size: 38px; line-height: 1.2; font-weight: 800; }

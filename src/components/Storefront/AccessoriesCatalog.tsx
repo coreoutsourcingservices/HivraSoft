@@ -1,5 +1,7 @@
 "use client";
 
+import type { ReactNode } from "react";
+
 import ResponsiveCatalog from "@/src/components/Storefront/ResponsiveCatalog";
 
 import type {
@@ -16,6 +18,7 @@ import type {
 ========================================================= */
 
 type Props = {
+  children?: ReactNode;
   products: CatalogProduct[];
 
   banners: CatalogBanner[];
@@ -34,6 +37,7 @@ type Props = {
 ========================================================= */
 
 export default function AccessoriesCatalog({
+  children,
   products,
   banners,
   title,
@@ -43,6 +47,7 @@ export default function AccessoriesCatalog({
 }: Props) {
   return (
     <ResponsiveCatalog
+          children={children}
       basePath="/accessories"
       allLabel="All Accessories"
       products={products}

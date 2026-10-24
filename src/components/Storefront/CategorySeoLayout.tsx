@@ -9,6 +9,6 @@ export default async function CategorySeoLayout({ path, children }: { path: stri
   return <>
     <StructuredData data={webpageSchema(seo)} />
     {children}
-    {category?.description?.trim() && <CategoryDescription title={category.name} html={category.description} pagePath={path} heading="h2" />}
+    {category?.description?.trim() && <CategoryDescription title={category.name} html={category.description} pagePath={path} />}
   </>;
 }

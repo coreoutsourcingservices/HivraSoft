@@ -197,8 +197,9 @@ export default async function MenPage({
         fixedPriceOffer={
           fixedPriceOffer
         }
-      />
-      <CategoryDescription title={currentCategory.name} html={description} pagePath={"/men" + (slugParts.length ? "/" + slugParts.join("/") : "")} />
+      >
+        <CategoryDescription title={currentCategory.name} html={description} pagePath={"/men" + (slugParts.length ? "/" + slugParts.join("/") : "")} />
+      </MenCatalog>
     </>
   );
 }
