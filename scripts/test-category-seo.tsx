@@ -28,6 +28,32 @@ assert.ok(pageMetadata(categorySeoFromTree([node("fallback", "men")], "/men")).d
 const renamed = { ...node("renamed", "women"), name: "Updated collection" };
 assert.match(categorySeoFromTree([renamed], "/women").title, /Updated collection/);
 
+// Each missing field uses the category's own name, including nested categories.
+for (const fields of [
+  {},
+  { metaTitle: "Saved title" },
+  { metaDescription: "Saved description" },
+  { metaTitle: "   ", metaDescription: "   " },
+]) {
+  const category = { ...node("fallback", "women"), name: "Women's collection", description: "<p>Rich category description</p>", ...fields };
+  const nested = { ...category, id: "nested", slug: "bra", name: "Bra collection" };
+  const cases: [string, StorefrontCategoryNode[], StorefrontCategoryNode][] = [
+    ["/women", [category], category],
+    ["/women/bra", [{ ...category, children: [nested] }], nested],
+  ];
+  for (const [path, categoryTree, expected] of cases) {
+    const metadata = pageMetadata(categorySeoFromTree(categoryTree, path));
+    const title = fields.metaTitle?.trim() || expected.name;
+    const description = fields.metaDescription?.trim() || expected.name;
+    assert.deepEqual(metadata.title, { absolute: title });
+    assert.equal(metadata.description, description);
+    assert.equal(metadata.openGraph?.title, title);
+    assert.equal(metadata.openGraph?.description, description);
+    assert.equal(metadata.twitter?.title, title);
+    assert.equal(metadata.twitter?.description, description);
+  }
+}
+
 assert.equal(normalizeContentHref("https://www.hivrasoft.com/women/bra/?sort=latest#details"), "/women/bra?sort=latest#details");
 assert.equal(normalizeContentHref("http://hivrasoft.com/women/"), "/women");
 assert.equal(normalizeContentHref("../women/", "/product/item"), "/women");
