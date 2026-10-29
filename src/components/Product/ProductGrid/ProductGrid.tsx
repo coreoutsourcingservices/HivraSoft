@@ -1,4 +1,6 @@
 "use client";
+import { stripHtml } from "@/src/utils/seoAnalyzer";
+
 import { productImageAlt } from "@/lib/image-alt";
 
 import Link from "next/link";
@@ -741,7 +743,7 @@ function ProductItem({
               "
             >
               {
-                product.shortDescription
+                stripHtml(product.shortDescription)
               }
             </p>
           )}

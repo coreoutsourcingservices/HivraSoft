@@ -1,3 +1,4 @@
+import { stripHtml } from "@/src/utils/seoAnalyzer";
 export type CatalogImage = {
   url: string;
   publicId: string;
@@ -100,7 +101,7 @@ export function toDisplayProduct(product: CatalogProduct | any): DisplayProduct 
     _id: String(safe._id || ""),
     name: color?.nameProduct || "Product",
     slug: color?.slugProduct || "",
-    shortDescription: color?.shortDescription || "",
+    shortDescription: stripHtml(color?.shortDescription || ""),
     description: color?.description || "",
     tags: Array.isArray(color?.tags) ? color!.tags! : [],
     seoTitle: color?.seoTitle || color?.nameProduct || "",

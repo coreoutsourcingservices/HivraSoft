@@ -56,8 +56,9 @@ const API_URL = (
    - refresh in background
 ========================================================= */
 
+// Invalidate browser snapshots containing image URLs from the previous Cloudinary account.
 const HOME_CACHE_KEY =
-  "hivra:home-page:v3";
+  "hivra:home-page:v4";
 
 const HOME_CACHE_TTL =
   process.env.NODE_ENV === "development" ? 0 : 12 * 60 * 60 * 1000;

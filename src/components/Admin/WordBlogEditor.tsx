@@ -60,6 +60,7 @@ type Props = {
   onImageUpload: (file: File) => Promise<BlogImage>;
   disabled?: boolean;
   placeholder?: string;
+  compact?: boolean;
 };
 
 const FontSize = Extension.create({
@@ -201,7 +202,7 @@ const ContentIds = Extension.create({
   },
 });
 
-export default function WordBlogEditor({ value, onChange, onImageUpload, disabled = false, placeholder = "Start writing your blog..." }: Props) {
+export default function WordBlogEditor({ value, onChange, onImageUpload, disabled = false, placeholder = "Start writing your blog...", compact = false }: Props) {
   const [zoom, setZoom] = useState(100);
   const [sourceMode, setSourceMode] = useState(() => hasDesignedHtml(value || ""));
   const [htmlPreview, setHtmlPreview] = useState(false);
@@ -265,7 +266,7 @@ export default function WordBlogEditor({ value, onChange, onImageUpload, disable
         return true;
       },
       attributes: {
-        class: "word-blog-prose focus:outline-none",
+        class: `word-blog-prose focus:outline-none ${compact ? "word-blog-prose--compact" : ""}`,
         spellcheck: "true",
       },
     },
@@ -523,18 +524,18 @@ export default function WordBlogEditor({ value, onChange, onImageUpload, disable
         )}
       </div>
 
-      <div className={`flex-1 overflow-y-auto overflow-x-hidden ${fullscreen ? "h-[calc(100vh-108px)]" : "max-h-[calc(100vh-190px)] min-h-[760px]"}`}>
+      <div className={`flex-1 overflow-y-auto overflow-x-hidden ${fullscreen ? "h-[calc(100vh-108px)]" : compact ? "max-h-[420px] min-h-[280px]" : "max-h-[calc(100vh-190px)] min-h-[760px]"}`}>
         <div className="min-h-full px-2 py-6 sm:px-5 sm:py-9 lg:px-8">
           <div
             className="mx-auto origin-top overflow-hidden rounded-[10px] border border-black/[0.045] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.06),0_24px_70px_rgba(33,26,24,0.08)]"
-            style={{ maxWidth: 900, minHeight: 900, zoom: zoom / 100 } as CSSProperties}
+            style={{ maxWidth: 900, minHeight: compact ? 280 : 900, zoom: zoom / 100 } as CSSProperties}
           >
             {sourceMode ? htmlPreview ? (
               <iframe
                 title="Sandboxed blog HTML preview"
                 sandbox=""
                 srcDoc={sourceHtml}
-                className="h-[900px] w-full border-0 bg-white"
+                className={`${compact ? "h-[320px]" : "h-[900px]"} w-full border-0 bg-white`}
               />
             ) : (
               <textarea
@@ -542,7 +543,7 @@ export default function WordBlogEditor({ value, onChange, onImageUpload, disable
                 onChange={(event) => { setSourceHtml(event.target.value); onChange(event.target.value); }}
                 spellCheck={false}
                 placeholder="Paste the complete HTML here. Your original CSS and layout will be preserved on save."
-                className="min-h-[900px] w-full resize-none bg-[#171717] p-8 font-mono text-[13px] leading-6 text-[#F5F5F5] outline-none sm:p-12"
+                className={`${compact ? "min-h-[280px]" : "min-h-[900px]"} w-full resize-none bg-[#171717] p-8 font-mono text-[13px] leading-6 text-[#F5F5F5] outline-none sm:p-12`}
               />
             ) : <EditorContent editor={editor} />}
           </div>
@@ -576,6 +577,7 @@ export default function WordBlogEditor({ value, onChange, onImageUpload, disable
         .word-blog-prose p.is-editor-empty:first-child::before { float: left; height: 0; pointer-events: none; color: rgb(33 26 24 / .32); content: attr(data-placeholder); }
         .table-action { height: 32px; border: 1px solid rgb(33 26 24 / .10); border-radius: 8px; background: white; padding: 0 10px; font-size: 9px; font-weight: 600; color: rgb(33 26 24 / .62); }
         @media (max-width: 768px) { .word-blog-prose { min-height: 760px; padding: 36px 26px 60px; font-size: 16px; } .word-blog-prose h1 { font-size: 32px; } .word-blog-prose h2 { font-size: 26px; } .word-blog-prose img { width: min(100%, var(--editor-image-width, 100%)); } }
+        .word-blog-prose.word-blog-prose--compact { min-height: 280px; padding: 24px; }
       `}</style>
     </div>
   );

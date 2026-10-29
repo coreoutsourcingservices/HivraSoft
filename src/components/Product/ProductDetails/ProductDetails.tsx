@@ -5,6 +5,7 @@ import { imageAlt as resolveImageAlt, productImageAlt } from "@/lib/image-alt";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import DOMPurify from "isomorphic-dompurify";
+import { editorContentHtml } from "@/lib/editor-content";
 import { normalizeContentAnchors } from "@/lib/content-links";
 import Link from "next/link";
 import { trackMetaEvent } from "@/lib/meta-pixel";
@@ -90,6 +91,7 @@ function positiveNumber(...values: unknown[]): number | undefined {
 const descriptionTags = [
   "div", "section", "article", "p", "br", "span", "h1", "h2", "h3",
   "h4", "h5", "h6", "strong", "b", "em", "i", "u", "s", "del",
+  "mark", "sub", "sup", "pre", "code",
   "ul", "ol", "li", "blockquote", "hr", "a", "img", "figure",
   "figcaption", "table", "thead", "tbody", "tfoot", "tr", "th", "td",
 ];
@@ -1048,8 +1050,9 @@ export default function ProductDetails({ product, currentSlug }: Props) {
     selectedColor?.slugProduct || currentSlug || ""
   );
 
-  const shortDescription = String(
-    selectedColor?.shortDescription || product.shortDescription || ""
+  const shortDescription = cleanDescriptionHtml(
+    editorContentHtml(String(selectedColor?.shortDescription || product.shortDescription || "")),
+    name, `/product/${currentSlug}`
   );
 
   const description = cleanDescriptionHtml(
@@ -1057,10 +1060,6 @@ export default function ProductDetails({ product, currentSlug }: Props) {
   );
 
 
-  const legacyPinkDescription =
-    /max-width\s*:\s*900px/i.test(description) &&
-    /#a3134f/i.test(description) &&
-    /#ffd1e3/i.test(description);
   /* =======================================================
      PRICES
   ======================================================= */
@@ -1290,9 +1289,10 @@ export default function ProductDetails({ product, currentSlug }: Props) {
           </h1>
 
           {shortDescription && (
-            <p className="mt-3 text-[12px] leading-5 text-black/50">
-              {shortDescription}
-            </p>
+            <div
+              className="mt-3 break-words [&_*]:[all:revert]"
+              dangerouslySetInnerHTML={{ __html: shortDescription }}
+            />
           )}
 
           {/* PRODUCT PRICE */}
@@ -1542,9 +1542,10 @@ export default function ProductDetails({ product, currentSlug }: Props) {
             </h2>
           </div>
 
+          {/* Restore native HTML semantics; saved inline styles take precedence. */}
           {description ? (
             <div
-              className={`mx-auto mt-8 max-w-[880px] text-[13px] leading-7 text-[#39322F] sm:text-[14px] [&_h1]:my-5 [&_h1]:text-2xl [&_h1]:font-bold [&_h2]:my-5 [&_h2]:text-xl [&_h2]:font-bold [&_h2]:text-[#A91543] [&_h3]:my-4 [&_h3]:text-lg [&_h3]:font-semibold [&_p]:my-4 [&_strong]:font-bold [&_strong]:text-[#A91543] [&_ul]:my-4 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:my-4 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:my-2 [&_img]:mx-auto [&_img]:my-6 [&_img]:max-w-full [&_img]:rounded-xl ${legacyPinkDescription ? "product-description--legacy-pink" : ""}`}
+              className="mx-auto mt-8 max-w-[880px] overflow-x-auto [&_*]:[all:revert]"
               dangerouslySetInnerHTML={{ __html: description }}
             />
           ) : (

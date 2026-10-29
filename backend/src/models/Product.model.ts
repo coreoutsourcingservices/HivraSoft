@@ -444,8 +444,8 @@ const productColorSchema =
         trim: true,
 
         maxlength: [
-          1000,
-          "Short description cannot exceed 1000 characters.",
+          100_000,
+          "Short description HTML cannot exceed 100000 characters.",
         ],
       },
 

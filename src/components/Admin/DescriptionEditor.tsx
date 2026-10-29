@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { editorContentHtml } from "@/lib/editor-content";
 import { apiFetch } from "@/lib/api";
 import type { BlogImage } from "@/lib/blog";
 
@@ -14,9 +15,10 @@ type Props = {
   onChange: (html: string) => void;
   disabled?: boolean;
   folder: string;
+  compact?: boolean;
 };
 
-export default function DescriptionEditor({ value, onChange, disabled, folder }: Props) {
+export default function DescriptionEditor({ value, onChange, disabled, folder, compact = false }: Props) {
   async function uploadImage(file: File): Promise<BlogImage> {
     const body = new FormData();
     body.set("image", file);
@@ -26,5 +28,5 @@ export default function DescriptionEditor({ value, onChange, disabled, folder }:
     return result.image;
   }
 
-  return <WordEditor placeholder="Write description..." value={value} onChange={onChange} disabled={disabled} onImageUpload={uploadImage} />;
+  return <WordEditor placeholder="Write description..." value={editorContentHtml(value)} compact={compact} onChange={onChange} disabled={disabled} onImageUpload={uploadImage} />;
 }

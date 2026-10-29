@@ -3424,31 +3424,16 @@ export default function ProductForm({
 
                     <div className="mt-4 grid gap-4">
                       <Field
+                        as="div"
                         label="Short Description"
-                        hint={`${color.shortDescription.length}/1000 characters`}
+                        hint="Formatted content shown below the product title. Saved as HTML."
                       >
-                        <textarea
-                          className={`${inputClass} min-h-28 resize-y py-3 leading-6`}
-                          maxLength={
-                            1000
-                          }
-                          value={
-                            color.shortDescription
-                          }
-                          placeholder="Short premium product summary..."
-                          onChange={(
-                            event
-                          ) =>
-                            updateColor(
-                              colorIndex,
-                              {
-                                shortDescription:
-                                  event
-                                    .target
-                                    .value,
-                              }
-                            )
-                          }
+                        <DescriptionEditor
+                          value={color.shortDescription}
+                          onChange={(shortDescription) => updateColor(colorIndex, { shortDescription })}
+                          disabled={saving}
+                          folder="products/short-descriptions"
+                          compact
                         />
                       </Field>
 

@@ -17,6 +17,7 @@ import {
 
 import {
   prepareProductDescriptionHtml,
+  prepareProductShortDescriptionHtml,
 } from "../utils/productHtml";
 import { calculateSeoScore } from "../utils/productSeoAnalyzer";
 
@@ -685,11 +686,7 @@ const normalizeColors = (
 
           ...pricing,
 
-          shortDescription:
-            color
-              .shortDescription
-              ?.trim() ||
-            "",
+          shortDescription: prepareProductShortDescriptionHtml(color.shortDescription),
 
           description:
             prepareProductDescriptionHtml(
