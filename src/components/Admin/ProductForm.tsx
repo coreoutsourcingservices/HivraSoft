@@ -3453,6 +3453,7 @@ export default function ProductForm({
                       </Field>
 
                       <Field
+                        as="div"
                         label="Description"
                         hint="Write formatted text, add images, or paste HTML source."
                       >
@@ -4767,11 +4768,13 @@ function SeoCheckSection({
 }
 
 function Field({
+  as: Container = "label",
   label,
   hint,
   required,
   children,
 }: {
+  as?: "label" | "div";
   label: string;
   hint?: string;
   required?: boolean;
@@ -4779,7 +4782,7 @@ function Field({
     ReactNode;
 }) {
   return (
-    <label className="block">
+    <Container className="block">
       <div className="mb-1.5 flex items-start justify-between gap-3">
         <span className="text-xs font-bold text-[#2A201D]/75">
           {
@@ -4805,7 +4808,7 @@ function Field({
       {
         children
       }
-    </label>
+    </Container>
   );
 }
 
