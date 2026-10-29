@@ -27,7 +27,6 @@ import {
   Bold,
   Braces,
   ChevronDown,
-  Code2,
   Eraser,
   Fullscreen,
   Highlighter,
@@ -127,8 +126,9 @@ const StyledImage = Image.extend({
 // TipTap is a document editor, not a full HTML/CSS editor.  Layout HTML must
 // remain in HTML mode or ProseMirror drops divs, gradients and inline styles.
 function hasDesignedHtml(html: string) {
-  // Any HTML source belongs in source mode; TipTap cannot round-trip arbitrary tags.
-  return /<(?:[a-z][\w:-]*\b[^>]*|!doctype\b[^>]*|!--[\s\S]*?--)>/i.test(html);
+  // Only custom page layouts require source mode; ordinary rich text stays editable.
+  return /<(?:html|head|body|style|script|iframe|section|article|header|footer|main|aside|nav)\b|<!doctype\b/i.test(html)
+    || /style\s*=\s*["'][^"']*(?:display\s*:\s*(?:grid|flex)|position\s*:\s*(?:absolute|fixed)|background(?:-image)?\s*:[^;"']*(?:gradient|url)\s*\()/i.test(html);
 }
 
 function cleanPastedHtml(html: string) {
@@ -149,7 +149,8 @@ function cleanPastedHtml(html: string) {
         .map((part) => part.trim())
         .filter((part) => part && !/^mso-/i.test(part) && !/^tab-stops:/i.test(part) && !/^text-autospace:/i.test(part))
         .join(";");
-      clean ? element.setAttribute("style", clean) : element.removeAttribute("style");
+      if (clean) element.setAttribute("style", clean);
+      else element.removeAttribute("style");
     }
   });
   return document.body.innerHTML;
@@ -211,7 +212,7 @@ export default function WordBlogEditor({ value, onChange, onImageUpload, disable
   const uploadNoticeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const sourceModeRef = useRef(sourceMode);
-  sourceModeRef.current = sourceMode;
+  useEffect(() => { sourceModeRef.current = sourceMode; }, [sourceMode]);
 
   const extensions = useMemo(() => [
     StarterKit.configure({ heading: { levels: [1, 2, 3, 4, 5, 6] } }),
@@ -243,10 +244,10 @@ export default function WordBlogEditor({ value, onChange, onImageUpload, disable
       transformPastedHTML: cleanPastedHtml,
       handlePaste: (_view, event) => {
         const rawText = event.clipboardData?.getData("text/plain") || "";
-        const richHtml = event.clipboardData?.getData("text/html") || "";
         // Pasting a full HTML snippet or a styled web layout must not invoke
         // TipTap's lossy HTML-to-ProseMirror conversion.
-        const importedHtml = hasDesignedHtml(rawText) ? rawText : hasDesignedHtml(richHtml) ? richHtml : "";
+        const importedHtml = hasDesignedHtml(rawText) ? rawText : "";
+        // Normal clipboard HTML inserts at the cursor through TipTap.
         if (!importedHtml) return false;
         // Never replace an existing Word document without asking.
         if (_view.state.doc.textContent.trim() && !window.confirm(
@@ -286,6 +287,8 @@ export default function WordBlogEditor({ value, onChange, onImageUpload, disable
     const next = value || "";
     if (sourceMode) {
       // Synchronize saved/loaded content, but do NOT round-trip it through TipTap.
+      // Sync the external controlled value while preserving raw source HTML.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSourceHtml((current) => current === next ? current : next);
       return;
     }
@@ -334,6 +337,7 @@ export default function WordBlogEditor({ value, onChange, onImageUpload, disable
       sourceModeRef.current = false;
       setSourceMode(false);
       setHtmlPreview(false);
+      setSourceHtml(converted);
       onChange(converted);
     } else {
       setSourceHtml(value || editor.getHTML());

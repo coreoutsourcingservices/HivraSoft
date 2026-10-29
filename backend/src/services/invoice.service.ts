@@ -128,6 +128,27 @@ function splitIdentifier(value: unknown, maxLength = 20) {
   return [raw.slice(0, maxLength), raw.slice(maxLength)];
 }
 
+// Conservative Helvetica width also wraps long unbroken address/email tokens.
+function wrapText(value: string, width: number, size = 8.2): string[] {
+  const limit = Math.max(1, Math.floor(width / (size * 0.75)));
+  const lines: string[] = [];
+  let line = "";
+  for (const word of value.trim().split(/\s+/)) {
+    if (line && line.length + word.length + 1 > limit) {
+      lines.push(line);
+      line = "";
+    }
+    let rest = word;
+    while (rest.length > limit) {
+      lines.push(rest.slice(0, limit));
+      rest = rest.slice(limit);
+    }
+    line = line ? line + " " + rest : rest;
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
 function buildInvoicePage(
   order: InvoiceOrder,
   items: any[],
@@ -172,24 +193,24 @@ function buildInvoicePage(
     );
   }
 
-  out += rectCmd(MARGIN, 534, PAGE_W - MARGIN * 2, 144, 0.96);
-  out += textCmd(MARGIN + 16, 658, "Billing / Shipping", 11, true);
-
   const addr = addressLines(order.shippingAddress);
-  addr.slice(0, 10).forEach((line, index) => {
+  if (customer.email) addr.push("Email: " + customer.email);
+  const wrappedAddress = addr.flatMap((line) => wrapText(line, 298));
+  const addressBottom = 642 - Math.max(0, wrappedAddress.length - 1) * 11;
+  const tableTop = Math.min(516, addressBottom - 30);
+  const panelBottom = tableTop + 14;
+  out += rectCmd(MARGIN, panelBottom, PAGE_W - MARGIN * 2, 678 - panelBottom, 0.96);
+  out += textCmd(MARGIN + 16, 658, "Billing / Shipping", 11, true);
+  wrappedAddress.forEach((line, index) => {
     out += textCmd(MARGIN + 16, 642 - index * 11, line, 8.2);
   });
-
-  if (customer.email) {
-    out += textCmd(MARGIN + 16, 525, `Email: ${customer.email}`, 8);
-  }
 
   const rx = 368;
   const valueX = rx + 88;
   out += textCmd(rx, 658, "Order / Payment", 11, true);
 
   let rightY = 641;
-  const orderNumberLines = splitIdentifier(order.orderNumber || order._id, 20);
+  const orderNumberLines = wrapText(String(order.orderNumber || order._id || "-"), 90);
 
   out += textCmd(rx, rightY, "Order Number:", 8.2, true);
   orderNumberLines.slice(0, 2).forEach((line, index) => {
@@ -234,7 +255,6 @@ function buildInvoicePage(
       });
   }
 
-  const tableTop = 530;
   out += textCmd(MARGIN + 16, tableTop, "Item", 9.5, true);
   out += textCmd(315, tableTop, "Unit", 9.5, true);
   out += textCmd(385, tableTop, "Qty", 9.5, true);
@@ -514,8 +534,8 @@ export function buildInvoicesPdf(orders: InvoiceOrder[]) {
   for (const order of orders) {
     const items = Array.isArray(order.items) ? order.items : [];
     const chunks = items.length
-      ? Array.from({ length: Math.ceil(items.length / 12) }, (_, i) =>
-          items.slice(i * 12, i * 12 + 12)
+      ? Array.from({ length: Math.ceil(items.length / 6) }, (_, i) =>
+          items.slice(i * 6, i * 6 + 6)
         )
       : [[]];
 
