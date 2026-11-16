@@ -198,25 +198,39 @@ function xlsxCell(value: string | number, row: number, col: number, style = 0) {
   return `<c r="${ref}" t="inlineStr" s="${style}"><is><t xml:space="preserve">${esc(value)}</t></is></c>`;
 }
 
-function sheetXml(title: string, subtitle: string, headers: string[], rows: Array<Array<string | number>>, moneyColumns: Set<number>, widths?: number[]) {
+function sheetXml(title: string, headers: string[], rows: Array<Array<string | number>>, moneyColumns: Set<number>, widths?: number[], totals = false) {
+  // Remove whole empty columns, never shift individual cells out of their records.
+  const kept = headers.map((_, index) => index).filter((index) => !rows.length || rows.some((row) => String(row[index] ?? "").trim() !== ""));
+  headers = kept.map((index) => headers[index]);
+  rows = rows.map((row) => kept.map((index) => row[index] ?? ""));
+  moneyColumns = new Set(kept.flatMap((index, next) => moneyColumns.has(index) ? [next] : []));
+  widths = widths ? kept.map((index) => widths![index]) : undefined;
+  const headerRow = title ? 2 : 1;
   const maxCol = Math.max(headers.length, 1);
   const cols = Array.from({ length: maxCol }, (_, i) => `<col min="${i + 1}" max="${i + 1}" width="${widths?.[i] || Math.min(38, Math.max(12, headers[i]?.length || 12) + 2)}" customWidth="1"/>`).join("");
   const rowXml: string[] = [];
-  rowXml.push(`<row r="1" ht="24" customHeight="1">${xlsxCell(title, 1, 0, 3)}</row>`);
-  rowXml.push(`<row r="2">${xlsxCell(subtitle, 2, 0, 4)}</row>`);
-  rowXml.push(`<row r="3">${xlsxCell(`Generated: ${dateTimeText(new Date())}`, 3, 0, 4)}</row>`);
-  rowXml.push(`<row r="5">${headers.map((header, i) => xlsxCell(header, 5, i, 1)).join("")}</row>`);
+  if (title) rowXml.push(`<row r="1" ht="28" customHeight="1">${xlsxCell(title, 1, 0, 3)}</row>`);
+  rowXml.push(`<row r="${headerRow}" ht="32" customHeight="1">${headers.map((header, i) => xlsxCell(header, headerRow, i, 1)).join("")}</row>`);
   rows.forEach((values, rIndex) => {
-    const excelRow = rIndex + 6;
-    rowXml.push(`<row r="${excelRow}">${values.map((value, cIndex) => xlsxCell(value, excelRow, cIndex, moneyColumns.has(cIndex) ? 2 : 0)).join("")}</row>`);
+    const excelRow = rIndex + headerRow + 1;
+    rowXml.push(`<row r="${excelRow}">${values.map((value, cIndex) => xlsxCell(value, excelRow, cIndex, headers[cIndex] === "Order Date" ? 5 : moneyColumns.has(cIndex) ? 2 : 0)).join("")}</row>`);
   });
-  const lastRow = Math.max(5, rows.length + 5);
+  const lastRow = headerRow + rows.length;
+  if (totals && rows.length) {
+    const totalRow = lastRow + 1;
+    rowXml.push(`<row r="${totalRow}">${xlsxCell("Grand Total", totalRow, 0, 1)}${headers.slice(1).map((_, offset) => {
+      const index = offset + 1;
+      if (!rows.every((row) => typeof row[index] === "number")) return "";
+      const sum = money(rows.reduce((total, row) => total + Number(row[index]), 0));
+      return `<c r="${colName(index)}${totalRow}" s="${moneyColumns.has(index) ? 2 : 0}"><f>SUM(${colName(index)}${headerRow + 1}:${colName(index)}${lastRow})</f><v>${sum}</v></c>`;
+    }).join("")}</row>`);
+  }
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-  <sheetViews><sheetView workbookViewId="0"><pane ySplit="5" topLeftCell="A6" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>
+  <sheetViews><sheetView workbookViewId="0"><pane ySplit="${headerRow}" topLeftCell="A${headerRow + 1}" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>
   <cols>${cols}</cols><sheetData>${rowXml.join("")}</sheetData>
-  <autoFilter ref="A5:${colName(maxCol - 1)}${lastRow}"/>
-  <mergeCells count="1"><mergeCell ref="A1:${colName(Math.min(maxCol - 1, 7))}1"/></mergeCells>
+  <autoFilter ref="A${headerRow}:${colName(maxCol - 1)}${lastRow}"/>
+  ${title ? `<mergeCells count="1"><mergeCell ref="A1:${colName(maxCol - 1)}1"/></mergeCells>` : ""}
 </worksheet>`;
 }
 
@@ -233,27 +247,41 @@ function safeSheetName(value: string, used: Set<string>) {
 }
 
 export function buildOrderReportXlsx(report: OrderReport) {
-  const subtitle = `Period: ${report.range.label} (${dateIso(report.range.start) || "Beginning"} to ${dateIso(report.range.end)})`;
-  const summaryHeaders = ["State Code", "State", "Orders", "Qty", "Order Subtotal Amount", "Cart Discount Amount", "Order Total Amount", "Order Total Tax Amount"];
+  const summaryHeaders = ["State Code (Billing)", "State", "Orders", "Qty", "Order Subtotal Amount", "Cart Discount Amount", "Order Total Amount", "Order Total Tax Amount"];
   const summaryRows = report.stateSummary.map((row) => [row.stateCode, row.state, row.orders, row.quantity, row.subtotal, row.discount, row.total, row.tax]);
-  const detailRows = report.rows.map(detailValues);
-  const detailMoney = new Set([21, 22, 23, 24, 25, 26, 32, 33]);
+  // Populated columns from the supplied GST state-wise reference, in its order.
+  const headers = ["Order Number", "Order Status", "Order Date", "First Name (Billing)", "Last Name (Billing)", "Address 1&2 (Billing)", "City (Billing)", "State Code (Billing)", "Postcode (Billing)", "Country Code (Billing)", "Email (Billing)", "Phone (Billing)", "Payment Method Title", "Cart Discount Amount", "Order Subtotal Amount", "Order Shipping Amount", "Order Refund Amount", "Order Total Amount", "Order Total Tax Amount", "SKU", "Item #", "Item Name", "Quantity (- Refund)", "Item Cost", "Coupon Code", "Discount Amount"];
+  const itemNumbers = new Map<NormalizedOrderRow, number>();
+  const orderItemCounts = new Map<string, number>();
+  for (const row of report.rows) {
+    const number = (orderItemCounts.get(row.orderId) || 0) + 1;
+    orderItemCounts.set(row.orderId, number);
+    itemNumbers.set(row, number);
+  }
+  const values = (row: NormalizedOrderRow): Array<string | number> => {
+    const [firstName, ...lastName] = row.customerName.trim().split(/\s+/);
+    const status = ["delivered", "completed"].includes(row.orderStatus) ? "Completed" : ["cancelled", "canceled", "returned", "refunded"].includes(row.orderStatus) ? "Cancelled" : "Pending";
+    const date = (Date.parse(dateIso(row.orderDate)) - Date.UTC(1899, 11, 30)) / 86_400_000;
+    return [row.orderNumber, status, Number.isFinite(date) ? date : "", firstName || "", lastName.join(" "), row.billingAddress, row.billingCity, row.billingStateCode, row.billingPostcode, /^(india|in)$/i.test(row.billingCountry) ? "IN" : row.billingCountry, row.customerEmail, row.customerPhone, row.paymentMethod === "cod" ? "Cash on delivery" : row.paymentMethod === "razorpay" ? "Razorpay" : row.paymentMethod, row.discount, row.subtotal, row.shipping, row.refund, row.total, row.tax, row.sku, itemNumbers.get(row) || 1, row.itemName, row.quantity, row.itemCost, row.couponCode, row.itemDiscount];
+  };
+  const detailRows = report.rows.map(values);
+  const detailMoney = new Set([13, 14, 15, 16, 17, 18, 23, 25]);
   const sheets: Array<{ name: string; xml: string }> = [];
   const used = new Set<string>();
-  sheets.push({ name: safeSheetName("Summary", used), xml: sheetXml("HivraSoft Order & Sales Report - State Summary", subtitle, summaryHeaders, summaryRows, new Set([4, 5, 6, 7]), [12, 24, 10, 10, 22, 22, 20, 20]) });
-  sheets.push({ name: safeSheetName("All Data", used), xml: sheetXml("HivraSoft Order & Sales Report - All Data", subtitle, DETAIL_HEADERS, detailRows, detailMoney) });
+  sheets.push({ name: safeSheetName("Summary", used), xml: sheetXml("GST Report - State Wise Summary", summaryHeaders, summaryRows, new Set([4, 5, 6, 7]), [23, 24, 10, 10, 24, 24, 24, 24], true) });
+  sheets.push({ name: safeSheetName("All Data", used), xml: sheetXml("", headers, detailRows, detailMoney) });
 
   for (const state of report.stateSummary) {
-    const stateRows = report.rows.filter((row) => (row.shippingState || row.billingState || "Unknown").trim().toLowerCase() === state.state.trim().toLowerCase()).map(detailValues);
+    const stateRows = report.rows.filter((row) => (row.shippingState || row.billingState || "Unknown").trim().toLowerCase() === state.state.trim().toLowerCase()).map(values);
     if (!stateRows.length) continue;
-    sheets.push({ name: safeSheetName(state.state || "Unknown", used), xml: sheetXml(`HivraSoft Orders - ${state.state}`, subtitle, DETAIL_HEADERS, stateRows, detailMoney) });
+    sheets.push({ name: safeSheetName(state.state || "Unknown", used), xml: sheetXml("", headers, stateRows, detailMoney) });
   }
 
   const contentTypes = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${sheets.map((_, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join("")}</Types>`;
   const rootRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`;
   const workbook = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>${sheets.map((sheet, i) => `<sheet name="${esc(sheet.name)}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join("")}</sheets></workbook>`;
   const workbookRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${sheets.map((_, i) => `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join("")}<Relationship Id="rId${sheets.length + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`;
-  const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="1"><numFmt numFmtId="164" formatCode="[$₹-en-IN]#,##0.00;[Red]-[$₹-en-IN]#,##0.00"/></numFmts><fonts count="3"><font><sz val="10"/><name val="Calibri"/></font><font><b/><color rgb="FFFFFFFF"/><sz val="10"/><name val="Calibri"/></font><font><b/><sz val="16"/><color rgb="FF8C1839"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF8C1839"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="2"><border/><border><left style="thin"><color rgb="FFE7DED8"/></left><right style="thin"><color rgb="FFE7DED8"/></right><top style="thin"><color rgb="FFE7DED8"/></top><bottom style="thin"><color rgb="FFE7DED8"/></bottom><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="5"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"/><xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
+  const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="2"><numFmt numFmtId="165" formatCode="dd-mm-yyyy"/><numFmt numFmtId="164" formatCode="[$₹-en-IN]#,##0.00;[Red]-[$₹-en-IN]#,##0.00"/></numFmts><fonts count="3"><font><sz val="10"/><name val="Calibri"/></font><font><b/><color rgb="FFFFFFFF"/><sz val="10"/><name val="Calibri"/></font><font><b/><sz val="16"/><color rgb="FF1F4E78"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF1F4E78"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="2"><border/><border><left style="thin"><color rgb="FFE7DED8"/></left><right style="thin"><color rgb="FFE7DED8"/></right><top style="thin"><color rgb="FFE7DED8"/></top><bottom style="thin"><color rgb="FFE7DED8"/></bottom><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="6"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"/><xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="165" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
 
   const files: Array<{ name: string; data: string | Buffer }> = [
     { name: "[Content_Types].xml", data: contentTypes },

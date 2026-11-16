@@ -98,9 +98,11 @@ function sourceLabel(value: unknown) {
 export default function AdminOrdersManager({ failedPaymentsOnly = false }: { failedPaymentsOnly?: boolean }) {
   const [orders, setOrders] = useState<Record<string, unknown>[]>([]);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState("10");
+  const [pendingPageSize, setPendingPageSize] = useState("10");
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 20,
+    limit: 10,
     total: 0,
     totalPages: 1,
   });
@@ -121,22 +123,36 @@ export default function AdminOrdersManager({ failedPaymentsOnly = false }: { fai
       setLoading(true);
       setError("");
 
-      const result = await getAdminOrders({
-        page,
-        limit: 20,
+      const query = {
+        page: pageSize === "all" ? 1 : page,
+        limit: pageSize === "all" ? 100 : Number(pageSize),
         search: search.trim(),
         status: orderStatus,
         paymentMethod,
         paymentStatus: failedPaymentsOnly ? undefined : paymentStatus,
         paymentIssuesOnly: failedPaymentsOnly,
         excludePaymentIssues: !failedPaymentsOnly,
-      });
+      };
+      const result = await getAdminOrders(query);
+      if (pageSize === "all") {
+        const allOrders = [...result.orders];
+        for (let nextPage = 2; nextPage <= result.pagination.totalPages; nextPage += 1) {
+          const nextResult = await getAdminOrders({ ...query, page: nextPage });
+          allOrders.push(...nextResult.orders);
+        }
+        result.orders = allOrders;
+        result.pagination = { page: 1, limit: allOrders.length, total: allOrders.length, totalPages: 1 };
+      }
+      if (pageSize !== "all" && page > result.pagination.totalPages) {
+        setPage(result.pagination.totalPages);
+        return;
+      }
 
       setOrders(Array.isArray(result.orders) ? result.orders : []);
       setPagination(
         result.pagination || {
           page,
-          limit: 20,
+          limit: Number(pageSize) || 100,
           total: 0,
           totalPages: 1,
         }
@@ -148,7 +164,7 @@ export default function AdminOrdersManager({ failedPaymentsOnly = false }: { fai
     } finally {
       setLoading(false);
     }
-  }, [page, search, orderStatus, paymentMethod, paymentStatus, failedPaymentsOnly]);
+  }, [page, pageSize, search, orderStatus, paymentMethod, paymentStatus, failedPaymentsOnly]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -341,6 +357,28 @@ export default function AdminOrdersManager({ failedPaymentsOnly = false }: { fai
             {busyId === "bulk" ? <Loader2 size={14} className="animate-spin" /> : null}
             Apply
           </button>
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <label htmlFor="orders-page-size" className="text-xs font-medium text-[#211A18]/60">Orders per page</label>
+          <select
+            id="orders-page-size"
+            value={pendingPageSize}
+            onChange={(event) => setPendingPageSize(event.target.value)}
+            disabled={loading}
+            className="h-11 rounded-xl border border-[#211A18]/15 bg-white px-3 text-xs text-[#211A18] outline-none focus:border-[#8C1839]/40 disabled:opacity-50"
+          >
+            {["10", "30", "50", "100", "all"].map((value) => (
+              <option key={value} value={value}>{value === "all" ? "All" : value}</option>
+            ))}
+          </select>
+          <button
+            type="button"
+            aria-label="Apply orders per page"
+            disabled={loading}
+            onClick={() => { setPage(1); setPageSize(pendingPageSize); }}
+            className="h-11 rounded-xl bg-[#8C1839] px-5 text-[10px] font-semibold uppercase tracking-wide text-white transition hover:bg-[#71132e] disabled:cursor-not-allowed disabled:opacity-50"
+          >Apply</button>
         </div>
 
         <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -673,7 +711,15 @@ export default function AdminOrdersManager({ failedPaymentsOnly = false }: { fai
             • Page {pagination.page} of {pagination.totalPages}
           </p>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              aria-label="Go to first page"
+              aria-current={page === 1 ? "page" : undefined}
+              disabled={page <= 1 || loading}
+              onClick={() => setPage(1)}
+              className="h-9 min-w-9 rounded-lg border border-[#211A18]/10 bg-white px-3 text-[10px] font-semibold disabled:cursor-not-allowed disabled:opacity-40"
+            >1</button>
             <button
               type="button"
               disabled={page <= 1 || loading}
@@ -690,12 +736,14 @@ export default function AdminOrdersManager({ failedPaymentsOnly = false }: { fai
               );
               const pageNumber = start + index;
 
-              if (pageNumber > pagination.totalPages) return null;
+              if (pageNumber <= 1 || pageNumber >= pagination.totalPages) return null;
 
               return (
                 <button
                   key={pageNumber}
                   type="button"
+                  disabled={loading}
+                  aria-current={pageNumber === page ? "page" : undefined}
                   onClick={() => setPage(pageNumber)}
                   className={`h-9 w-9 rounded-lg text-[10px] font-semibold ${
                     pageNumber === page
@@ -718,6 +766,16 @@ export default function AdminOrdersManager({ failedPaymentsOnly = false }: { fai
             >
               Next
             </button>
+            {pagination.totalPages > 1 && (
+              <button
+                type="button"
+                aria-label={`Go to last page, ${pagination.totalPages}`}
+                aria-current={page === pagination.totalPages ? "page" : undefined}
+                disabled={page >= pagination.totalPages || loading}
+                onClick={() => setPage(pagination.totalPages)}
+                className="h-9 min-w-9 rounded-lg border border-[#211A18]/10 bg-white px-3 text-[10px] font-semibold disabled:cursor-not-allowed disabled:opacity-40"
+              >{pagination.totalPages}</button>
+            )}
           </div>
         </div>
       </div>

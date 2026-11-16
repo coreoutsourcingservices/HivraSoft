@@ -3,6 +3,7 @@ import { fetchBlogsServer } from "@/lib/blog-server";
 import StructuredData from "@/src/components/Storefront/StructuredData";
 import { absoluteUrl, pageMetadata } from "@/lib/seo";
 import { STATIC_SEO } from "@/lib/seo-pages";
+import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +18,7 @@ export default async function BlogPage({ searchParams }: PageProps) {
   const requested = Number(query?.page || 1);
   const page = Number.isSafeInteger(requested) && requested > 0 ? requested : 1;
   const result = await fetchBlogsServer(`page=${page}&limit=9&sort=latest`);
+  if (!result || (page > 1 && page > result.pagination.totalPages)) notFound();
   return (
     <>
     <StructuredData data={{

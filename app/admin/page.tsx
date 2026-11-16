@@ -28,8 +28,10 @@ import {
 
 import {
   getAdminDashboard,
+  getAdminOrders,
   type AdminDashboardData,
 } from "@/lib/admin-api";
+import { dashboardPeriodData, dashboardPeriods, type DashboardRange } from "./dashboard-period";
 
 const BRAND = "#c41245";
 const BRAND_DARK = "#a50d39";
@@ -102,7 +104,13 @@ const tableCellStyle: CSSProperties = {
 };
 
 export default function AdminDashboardPage() {
-  const [data, setData] = useState<AdminDashboardData>(EMPTY);
+  const [baseData, setData] = useState<AdminDashboardData>(EMPTY);
+  const [orders, setOrders] = useState<Record<string, unknown>[]>([]);
+  const [range, setRange] = useState<DashboardRange>({ period: "7_days" });
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const data = useMemo(() => ({ ...baseData, ...dashboardPeriodData(orders, range) }), [baseData, orders, range]);
+  const rangeLabel = range.from ? `${range.from} to ${range.to}` : dashboardPeriods.find(([value]) => value === range.period)![1];
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
@@ -118,6 +126,13 @@ export default function AdminDashboardPage() {
       setError("");
 
       const response = await getAdminDashboard();
+      const first = await getAdminOrders({ page: 1, limit: 100, excludePaymentIssues: true });
+      const allOrders = [...first.orders];
+      for (let page = 2; page <= first.pagination.totalPages; page++) {
+        const result = await getAdminOrders({ page, limit: 100, excludePaymentIssues: true });
+        allOrders.push(...result.orders);
+      }
+      setOrders(allOrders);
       setData(response);
     } catch (err) {
       setError(
@@ -357,6 +372,16 @@ export default function AdminDashboardPage() {
       </section>
 
       {/* SALES + ORDER STATUS */}
+      <section aria-label="Dashboard date filter" style={{ ...panelStyle, padding: 16, display: "flex", flexWrap: "wrap", alignItems: "end", justifyContent: "space-between", gap: 16 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          {dashboardPeriods.map(([period, label]) => <button key={period} type="button" disabled={loading || refreshing} aria-pressed={!range.from && range.period === period} onClick={() => { setRange({ period }); setDateFrom(""); setDateTo(""); }} className={`rounded-2xl px-5 py-4 text-xs font-semibold disabled:opacity-50 ${!range.from && range.period === period ? "bg-[#8C1839] text-white" : "bg-[#FAF8F6] text-[#211A18]"}`}>{label}</button>)}
+        </div>
+        <form onSubmit={(event) => { event.preventDefault(); if (dateFrom && dateTo && dateFrom <= dateTo) setRange({ period: range.period, from: dateFrom, to: dateTo }); }} className="flex flex-wrap items-end gap-2">
+          <label className="flex flex-col gap-2 text-xs text-[#747b87]">From date<input required type="date" value={dateFrom} max={dateTo || undefined} onChange={(event) => setDateFrom(event.target.value)} className="h-12 rounded-2xl border border-[#e5e7eb] bg-white px-3 text-[#16191f]" /></label>
+          <label className="flex flex-col gap-2 text-xs text-[#747b87]">To date<input required type="date" value={dateTo} min={dateFrom || undefined} onChange={(event) => setDateTo(event.target.value)} className="h-12 rounded-2xl border border-[#e5e7eb] bg-white px-3 text-[#16191f]" /></label>
+          <button type="submit" disabled={loading || refreshing || !dateFrom || !dateTo || dateFrom > dateTo} className="h-12 rounded-2xl bg-[#8C1839] px-5 text-xs font-semibold text-white disabled:opacity-40">Apply dates</button>
+        </form>
+      </section>
 
       <section
         style={{
@@ -380,7 +405,7 @@ export default function AdminDashboardPage() {
               />
             }
             title="Sales Overview"
-            subtitle="Order revenue for the last 7 days"
+            subtitle={`Order revenue · ${rangeLabel}`}
             action={
               <div
                 style={{
@@ -392,7 +417,7 @@ export default function AdminDashboardPage() {
                   fontWeight: 600,
                 }}
               >
-                Last 7 Days
+                {rangeLabel}
               </div>
             }
           />
@@ -414,7 +439,7 @@ export default function AdminDashboardPage() {
           <PanelHeader
             icon={<OrderStatusIcon />}
             title="Order Status"
-            subtitle="Distribution of orders by status"
+            subtitle={`Distribution of orders by status · ${rangeLabel}`}
           />
 
           <div
@@ -490,7 +515,7 @@ export default function AdminDashboardPage() {
             <PanelHeader
               icon={<ShoppingCart size={21} />}
               title="Recent Orders"
-              subtitle="Latest orders placed by customers"
+              subtitle={`Latest orders · ${rangeLabel}`}
               action={
                 <Link
                   href="/admin/orders"
@@ -534,7 +559,7 @@ export default function AdminDashboardPage() {
               >
                 <tr>
                   <th style={tableHeadingStyle}>
-                    #
+                    Date
                   </th>
 
                   <th style={tableHeadingStyle}>
@@ -553,10 +578,6 @@ export default function AdminDashboardPage() {
                     Status
                   </th>
 
-                  <th style={tableHeadingStyle}>
-                    Date
-                  </th>
-
                   <th
                     style={{
                       ...tableHeadingStyle,
@@ -573,7 +594,7 @@ export default function AdminDashboardPage() {
                 0 ? (
                   <tr>
                     <td
-                      colSpan={7}
+                      colSpan={6}
                       style={{
                         padding: "40px 20px",
                         textAlign: "center",
@@ -596,9 +617,7 @@ export default function AdminDashboardPage() {
                             fontWeight: 700,
                           }}
                         >
-                          #
-                          {order.orderNumber ||
-                            order.id.slice(-4)}
+                          {formatDate(order.date)}
                         </td>
 
                         <td style={tableCellStyle}>
@@ -679,17 +698,6 @@ export default function AdminDashboardPage() {
                           <OrderStatusBadge
                             status={order.status}
                           />
-                        </td>
-
-                        <td
-                          style={{
-                            ...tableCellStyle,
-                            color: "#656c78",
-                          }}
-                        >
-                          {formatDate(
-                            order.date,
-                          )}
                         </td>
 
                         <td

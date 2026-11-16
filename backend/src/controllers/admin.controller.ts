@@ -459,6 +459,8 @@ export async function getAdminDashboard(_req: Request, res: Response) {
     });
 
     const rawStatuses = await Order.aggregate([
+      // Match the normal Orders list; payment-issue orders have their own page.
+      { $match: { $nor: [adminPaymentIssueFilter()] } },
       { $group: { _id: { $toLower: "$status" }, count: { $sum: 1 } } },
     ]);
     const rawStatusMap = new Map(rawStatuses.map((row: any) => [String(row._id || ""), Number(row.count || 0)]));

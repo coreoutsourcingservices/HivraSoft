@@ -23,7 +23,7 @@ type LoaderProps = {
   onComplete?: () => void;
 };
 
-const LOADER_DURATION_SECONDS = 1;
+const LOADER_DURATION_SECONDS = 4;
 
 /* =========================================================
    GREETINGS

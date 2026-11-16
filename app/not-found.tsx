@@ -1,9 +1,11 @@
-import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Home, Search, ShoppingBag } from "lucide-react";
+import Header from "@/src/components/Header/Header";
 
 export default function NotFound() {
   return (
+    <>
+    <Header />
     <main className="relative isolate min-h-screen overflow-hidden bg-[#FFFAF8] text-[#301923]">
       {/* Decorative layers only; no changes to global site styles. */}
       <div
@@ -18,25 +20,6 @@ export default function NotFound() {
         aria-hidden="true"
         className="pointer-events-none absolute -right-20 bottom-16 h-80 w-80 rounded-full border border-[#A51D45]/10"
       />
-
-      <header className="relative mx-auto flex w-full max-w-6xl items-center justify-between px-5 py-6 sm:px-8 sm:py-8">
-        <Link href="/" aria-label="HivraSoft homepage" className="inline-flex items-center">
-          <Image
-            src="/images/logos/hivra-soft-logo.png"
-            alt="HivraSoft"
-            width={165}
-            height={55}
-            className="h-auto w-32 sm:w-40"
-            priority
-          />
-        </Link>
-        <Link
-          href="/contact"
-          className="rounded-full border border-[#A51D45]/20 bg-white/80 px-4 py-2 text-xs font-semibold text-[#8E1D43] transition hover:border-[#A51D45]/50 hover:bg-white sm:text-sm"
-        >
-          Need help?
-        </Link>
-      </header>
 
       <section className="relative mx-auto grid w-full max-w-6xl items-center gap-10 px-5 pb-20 pt-10 sm:px-8 md:min-h-[650px] md:grid-cols-2 md:gap-12 md:pb-24 md:pt-8">
         <div className="mx-auto w-full max-w-xl text-center md:mx-0 md:text-left">
@@ -103,5 +86,6 @@ export default function NotFound() {
         </div>
       </section>
     </main>
+    </>
   );
 }

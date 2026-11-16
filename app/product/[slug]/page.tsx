@@ -1,5 +1,6 @@
 import {
   notFound,
+  permanentRedirect,
 } from "next/navigation";
 import { cache } from "react";
 import { requestPublicProduct } from "@/lib/public-product-request";
@@ -353,6 +354,9 @@ export default async function ProductPage({
   if (!product) {
     notFound();
   }
+
+  const seo = productSeo(product, slug);
+  if (seo.input.path !== `/product/${slug}`) permanentRedirect(seo.input.path);
 
   return (
     <>

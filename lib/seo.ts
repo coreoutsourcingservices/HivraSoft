@@ -149,7 +149,8 @@ export function productSeo(product: ApiProduct, slug: string) {
     || (selectedColor && !/default|multi/i.test(selectedColor) && !apiDescription.toLowerCase().includes(selectedColor) && /\b(?:red|blue|white|black|pink|green|maroon|beige)\b/i.test(apiDescription));
   const description = seoDescription(unreliableDescription ? "" : apiDescription,
     `Shop ${shortLabel} at HivraSoft. ${sizeLabel ? `Sizes ${sizeLabel}. ` : ""}View colours and product details.`);
-  const input: SeoInput = { title, description, path: `/product/${slug}`, image: images.find(image => image.isDefault)?.url || images[0]?.url, keywords: [color?.focusKeyword || "", ...(color?.tags || [])] };
+  // Old product slugs resolve to the active default variant's one canonical URL.
+  const input: SeoInput = { title, description, path: `/product/${color?.slugProduct || slug}`, image: images.find(image => image.isDefault)?.url || images[0]?.url, keywords: [color?.focusKeyword || "", ...(color?.tags || [])] };
   const sizes = (color?.sizes || []).filter(size => size.isActive !== false);
   const selected = sizes.find(size => size.isDefault) || sizes.find(size => Number(size.stock || 0) > 0) || sizes[0];
   const price = Number(selected?.showPrice ?? selected?.sellingPrice ?? selected?.price ?? color?.showPrice ?? color?.sellingPrice ?? product.sellingPrice ?? product.price);
