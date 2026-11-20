@@ -6,6 +6,8 @@ import Link from "next/link";
 
 import {
 
+  Fragment,
+
   useCallback,
 
   useEffect,
@@ -254,6 +256,12 @@ function normalizeProduct(product) {
 
       hex: safeText(color?.hex || "#D9D9D9"),
 
+      image: (Array.isArray(color?.images)
+        ? color.images.find((item) => item?.isDefault && item?.url)?.url || color.images.find((item) => item?.url)?.url
+        : "") || "",
+
+      productName: safeText(color?.nameProduct),
+
       isDefault: color?.isDefault === true,
 
       sizes,
@@ -362,6 +370,7 @@ export default function ProductsManager() {
 
   const [products, setProducts] = useState([]);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [pagination, setPagination] = useState({ page: 1, pageSize: 10, total: 0, totalPages: 1, totalProducts: 0 });
   const [categoryOptions, setCategoryOptions] = useState([]);
   const requestRef = useRef(0);
@@ -402,7 +411,7 @@ export default function ProductsManager() {
     setError("");
     try {
       const query = new URLSearchParams({
-        page: String(page), limit: "10", search, status, category,
+        page: String(page), limit: String(pageSize), search, status, category,
         productType, stockStatus, seoStatus,
       });
       const response = await apiFetch(`/api/products?${query}`, { method: "GET" });
@@ -417,7 +426,7 @@ export default function ProductsManager() {
     } finally {
       if (request === requestRef.current) setLoading(false);
     }
-  }, [page, search, status, category, productType, stockStatus, seoStatus]);
+  }, [page, pageSize, search, status, category, productType, stockStatus, seoStatus]);
 
   useEffect(() => {
     void loadProducts();
@@ -1081,7 +1090,7 @@ export default function ProductsManager() {
 
         <p className="text-[9px] text-[#211A18]/40">
 
-          Showing <strong className="text-[#211A18]">{pagination.total ? (pagination.page - 1) * 10 + 1 : 0}–{Math.min(pagination.page * 10, pagination.total)}</strong> of{" "}
+          Showing <strong className="text-[#211A18]">{pagination.total ? (pagination.page - 1) * pageSize + 1 : 0}–{Math.min(pagination.page * pageSize, pagination.total)}</strong> of{" "}
           <strong className="text-[#211A18]">{pagination.total}</strong> matching products
           {hasFilters ? ` (${pagination.totalProducts} total)` : ""}
 
@@ -1111,10 +1120,13 @@ export default function ProductsManager() {
 
 
 
-      <nav aria-label="Product pagination" className="mt-4 flex flex-wrap items-center justify-end gap-3 text-xs">
-        <button type="button" disabled={loading || busy || page <= 1} onClick={() => setPage(current => current - 1)} className="rounded-xl border border-[#211A18]/15 bg-white px-4 py-2 font-semibold disabled:opacity-40">Previous</button>
-        <span aria-live="polite">Page {pagination.page} of {pagination.totalPages}</span>
-        <button type="button" disabled={loading || busy || page >= pagination.totalPages} onClick={() => setPage(current => current + 1)} className="rounded-xl border border-[#211A18]/15 bg-white px-4 py-2 font-semibold disabled:opacity-40">Next</button>
+      <nav aria-label="Product pagination" className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs">
+        <label className="flex items-center gap-2 font-medium text-[#211A18]/65">Products per page<select aria-label="Products per page" value={pageSize} disabled={loading || busy} onChange={(event) => { setPageSize(Number(event.target.value)); setPage(1); setSelectedIds([]); }} className="rounded-xl border border-[#211A18]/15 bg-white px-3 py-2 text-[#211A18]">{[10, 15, 30, 100].map((size) => <option key={size} value={size}>{size}</option>)}</select></label>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <button type="button" disabled={loading || busy || page <= 1} onClick={() => setPage(current => current - 1)} className="rounded-xl border border-[#211A18]/15 bg-white px-4 py-2 font-semibold disabled:opacity-40">Previous</button>
+          {Array.from({ length: pagination.totalPages }, (_, index) => index + 1).filter((number) => number === 1 || number === pagination.totalPages || Math.abs(number - page) <= 2).map((number, index, numbers) => <Fragment key={number}>{index > 0 && number - numbers[index - 1] > 1 ? <span className="px-1 text-[#211A18]/45">…</span> : null}<button type="button" aria-current={number === page ? "page" : undefined} disabled={loading || busy} onClick={() => setPage(number)} className={`min-w-9 rounded-xl border px-3 py-2 font-semibold ${number === page ? "border-[#8C1839] bg-[#8C1839] text-white" : "border-[#211A18]/15 bg-white text-[#211A18]"}`}>{number}</button></Fragment>)}
+          <button type="button" disabled={loading || busy || page >= pagination.totalPages} onClick={() => setPage(current => current + 1)} className="rounded-xl border border-[#211A18]/15 bg-white px-4 py-2 font-semibold disabled:opacity-40">Next</button>
+        </div>
       </nav>
 
       <section className="mt-3 w-full min-w-0 overflow-hidden rounded-2xl border border-[#211A18]/10 bg-white shadow-sm">
@@ -1250,7 +1262,7 @@ function ProductRow({ product, selected, onToggleSelected, onDelete, busy }) {
 
   return (
 
-    <div className="grid w-full min-w-0 items-start gap-3 border-b border-[#211A18]/10 px-4 py-4 transition-colors last:border-b-0 hover:bg-[#FFFCFB]"
+    <div className={`grid w-full min-w-0 items-start gap-3 border-b border-[#211A18]/10 px-4 py-4 transition-colors last:border-b-0 ${selectedColor && product.isColor ? "bg-[#FFFCFB]" : "hover:bg-[#FFFCFB]"}`}
       style={{ gridTemplateColumns: "32px minmax(260px,1.7fr) 72px 104px minmax(170px,1.05fr) 116px 90px 108px" }}>
 
       <div className="pt-7">
@@ -1277,13 +1289,13 @@ function ProductRow({ product, selected, onToggleSelected, onDelete, busy }) {
 
         <div className="h-[72px] w-[58px] shrink-0 overflow-hidden rounded-xl border border-[#211A18]/8 bg-[#F3EEE8]">
 
-          {product.image ? (
+          {selectedColor?.image || product.image ? (
 
             <img
 
-              src={product.image}
+              src={selectedColor?.image || product.image}
 
-              alt={product.name}
+              alt={selectedColor?.name ? `${product.name} - ${selectedColor.name}` : product.name}
 
               className="h-full w-full object-cover"
 
@@ -1307,7 +1319,7 @@ function ProductRow({ product, selected, onToggleSelected, onDelete, busy }) {
 
           <p className="truncate text-[12px] font-semibold text-[#211A18]">
 
-            {product.name}
+            {selectedColor?.productName || product.name}
 
           </p>
 
@@ -1379,7 +1391,7 @@ function ProductRow({ product, selected, onToggleSelected, onDelete, busy }) {
 
                   title={color.name}
 
-                  aria-label={`${color.name} stock`}
+                  aria-label={`Show ${color.name} product color`}
 
                   aria-pressed={active}
 

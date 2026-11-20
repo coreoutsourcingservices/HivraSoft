@@ -77,12 +77,18 @@ function downloadExcel(kind: "cart" | "wishlist", rows: CommerceTrackingRow[]) {
     "User Number",
     "User Mail",
     "Product",
+    "Product ID",
+    "Color",
     "Category",
     "Size",
     "Price",
     "Quantity",
+    "Tracking Status",
     "Date",
     "Time",
+    "Last Updated",
+    "24h Reminder Email",
+    "48h Reminder Email",
   ];
 
   const headerRow = headers.map((header) => `<Cell ss:StyleID="Header"><Data ss:Type="String">${xmlEscape(header)}</Data></Cell>`).join("");
@@ -92,12 +98,18 @@ function downloadExcel(kind: "cart" | "wishlist", rows: CommerceTrackingRow[]) {
       ${textCell(row.user.phone)}
       ${textCell(row.user.email)}
       ${textCell(row.product.name)}
+      ${textCell(row.product.id)}
+      ${textCell(row.product.colorName)}
       ${textCell(row.product.categoryName || "—")}
       ${textCell(row.product.sizeName || "—")}
       ${numberCell(row.product.price)}
       ${numberCell(row.quantity)}
+      ${textCell(row.status)}
       ${textCell(exportDate(row.addedAt))}
       ${textCell(exportTime(row.addedAt))}
+      ${textCell(dateTime(row.updatedAt))}
+      ${textCell(row.email.reminder24HourSent ? "Sent" : row.email.reminder24HourError ? `Failed: ${row.email.reminder24HourError}` : "Pending")}
+      ${textCell(row.email.reminder48HourSent ? "Sent" : row.email.reminder48HourError ? `Failed: ${row.email.reminder48HourError}` : "Pending")}
     </Row>`).join("");
 
   const workbook = `<?xml version="1.0"?>
@@ -264,11 +276,14 @@ export default function CommerceTrackingPage({ kind }: { kind: "cart" | "wishlis
       setExporting(true);
       const first = await getTracking(1, 100);
       const allRows = [...first.tracking];
-      const totalPages = Math.max(1, first.pagination.totalPages);
+      let totalPages = Math.max(1, first.pagination.totalPages);
+      let exportPage = 2;
 
-      for (let exportPage = 2; exportPage <= totalPages; exportPage += 1) {
+      while (exportPage <= totalPages) {
         const next = await getTracking(exportPage, 100);
         allRows.push(...next.tracking);
+        totalPages = Math.max(totalPages, next.pagination.totalPages);
+        exportPage += 1;
       }
 
       if (!allRows.length) {
@@ -317,7 +332,7 @@ export default function CommerceTrackingPage({ kind }: { kind: "cart" | "wishlis
               className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#8C1839] px-4 text-[10px] font-semibold text-white disabled:opacity-50"
             >
               {exporting ? <Loader2 size={14} className="animate-spin" /> : <FileSpreadsheet size={14} />}
-              {exporting ? "Exporting..." : "Export Excel"}
+              {exporting ? "Exporting all..." : "Export All to Excel"}
             </button>
             <div className="rounded-xl bg-[#F7F3EF] px-4 py-3 text-[10px] font-semibold text-[#211A18]/60">
               {pagination.total.toLocaleString("en-IN")} tracking record{pagination.total === 1 ? "" : "s"}

@@ -14,6 +14,7 @@ import {
   syncAdminRazorpayPayment,
 } from "@/lib/admin-api";
 import { adminPaymentStatus } from "@/lib/admin-payment-status";
+import { confirmAdminAction } from "@/src/components/Admin/AdminConfirmProvider";
 
 function text(value: unknown, fallback = "—") {
   return typeof value === "string" || typeof value === "number"
@@ -245,6 +246,23 @@ export default function AdminOrdersManager({ failedPaymentsOnly = false }: { fai
     } finally {
       setBusyId("");
     }
+  }
+
+  async function requestOrderStatusChange(id: string, status: SimpleOrderStatus, orderNumber: string) {
+    if (status === "completed" || status === "cancelled") {
+      const confirmed = await confirmAdminAction({
+        title: status === "completed" ? "Complete this order?" : "Cancel this order?",
+        itemName: orderNumber,
+        description: status === "completed"
+          ? "Confirm that this order should be marked as completed."
+          : "Confirm that this order should be cancelled. This may affect stock and order processing.",
+        confirmLabel: "OK",
+        cancelLabel: "Cancel",
+        destructive: status === "cancelled",
+      });
+      if (!confirmed) return;
+    }
+    await changeOrderStatus(id, status);
   }
 
   async function applyBulkAction() {
@@ -652,7 +670,7 @@ export default function AdminOrdersManager({ failedPaymentsOnly = false }: { fai
                             value={status}
                             disabled={busyId === `status-${id}` || busyId === "bulk"}
                             onChange={(event) =>
-                              void changeOrderStatus(id, event.target.value as SimpleOrderStatus)
+                              void requestOrderStatusChange(id, event.target.value as SimpleOrderStatus, text(order.orderNumber, id))
                             }
                             className={`h-9 min-w-[112px] rounded-lg border px-2 pr-7 text-[9px] font-semibold uppercase outline-none ${statusClass(status)}`}
                           >
