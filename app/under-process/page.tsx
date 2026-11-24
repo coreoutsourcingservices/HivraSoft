@@ -15,10 +15,10 @@ export default function UnderProcessPage() {
       <section className="process-card" aria-labelledby="process-title">
         <a className="process-brand" href="/" aria-label="HivraSoft home">
           <Image
-            src="/logo%20-%20Hivra%20Soft.png"
+            src="/images/logos/hivra-desktop.png.png"
             alt="HivraSoft — Intimate Comfort"
-            width={280}
-            height={113}
+            width={390}
+            height={130}
             priority
             className="process-brand-logo"
           />
@@ -51,7 +51,7 @@ export default function UnderProcessPage() {
         .process-page{--ink:#191526;--muted:#777488;--violet:#7357e8;--pink:#d964a5;position:relative;isolation:isolate;display:grid;min-height:100svh;overflow:hidden;place-items:center;padding:40px 20px 76px;background:radial-gradient(ellipse at 50% 45%,#fff 0%,#faf9ff 48%,#f3f1fb 100%);color:var(--ink);font-family:Arial,Helvetica,sans-serif}
         .process-card{position:relative;z-index:1;display:flex;width:min(100%,560px);flex-direction:column;align-items:center;text-align:center}
         .process-brand{display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
-        .process-brand-logo{display:block;width:min(68vw,280px);height:auto;object-fit:contain}
+        .process-brand-logo{display:block;width:min(82vw,390px);height:auto;object-fit:contain}
         .process-art{position:relative;display:grid;width:206px;height:206px;place-items:center;margin:48px 0 30px}
         .process-orbit{position:absolute;border:1px solid #826ce323;border-radius:50%}
         .process-orbit-outer{inset:2px;animation:process-spin 22s linear infinite}
