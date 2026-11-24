@@ -47,6 +47,11 @@ const nextConfig = {
   },
   async redirects() {
     return [
+      {
+        source: "/",
+        destination: "/under-process",
+        permanent: true,
+      },
       ...Object.entries(legacyContentLinks).map(([source, destination]) => ({ source, destination, permanent: true })),
       {
         source: "/:path*",
